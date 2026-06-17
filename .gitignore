@@ -1,0 +1,27 @@
+.obsidian/plugins/remotely-save/data.json
+.obsidian-mobile/plugins/remotely-save/data.json
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.trash/
+*.war
+remotely-save-sync.db
+.remotely-save-db-*
+# ========================
+# 보안 (오늘 사건 교훈)
+# ========================
+*credentials*
+*secret*
+*password*
+*token*
+*access_key*
+*.env
+secrets/
+private/
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
+desktop.ini

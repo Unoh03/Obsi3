@@ -1,0 +1,74 @@
+# AWS 목차
+
+## 개요
+
+AWS 수업, 강의 PDF, 개념 노트, 실습 노트, 운영 보조 기록을 연결하는 AWS 영역의 진입점이다.
+
+개념 노트는 AWS 구조와 서비스 의미를 정리하고, 실습 노트는 실제 Console 조작, 명령, 오류, 검증 결과를 남긴다.
+
+## 상위 경로
+
+- [[00_index/Home|Home]]
+- [[10_학습 노트/00_학습노트_목차|학습노트 목차]]
+- [[10_학습 노트/클라우드/00_클라우드_목차|클라우드 목차]]
+
+## 현재 재시작 지점
+
+1. 진행 중인 p.84 구조 실습은 [[10_학습 노트/클라우드/AWS/실습 노트/Web VPC와 RDS 연계 실습|Web VPC와 RDS 연계 실습]]에 기록한다. 현재 실습은 RDS 대신 EC2 MariaDB를 사용한 변형 구성이다.
+2. 직전 완료 범위는 [[10_학습 노트/클라우드/AWS/실습 노트/NAT Instance 실습|NAT Instance 실습]]이다.
+3. 다음 큰 범위는 `AWS기초.pdf` p.86 이후 Route 53, ELB / ALB, ACM, HTTPS 연결이다.
+
+## 강의 자료와 RAW
+
+- [[40_자료/강의 자료/AWS기초.pdf|AWS 기초]]
+- [[10_학습 노트/클라우드/AWS/RAW 메모|RAW 메모]] - 수업 중 빠르게 기록하고, 이후 개념 노트와 실습 노트로 분해한다.
+
+> [!warning] 자료 기준 시점
+> `AWS기초.pdf`는 `Copyright © 2018` 자료다. Console 화면, 비용, Free Tier, 서비스 권장 구성, 보안 기본값은 실제 실습 전에 AWS 공식 문서나 현재 Console 기준으로 다시 확인한다.
+
+## 학습 범위 지도
+
+| PDF 범위 | 학습 단위 | 현재 정리 상태 |
+| --- | --- | --- |
+| p.2-12 | 클라우드 유형, DevOps, Terraform, IaaS / PaaS / SaaS, AWS 이점 | [[10_학습 노트/클라우드/AWS/개념 노트/클라우드 컴퓨팅과 AWS 입문|클라우드 컴퓨팅과 AWS 입문]] |
+| p.13-25 | EC2, 글로벌 인프라, Scale-up / Scale-out, EC2와 RDS 기본 구성 | [[10_학습 노트/클라우드/AWS/실습 노트/EC2와 RDS 기본 구성 실습|EC2와 RDS 기본 구성 실습]] |
+| p.25-30 | VPC, Subnet, Route Table, Security Group, Internet Gateway 기초 | [[10_학습 노트/클라우드/AWS/개념 노트/VPC 네트워크 기초|VPC 네트워크 기초]] |
+| p.31-65 | VPC Console 구성, Public / Private EC2, SSH 접근 검증 | [[10_학습 노트/클라우드/AWS/실습 노트/VPC 실습|VPC 실습]] |
+| p.66-71 | Multi-AZ, Bastion Host, NAT, RDS 확장 구조 | [[10_학습 노트/클라우드/AWS/개념 노트/Multi-AZ와 Bastion, NAT 구성 기초|Multi-AZ와 Bastion, NAT 구성 기초]] |
+| p.72-81 | NAT Gateway / NAT Instance 조건, NAT Instance outbound 검증 | [[10_학습 노트/클라우드/AWS/개념 노트/NAT Gateway와 NAT Instance 구성 기초|NAT Gateway와 NAT Instance 구성 기초]], [[10_학습 노트/클라우드/AWS/실습 노트/NAT Instance 실습|NAT Instance 실습]] |
+| p.82-85 | Web VPC, Bastion, NAT Instance, Web EC2, DB 연계 구조 | [[10_학습 노트/클라우드/AWS/실습 노트/Web VPC와 RDS 연계 실습|Web VPC와 RDS 연계 실습]] - RDS 범위를 EC2 MariaDB 구성으로 변형해 진행 중 |
+| p.86-122 | Route 53, ELB / ALB, ACM, HTTPS, Target Group, DNS 연결 | 정리 예정 |
+| p.123-126 | Auto Scaling, S3, CloudFront, Multi-Region DR, CodePipeline | 정리 예정 |
+
+## 개념 노트
+
+- [[10_학습 노트/클라우드/AWS/개념 노트/클라우드 컴퓨팅과 AWS 입문|클라우드 컴퓨팅과 AWS 입문]]
+- [[10_학습 노트/클라우드/AWS/개념 노트/VPC 네트워크 기초|VPC 네트워크 기초]]
+- [[10_학습 노트/클라우드/AWS/개념 노트/Multi-AZ와 Bastion, NAT 구성 기초|Multi-AZ와 Bastion, NAT 구성 기초]]
+- [[10_학습 노트/클라우드/AWS/개념 노트/NAT Gateway와 NAT Instance 구성 기초|NAT Gateway와 NAT Instance 구성 기초]]
+
+## 실습 노트
+
+- [[10_학습 노트/클라우드/AWS/실습 노트/EC2와 RDS 기본 구성 실습|EC2와 RDS 기본 구성 실습]] - EC2에 Tomcat과 `boot.war`를 배포하고 RDS for MariaDB와 연결한 실습
+- [[10_학습 노트/클라우드/AWS/실습 노트/VPC 실습|VPC 실습]] - VPC, Public / Private Subnet, Route Table, IGW, Public EC2 경유 Private EC2 SSH 접속 검증
+- [[10_학습 노트/클라우드/AWS/실습 노트/NAT Instance 실습|NAT Instance 실습]] - NAT Instance의 IP forwarding과 MASQUERADE를 설정하고 Private EC2의 외부 ping 통신을 검증한 실습
+- [[10_학습 노트/클라우드/AWS/실습 노트/Web VPC와 RDS 연계 실습|Web VPC와 RDS 연계 실습]] - p.84 이후 Web EC2와 DB 연계 구조를 구성한 실습. 현재는 RDS 대신 EC2 MariaDB로 진행
+
+## 운영 / 보조 기록
+
+- [[10_학습 노트/클라우드/AWS/서버_시퓨_100%_찍을_때|EC2 서버가 멈추거나 CPU 100% 찍을 때]]
+- [[10_학습 노트/클라우드/AWS/ec2_tomcat_setup.sh|ec2_tomcat_setup.sh]]
+- [[10_학습 노트/클라우드/AWS/ec2_mariadb_setup.sh|ec2_mariadb_setup.sh]]
+- [[10_학습 노트/클라우드/AWS/ec2_rds_client_setup.sh|ec2_rds_client_setup.sh]]
+
+## 정리 대기
+
+- [ ] [[10_학습 노트/클라우드/AWS/실습 노트/Web VPC와 RDS 연계 실습|Web VPC와 RDS 연계 실습]]에 p.84 이후 실제 구성, 오류, 검증 결과를 누적한다. RDS와 EC2 MariaDB 차이는 실습 관찰값 기준으로 구분한다.
+- [ ] Route 53 / ALB / ACM / HTTPS 범위는 PDF를 먼저 훑고 개념 노트와 실습 노트 경계를 정한다.
+- [ ] p.123-126 확장 주제는 현재 수업에서 실제로 다루는 깊이를 확인한 뒤 개요 노트로 둘지, 후속 후보로만 남길지 결정한다.
+
+## 운영 메모
+
+- AWS MOC는 탐색용으로 유지한다. PDF 페이지 분석이나 실습 로그가 길어지면 별도 노트로 분리한다.
+- 개념 노트와 실습 노트는 분리한다. 같은 PDF 범위라도 원리 설명은 개념 노트, 실제 명령과 검증은 실습 노트에 둔다.
+- Public IPv4, Console UI, 보안 그룹 기본값, NAT / RDS / Free Tier 관련 내용은 바뀔 수 있으므로 성공 당시 관찰값과 현재 권장 구성을 구분해서 기록한다.

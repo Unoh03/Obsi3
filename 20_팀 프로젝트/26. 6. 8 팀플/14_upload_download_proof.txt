@@ -1,0 +1,13 @@
+CARE upload/download proof file
+
+Purpose:
+- Use this harmless text file for upload and download verification.
+- This file is not a web shell and is not meant to execute on the server.
+
+Expected evidence:
+- Upload succeeds through the CARE board attachment form.
+- The saved file can be downloaded or opened from the expected file path.
+- The content below remains unchanged after download.
+
+Proof string:
+care-upload-download-proof-2026-06-16

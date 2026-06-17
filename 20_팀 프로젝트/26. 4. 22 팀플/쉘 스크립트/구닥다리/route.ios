@@ -1,0 +1,238 @@
+[Client-R]
+enable
+terminal history size 256
+configure terminal
+no ip domain-lookup
+
+enable secret '
+username asd secret '
+line console 0
+ login local
+ logging synchronous
+exit
+
+! =========================
+! 인터페이스 설정
+! f0/0 = Client 쪽 스위치
+! f0/1 = DNS-R(오른쪽 라우터)
+! =========================
+interface fastethernet 0/0
+ ip address 192.168.31.254 255.255.255.0
+ ip nat inside
+ no shutdown
+exit
+
+interface fastethernet 0/1
+ ip address 12.12.12.1 255.255.255.0
+ ip nat outside
+ no shutdown
+exit
+
+! =========================
+! 기본 라우트
+! DNS-R 쪽으로 전부 넘김
+! =========================
+ip route 0.0.0.0 0.0.0.0 12.12.12.2
+
+! =========================
+! NAT(PAT)
+! Client 대역이 f0/1 주소 하나를 공유해서 외부로 나감
+! =========================
+access-list 1 permit 192.168.31.0 0.0.0.255
+ip nat inside source list 1 interface fastethernet 0/1 overload
+
+! =========================
+! RIP v2
+! 트랜짓망만 광고
+! Client 내부망(192.168.31.0/24)은 RIP에 태우지 않음
+! =========================
+router rip
+ version 2
+ no auto-summary
+ network 12.12.12.0
+ default-information originate
+exit
+
+end
+copy running-config startup-config
+
+
+[DNS-R]
+en
+terminal history size 256
+conf t
+no ip domain-lookup
+ena sec '
+user asd sec '
+lin co 0
+logi loc
+logg syn
+
+exit
+
+
+conf t
+
+! 인터페 추가
+int f0/1
+ip add 12.12.12.2 255.255.255.0
+no sh
+int f1/0
+ip add 23.23.23.2 255.255.255.0
+no sh
+int f0/0
+ip add 192.168.2.254 255.255.255.0
+no sh
+int loopback 0
+ip add 2.2.2.2 255.255.255.0
+no sh
+exit
+
+! NAT (Static NAT: DNS 서버의 사설 IP를 공인 IP 2.2.2.2로 1:1 고정 매핑)
+ip nat inside source static 192.168.2.1 2.2.2.2
+int f0/0
+ip nat inside
+int f0/1
+ip nat outside
+int f1/0
+ip nat outside
+exit
+
+! 라우팅
+router r
+version 2
+no au
+net 12.12.12.0
+net 23.23.23.0
+net 2.2.2.0
+end
+cop r s
+
+
+[WEB-R]
+en
+terminal history size 256
+conf t
+no ip domain-lookup
+ena sec '
+user asd sec '
+lin co 0
+logi loc
+logg syn
+
+exit
+
+
+conf t
+
+! 인터페 추가
+int f0/1
+ip add 23.23.23.3 255.255.255.0
+no sh
+int f1/0
+ip add 34.34.34.3 255.255.255.0
+no sh
+int f0/0
+ip add 192.168.3.254 255.255.255.0
+no sh
+int loopback 0
+ip add 3.3.3.3 255.255.255.0
+no sh
+exit
+
+! NAT 추가 (Static NAT: LB 서버 매핑, NAT-PAT: WEB 서버 매핑)
+ip nat inside source static 192.168.3.1 3.3.3.3
+access-list 1 permit 192.168.3.0 0.0.0.255
+access-list 1 deny any
+ip nat inside source list 1 int f1/0 overload
+int f0/0
+ip nat inside
+int f0/1
+ip nat outside
+int f1/0
+ip nat outside
+exit
+
+! 라우팅
+router r
+version 2
+no au
+net 23.23.23.0
+net 34.34.34.0
+net 3.3.3.0
+end
+cop r s 
+
+
+[DB-R]
+en
+terminal history size 256
+conf t
+no ip domain-lookup
+ena sec '
+user asd sec '
+lin co 0
+logi loc
+logg syn
+
+exit
+
+
+conf t
+
+! 인터페 추가
+int f0/1
+ip add 34.34.34.4 255.255.255.0
+no sh
+int f0/0
+ip add 192.168.4.254 255.255.255.0
+no sh
+int loopback 0
+ip add 4.4.4.4 255.255.255.0
+no sh
+exit
+
+! NAT 추가 (Static NAT: DB 서버 매핑)
+ip nat inside source static 192.168.4.1 4.4.4.4
+int f0/0
+ip nat inside
+int f0/1
+ip nat outside
+exit
+
+! 라우팅
+router r
+version 2
+no au
+net 34.34.34.0
+net 4.4.4.0
+exit
+
+! 🛡️[보안] WEB 서버(3.3.3.3)와 R3 라우터(34.34.34.3)만 허용하는 화이트리스트 ACL
+access-list 1 permit host 3.3.3.3
+access-list 1 permit host 34.34.34.3
+access-list 1 deny any
+int f0/1
+ip access-group 1 in
+end
+cop r s
+
+
+[MANAGE-R]
+en
+terminal history size 256
+conf t
+no ip domain-lookup
+ena sec '
+user asd sec '
+lin co 0
+logi loc
+logg syn
+
+exit
+
+
+conf t
+! 인터페 추가
+int f0/1
+ip add

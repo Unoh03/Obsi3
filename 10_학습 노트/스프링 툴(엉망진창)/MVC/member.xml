@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  
+  <!-- Window -> Preferences -> Maven -> download artifact javadoc 체크 -->
+  
+  <mapper namespace="com.example.mvcExample.IMvcMapper">
+  	<insert id="registProc">
+  		<!-- INSERT INTO member VALUES('user77', '123', '유저칠칠', '12344', '서울시', '303호', '010-3012-0626'); -->
+  		INSERT INTO member VALUES(
+  		#{id}, #{pw}, #{userName}, #{postCode}, #{address}, #{detailAddress}, #{mobile})
+  	</insert>
+  	
+  	<resultMap type="com.example.mvcExample.MemberDTO" id="memberVO">
+  		<id column="id" property="id"/> <!-- 컬럼과 프로퍼티가 같아서 안해도 됨 -->
+  		<result column="postcode" property="postCode"/> <!-- 컬럼과 프로퍼티가 달라서 필수 -->
+  		<result column="detailaddress" property="detailAddress"/>
+		<!-- 🚨 추가됨: DB의 username(소문자)을 DTO의 userName(카멜)에 완벽하게 꽂아 넣음 -->
+  		<result column="username" property="userName"/>
+  	</resultMap>
+  	
+  	<select id="loginProc" parameterType="String" resultMap="memberVO">
+  		SELECT * FROM member WHERE id=#{id}
+  	</select>
+  	
+  	<select id="memberInfo" resultMap="memberVO">
+  		SELECT * FROM member
+  	</select>	
+  	
+  	<update id="updateProc">
+  		UPDATE member SET pw=#{pw}, username=#{userName}, address=#{address}, detailaddress=#{detailAddress}, mobile=#{mobile}
+  		WHERE id=#{id}
+  	</update>
+  	
+  	<delete id="deleteProc">
+  		DELETE FROM member WHERE id=#{id}
+  	</delete>
+  	
+  </mapper>

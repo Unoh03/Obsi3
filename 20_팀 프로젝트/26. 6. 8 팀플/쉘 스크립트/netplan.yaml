@@ -1,0 +1,69 @@
+## LB
+sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null << EOF
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: true
+      dhcp6: false
+    ens37:
+      dhcp4: false
+      addresses:
+        - 172.168.10.5/24
+        - 172.168.11.5/24
+      routes:
+        - to: default
+          via: 172.168.10.254
+EOF
+
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+
+sudo netplan apply
+
+
+
+## WEB
+sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null << EOF
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: true
+      dhcp6: false
+    ens37:
+      dhcp4: false
+      addresses:
+        - 172.168.10.10/24
+        - 172.168.12.10/24
+      routes:
+        - to: default
+          via: 172.168.10.254
+EOF
+
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+
+sudo netplan apply
+
+
+
+## NFS
+sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null << EOF
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: true
+      dhcp6: false
+    ens37:
+      dhcp4: false
+      addresses:
+        - 172.168.10.15/24
+        - 172.168.13.15/24
+      routes:
+        - to: default
+          via: 172.168.10.254
+EOF
+
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+
+sudo netplan apply

@@ -1,0 +1,12 @@
+{
+  "attachmentFolderPath": "40_자료/캡쳐 창고",
+  "alwaysUpdateLinks": true,
+  "defaultViewMode": "preview",
+  "pdfExportSettings": {
+    "includeName": true,
+    "pageSize": "A3",
+    "landscape": true,
+    "margin": "1",
+    "downscalePercent": 100
+  }
+}

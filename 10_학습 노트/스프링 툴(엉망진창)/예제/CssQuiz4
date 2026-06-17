@@ -1,0 +1,95 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>quiz5</title>
+<style>
+* {
+	box-sizing: border-box;
+}
+
+div.default {
+	width: 1400px;
+	height: 1400px;
+	margin: 0 auto;
+}
+
+header {
+	border-style: solid;
+	height: 20%;
+	text-align: center;
+	border-bottom: none; 
+}
+
+nav {
+	height: 10%;
+	border-style: solid;
+	border-bottom: none; 
+	text-align: center;
+}
+
+article {
+	width: 50%;
+	height: 30%;
+	border-style: solid;
+	float: left;
+	border-right: none;
+	text-align: center;
+}
+
+aside {
+	float: left;
+	width: 50%;
+	height: 30%;
+	border-style: solid;
+	text-align: center;
+}
+
+footer {
+	text-align: center;
+	border-style: solid;
+	border-top: none;
+	clear: both
+}
+
+li {  
+        list-style: none; 
+        text-align: center;
+}
+</style>
+</head>
+<body>
+	<div class="default">
+		<header>
+			<h1>header</h1>
+		</header>
+		<nav>
+			<h3>nav</h3>
+		</nav>
+		<article>
+		<p><h3>article</h3></p>
+		<p>header</p>
+		<p>article</p>
+		<p>footer</p>
+		
+		</article>
+		<aside>
+			<h3>aside</h3>
+		<ul>	
+			<div>
+			<input style="float: inline-start;" type="text" name="id">
+			<input style="float: left;" type="password" name="pw">
+			<input style="float: right" type="button"  value="로그인">
+			</div>
+		</ul>
+		<a href="#">회원가입</a>|
+		<a href="#">ID/PW 찾기</a>
+		</aside>
+		<footer>
+			<h3>footer</h3>
+		</footer>
+	</div>
+</body>
+</html>

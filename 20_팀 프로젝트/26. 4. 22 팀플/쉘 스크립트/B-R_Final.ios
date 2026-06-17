@@ -1,0 +1,169 @@
+! =====================================================
+! B-R_Final.ios
+! 2조 / B-PC / DATA-MGMT 라우터 최종 설정
+!
+! 기준 토폴로지:
+! - f0/0 = B DATA/MGMT LAN / DB, Log, Monitor 쪽
+! - f0/1 = Transit-SW 쪽
+!
+! B DATA/MGMT LAN:
+! - 사설망: 192.168.3.0/24
+! - B-R Gateway: 192.168.3.254/24
+!
+! Transit LAN:
+! - 1.2.123.0/24
+! - B-R Transit: 1.2.123.3/24
+!
+! NAT:
+! - f0/0 = ip nat inside
+! - f0/1 = ip nat outside
+! - DB1: 192.168.3.1 -> 1.2.3.1 Static NAT
+! - DB2: 192.168.3.2 -> 1.2.3.2 Static NAT
+! - Log: 192.168.3.3 -> 1.2.3.3 Static NAT
+! - Monitor: 192.168.3.4 is Pull 방식 / inbound Static NAT 없음
+! - Monitor outbound Pull: 192.168.3.4 -> 1.2.123.3 PAT
+!
+! ACL:
+! - WEB1(1.2.2.3), WEB2(1.2.2.4)만 DB1/DB2 MariaDB 접근 허용
+! - WEB1/WEB2만 Log Loki 3100/tcp 접근 허용
+! - DNS/LB/WEB node_exporter 응답만 Monitor PAT 주소로 허용
+! - 그 외 B 공인 역할 IP와 Monitor PAT inbound 접근 차단
+! =====================================================
+
+enable
+terminal history size 256
+configure terminal
+
+! =====================================================
+! 1. 기본 설정
+! =====================================================
+hostname B-R
+no ip domain-lookup
+
+enable secret '
+username asd secret '
+
+line console 0
+ login local
+ logging synchronous
+exit
+
+! =====================================================
+! 2. 인터페이스 설정
+! =====================================================
+interface fastethernet 0/0
+ description B_DATA_MGMT_LAN_DB_LOG_MONITOR
+ ip address 192.168.3.254 255.255.255.0
+ ip nat inside
+ no shutdown
+exit
+
+interface fastethernet 0/1
+ description TO_TRANSIT_SW
+ ip address 1.2.123.3 255.255.255.0
+ ip nat outside
+ no shutdown
+exit
+
+! =====================================================
+! 3. Static NAT - DATA/MGMT 서비스
+! Monitor는 Pull 방식이므로 inbound Static NAT를 만들지 않음
+! =====================================================
+ip nat inside source static 192.168.3.1 1.2.3.1
+ip nat inside source static 192.168.3.2 1.2.3.2
+ip nat inside source static 192.168.3.3 1.2.3.3
+
+! =====================================================
+! 4. PAT - Monitor Pull 수집용 outbound NAT
+! Monitor가 A/C Zone 공인 역할 IP를 Pull 수집할 때 사용
+! 192.168.3.4 -> B-R f0/1 주소 1.2.123.3으로 PAT
+! B Zone 내부 대상(DB/Log)은 192.168.3.x 사설 IP로 수집 권장
+! =====================================================
+no access-list 20
+access-list 20 permit host 192.168.3.4
+ip nat inside source list 20 interface fastethernet 0/1 overload
+
+! =====================================================
+! 5. 정적 라우트
+! A-PC EDGE/DNS 공인 역할망: 1.2.1.0/24 -> A-R
+! C-PC APP 공인 역할망:      1.2.2.0/24 -> C-R
+! =====================================================
+ip route 1.2.1.0 255.255.255.0 1.2.123.1
+ip route 1.2.2.0 255.255.255.0 1.2.123.2
+
+! =====================================================
+! 6. ACL - B 영역 접근 제어
+! 적용 위치: f0/1 inbound
+!
+! 정책:
+! - DB1/DB2는 WEB1/WEB2의 MariaDB 3306/tcp만 허용
+! - Log는 WEB1/WEB2의 Loki 3100/tcp만 허용
+! - Monitor는 Static NAT 없이 PAT(1.2.123.3) 응답 경로만 허용
+! - 1.2.123.3은 B-R outside IP이자 Monitor PAT 주소이므로 외부 inbound는 차단
+! - 이 ACL은 default-deny 방화벽이 아니라 프로젝트 NAT endpoint 접근 제어 ACL임
+! =====================================================
+no ip access-list extended B_ZONE_IN_V2
+ip access-list extended B_ZONE_IN_V2
+ remark === WEB TO DB MARIADB ONLY ===
+ permit tcp host 1.2.2.3 host 1.2.3.1 eq 3306
+ permit tcp host 1.2.2.4 host 1.2.3.1 eq 3306
+ permit tcp host 1.2.2.3 host 1.2.3.2 eq 3306
+ permit tcp host 1.2.2.4 host 1.2.3.2 eq 3306
+
+ remark === WEB TO LOKI ONLY ===
+ permit tcp host 1.2.2.3 host 1.2.3.3 eq 3100
+ permit tcp host 1.2.2.4 host 1.2.3.3 eq 3100
+
+ remark === NODE_EXPORTER RESPONSES TO MONITOR PAT FROM DNS ===
+ permit tcp host 1.2.1.2 eq 9100 host 1.2.123.3 established
+ permit tcp host 1.2.1.3 eq 9100 host 1.2.123.3 established
+
+ remark === NODE_EXPORTER RESPONSES TO MONITOR PAT FROM C ZONE ===
+ permit tcp host 1.2.2.1 eq 9100 host 1.2.123.3 established
+ permit tcp host 1.2.2.2 eq 9100 host 1.2.123.3 established
+ permit tcp host 1.2.2.3 eq 9100 host 1.2.123.3 established
+ permit tcp host 1.2.2.4 eq 9100 host 1.2.123.3 established
+
+ remark === BLOCK OTHER DIRECT ACCESS TO B PUBLIC ENDPOINTS ===
+ deny ip any host 1.2.3.1 log
+ deny ip any host 1.2.3.2 log
+ deny ip any host 1.2.3.3 log
+ deny ip any host 1.2.123.3 log
+
+ remark === PERMIT UNRELATED TRANSIT TRAFFIC ===
+ permit ip any any
+exit
+
+interface fastethernet 0/1
+ ip access-group B_ZONE_IN_V2 in
+exit
+
+! =====================================================
+! 7. 저장
+! =====================================================
+end
+copy running-config startup-config
+
+! =====================================================
+! 8. 확인 명령어
+! 아래 명령은 설정 후 사람이 직접 실행해서 확인
+! =====================================================
+show ip interface brief
+show ip route
+show running-config | include ip nat
+show running-config | include access-group
+show access-lists B_ZONE_IN_V2
+show ip nat translations
+show ip nat statistics
+
+! =====================================================
+! 9. 기본 검증 참고
+! =====================================================
+![주의] B-R -> A-R/C-R ping은 B_ZONE_IN_V2의 1.2.123.3 inbound 차단 때문에 실패할 수 있음
+![검증] B-R 라우팅은 show ip route, show access-lists B_ZONE_IN_V2, 서비스 흐름으로 확인
+![임시 검증] ping이 필요하면 ICMP permit을 임시 추가 후 제거
+!
+! [주의] A-R/C-R -> B-R 1.2.123.3 ping은 B_ZONE_IN_V2의 Monitor PAT inbound 차단 때문에 실패할 수 있음
+! [성공 예상] WEB1/WEB2 -> DB1/DB2 3306/tcp
+! [성공 예상] WEB1/WEB2 -> Log 3100/tcp
+! [실패 정상] A Client 또는 일반 외부 -> DB/Log 직접 접근

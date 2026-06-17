@@ -1,0 +1,101 @@
+sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null << EOF
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: true
+      dhcp6: false
+    ens37:
+      dhcp4: false
+      addresses:
+        - 172.16.0.150/24
+      routes:
+        - to: default
+          via: 172.16.0.254
+      nameservers:
+        addresses: [8.8.8.8, 1.1.1.1]
+EOF
+
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+sudo netplan apply
+
+
+---
+
+## LB
+sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null << EOF
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: false
+      addresses:
+        - 172.168.10.5/24
+        - 172.168.11.5/24
+      routes:
+        - to: default
+          via: 172.168.10.254
+      nameservers:
+        addresses: [1.1.1.1, 168.126.63.1]
+    ens37:
+      dhcp4: true
+      dhcp6: false
+EOF
+
+
+## WEB
+sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null << EOF
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: false
+      addresses:
+        - 172.168.10.10/24
+        - 172.168.12.10/24
+      routes:
+        - to: default
+          via: 172.168.10.254
+      nameservers:
+        addresses: [1.1.1.1, 168.126.63.1]
+    ens37:
+      dhcp4: true
+      dhcp6: false
+EOF
+
+
+## NFS
+sudo tee /etc/netplan/50-cloud-init.yaml > /dev/null << EOF
+network:
+  version: 2
+  ethernets:
+    ens33:
+      dhcp4: false
+      addresses:
+        - 172.168.10.15/24
+        - 172.168.13.15/24
+      routes:
+        - to: default
+          via: 172.168.10.254
+      nameservers:
+        addresses: [1.1.1.1, 168.126.63.1]
+    ens37:
+      dhcp4: true
+      dhcp6: false
+EOF
+
+
+
+sudo chmod 600 /etc/netplan/50-cloud-init.yaml
+
+sudo netplan apply
+
+
+sudo nmcli con mod "Wired connection 1" \
+  ipv4.addresses 172.16.0.200/24 \
+  ipv4.gateway 172.16.0.254 \
+  ipv4.dns "8.8.8.8" \
+  ipv4.method manual
+
+sudo nmcli con down "Wired connection 1"
+sudo nmcli con up "Wired connection 1"
