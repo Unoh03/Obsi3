@@ -1,0 +1,66 @@
+title = "Obsi2 strict secret scanning policy"
+
+# Extend gitleaks built-in rules, then add stricter vault-local rules.
+# Policy: do not add broad allowlists. If an exception is needed, review the
+# exact file, line, and reason first, then add the narrowest possible exception.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "obsi2-aws-access-key-id-strict"
+description = "Block AWS access key IDs, including values that default rules may treat as examples."
+regex = '''\b((?:A3T[A-Z0-9]|AKIA|ASIA|ABIA|ACCA)[A-Z0-9]{16})\b'''
+secretGroup = 1
+keywords = [
+  "A3T",
+  "AKIA",
+  "ASIA",
+  "ABIA",
+  "ACCA",
+]
+
+[[rules]]
+id = "obsi2-aws-secret-assignment-strict"
+description = "Block likely AWS secret access key or session token assignments."
+regex = '''(AWS_SECRET_ACCESS_KEY|aws_secret_access_key|AWS_SESSION_TOKEN|aws_session_token)\s*(=|:)\s*['"]?[A-Za-z0-9/+=]{16,}'''
+secretGroup = 1
+keywords = [
+  "AWS_SECRET_ACCESS_KEY",
+  "AWS_SESSION_TOKEN",
+  "aws_secret_access_key",
+  "aws_session_token",
+]
+
+[[rules]]
+id = "obsi2-sensitive-assignment-strict"
+description = "Block high-entropy credential-like assignments in notes and scripts."
+regex = '''(?i)\b(?:api[_-]?key|auth[_-]?token|access[_-]?token|refresh[_-]?token|bearer[_-]?token|client[_-]?secret|password|passwd|credential|credentials)\b\s*(?:=|:|=>|:=)\s*['"]?([A-Za-z0-9][A-Za-z0-9_./+=:@%~-]{15,})['"]?'''
+secretGroup = 1
+entropy = 3.0
+keywords = [
+  "API_KEY",
+  "AUTH_TOKEN",
+  "ACCESS_TOKEN",
+  "REFRESH_TOKEN",
+  "CLIENT_SECRET",
+  "PASSWORD",
+  "PASSWD",
+  "CREDENTIAL",
+  "CREDENTIALS",
+  "api",
+  "auth",
+  "token",
+  "secret",
+  "password",
+  "passwd",
+  "credential",
+  "credentials",
+]
+
+[[rules]]
+id = "obsi2-private-key-block"
+description = "Block private key material."
+regex = '''-----BEGIN (?:RSA |DSA |EC |OPENSSH |PGP )?PRIVATE KEY-----'''
+keywords = [
+  "PRIVATE KEY",
+]

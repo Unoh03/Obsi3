@@ -23,6 +23,39 @@ routes:
     method: GET
     path: "/member/modify.php"
     sensitive: true
+  directory_data:
+    method: GET
+    path: "/data/"
+  directory_images:
+    method: GET
+    path: "/images/"
+  directory_uploads:
+    method: GET
+    path: "/uploads/"
+  error_missing_page:
+    method: GET
+    path: "/kisa-v1-not-found-404"
+  info_dbconn:
+    method: GET
+    path: "/dbconn.php"
+  info_config_local:
+    method: GET
+    path: "/config.local.php"
+  info_git_head:
+    method: GET
+    path: "/.git/HEAD"
+  info_table_create_text:
+    method: GET
+    path: "/member/%ED%85%8C%EC%9D%B4%EB%B8%94%20%EC%83%9D%EC%84%B1.txt"
+  download_known_candidate:
+    method: GET
+    path: "/center/download.php?filename=14_fake_webshell_proof.php"
+  admin_root:
+    method: GET
+    path: "/admin/"
+  admin_login:
+    method: GET
+    path: "/admin/login.php"
 
 method_probe:
   path: "/kisa-method-probe-v0.txt"

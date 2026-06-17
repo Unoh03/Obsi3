@@ -1,0 +1,30 @@
+id: "04"
+name: "에러 페이지"
+kisa_section: "X. Web Application"
+required_mode: "safe-active"
+description: "A missing route is requested and verbose error disclosure patterns are checked."
+steps:
+  - id: verbose_error_probe
+    action: path_probe
+    summary: "Error response is checked for stack traces, local paths, and version leakage."
+    routes:
+      - error_missing_page
+    vulnerable_statuses:
+      - 400
+      - 403
+      - 404
+      - 500
+    not_vulnerable_statuses:
+      - 403
+      - 404
+    vulnerable_body_patterns:
+      - 'Fatal error'
+      - 'Warning:'
+      - 'Notice:'
+      - 'Stack trace'
+      - 'Traceback'
+      - 'mysqli_sql_exception'
+      - 'in /var/www/'
+      - 'Apache/[0-9]'
+      - 'PHP/[0-9]'
+    no_match_status: "not_vulnerable"

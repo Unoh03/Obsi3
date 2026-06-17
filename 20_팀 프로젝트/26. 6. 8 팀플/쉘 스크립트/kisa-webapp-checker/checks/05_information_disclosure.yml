@@ -1,0 +1,28 @@
+id: "05"
+name: "정보 노출"
+kisa_section: "X. Web Application"
+required_mode: "safe-active"
+description: "Configured sensitive file candidates are requested and source/config leakage patterns are checked."
+steps:
+  - id: sensitive_file_probe
+    action: path_probe
+    summary: "Sensitive file candidates are checked for direct exposure."
+    routes:
+      - info_dbconn
+      - info_config_local
+      - info_git_head
+      - info_table_create_text
+    vulnerable_statuses:
+      - 200
+    not_vulnerable_statuses:
+      - 403
+      - 404
+    vulnerable_body_patterns:
+      - '<\?php'
+      - 'mysqli_connect'
+      - 'DB_HOST'
+      - 'DB_PASS'
+      - 'password'
+      - 'ref: refs/heads'
+      - 'create table'
+    no_match_status: "inconclusive"

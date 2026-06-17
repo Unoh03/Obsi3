@@ -1,0 +1,18 @@
+id: "15"
+name: "파일 다운로드"
+kisa_section: "X. Web Application"
+required_mode: "safe-active"
+description: "Known download candidates from the target profile are requested without traversal payloads."
+steps:
+  - id: direct_download_candidate
+    action: path_probe
+    summary: "Profile-defined known download candidate is checked for direct exposure."
+    routes:
+      - download_known_candidate
+    vulnerable_statuses:
+      - 200
+    not_vulnerable_statuses:
+      - 403
+      - 404
+    status_only_vulnerable: true
+    no_match_status: "inconclusive"

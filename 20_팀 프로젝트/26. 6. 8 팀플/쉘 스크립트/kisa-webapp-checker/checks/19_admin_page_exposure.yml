@@ -1,0 +1,22 @@
+id: "19"
+name: "관리자 페이지 노출"
+kisa_section: "X. Web Application"
+required_mode: "safe-active"
+description: "Profile-defined admin page candidates are requested and exposed status codes are recorded."
+steps:
+  - id: admin_page_probe
+    action: path_probe
+    summary: "Admin page candidates are checked for direct exposure."
+    routes:
+      - admin_root
+      - admin_login
+    vulnerable_statuses:
+      - 200
+      - 301
+      - 302
+    not_vulnerable_statuses:
+      - 401
+      - 403
+      - 404
+    status_only_vulnerable: true
+    no_match_status: "inconclusive"

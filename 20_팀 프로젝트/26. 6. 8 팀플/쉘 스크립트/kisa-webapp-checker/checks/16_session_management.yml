@@ -1,0 +1,20 @@
+id: "16"
+name: "불충분한 세션 관리"
+kisa_section: "X. Web Application"
+required_mode: "passive"
+description: "Session-related Set-Cookie headers are inspected for defensive flags."
+steps:
+  - id: session_cookie_flags
+    action: inspect_cookies
+    summary: "Session cookies are checked for HttpOnly, SameSite, and Secure when HTTPS is used."
+    routes:
+      - home
+      - login
+      - member_modify
+    session_cookie_patterns:
+      - 'phpsessid'
+      - 'session'
+    required_flags:
+      - httponly
+      - samesite
+      - secure_when_https
