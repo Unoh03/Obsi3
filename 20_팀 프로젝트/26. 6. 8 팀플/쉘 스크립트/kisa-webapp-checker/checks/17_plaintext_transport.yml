@@ -1,0 +1,13 @@
+id: "17"
+name: "데이터 평문 전송"
+kisa_section: "X. Web Application"
+required_mode: "passive"
+description: "HTTP/HTTPS scheme and sensitive route form actions are recorded."
+steps:
+  - id: inspect_transport
+    action: inspect_transport
+    routes:
+      - home
+      - login
+      - register
+      - member_modify

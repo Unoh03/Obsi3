@@ -1,0 +1,29 @@
+name: care
+base_url: "http://127.0.0.1"
+target_allowlist:
+  - "127.0.0.1"
+  - "localhost"
+  - "172.168.10.10"
+timeout_seconds: 5
+verify_tls: false
+
+routes:
+  home:
+    method: GET
+    path: "/"
+  login:
+    method: GET
+    path: "/member/login.php"
+    sensitive: true
+  register:
+    method: GET
+    path: "/member/register.php"
+    sensitive: true
+  member_modify:
+    method: GET
+    path: "/member/modify.php"
+    sensitive: true
+
+method_probe:
+  path: "/kisa-method-probe-v0.txt"
+  body: "kisa-webapp-checker-v0"

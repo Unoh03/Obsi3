@@ -1,0 +1,28 @@
+id: "21"
+name: "불필요한 Method 악용"
+kisa_section: "X. Web Application"
+required_mode: "safe-active"
+description: "OPTIONS, TRACE, PUT, and DELETE behavior is recorded."
+steps:
+  - id: inspect_http_methods
+    action: http_methods
+    route: method_probe
+    methods:
+      - OPTIONS
+      - TRACE
+      - PUT
+      - DELETE
+    risky_methods:
+      - TRACE
+      - PUT
+      - DELETE
+      - CONNECT
+    blocked_statuses:
+      - 403
+      - 405
+      - 501
+    vulnerable_statuses:
+      - 200
+      - 201
+      - 202
+      - 204
