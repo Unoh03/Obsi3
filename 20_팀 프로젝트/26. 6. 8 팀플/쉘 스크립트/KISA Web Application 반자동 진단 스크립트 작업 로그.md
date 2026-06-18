@@ -1148,6 +1148,57 @@ ZAP/Nuclei 연동 금지
 MOC/index 수정 금지
 ```
 
+### Goal 2 프롬프트 보관
+
+Goal 1은 08 SSRF check 구현, 로컬 검증, WEB VM 실행 명령 준비까지로 끝낸다. 실제 CARE 서버 evidence는 사용자가 WEB VM에서 실행한 뒤 결과를 가져오면 Goal 2에서 분석한다.
+
+복붙용 Goal 2 프롬프트:
+
+```text
+목표: WEB VM에서 실행한 08 SSRF check 결과를 분석하고, 판정/문서/로그를 마무리한다.
+
+배경:
+- Goal 1에서 KISA Web Application Checker에 08 SSRF check를 구현했다.
+- Codex 로컬에서는 실제 `172.168.10.10` CARE 서버와 직접 통신하지 않는다.
+- 사용자가 WEB VM의 VSC SSH 터미널에서 실행한 결과를 붙여넣었다.
+
+입력으로 받을 수 있는 것:
+- WEB VM에서 실행한 명령어
+- checker stdout
+- `evidence/<run_id>/result.json`
+- `evidence/<run_id>/report.md`
+- `evidence/<run_id>/run.log`
+- 08 SSRF request/response evidence
+- 오류 메시지 또는 connection 실패 출력
+
+범위:
+1. 사용자가 붙여넣은 실행 결과를 읽고 08 SSRF 판정이 타당한지 확인한다.
+2. `vulnerable`, `not_vulnerable`, `manual_required`, `inconclusive`, `error` 중 상태가 evidence와 맞는지 검토한다.
+3. 조치 전 proof 문자열 노출과 조치 후 loopback 차단이 구분되는지 확인한다.
+4. 판정이 잘못되었으면 08 check rule 또는 README/로그 문서만 최소 보정한다.
+5. 실제 CARE evidence로 보고서에 쓸 수 있는지 판단한다.
+6. 작업 로그에 실행 결과, 판정, 한계, 다음 작업 기준을 기록한다.
+7. 필요하면 WEB VM에서 다시 실행할 명령어를 짧게 제시한다.
+8. `git diff --check`를 통과시킨다.
+
+금지:
+- 새 취약점 check 구현 금지
+- 01/12/13 구현 금지
+- CARE PHP 코드 수정 금지
+- DB 실행 또는 데이터 변경 금지
+- 파일 업로드, 글쓰기, 회원정보 수정 금지
+- 내부망 스캔, 포트스캔, AWS metadata 탈취 시도 금지
+- ZAP/Nuclei 연동 금지
+- MOC/index 수정 금지
+
+완료 기준:
+- WEB VM 실행 결과에 대한 판정이 evidence 기준으로 정리됨
+- 08 SSRF check의 false positive/false negative 가능성이 필요한 만큼 보정됨
+- 보고서용 evidence 가능 여부가 정리됨
+- 작업 로그가 갱신됨
+- `git diff --check` 통과
+```
+
 ## 다음 기록 템플릿
 
 ```markdown
