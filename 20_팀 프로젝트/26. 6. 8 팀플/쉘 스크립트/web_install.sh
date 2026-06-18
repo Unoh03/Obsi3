@@ -5,7 +5,7 @@ DEV_USER="user1"
 WEB_ROOT="/var/www/care"
 APACHE_PORT=80
 DB_NAME="care"
-DB_USER="care"
+DB_USER="user"
 DB_PASS="1111"
 
 echo "▶ LAMP 환경 구성 시작 (/var/www/care 기준)"
@@ -23,10 +23,10 @@ sudo systemctl enable --now apache2
 #     echo "Listen ${APACHE_PORT}" | sudo tee -a $PORTS_CONF
 # fi
 
-# ### 4. Apache 서버포트 및 웹최상위 경로 설정
-# VHOST="/etc/apache2/sites-available/000-default.conf"
-# sudo sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${APACHE_PORT}>/" $VHOST
-# sudo sed -i "s|DocumentRoot .*|DocumentRoot ${WEB_ROOT}|" $VHOST
+### 4. Apache 서버포트 및 웹최상위 경로 설정
+VHOST="/etc/apache2/sites-available/000-default.conf"
+sudo sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${APACHE_PORT}>/" $VHOST
+sudo sed -i "s|DocumentRoot .*|DocumentRoot ${WEB_ROOT}|" $VHOST
 
 ### 5. 웹 디렉터리 생성
 sudo mkdir -p ${WEB_ROOT}
