@@ -1,0 +1,25 @@
+id: "02"
+name: "SQL 인젝션"
+kisa_section: "X. Web Application"
+required_mode: "attack-active"
+description: "Profile-defined input routes are probed with SQLi payloads from payload files."
+steps:
+  - id: search_parameter_sqli_probe
+    action: payload_probe
+    summary: "Search-like input parameter is checked with SQLi payloads. No state-changing request is sent."
+    routes:
+      - board_search
+    parameter: data
+    baseline_value: "kisa-baseline"
+    payloads_file: "payloads/sqli.yml"
+    payload_group: "error_based_basic"
+    vulnerable_statuses:
+      - 500
+    vulnerable_body_patterns:
+      - "SQL syntax"
+      - "mysqli_sql_exception"
+      - "MariaDB"
+      - "MySQL"
+      - "Warning: mysqli"
+      - "You have an error in your SQL syntax"
+    no_match_status: "manual_required"

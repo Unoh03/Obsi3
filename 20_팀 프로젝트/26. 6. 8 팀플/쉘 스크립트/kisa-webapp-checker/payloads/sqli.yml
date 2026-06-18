@@ -1,0 +1,7 @@
+groups:
+  error_based_basic:
+    - "'"
+    - "\""
+    - "' OR '1'='1"
+    - "\" OR \"1\"=\"1"
+    - "' UNION SELECT NULL-- "

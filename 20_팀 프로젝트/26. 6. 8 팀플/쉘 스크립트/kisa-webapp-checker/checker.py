@@ -3,8 +3,8 @@
 
 v0 validated the framework pipeline:
 profile -> checks -> request -> evidence -> report.
-v1 adds low-risk passive/safe-active checks while keeping target-specific
-values in profiles and checks.
+v2 adds the shared foundation for payload-based and state-changing checks
+while keeping target-specific values in profiles, checks, and payload files.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlsplit, urlunsplit
 from urllib.error import HTTPError
 from urllib.request import Request as UrlRequest
 from urllib.request import urlopen
@@ -37,6 +37,7 @@ VALID_STATUSES = {
     "passed",
     "vulnerable",
     "not_vulnerable",
+    "not_applicable",
     "manual_required",
     "skipped_by_mode",
     "inconclusive",
@@ -48,6 +49,7 @@ KNOWN_ACTIONS = {
     "http_methods",
     "path_probe",
     "inspect_cookies",
+    "payload_probe",
 }
 
 
@@ -234,6 +236,18 @@ def make_url(base_url: str, path: str) -> str:
     return urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
 
 
+def add_query_params(url: str, params: dict[str, Any]) -> str:
+    if not params:
+        return url
+    parts = urlsplit(url)
+    query_items = parse_qsl(parts.query, keep_blank_values=True)
+    for key, value in params.items():
+        query_items.append((str(key), str(value)))
+    return urlunsplit(
+        (parts.scheme, parts.netloc, parts.path, urlencode(query_items), parts.fragment)
+    )
+
+
 def require_allowed_target(profile: dict[str, Any]) -> None:
     base_url = str(profile.get("base_url", "")).strip()
     if not base_url:
@@ -263,6 +277,15 @@ def get_route(profile: dict[str, Any], route_name: str) -> dict[str, Any]:
     if not isinstance(route, dict):
         raise ConfigError(f"Unknown route in profile: {route_name}")
     return route
+
+
+def route_params(route: dict[str, Any], key: str) -> dict[str, Any]:
+    values = route.get(key, {})
+    if values is None:
+        return {}
+    if not isinstance(values, dict):
+        raise ConfigError(f"route.{key} must be a mapping")
+    return dict(values)
 
 
 def find_form_actions(html: str) -> list[str]:
@@ -328,6 +351,83 @@ def set_cookie_values(response: Any) -> list[str]:
     return []
 
 
+def resolve_checker_path(check: dict[str, Any], value: str) -> Path:
+    candidate = Path(value)
+    if candidate.is_absolute():
+        return candidate
+    source = Path(str(check.get("_source", "")))
+    if source:
+        return source.resolve().parent.parent / candidate
+    return Path.cwd() / candidate
+
+
+def load_payload_values(check: dict[str, Any], step: dict[str, Any]) -> list[str]:
+    payloads: list[str] = []
+    inline_payloads = step.get("payloads", [])
+    if inline_payloads:
+        if not isinstance(inline_payloads, list):
+            raise ConfigError("payload_probe.payloads must be a list")
+        payloads.extend(str(value) for value in inline_payloads)
+
+    payload_file = step.get("payloads_file")
+    if payload_file:
+        payload_path = resolve_checker_path(check, str(payload_file))
+        data = load_yaml(payload_path)
+        group_name = str(step.get("payload_group", "default"))
+        groups = data.get("groups", {})
+        if not isinstance(groups, dict):
+            raise ConfigError(f"payload file groups must be a mapping: {payload_path}")
+        group = groups.get(group_name)
+        if not isinstance(group, list) or not group:
+            raise ConfigError(
+                f"payload group `{group_name}` must be a non-empty list: {payload_path}"
+            )
+        payloads.extend(str(value) for value in group)
+
+    if not payloads:
+        raise ConfigError("payload_probe requires inline payloads or payloads_file")
+    return payloads
+
+
+def apply_profile_session_to_requests(session: Any, profile: dict[str, Any]) -> None:
+    session_cfg = profile.get("session", {})
+    if not isinstance(session_cfg, dict):
+        raise ConfigError("profile.session must be a mapping when provided")
+
+    cookies = session_cfg.get("cookies", {})
+    if cookies:
+        if not isinstance(cookies, dict):
+            raise ConfigError("profile.session.cookies must be a mapping")
+        for key, value in cookies.items():
+            session.cookies.set(str(key), str(value))
+
+    headers = session_cfg.get("headers", {})
+    if headers:
+        if not isinstance(headers, dict):
+            raise ConfigError("profile.session.headers must be a mapping")
+        session.headers.update({str(key): str(value) for key, value in headers.items()})
+
+
+def profile_session_headers(profile: dict[str, Any]) -> dict[str, str]:
+    session_cfg = profile.get("session", {})
+    if not isinstance(session_cfg, dict):
+        raise ConfigError("profile.session must be a mapping when provided")
+    headers: dict[str, str] = {}
+    session_headers = session_cfg.get("headers", {})
+    if session_headers:
+        if not isinstance(session_headers, dict):
+            raise ConfigError("profile.session.headers must be a mapping")
+        headers.update({str(key): str(value) for key, value in session_headers.items()})
+    cookies = session_cfg.get("cookies", {})
+    if cookies:
+        if not isinstance(cookies, dict):
+            raise ConfigError("profile.session.cookies must be a mapping")
+        headers["Cookie"] = "; ".join(
+            f"{key}={value}" for key, value in cookies.items()
+        )
+    return headers
+
+
 def validate_check_steps(profile: dict[str, Any], check: dict[str, Any]) -> None:
     steps = check.get("steps", [])
     if not isinstance(steps, list) or not steps:
@@ -339,9 +439,11 @@ def validate_check_steps(profile: dict[str, Any], check: dict[str, Any]) -> None
         action = step.get("action")
         if action not in KNOWN_ACTIONS:
             raise ConfigError(f"check {check.get('id', 'unknown')}: unknown action `{action}`")
-        if action in {"inspect_transport", "path_probe", "inspect_cookies"}:
+        if action in {"inspect_transport", "path_probe", "inspect_cookies", "payload_probe"}:
             for route_name in list_step_routes(step):
                 get_route(profile, route_name)
+            if action == "payload_probe":
+                load_payload_values(check, step)
         elif action == "http_methods":
             route_name = str(step.get("route", "method_probe"))
             if not isinstance(profile.get(route_name), dict):
@@ -386,12 +488,16 @@ class CheckerRunner:
         mode: str,
         output_root: Path,
         validate_only: bool = False,
+        confirm_state_changing: bool = False,
+        confirm_destructive_risk: bool = False,
     ) -> None:
         self.profile = profile
         self.checks = checks
         self.mode = mode
         self.output_root = output_root
         self.validate_only = validate_only
+        self.confirm_state_changing = confirm_state_changing
+        self.confirm_destructive_risk = confirm_destructive_risk
         self.base_url = str(profile["base_url"]).rstrip("/")
         self.timeout = int(profile.get("timeout_seconds", 5))
         self.verify_tls = bool(profile.get("verify_tls", True))
@@ -403,6 +509,8 @@ class CheckerRunner:
         if not validate_only:
             self.requests = load_requests_module()
             self.session = self.requests.Session() if self.requests else None
+            if self.session is not None:
+                apply_profile_session_to_requests(self.session, self.profile)
         else:
             self.session = None
 
@@ -411,6 +519,7 @@ class CheckerRunner:
         self.log_lines.append(f"[{timestamp}] {message}")
 
     def run(self) -> list[CheckResult]:
+        self.enforce_mode_confirmation()
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.log(f"run_id={self.run_id}")
         self.log(f"profile={self.profile.get('name', 'unnamed')}")
@@ -424,6 +533,18 @@ class CheckerRunner:
 
         self.write_outputs(results)
         return results
+
+    def enforce_mode_confirmation(self) -> None:
+        if self.validate_only:
+            return
+        if mode_allows(self.mode, "destructive-risk") and not self.confirm_destructive_risk:
+            raise ConfigError(
+                "`destructive-risk` mode requires --confirm-destructive-risk"
+            )
+        if mode_allows(self.mode, "state-changing") and not self.confirm_state_changing:
+            raise ConfigError(
+                "`state-changing` mode requires --confirm-state-changing"
+            )
 
     def run_check(self, check: dict[str, Any]) -> CheckResult:
         check_id = str(check.get("id", "unknown"))
@@ -468,6 +589,8 @@ class CheckerRunner:
                 action_results.append(self.path_probe(check, step, check_dir))
             elif action == "inspect_cookies":
                 action_results.append(self.inspect_cookies(check, step, check_dir))
+            elif action == "payload_probe":
+                action_results.append(self.payload_probe(check, step, check_dir))
             else:
                 raise ConfigError(f"check {check_id}: unknown action `{action}`")
 
@@ -739,6 +862,145 @@ class CheckerRunner:
             evidence=evidence,
         )
 
+    def payload_probe(
+        self, check: dict[str, Any], step: dict[str, Any], check_dir: Path
+    ) -> CheckResult:
+        findings: list[str] = []
+        evidence: list[EvidenceItem] = []
+        statuses: list[str] = []
+
+        route_names = list_step_routes(step)
+        payloads = load_payload_values(check, step)
+        parameter = str(step.get("parameter", "")).strip()
+        if not parameter:
+            raise ConfigError("payload_probe.parameter is required")
+
+        baseline_value = str(step.get("baseline_value", "kisa-baseline"))
+        vulnerable_statuses = int_set(step.get("vulnerable_statuses"), [500])
+        vulnerable_body_patterns = str_list(step.get("vulnerable_body_patterns"))
+        vulnerable_header_patterns = str_list(step.get("vulnerable_header_patterns"))
+        no_match_status = str(step.get("no_match_status", "inconclusive"))
+        if no_match_status not in VALID_STATUSES:
+            raise ConfigError(f"Invalid no_match_status: {no_match_status}")
+
+        for route_index, route_name in enumerate(route_names, start=1):
+            route = get_route(self.profile, route_name)
+            method = str(route.get("method", "GET")).upper()
+            if method not in {"GET", "POST"}:
+                statuses.append("manual_required")
+                findings.append(
+                    f"Route `{route_name}` uses `{method}`; payload_probe supports GET/POST only."
+                )
+                continue
+
+            base_path = str(route.get("path", "/"))
+            base_url = make_url(self.base_url, base_path)
+            base_params = route_params(route, "params")
+            base_data = route_params(route, "data")
+
+            try:
+                request_url, body, headers = self.build_payload_request(
+                    method,
+                    base_url,
+                    base_params,
+                    base_data,
+                    parameter,
+                    baseline_value,
+                )
+                response, request_path, response_path = self.send_request(
+                    method=method,
+                    url=request_url,
+                    step_id=f"payload_{route_name}_{route_index}_baseline",
+                    check_dir=check_dir,
+                    body=body,
+                    headers=headers,
+                )
+                evidence.append(EvidenceItem(f"{route_name} baseline request", request_path))
+                evidence.append(EvidenceItem(f"{route_name} baseline response", response_path))
+                findings.append(
+                    f"Route `{route_name}` baseline returned {response.status_code}."
+                )
+            except RequestFailed as exc:
+                evidence.append(EvidenceItem(f"{route_name} baseline failed request", exc.request_path))
+                evidence.append(EvidenceItem(f"{route_name} baseline error response", exc.response_path))
+                statuses.append("error")
+                findings.append(f"Route `{route_name}` baseline request failed: {exc}")
+                continue
+
+            for payload_index, payload in enumerate(payloads, start=1):
+                try:
+                    request_url, body, headers = self.build_payload_request(
+                        method,
+                        base_url,
+                        base_params,
+                        base_data,
+                        parameter,
+                        payload,
+                    )
+                    response, request_path, response_path = self.send_request(
+                        method=method,
+                        url=request_url,
+                        step_id=f"payload_{route_name}_{route_index}_{payload_index}",
+                        check_dir=check_dir,
+                        body=body,
+                        headers=headers,
+                    )
+                    evidence.append(EvidenceItem(f"{route_name} payload request", request_path))
+                    evidence.append(EvidenceItem(f"{route_name} payload response", response_path))
+
+                    body_matches = find_regex_matches(response.text, vulnerable_body_patterns)
+                    header_matches = find_regex_matches(header_text(response), vulnerable_header_patterns)
+                    matched = body_matches + header_matches
+                    if response.status_code in vulnerable_statuses or matched:
+                        statuses.append("vulnerable")
+                        reason = f"status {response.status_code}"
+                        if matched:
+                            reason += f", matched: {', '.join(matched)}"
+                        findings.append(
+                            f"Route `{route_name}` payload #{payload_index} indicates possible exposure: {reason}."
+                        )
+                    else:
+                        statuses.append(no_match_status)
+                        findings.append(
+                            f"Route `{route_name}` payload #{payload_index} returned {response.status_code}; no configured exposure pattern matched."
+                        )
+                except RequestFailed as exc:
+                    evidence.append(EvidenceItem(f"{route_name} payload failed request", exc.request_path))
+                    evidence.append(EvidenceItem(f"{route_name} payload error response", exc.response_path))
+                    statuses.append("error")
+                    findings.append(f"Route `{route_name}` payload request failed: {exc}")
+
+        return CheckResult(
+            id=str(check["id"]),
+            name=str(check["name"]),
+            status=reduce_status(statuses),
+            required_mode=str(check.get("required_mode", "attack-active")),
+            evidence_dir=str(check_dir.relative_to(self.run_dir)),
+            summary=str(step.get("summary", "Payload probes executed and compared with configured rules.")),
+            findings=findings,
+            evidence=evidence,
+        )
+
+    def build_payload_request(
+        self,
+        method: str,
+        base_url: str,
+        base_params: dict[str, Any],
+        base_data: dict[str, Any],
+        parameter: str,
+        value: str,
+    ) -> tuple[str, str | None, dict[str, str]]:
+        headers: dict[str, str] = {}
+        if method == "GET":
+            params = dict(base_params)
+            params[parameter] = value
+            return add_query_params(base_url, params), None, headers
+
+        data = dict(base_data)
+        data[parameter] = value
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        return add_query_params(base_url, base_params), urlencode(data), headers
+
     def check_http_methods(
         self, check: dict[str, Any], step: dict[str, Any], check_dir: Path
     ) -> CheckResult:
@@ -835,16 +1097,20 @@ class CheckerRunner:
         step_id: str,
         check_dir: Path,
         body: str | None = None,
+        headers: dict[str, str] | None = None,
     ):
         if self.requests is None:
-            return self.send_request_stdlib(method, url, step_id, check_dir, body)
+            return self.send_request_stdlib(method, url, step_id, check_dir, body, headers)
         assert self.session is not None
 
+        request_headers = {"User-Agent": "kisa-webapp-checker-v2"}
+        if headers:
+            request_headers.update(headers)
         request = self.requests.Request(
             method=method,
             url=url,
             data=body,
-            headers={"User-Agent": "kisa-webapp-checker-v1"},
+            headers=request_headers,
         )
         prepared = self.session.prepare_request(request)
         request_path = check_dir / f"{step_id}.request.txt"
@@ -883,17 +1149,21 @@ class CheckerRunner:
         step_id: str,
         check_dir: Path,
         body: str | None = None,
+        headers: dict[str, str] | None = None,
     ):
         request_path = check_dir / f"{step_id}.request.txt"
         response_path = check_dir / f"{step_id}.response.txt"
         request_body = body.encode("utf-8") if body is not None else None
-        headers = {"User-Agent": "kisa-webapp-checker-v1"}
+        request_headers = {"User-Agent": "kisa-webapp-checker-v2"}
+        request_headers.update(profile_session_headers(self.profile))
+        if headers:
+            request_headers.update(headers)
         request_path.write_text(
-            format_raw_request(method, url, headers, body),
+            format_raw_request(method, url, request_headers, body),
             encoding="utf-8",
         )
 
-        request = UrlRequest(url, data=request_body, headers=headers, method=method)
+        request = UrlRequest(url, data=request_body, headers=request_headers, method=method)
         context = None
         if urlparse(url).scheme == "https" and not self.verify_tls:
             context = ssl._create_unverified_context()
@@ -978,6 +1248,7 @@ def reduce_status(statuses: list[str]) -> str:
         "error",
         "manual_required",
         "inconclusive",
+        "not_applicable",
         "not_vulnerable",
         "passed",
     ]
@@ -1058,7 +1329,7 @@ def format_simple_response(response: SimpleResponse) -> str:
 
 def render_report(result_json: dict[str, Any]) -> str:
     lines = [
-        "# KISA Web Application Checker v1 Report",
+        "# KISA Web Application Checker v2 Report",
         "",
         f"- run_id: `{result_json['run_id']}`",
         f"- profile: `{result_json['profile']}`",
@@ -1099,7 +1370,7 @@ def render_rollback_checklist(profile: dict[str, Any], results: list[CheckResult
     lines = [
         "# Rollback Checklist",
         "",
-        "v1 does not perform automatic cleanup.",
+        "v2 does not perform automatic cleanup.",
         "Review this checklist after state-changing or method checks.",
         "",
         "- [ ] Review `result.json` for `vulnerable`, `error`, and `inconclusive` checks.",
@@ -1107,6 +1378,18 @@ def render_rollback_checklist(profile: dict[str, Any], results: list[CheckResult
     ]
     if probe_url:
         lines.append(f"- [ ] If PUT created a file, check and remove: `{probe_url}`")
+
+    fixtures = profile.get("fixtures", {})
+    if isinstance(fixtures, dict) and fixtures:
+        lines.extend(["", "## Profile Fixtures", ""])
+        for name, value in fixtures.items():
+            lines.append(f"- [ ] Review fixture `{name}`: `{value}`")
+
+    rollback_items = profile.get("rollback", [])
+    if isinstance(rollback_items, list) and rollback_items:
+        lines.extend(["", "## Profile Rollback Notes", ""])
+        for item in rollback_items:
+            lines.append(f"- [ ] {item}")
     return "\n".join(lines) + "\n"
 
 
@@ -1127,7 +1410,7 @@ def load_checks(checks_dir: Path) -> list[dict[str, Any]]:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="KISA Web Application semi-automatic checker v1"
+        description="KISA Web Application semi-automatic checker v2"
     )
     parser.add_argument("--profile", required=True, help="Path to target profile YAML")
     parser.add_argument("--checks", required=True, help="Directory containing check YAML files")
@@ -1146,6 +1429,16 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--validate-only",
         action="store_true",
         help="Validate profile/check parsing without HTTP requests",
+    )
+    parser.add_argument(
+        "--confirm-state-changing",
+        action="store_true",
+        help="Required to execute state-changing or higher modes.",
+    )
+    parser.add_argument(
+        "--confirm-destructive-risk",
+        action="store_true",
+        help="Required to execute destructive-risk mode.",
     )
     return parser.parse_args(argv)
 
@@ -1169,6 +1462,8 @@ def main(argv: list[str]) -> int:
             mode=args.mode,
             output_root=output_root,
             validate_only=args.validate_only,
+            confirm_state_changing=args.confirm_state_changing,
+            confirm_destructive_risk=args.confirm_destructive_risk,
         )
         results = runner.run()
         print(f"[OK] run_id={runner.run_id}")

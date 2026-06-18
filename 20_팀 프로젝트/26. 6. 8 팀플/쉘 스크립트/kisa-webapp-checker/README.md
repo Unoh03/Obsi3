@@ -1,8 +1,8 @@
-# KISA Web Application Checker v1
+# KISA Web Application Checker v2
 
 KISA X. Web Application 01~21 전체 진단을 목표로 하는 반자동 진단 프레임워크다.
 
-v1은 완성형 취약점 스캐너가 아니라, 비교적 안전한 passive / safe-active 항목을 중심으로 다음 흐름을 검증한다.
+v2는 완성형 취약점 스캐너가 아니라, v1의 passive / safe-active 파이프라인에 payload 기반 검사와 state-changing 안전장치를 추가한 단계다.
 
 ```text
 profile -> check -> request -> evidence -> report
@@ -12,6 +12,7 @@ profile -> check -> request -> evidence -> report
 
 | 번호 | 항목 | mode | 동작 |
 |---:|---|---|---|
+| 02 | SQL 인젝션 | `attack-active` | payload 파일의 SQLi 문자열을 profile-defined route에 주입하고 오류/노출 패턴 확인 |
 | 03 | 디렉터리 인덱싱 | `safe-active` | 후보 디렉터리 요청 후 listing 패턴 확인 |
 | 04 | 에러 페이지 | `safe-active` | 없는 경로 요청 후 stack trace, local path, version 노출 확인 |
 | 05 | 정보 노출 | `safe-active` | 후보 민감 파일 요청 후 설정/소스 노출 패턴 확인 |
@@ -20,6 +21,8 @@ profile -> check -> request -> evidence -> report
 | 17 | 데이터 평문 전송 | `passive` | base URL scheme, 민감 route 후보, form action 기록 |
 | 19 | 관리자 페이지 노출 | `safe-active` | 후보 관리자 페이지 접근 가능 여부 확인 |
 | 21 | 불필요한 Method 악용 | `safe-active` | `OPTIONS`, `TRACE`, `PUT`, `DELETE` 응답 기록 |
+
+v2의 02번은 기본 실행에서는 동작하지 않는다. `--mode attack-active`를 명시해야 실행된다.
 
 ## 설치
 
@@ -47,6 +50,17 @@ target_allowlist:
 
 CARE 전용 경로 후보는 `profiles/care.yml`에만 둔다. `checker.py`에는 CARE URL, 계정, payload를 넣지 않는다.
 
+로그인된 세션이 필요한 항목은 profile에 쿠키나 헤더를 직접 넣어 주입한다.
+
+```yaml
+session:
+  cookies:
+    PHPSESSID: "실습용_세션값"
+  headers: {}
+```
+
+실제 세션 쿠키는 보고서나 Git에 남기지 않는다.
+
 ## 실행
 
 passive mode:
@@ -61,11 +75,25 @@ safe-active mode:
 python checker.py --profile profiles/care.yml --checks checks --mode safe-active
 ```
 
+attack-active mode:
+
+```bash
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active
+```
+
+state-changing mode:
+
+```bash
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing --confirm-state-changing
+```
+
 설정만 검증하고 HTTP 요청을 보내지 않으려면:
 
 ```bash
 python checker.py --profile profiles/care.yml --checks checks --mode passive --validate-only
 python checker.py --profile profiles/care.yml --checks checks --mode safe-active --validate-only
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing --validate-only
 ```
 
 ## mode 주의
@@ -74,8 +102,11 @@ python checker.py --profile profiles/care.yml --checks checks --mode safe-active
 |---|---|
 | `passive` | GET 요청과 응답 관찰 중심. 상태 변경 없음 |
 | `safe-active` | 없는 경로 요청, 후보 URL 확인, `OPTIONS`/`TRACE`/`PUT`/`DELETE` 같은 method 확인 포함 |
+| `attack-active` | SQLi/XSS 등 payload 전송 가능. 실습 대상에서만 실행 |
+| `state-changing` | 글쓰기, 회원정보 수정, 업로드처럼 상태 변경 가능. `--confirm-state-changing` 필요 |
+| `destructive-risk` | 삭제, 대량 요청, 장애 가능 요청. 기본 금지, `--confirm-destructive-risk` 필요 |
 
-`safe-active`는 실습 대상에서만 실행한다. 특히 21번은 `PUT`, `DELETE` 요청을 보낼 수 있다.
+`safe-active` 이상은 실습 대상에서만 실행한다. 특히 21번은 `PUT`, `DELETE` 요청을 보낼 수 있다.
 
 ## 출력
 
@@ -118,12 +149,14 @@ evidence/<run_id>/
 - `checker.py`에는 CARE 전용 URL, 계정, payload를 넣지 않는다.
 - target 값은 `profiles/*.yml`에 둔다.
 - KISA 항목별 동작은 `checks/*.yml`에 둔다.
+- payload는 `payloads/*.yml`에 둔다.
 - 기본 실행은 `passive`다.
-- SQLi, XSS, SSRF, 로그인 자동화, brute force, 파일 업로드/삭제, DB 변경은 v1 범위가 아니다.
+- state-changing 이상은 confirm 없이는 실행하지 않는다.
+- brute force, 파일 삭제, DB 변경, 서비스 장애 유발 요청은 v2 범위가 아니다.
 
 ## 이후 단계
 
 | 단계 | 구현 후보 |
 |---|---|
-| v2 | 02, 06, 07, 09, 10, 11, 14, 20 |
+| v2 추가 후보 | 06, 07, 09, 10, 11, 14, 20 |
 | v3 | 01, 08, 12, 13 |

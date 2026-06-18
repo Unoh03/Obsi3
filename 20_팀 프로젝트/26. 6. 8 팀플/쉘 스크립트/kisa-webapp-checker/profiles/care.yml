@@ -7,6 +7,18 @@ target_allowlist:
 timeout_seconds: 5
 verify_tls: false
 
+session:
+  cookies:
+  headers:
+
+fixtures:
+  test_prefix: "kisa-checker-v2"
+  note: "Real fixture accounts, posts, and upload files should be defined here when state-changing checks are enabled."
+
+rollback:
+  - "Review evidence/<run_id>/rollback_checklist.md before deleting test artifacts."
+  - "Remove test posts, accounts, or uploaded files only after screenshots/report evidence are preserved."
+
 routes:
   home:
     method: GET
@@ -23,6 +35,13 @@ routes:
     method: GET
     path: "/member/modify.php"
     sensitive: true
+  board_search:
+    method: GET
+    path: "/center/list.php"
+    params:
+      mode: "search"
+      find: "subject"
+      data: "kisa-baseline"
   directory_data:
     method: GET
     path: "/data/"

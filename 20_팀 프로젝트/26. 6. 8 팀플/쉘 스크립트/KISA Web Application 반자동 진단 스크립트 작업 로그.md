@@ -332,6 +332,129 @@ v2 시작 전에 정해야 할 것:
 - evidence를 어디까지 저장할지
 - rollback checklist를 항목별로 만들지
 
+## 2026-06-18 v2 공통 기반과 02 SQL 인젝션 check 추가
+
+### 목적
+
+v2의 첫 작업은 02, 06, 07, 09, 10, 11, 14, 20을 한 번에 완성하는 것이 아니라, v2 계열 check를 안전하게 붙일 수 있는 공통 기반을 만드는 것이었다.
+
+이번 범위는 다음으로 제한했다.
+
+```text
+v2 공통 기반
+-> session 주입
+-> fixture / rollback 메모 구조
+-> payload 파일 참조
+-> state-changing confirm
+-> generic payload_probe action
+-> 02 SQL 인젝션 check 1개
+```
+
+### 구현 범위
+
+수정 및 추가한 파일:
+
+```text
+kisa-webapp-checker/checker.py
+kisa-webapp-checker/README.md
+kisa-webapp-checker/profiles/care.yml
+kisa-webapp-checker/checks/02_sql_injection.yml
+kisa-webapp-checker/payloads/sqli.yml
+```
+
+추가한 엔진 기능:
+
+| 기능 | 내용 |
+|---|---|
+| `payload_probe` | payload 파일 또는 inline payload를 route parameter에 주입하고 response status/body/header rule로 판정 |
+| `payloads/*.yml` | SQLi 등 payload를 checker.py 밖으로 분리 |
+| `session.cookies` / `session.headers` | 로그인 자동화 대신 profile에서 기존 세션 쿠키나 헤더를 주입할 수 있게 함 |
+| `fixtures` | 테스트 prefix, 계정, 게시글, 업로드 파일 등 상태 변경 전제를 profile에 기록할 공간 |
+| `rollback` | profile 기반 rollback 메모를 `rollback_checklist.md`에 반영 |
+| `--confirm-state-changing` | `state-changing` 이상 실제 실행 시 필수 확인 플래그 |
+| `--confirm-destructive-risk` | `destructive-risk` 실제 실행 시 필수 확인 플래그 |
+
+추가한 v2 check:
+
+| 번호 | 항목 | mode | 구현 상태 |
+|---:|---|---|---|
+| 02 | SQL 인젝션 | `attack-active` | `board_search` route의 `data` parameter에 `payloads/sqli.yml` payload를 주입하는 구조 추가 |
+
+### 주요 결정
+
+- `checker.py`에는 CARE URL, 계정, 게시글 번호, SQLi payload를 넣지 않았다.
+- CARE의 검색 route는 `profiles/care.yml`의 `board_search`에만 추가했다.
+- SQLi payload는 `payloads/sqli.yml`에 분리했다.
+- 02번은 `attack-active`로 두어 `passive`와 `safe-active` 기본 실행에서는 스킵되게 했다.
+- 로그인 자동화는 아직 넣지 않았다. 대신 profile의 `session.cookies` / `session.headers`로 기존 세션을 주입하는 방식을 먼저 열었다.
+- state-changing 이상은 실제 실행 시 confirm 없이는 막히게 했다.
+
+### v2 후보 재분류
+
+| 번호 | 항목 | v2 판단 | 기본 mode | 필요 fixture / 전제 | 이번 구현 |
+|---:|---|---|---|---|---|
+| 02 | SQL 인젝션 | 먼저 구현 가능 | `attack-active` | 검색/로그인/조회 route, payload 파일 | 구현 시작 |
+| 06 | XSS | 구현 가능하나 reflected/stored 분리 필요 | `attack-active` 또는 `state-changing` | reflected route 또는 테스트 게시글 fixture | 보류 |
+| 07 | CSRF | 반자동. 토큰 부재와 상태 변경 재전송 확인 필요 | `state-changing` | 로그인 세션, 회원정보 수정 route, rollback | 보류 |
+| 09 | 약한 비밀번호 정책 | 반자동. 회원가입/수정 route 필요 | `state-changing` | 테스트 계정, 약한 비밀번호 목록, cleanup | 보류 |
+| 10 | 불충분한 인증 절차 | 반자동. 중요 기능 접근 전 재인증 요구 여부 확인 | `state-changing` | 로그인 세션, 회원정보 수정 route | 보류 |
+| 11 | 불충분한 권한 검증 | 반자동. 사용자 A/B와 객체 ID fixture 필요 | `state-changing` | 저권한/고권한 계정, 게시글/회원 object id | 보류 |
+| 14 | 악성 파일 업로드 | 반자동. 안전한 proof 파일만 허용 | `state-changing` | 업로드 route, proof file, cleanup path | 보류 |
+| 20 | 자동화 공격 | 위험. rate limit과 요청 상한 먼저 필요 | `destructive-risk` | 요청 횟수 상한, sleep, 중단 조건 | 보류 |
+
+### 검증 결과
+
+실행한 검증:
+
+```bash
+python -c "import py_compile, tempfile; py_compile.compile('checker.py', cfile=tempfile.NamedTemporaryFile(delete=False).name, doraise=True); print('py_compile ok')"
+python checker.py --help
+python checker.py --profile profiles/care.yml --checks checks --mode passive --validate-only --output "$env:TEMP\kisa-checker-validate-passive2"
+python checker.py --profile profiles/care.yml --checks checks --mode safe-active --validate-only --output "$env:TEMP\kisa-checker-validate-safe2"
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --output "$env:TEMP\kisa-checker-validate-attack2"
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing --validate-only --output "$env:TEMP\kisa-checker-validate-state2"
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing --output "$env:TEMP\kisa-checker-state-block2"
+git diff --check
+```
+
+확인한 사실:
+
+- `py_compile` 통과.
+- `--help`에 v2 설명과 `--confirm-state-changing`, `--confirm-destructive-risk` 표시.
+- `passive --validate-only`에서 02번은 `skipped_by_mode`, 16/17은 `passed`.
+- `safe-active --validate-only`에서 02번은 `skipped_by_mode`, v1 safe-active 항목은 `passed`.
+- `attack-active --validate-only`에서 02,03,04,05,15,16,17,19,21 모두 설정 검증 통과.
+- `state-changing --validate-only`도 설정 검증 통과.
+- 실제 `state-changing` 실행은 confirm 없이 다음 오류로 차단됨.
+
+```text
+[ERROR] `state-changing` mode requires --confirm-state-changing
+```
+
+- `git diff --check` 통과.
+- `checker.py`에서 CARE 전용 URL, 계정명, SQLi payload 하드코딩 검색 결과 없음.
+- repo 내부 `__pycache__` 생성 없음.
+
+### 현재 한계
+
+- 02번은 error-based SQLi 중심의 첫 구조다. boolean-based diff, time-based check, 로그인/조회 route 검증은 아직 없다.
+- `payload_probe`는 GET/POST parameter 주입만 지원한다.
+- 로그인 자동화는 아직 없다. 현재 방식은 profile에 기존 세션 쿠키/헤더를 주입하는 방식이다.
+- state-changing check의 rollback은 아직 자동 생성이 아니라 profile 메모와 공통 checklist 중심이다.
+- v2 후보 중 06,07,09,10,11,14,20은 아직 구현하지 않았다.
+- 실제 `attack-active` 실행은 하지 않았다. 이번 검증은 validate-only와 confirm 차단 확인까지만 수행했다.
+
+### 다음 작업 기준
+
+다음 작업은 둘 중 하나로 잡는다.
+
+```text
+1. 02 SQL 인젝션을 실제 CARE 검색 route 기준으로 제한 실행하고 evidence 품질 확인
+2. 06 XSS 또는 07 CSRF를 위한 state-changing fixture 구조를 먼저 구현
+```
+
+권장 순서는 1번이다. 02번은 state-changing이 아니므로 v2 첫 실제 실행 검증 대상으로 가장 부담이 낮다.
+
 ## 다음 기록 템플릿
 
 ```markdown
