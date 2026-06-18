@@ -1,0 +1,21 @@
+id: "08"
+name: "SSRF"
+kisa_section: "X. Web Application"
+required_mode: "attack-active"
+description: "A profile-defined server-side URL fetch endpoint is probed with a controlled localhost-only proof URL."
+steps:
+  - id: localhost_internal_proof_probe
+    action: payload_probe
+    summary: "SSRF fetch route is checked with a controlled loopback-only internal proof URL. No scan, DB, login, or state-changing request is sent."
+    routes:
+      - ssrf_fetch
+    parameter: url
+    baseline_value: "http://172.168.10.10/"
+    payloads_file: "payloads/ssrf.yml"
+    payload_group: "localhost_internal_proof"
+    vulnerable_statuses:
+      - 599
+    vulnerable_body_patterns:
+      - "SSRF_INTERNAL_PROOF"
+      - "care-ssrf-local-only-proof"
+    no_match_status: "manual_required"

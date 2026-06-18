@@ -1,0 +1,17 @@
+name: mock-ssrf
+base_url: "http://127.0.0.1:18081"
+target_allowlist:
+  - "127.0.0.1"
+  - "localhost"
+timeout_seconds: 5
+verify_tls: false
+
+routes:
+  ssrf_fetch:
+    method: GET
+    path: "/vuln/ssrf/fetch.php"
+    params:
+      url: "http://172.168.10.10/"
+  ssrf_internal_proof:
+    method: GET
+    path: "/vuln/ssrf/internal-proof.php"

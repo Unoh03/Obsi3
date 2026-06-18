@@ -1,0 +1,3 @@
+groups:
+  localhost_internal_proof:
+    - "http://127.0.0.1/vuln/ssrf/internal-proof.php"

@@ -1148,6 +1148,145 @@ ZAP/Nuclei 연동 금지
 MOC/index 수정 금지
 ```
 
+## 2026-06-18 08 SSRF check 구현과 로컬 검증
+
+### 목적
+
+v3 첫 구현 대상으로 확정한 08 SSRF를 checker에 추가했다.
+
+이번 goal은 실제 CARE 서버 evidence 생성이 아니라 다음까지를 목표로 했다.
+
+```text
+08 SSRF check 구현
+-> 로컬 validate-only / mock 검증
+-> WEB VM에서 사용자가 실행할 명령 준비
+```
+
+Codex 로컬에서는 `172.168.10.10` CARE 서버와 직접 통신하지 않는다.
+
+### 구현 범위
+
+수정 및 추가한 파일:
+
+```text
+kisa-webapp-checker/profiles/care.yml
+kisa-webapp-checker/checks/08_ssrf.yml
+kisa-webapp-checker/payloads/ssrf.yml
+kisa-webapp-checker/profiles/mock_ssrf.yml
+kisa-webapp-checker/mock_targets/ssrf_fetch_mock.py
+kisa-webapp-checker/README.md
+```
+
+`checker.py`는 수정하지 않았다. 기존 `payload_probe` 구조를 그대로 사용했다.
+
+추가한 CARE route:
+
+| route | 의미 |
+|---|---|
+| `ssrf_fetch` | `/vuln/ssrf/fetch.php`에 `url` 파라미터를 넣어 서버 측 요청 기능을 검사 |
+| `ssrf_internal_proof` | `/vuln/ssrf/internal-proof.php` 내부 proof page 위치 기록 |
+
+추가한 payload:
+
+```text
+http://127.0.0.1/vuln/ssrf/internal-proof.php
+```
+
+### 판정 기준
+
+08번 check의 기준:
+
+| 상황 | 기대 상태 |
+|---|---|
+| baseline fetch가 정상이고, loopback proof payload 응답에 `SSRF_INTERNAL_PROOF` 또는 `care-ssrf-local-only-proof`가 보임 | `vulnerable` |
+| baseline fetch는 정상이나 proof 문자열이 보이지 않음 | `manual_required` |
+| baseline부터 실패 | `error` 또는 `inconclusive` 성격으로 Goal 2에서 재판단 |
+
+조치 후를 자동으로 `not_vulnerable`로 단정하지 않고 `manual_required`로 남긴 이유:
+
+```text
+차단 문구, HTTP status, redirect, 운영 정책은 target마다 다를 수 있다.
+따라서 proof가 안 보인다는 사실만으로는 자동 확정하지 않고 request/response evidence를 보고 Goal 2에서 판정한다.
+```
+
+### 검증 결과
+
+실행한 로컬 검증:
+
+```powershell
+python -c "import py_compile, tempfile; files=['checker.py','mock_targets/ssrf_fetch_mock.py']; [py_compile.compile(f, cfile=tempfile.NamedTemporaryFile(delete=False).name, doraise=True) for f in files]; print('py_compile ok')"
+
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --output "$env:TEMP\kisa-checker-ssrf-validate2"
+```
+
+확인 결과:
+
+```text
+py_compile ok
+
+[passed] 02 SQL 인젝션
+[passed] 03 디렉터리 인덱싱
+[passed] 04 에러 페이지
+[passed] 05 정보 노출
+[passed] 08 SSRF
+[passed] 15 파일 다운로드
+[passed] 16 불충분한 세션 관리
+[passed] 17 데이터 평문 전송
+[passed] 19 관리자 페이지 노출
+[passed] 21 불필요한 Method 악용
+```
+
+mock target 검증 결과:
+
+```text
+MOCK_MODE=vulnerable STATUS=vulnerable
+MOCK_MODE=safe STATUS=manual_required
+```
+
+초기 검증 중 `vulnerable_statuses: []`가 YAML fallback에서 문자열처럼 해석되어 `status lists must be YAML lists` 오류가 났다. 그래서 빈 리스트 대신 실제로 쓰이지 않을 상태 코드 `599`를 block list로 넣어 파서 호환성을 맞췄다.
+
+### WEB VM 실행 명령
+
+실제 CARE evidence는 WEB VM의 VSC SSH 터미널에서 실행한다.
+
+```bash
+cd ~/kisa-webapp-checker
+mkdir -p /tmp/kisa-checker-08-only/checks /tmp/kisa-checker-08-only/payloads
+cp checks/08_ssrf.yml /tmp/kisa-checker-08-only/checks/
+cp payloads/ssrf.yml /tmp/kisa-checker-08-only/payloads/
+python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checker-08-only/checks --mode attack-active
+```
+
+실행 후 확인할 출력:
+
+```bash
+RUN_ID="<방금 출력된 run_id>"
+cat "evidence/${RUN_ID}/result.json"
+cat "evidence/${RUN_ID}/report.md"
+cat "evidence/${RUN_ID}/run.log"
+find "evidence/${RUN_ID}" -type f | sort
+```
+
+사용자는 위 출력과 08 SSRF request/response evidence를 가져오고, Goal 2에서 판정과 보정을 진행한다.
+
+### 현재 한계
+
+- 실제 CARE 서버와 통신하지 않았으므로 보고서용 SSRF evidence는 아직 없다.
+- mock 결과는 checker 판정 구조 검증일 뿐이다.
+- 조치 후 차단은 자동 `not_vulnerable`로 확정하지 않고 `manual_required`로 남긴다.
+- AWS metadata, 내부망 스캔, 포트 스캔은 이번 check 범위가 아니다.
+
+### 다음 작업 기준
+
+다음 작업은 Goal 2로 진행한다.
+
+```text
+WEB VM에서 08번만 실행
+-> result.json / report.md / run.log / request-response 확인
+-> vulnerable 또는 manual_required 판정이 evidence와 맞는지 검토
+-> 필요하면 08 check rule 또는 README/로그만 보정
+```
+
 ### Goal 2 프롬프트 보관
 
 Goal 1은 08 SSRF check 구현, 로컬 검증, WEB VM 실행 명령 준비까지로 끝낸다. 실제 CARE 서버 evidence는 사용자가 WEB VM에서 실행한 뒤 결과를 가져오면 Goal 2에서 분석한다.

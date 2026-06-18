@@ -42,6 +42,14 @@ routes:
       mode: "search"
       find: "subject"
       data: "kisa-baseline"
+  ssrf_fetch:
+    method: GET
+    path: "/vuln/ssrf/fetch.php"
+    params:
+      url: "http://172.168.10.10/"
+  ssrf_internal_proof:
+    method: GET
+    path: "/vuln/ssrf/internal-proof.php"
   directory_data:
     method: GET
     path: "/data/"

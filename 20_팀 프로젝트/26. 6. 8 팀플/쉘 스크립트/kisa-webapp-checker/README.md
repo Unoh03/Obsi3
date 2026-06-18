@@ -1,8 +1,8 @@
-# KISA Web Application Checker v2
+# KISA Web Application Checker v3
 
 KISA X. Web Application 01~21 전체 진단을 목표로 하는 반자동 진단 프레임워크다.
 
-v2는 완성형 취약점 스캐너가 아니라, v1의 passive / safe-active 파이프라인에 payload 기반 검사와 state-changing 안전장치를 추가한 단계다.
+v3는 완성형 취약점 스캐너가 아니라, v1의 passive / safe-active 파이프라인과 v2의 payload 기반 검사 구조 위에 SSRF처럼 앱 문맥이 필요한 check를 하나씩 붙이는 단계다.
 
 ```text
 profile -> check -> request -> evidence -> report
@@ -13,6 +13,7 @@ profile -> check -> request -> evidence -> report
 | 번호 | 항목 | mode | 동작 |
 |---:|---|---|---|
 | 02 | SQL 인젝션 | `attack-active` | payload 파일의 SQLi 문자열을 profile-defined route에 주입하고 오류/노출 패턴 확인 |
+| 08 | SSRF | `attack-active` | profile-defined URL fetch route에 통제된 loopback-only proof URL을 주입하고 proof 문자열 노출 여부 확인 |
 | 03 | 디렉터리 인덱싱 | `safe-active` | 후보 디렉터리 요청 후 listing 패턴 확인 |
 | 04 | 에러 페이지 | `safe-active` | 없는 경로 요청 후 stack trace, local path, version 노출 확인 |
 | 05 | 정보 노출 | `safe-active` | 후보 민감 파일 요청 후 설정/소스 노출 패턴 확인 |
@@ -22,7 +23,7 @@ profile -> check -> request -> evidence -> report
 | 19 | 관리자 페이지 노출 | `safe-active` | 후보 관리자 페이지 접근 가능 여부 확인 |
 | 21 | 불필요한 Method 악용 | `safe-active` | `OPTIONS`, `TRACE`, `PUT`, `DELETE` 응답 기록 |
 
-v2의 02번은 기본 실행에서는 동작하지 않는다. `--mode attack-active`를 명시해야 실행된다.
+02번과 08번은 기본 실행에서는 동작하지 않는다. `--mode attack-active`를 명시해야 실행된다.
 
 ## 설치
 
@@ -86,6 +87,60 @@ mock mode:
 | `vulnerable` | baseline은 200, SQLi-like payload는 SQL error 500 | `vulnerable` |
 | `safe` | baseline과 payload 모두 정상 200 | `manual_required` |
 | `db-down` | baseline과 payload 모두 500 | `inconclusive` |
+
+## WEB VM 없이 08번 checker 동작만 검증
+
+Codex 로컬에서는 실제 `172.168.10.10` CARE 서버와 직접 통신하지 않는다. 대신 mock target으로 08번 판정 구조만 검증할 수 있다.
+
+이 결과는 보고서용 CARE 취약 증거가 아니다.
+
+터미널 1:
+
+```bash
+python mock_targets/ssrf_fetch_mock.py --mode vulnerable --port 18081
+```
+
+터미널 2:
+
+```bash
+mkdir -p /tmp/kisa-checker-08-only/checks /tmp/kisa-checker-08-only/payloads
+cp checks/08_ssrf.yml /tmp/kisa-checker-08-only/checks/
+cp payloads/ssrf.yml /tmp/kisa-checker-08-only/payloads/
+python checker.py --profile profiles/mock_ssrf.yml --checks /tmp/kisa-checker-08-only/checks --mode attack-active
+```
+
+mock mode:
+
+| mode | 의미 | 기대 판정 |
+|---|---|---|
+| `vulnerable` | fetch endpoint가 loopback-only proof 응답을 그대로 반환 | `vulnerable` |
+| `safe` | fetch endpoint가 loopback/internal 요청을 차단 | `manual_required` |
+
+`manual_required`로 남기는 이유는 조치 후 차단 문구, HTTP status, 운영 정책이 target마다 다를 수 있기 때문이다. 실제 보고서 판정은 request/response evidence를 보고 확정한다.
+
+## WEB VM에서 08번 실제 CARE evidence 생성
+
+08번 실제 evidence는 WEB VM의 VSC SSH 터미널에서 실행한다. Codex 로컬에서 `172.168.10.10`으로 직접 접근하려고 하지 않는다.
+
+```bash
+cd ~/kisa-webapp-checker
+mkdir -p /tmp/kisa-checker-08-only/checks /tmp/kisa-checker-08-only/payloads
+cp checks/08_ssrf.yml /tmp/kisa-checker-08-only/checks/
+cp payloads/ssrf.yml /tmp/kisa-checker-08-only/payloads/
+python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checker-08-only/checks --mode attack-active
+```
+
+실행 후 확인할 파일:
+
+```bash
+RUN_ID="<방금 출력된 run_id>"
+cat "evidence/${RUN_ID}/result.json"
+cat "evidence/${RUN_ID}/report.md"
+cat "evidence/${RUN_ID}/run.log"
+find "evidence/${RUN_ID}" -type f | sort
+```
+
+Goal 2에서는 위 출력과 08 SSRF request/response evidence를 기준으로 `vulnerable`, `manual_required`, `inconclusive`, `error` 판정이 맞는지 다시 본다.
 
 ## 실행
 
@@ -185,4 +240,4 @@ evidence/<run_id>/
 | 단계 | 구현 후보 |
 |---|---|
 | v2 추가 후보 | 06, 07, 09, 10, 11, 14, 20 |
-| v3 | 01, 08, 12, 13 |
+| v3 다음 후보 | 01, 12, 13 |
