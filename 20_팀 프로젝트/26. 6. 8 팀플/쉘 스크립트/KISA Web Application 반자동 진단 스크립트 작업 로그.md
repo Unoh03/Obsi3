@@ -215,6 +215,123 @@ v2 후보:
 
 단, v2부터는 로그인, fixture, rollback, state-changing 허용 범위를 먼저 정해야 한다.
 
+## 2026-06-18 실제 WEB 서버 실행 테스트와 v2 전환 결정
+
+### 목적
+
+v1 checker를 실제 WEB 서버 홈 디렉터리에서 실행해 보고, validate-only 결과와 실제 실행 결과가 어떻게 다른지 확인했다.
+
+또한 16번과 17번은 VM/GNS 환경에서 완전 조치까지 밀어붙이기보다 AWS 환경에서 HTTPS를 구성한 뒤 재검증하는 편이 낫다고 판단했다.
+
+### 실행한 명령
+
+사용자가 WEB 서버에서 실행한 명령은 다음과 같다.
+
+```bash
+cd kisa-webapp-checker/
+
+python3 checker.py --profile profiles/care.yml --checks checks --mode passive --validate-only
+
+python3 checker.py --profile profiles/care.yml --checks checks --mode passive
+
+mkdir -p /tmp/kisa-checks-21
+cp checks/21_unnecessary_method.yml /tmp/kisa-checks-21/
+python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checks-21 --mode safe-active
+```
+
+### 확인된 결과
+
+`passive --validate-only` 결과:
+
+```text
+[OK] run_id=20260618-002938
+[OK] evidence=/home/webuser/kisa-webapp-checker/evidence/20260618-002938
+[skipped_by_mode] 03 디렉터리 인덱싱
+[skipped_by_mode] 04 에러 페이지
+[skipped_by_mode] 05 정보 노출
+[skipped_by_mode] 15 파일 다운로드
+[passed] 16 불충분한 세션 관리
+[passed] 17 데이터 평문 전송
+[skipped_by_mode] 19 관리자 페이지 노출
+[skipped_by_mode] 21 불필요한 Method 악용
+```
+
+`passive` 실제 실행 결과:
+
+```text
+[OK] run_id=20260618-002949
+[OK] evidence=/home/webuser/kisa-webapp-checker/evidence/20260618-002949
+[skipped_by_mode] 03 디렉터리 인덱싱
+[skipped_by_mode] 04 에러 페이지
+[skipped_by_mode] 05 정보 노출
+[skipped_by_mode] 15 파일 다운로드
+[vulnerable] 16 불충분한 세션 관리
+[vulnerable] 17 데이터 평문 전송
+[skipped_by_mode] 19 관리자 페이지 노출
+[skipped_by_mode] 21 불필요한 Method 악용
+```
+
+21번만 따로 `safe-active`로 실행한 결과:
+
+```text
+[OK] run_id=20260618-003323
+[OK] evidence=/home/webuser/kisa-webapp-checker/evidence/20260618-003323
+[not_vulnerable] 21 불필요한 Method 악용
+```
+
+### 해석
+
+`validate-only`의 `passed`는 설정 파일과 실행 전제의 형식 검증이 통과했다는 뜻으로 본다. 실제 서비스 상태가 안전하다는 의미가 아니다.
+
+실제 `passive` 실행에서 16번과 17번이 `vulnerable`로 나온 이유는 다음처럼 해석했다.
+
+| 번호 | 결과 | 해석 |
+|---:|---|---|
+| 16 | `vulnerable` | HTTPS가 없으면 `Secure` 쿠키 속성까지 완성 검증하기 어렵다. 현재 cookie flag 기준에서 취약으로 판정됨 |
+| 17 | `vulnerable` | profile의 기준 URL과 실제 서비스가 HTTP 기반이므로 데이터 평문 전송 취약 상태로 판정됨 |
+| 21 | `not_vulnerable` | 현재 CARE/Apache 환경에서 불필요한 Method 악용은 v1 checker 기준으로 취약하지 않음 |
+
+### 주요 결정
+
+- 16번과 17번을 VM/GNS에서 더 끌지 않고 AWS 후속 검증으로 분리했다.
+- AWS 후속 절차는 [[20_팀 프로젝트/26. 6. 8 팀플/웹 보안 모음/AWS 후속 조치와 재검증|AWS 후속 조치와 재검증]]에 정리했다.
+- v1 checker의 기본 구조는 유지한다.
+- 다음 작업은 v2로 넘어간다.
+
+### 현재 한계
+
+- 16번의 `vulnerable` 판정은 세션 ID 난수성, 세션 재사용성 전체를 자동 검증한 결과가 아니라 cookie flag 중심 판정이다.
+- 17번의 `vulnerable` 판정은 현재 환경이 HTTP라는 사실과 직접 연결된다.
+- AWS에서 HTTPS가 구성되면 `profiles/care.yml`의 `base_url`을 `https://...`로 바꾸고 16/17을 다시 확인해야 한다.
+- v2부터는 로그인, fixture, rollback, state-changing 요청을 어떻게 다룰지 결정해야 한다.
+
+### 다음 작업 기준
+
+다음 작업은 v2로 간다.
+
+v2의 목표는 v1보다 더 실제 취약점에 가까운 항목을 다루되, 하드코딩된 CARE 전용 공격기가 아니라 profile 기반 반자동 진단기 구조를 유지하는 것이다.
+
+우선 검토할 후보:
+
+```text
+02 SQL 인젝션
+06 XSS
+07 CSRF
+09 약한 비밀번호 정책
+10 불충분한 인증 절차
+11 불충분한 권한 검증
+14 악성 파일 업로드
+20 자동화 공격
+```
+
+v2 시작 전에 정해야 할 것:
+
+- 로그인 세션을 profile로 주입할지
+- 테스트용 fixture 계정을 둘지
+- state-changing 요청을 어디까지 허용할지
+- evidence를 어디까지 저장할지
+- rollback checklist를 항목별로 만들지
+
 ## 다음 기록 템플릿
 
 ```markdown
