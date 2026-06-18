@@ -13,7 +13,7 @@ profile -> check -> request -> evidence -> report
 | 번호 | 항목 | mode | 동작 |
 |---:|---|---|---|
 | 02 | SQL 인젝션 | `attack-active` | payload 파일의 SQLi 문자열을 profile-defined route에 주입하고 오류/노출 패턴 확인 |
-| 08 | SSRF | `attack-active` | profile-defined URL fetch route에 통제된 loopback-only proof URL을 주입하고 proof 문자열 노출 여부 확인 |
+| 08 | SSRF | `attack-active` | profile-defined URL fetch route에 통제된 loopback-only proof URL을 주입하고 proof 문자열 노출 또는 차단 근거 확인 |
 | 03 | 디렉터리 인덱싱 | `safe-active` | 후보 디렉터리 요청 후 listing 패턴 확인 |
 | 04 | 에러 페이지 | `safe-active` | 없는 경로 요청 후 stack trace, local path, version 노출 확인 |
 | 05 | 정보 노출 | `safe-active` | 후보 민감 파일 요청 후 설정/소스 노출 패턴 확인 |
@@ -114,9 +114,9 @@ mock mode:
 | mode | 의미 | 기대 판정 |
 |---|---|---|
 | `vulnerable` | fetch endpoint가 loopback-only proof 응답을 그대로 반환 | `vulnerable` |
-| `safe` | fetch endpoint가 loopback/internal 요청을 차단 | `manual_required` |
+| `safe` | fetch endpoint가 loopback/internal 요청을 차단 | `not_vulnerable` |
 
-`manual_required`로 남기는 이유는 조치 후 차단 문구, HTTP status, 운영 정책이 target마다 다를 수 있기 때문이다. 실제 보고서 판정은 request/response evidence를 보고 확정한다.
+`safe` mock은 CARE의 조치 후 응답인 `허용되지 않은 요청 대상입니다`와 같은 차단 문구를 반환하므로 자동 `not_vulnerable`이 기대된다. 알 수 없는 차단 문구, 빈 응답, redirect 정책처럼 rule에 없는 경우만 `manual_required`로 남긴다.
 
 ## WEB VM에서 08번 실제 CARE evidence 생성
 
@@ -140,7 +140,7 @@ cat "evidence/${RUN_ID}/run.log"
 find "evidence/${RUN_ID}" -type f | sort
 ```
 
-Goal 2에서는 위 출력과 08 SSRF request/response evidence를 기준으로 `vulnerable`, `manual_required`, `inconclusive`, `error` 판정이 맞는지 다시 본다.
+Goal 2에서는 위 출력과 08 SSRF request/response evidence를 기준으로 `vulnerable`, `not_vulnerable`, `manual_required`, `inconclusive`, `error` 판정이 맞는지 다시 본다. 현재 CARE 조치 후 응답처럼 `허용되지 않은 요청 대상입니다`가 확인되면 `not_vulnerable`이 기대된다.
 
 ## 실행
 

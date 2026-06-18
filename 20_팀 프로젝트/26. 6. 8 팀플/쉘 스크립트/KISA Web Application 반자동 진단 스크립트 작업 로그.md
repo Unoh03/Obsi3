@@ -1338,6 +1338,81 @@ Goal 1은 08 SSRF check 구현, 로컬 검증, WEB VM 실행 명령 준비까지
 - `git diff --check` 통과
 ```
 
+## 2026-06-18 08 SSRF 차단 문구 자동 판정 보정
+
+### 목적
+
+WEB VM에서 08번 SSRF check를 실제 CARE 서버에 실행한 결과, 조치 후 차단 문구가 명확히 남았는데도 상태가 `manual_required`로 나왔다.
+
+사용자가 가져온 실제 실행 근거:
+
+```text
+run_id=20260618-082321
+checker stdout: [manual_required] 08 SSRF
+payload response body: 허용되지 않은 요청 대상입니다.
+```
+
+이 결과는 “proof 문자열이 노출되지 않았으니 사람이 봐야 함”이 아니라, 현재 CARE 조치 코드가 loopback/internal 요청을 의도적으로 차단했다는 자동 판정 근거에 가깝다.
+
+### 구현 보정
+
+`payload_probe`에 조치 후 차단 근거를 선언할 수 있는 rule을 추가했다.
+
+```yaml
+not_vulnerable_statuses:
+  - 403
+not_vulnerable_body_patterns:
+  - "허용되지 않은 요청 대상입니다"
+```
+
+이에 따라 08번 SSRF check는 다음처럼 판정한다.
+
+| 응답 근거 | 판정 |
+|---|---|
+| `SSRF_INTERNAL_PROOF` 또는 `care-ssrf-local-only-proof` 노출 | `vulnerable` |
+| `허용되지 않은 요청 대상입니다` 차단 문구 확인 | `not_vulnerable` |
+| proof도 차단 문구도 없고 rule로 해석 불가 | `manual_required` |
+
+### 주요 결정
+
+- `manual_required`는 “알 수 없는 응답”에만 남긴다.
+- 이미 rule로 정의한 차단 문구나 차단 status는 `not_vulnerable`로 자동 판정한다.
+- 이는 CARE에 하드코딩하는 것이 아니라, `checks/08_ssrf.yml`에 target별 차단 근거를 선언하는 방식이다.
+- 실제 request/response evidence는 계속 저장하므로, 최종 보고서에서는 자동 판정과 원문 evidence를 함께 확인할 수 있다.
+
+### 검증 결과
+
+로컬에서 문법, 설정, mock target 판정을 다시 확인했다.
+
+```text
+py_compile ok
+
+attack-active validate-only:
+[passed] 08 SSRF
+
+mock target:
+MOCK_MODE=vulnerable STATUS=vulnerable
+MOCK_MODE=safe STATUS=not_vulnerable
+```
+
+### 다음 실행 기준
+
+WEB VM에서 08번만 다시 실행하면, 현재와 같은 조치 후 응답에서는 다음 상태가 기대된다.
+
+```text
+[not_vulnerable] 08 SSRF
+```
+
+다시 실행할 명령:
+
+```bash
+cd ~/kisa-webapp-checker
+mkdir -p /tmp/kisa-checker-08-only/checks /tmp/kisa-checker-08-only/payloads
+cp checks/08_ssrf.yml /tmp/kisa-checker-08-only/checks/
+cp payloads/ssrf.yml /tmp/kisa-checker-08-only/payloads/
+python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checker-08-only/checks --mode attack-active
+```
+
 ## 다음 기록 템플릿
 
 ```markdown

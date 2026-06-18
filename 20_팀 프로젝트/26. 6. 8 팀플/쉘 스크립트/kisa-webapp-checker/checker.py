@@ -879,6 +879,9 @@ class CheckerRunner:
         vulnerable_statuses = int_set(step.get("vulnerable_statuses"), [500])
         vulnerable_body_patterns = str_list(step.get("vulnerable_body_patterns"))
         vulnerable_header_patterns = str_list(step.get("vulnerable_header_patterns"))
+        not_vulnerable_statuses = int_set(step.get("not_vulnerable_statuses"), [])
+        not_vulnerable_body_patterns = str_list(step.get("not_vulnerable_body_patterns"))
+        not_vulnerable_header_patterns = str_list(step.get("not_vulnerable_header_patterns"))
         no_match_status = str(step.get("no_match_status", "inconclusive"))
         if no_match_status not in VALID_STATUSES:
             raise ConfigError(f"Invalid no_match_status: {no_match_status}")
@@ -976,10 +979,28 @@ class CheckerRunner:
                             f"Route `{route_name}` payload #{payload_index} indicates possible exposure: {reason}."
                         )
                     else:
-                        statuses.append(no_match_status)
-                        findings.append(
-                            f"Route `{route_name}` payload #{payload_index} returned {response.status_code}; no configured exposure pattern matched."
+                        not_vulnerable_body_matches = find_regex_matches(
+                            response.text, not_vulnerable_body_patterns
                         )
+                        not_vulnerable_header_matches = find_regex_matches(
+                            header_text(response), not_vulnerable_header_patterns
+                        )
+                        not_vulnerable_matched = (
+                            not_vulnerable_body_matches + not_vulnerable_header_matches
+                        )
+                        if response.status_code in not_vulnerable_statuses or not_vulnerable_matched:
+                            statuses.append("not_vulnerable")
+                            reason = f"status {response.status_code}"
+                            if not_vulnerable_matched:
+                                reason += f", matched: {', '.join(not_vulnerable_matched)}"
+                            findings.append(
+                                f"Route `{route_name}` payload #{payload_index} indicates configured blocking evidence: {reason}."
+                            )
+                        else:
+                            statuses.append(no_match_status)
+                            findings.append(
+                                f"Route `{route_name}` payload #{payload_index} returned {response.status_code}; no configured exposure or blocking pattern matched."
+                            )
                 except RequestFailed as exc:
                     evidence.append(EvidenceItem(f"{route_name} payload failed request", exc.request_path))
                     evidence.append(EvidenceItem(f"{route_name} payload error response", exc.response_path))

@@ -5,7 +5,7 @@ This server is not CARE evidence. It only verifies that checker.py can:
 
 - keep a normal fetch baseline separate from a loopback-only proof request;
 - mark proof disclosure as vulnerable;
-- leave blocked SSRF attempts for manual review when proof is not disclosed.
+- mark configured SSRF blocking evidence as not_vulnerable.
 """
 
 from __future__ import annotations

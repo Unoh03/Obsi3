@@ -18,4 +18,8 @@ steps:
     vulnerable_body_patterns:
       - "SSRF_INTERNAL_PROOF"
       - "care-ssrf-local-only-proof"
+    not_vulnerable_statuses:
+      - 403
+    not_vulnerable_body_patterns:
+      - "허용되지 않은 요청 대상입니다"
     no_match_status: "manual_required"
