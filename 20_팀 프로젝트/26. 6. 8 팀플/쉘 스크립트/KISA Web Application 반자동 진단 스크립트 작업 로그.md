@@ -750,6 +750,92 @@ $env:NO_PROXY='localhost,127.0.0.1,::1,172.168.10.10'
 성공하면 result.json / report.md / run.log / 02_SQL request-response를 읽고 evidence 품질을 판단한다.
 ```
 
+### SSH 경유 가능성 확인
+
+추가 단서:
+
+```text
+Windows/Codex 위치에서는 172.168.10.10 HTTP 접근이 안 된다.
+하지만 VS Code Remote SSH로 192.168.240.146 접속은 가능하다.
+```
+
+이 구조는 다음처럼 해석한다.
+
+```text
+172.168.10.10
+= GNS/VM 내부 웹 서비스 IP
+= Windows/Codex에서 직접 HTTP 접근 불가
+
+192.168.240.146
+= Windows 호스트가 SSH로 접근 가능한 VM 관리/어댑터 IP
+```
+
+따라서 02번 check는 Windows/Codex에서 억지로 돌리는 것보다, VS Code SSH로 WEB VM에 접속한 터미널에서 직접 실행하는 쪽이 맞다.
+
+Codex 쉘에서 SSH 재사용 가능 여부도 확인했다.
+
+```powershell
+ssh
+```
+
+기본 `ssh`는 sandbox deny wrapper로 잡혀 있었다.
+
+```text
+C:\Users\Unoh\.sbx-denybin\ssh.bat
+C:\Users\Unoh\.sbx-denybin\ssh.cmd
+C:\Windows\System32\OpenSSH\ssh.exe
+```
+
+직접 OpenSSH 실행 파일로 비대화식 접속도 시도했다.
+
+```powershell
+& "$env:WINDIR\System32\OpenSSH\ssh.exe" -o BatchMode=yes -o ConnectTimeout=5 webuser@192.168.240.146 "printf 'ssh-ok\n'; hostname; pwd"
+```
+
+결과:
+
+```text
+webuser@192.168.240.146: Permission denied (publickey,password).
+```
+
+판단:
+
+```text
+VS Code Remote SSH는 사용자가 직접 접속할 수 있지만,
+현재 Codex 쉘에서는 같은 인증 상태를 비대화식으로 재사용할 수 없다.
+그러므로 02번 실제 evidence 생성은 사용자가 VSC SSH 터미널에서 실행해야 한다.
+```
+
+VSC SSH 터미널에서 실행할 명령:
+
+```bash
+cd ~/kisa-webapp-checker
+mkdir -p /tmp/kisa-checker-02-only/checks /tmp/kisa-checker-02-only/payloads
+cp checks/02_sql_injection.yml /tmp/kisa-checker-02-only/checks/
+cp payloads/sqli.yml /tmp/kisa-checker-02-only/payloads/
+python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checker-02-only/checks --mode attack-active
+```
+
+실행 후 확인할 파일:
+
+```bash
+ls -R evidence | tail -n 40
+cat evidence/<run_id>/result.json
+cat evidence/<run_id>/report.md
+cat evidence/<run_id>/run.log
+ls evidence/<run_id>/02_SQL
+```
+
+이 출력이 돌아오면 다음에 할 일:
+
+```text
+1. result.json의 02 status 확인
+2. request/response가 실제 SQLi payload probe 증거인지 확인
+3. vulnerable / manual_required / inconclusive / error 중 판정 정리
+4. 보고서 재료로 충분한지 판단
+5. 작업 로그에 최종 실행 결과 추가
+```
+
 ## 다음 기록 템플릿
 
 ```markdown
