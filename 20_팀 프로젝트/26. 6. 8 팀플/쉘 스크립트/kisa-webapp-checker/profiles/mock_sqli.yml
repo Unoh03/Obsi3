@@ -1,0 +1,16 @@
+name: mock-sqli
+base_url: "http://127.0.0.1:18080"
+target_allowlist:
+  - "127.0.0.1"
+  - "localhost"
+timeout_seconds: 5
+verify_tls: false
+
+routes:
+  board_search:
+    method: GET
+    path: "/center/list.php"
+    params:
+      mode: "search"
+      find: "subject"
+      data: "kisa-baseline"

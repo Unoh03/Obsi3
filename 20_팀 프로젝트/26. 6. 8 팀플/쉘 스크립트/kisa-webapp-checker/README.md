@@ -61,6 +61,32 @@ session:
 
 실제 세션 쿠키는 보고서나 Git에 남기지 않는다.
 
+## DB 없이 02번 checker 동작만 검증
+
+DB가 꺼져 있으면 실제 CARE SQL Injection 증거는 만들 수 없다. 대신 mock target으로 checker의 `payload_probe` 동작만 검증할 수 있다.
+
+이 결과는 보고서용 CARE 취약 증거가 아니다.
+
+터미널 1:
+
+```bash
+python mock_targets/sqli_search_mock.py --mode vulnerable --port 18080
+```
+
+터미널 2:
+
+```bash
+python checker.py --profile profiles/mock_sqli.yml --checks checks --mode attack-active
+```
+
+mock mode:
+
+| mode | 의미 | 기대 판정 |
+|---|---|---|
+| `vulnerable` | baseline은 200, SQLi-like payload는 SQL error 500 | `vulnerable` |
+| `safe` | baseline과 payload 모두 정상 200 | `manual_required` |
+| `db-down` | baseline과 payload 모두 500 | `inconclusive` |
+
 ## 실행
 
 passive mode:

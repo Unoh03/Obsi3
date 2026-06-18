@@ -920,6 +920,22 @@ class CheckerRunner:
                 findings.append(
                     f"Route `{route_name}` baseline returned {response.status_code}."
                 )
+                baseline_body_matches = find_regex_matches(
+                    response.text, vulnerable_body_patterns
+                )
+                baseline_header_matches = find_regex_matches(
+                    header_text(response), vulnerable_header_patterns
+                )
+                baseline_matched = baseline_body_matches + baseline_header_matches
+                if response.status_code in vulnerable_statuses or baseline_matched:
+                    statuses.append("inconclusive")
+                    reason = f"status {response.status_code}"
+                    if baseline_matched:
+                        reason += f", matched: {', '.join(baseline_matched)}"
+                    findings.append(
+                        f"Route `{route_name}` baseline already matches exposure indicators ({reason}); payload comparison is not reliable."
+                    )
+                    continue
             except RequestFailed as exc:
                 evidence.append(EvidenceItem(f"{route_name} baseline failed request", exc.request_path))
                 evidence.append(EvidenceItem(f"{route_name} baseline error response", exc.response_path))

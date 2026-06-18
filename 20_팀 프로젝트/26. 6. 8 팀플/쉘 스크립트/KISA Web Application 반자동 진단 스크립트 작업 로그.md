@@ -836,6 +836,228 @@ ls evidence/<run_id>/02_SQL
 5. 작업 로그에 최종 실행 결과 추가
 ```
 
+## 2026-06-18 DB 중단 상태에서 02번 false positive 보정
+
+### 상황
+
+WEB VM 내부에서 02번만 제한 실행했다.
+
+```bash
+cd ~/kisa-webapp-checker
+mkdir -p /tmp/kisa-checker-02-only/checks /tmp/kisa-checker-02-only/payloads
+cp checks/02_sql_injection.yml /tmp/kisa-checker-02-only/checks/
+cp payloads/sqli.yml /tmp/kisa-checker-02-only/payloads/
+python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checker-02-only/checks --mode attack-active
+```
+
+결과:
+
+```text
+[OK] run_id=20260618-042454
+[OK] evidence=/home/webuser/kisa-webapp-checker/evidence/20260618-042454
+[vulnerable] 02 SQL 인젝션
+```
+
+하지만 당시 DB가 꺼져 있었다.
+
+`result.json`의 핵심 findings:
+
+```text
+Route `board_search` baseline returned 500.
+Route `board_search` payload #1 indicates possible exposure: status 500.
+Route `board_search` payload #2 indicates possible exposure: status 500.
+Route `board_search` payload #3 indicates possible exposure: status 500.
+Route `board_search` payload #4 indicates possible exposure: status 500.
+Route `board_search` payload #5 indicates possible exposure: status 500.
+```
+
+`run.log`의 핵심 흐름:
+
+```text
+GET http://127.0.0.1/center/list.php?mode=search&find=subject&data=kisa-baseline -> 500
+GET http://127.0.0.1/center/list.php?mode=search&find=subject&data=%27 -> 500
+GET http://127.0.0.1/center/list.php?mode=search&find=subject&data=%22 -> 500
+GET http://127.0.0.1/center/list.php?mode=search&find=subject&data=%27+OR+%271%27%3D%271 -> 500
+GET http://127.0.0.1/center/list.php?mode=search&find=subject&data=%22+OR+%221%22%3D%221 -> 500
+GET http://127.0.0.1/center/list.php?mode=search&find=subject&data=%27+UNION+SELECT+NULL--+ -> 500
+```
+
+### 판단
+
+이 결과는 SQL Injection 취약 증거로 쓰면 안 된다.
+
+이유:
+
+```text
+baseline인 kisa-baseline 요청부터 500이다.
+즉, payload 때문에 500이 난 것이 아니라 DB 중단 같은 공통 장애 때문에 모든 요청이 500이 된 상태다.
+```
+
+따라서 기존 checker 판정은 false positive였다.
+
+```text
+기존 판정: vulnerable
+올바른 판정: inconclusive 또는 error 성격
+```
+
+### 코드 보정
+
+`checker.py`의 `payload_probe`를 최소 수정했다.
+
+변경 의도:
+
+```text
+baseline 응답이 이미 vulnerable_statuses 또는 vulnerable pattern에 걸리면,
+payload 비교가 불가능하므로 vulnerable로 판정하지 않는다.
+```
+
+새 동작:
+
+```text
+baseline 500
+-> payload 비교 생략
+-> status: inconclusive
+-> finding: baseline already matches exposure indicators; payload comparison is not reliable
+```
+
+### 회귀 검증
+
+로컬 임시 HTTP 서버를 띄워 모든 요청에 500을 반환하게 만든 뒤, 02번 payload_probe를 실행했다.
+
+검증 목적:
+
+```text
+DB 장애처럼 baseline부터 500인 상태에서 vulnerable로 오판하지 않는지 확인
+```
+
+결과:
+
+```text
+[OK] run_id=20260618-150810
+[OK] evidence=C:\Users\Unoh\AppData\Local\Temp\kisa-baseline-500-s6b3ihhe\evidence\20260618-150810
+[inconclusive] 02 SQL ???
+REGRESSION_STATUS=inconclusive
+```
+
+판단:
+
+```text
+baseline 500 false positive는 보정됐다.
+```
+
+### 현재 결론
+
+DB가 꺼져 있으면 02 SQL 인젝션 actual evidence는 만들 수 없다.
+
+다른 것으로 대체 테스트할 수 있는 범위는 다음뿐이다.
+
+| 테스트 | 가능 여부 | 의미 |
+|---|---:|---|
+| checker 설정 검증 | 가능 | YAML, route, payload 파일 구조 확인 |
+| request 생성 확인 | 가능 | `/center/list.php?...data=...` 요청이 만들어지는지 확인 |
+| baseline 500 false positive 방지 | 가능 | DB 장애를 SQLi로 오판하지 않는지 확인 |
+| 실제 SQL Injection 취약 판정 | 불가 | DB가 켜져 있고 baseline이 정상이어야 함 |
+
+### 다음 재시도 기준
+
+DB를 켠 뒤 WEB VM 내부에서 다시 실행한다.
+
+```bash
+cd ~/kisa-webapp-checker
+python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checker-02-only/checks --mode attack-active
+```
+
+재실행 후 기대 조건:
+
+```text
+baseline request는 200 또는 정상적인 게시판 응답이어야 한다.
+payload request에서만 500, SQL error, mysqli_sql_exception, MariaDB/MySQL error 등이 나와야 SQLi evidence로 쓸 수 있다.
+```
+
+DB가 켜진 뒤에도 baseline이 500이면 다음을 먼저 확인한다.
+
+```text
+1. Apache/PHP error log
+2. config.local.php의 DB host/user/password/dbname
+3. MariaDB service 상태
+4. center table 존재 여부
+5. /center/list.php?mode=search&find=subject&data=kisa-baseline 직접 접속 결과
+```
+
+### DB 없이 가능한 대체 작업
+
+DB가 꺼져 있으면 실제 CARE SQL Injection 증거는 만들 수 없다.
+
+하지만 checker 자체의 02번 동작은 mock target으로 검증할 수 있다.
+
+추가한 파일:
+
+```text
+kisa-webapp-checker/mock_targets/sqli_search_mock.py
+kisa-webapp-checker/profiles/mock_sqli.yml
+```
+
+용도:
+
+```text
+실제 CARE 취약 증거 생성이 아니라,
+payload_probe가 다음 세 상태를 구분하는지 검증한다.
+```
+
+| mock mode | 의미 | 기대 판정 |
+|---|---|---|
+| `vulnerable` | baseline은 200, SQLi-like payload는 SQL error 500 | `vulnerable` |
+| `safe` | baseline과 payload 모두 정상 200 | `manual_required` |
+| `db-down` | baseline과 payload 모두 500 | `inconclusive` |
+
+사용법:
+
+```bash
+# 터미널 1
+python mock_targets/sqli_search_mock.py --mode vulnerable --port 18080
+
+# 터미널 2
+python checker.py --profile profiles/mock_sqli.yml --checks checks --mode attack-active
+```
+
+중요:
+
+```text
+mock 결과는 checker 검증용이다.
+보고서용 SQLi evidence는 DB를 켠 뒤 실제 CARE route에서 다시 만들어야 한다.
+```
+
+검증 결과:
+
+```text
+MOCK_MODE=vulnerable STATUS=vulnerable EXPECTED=vulnerable
+MOCK_MODE=safe STATUS=manual_required EXPECTED=manual_required
+MOCK_MODE=db-down STATUS=inconclusive EXPECTED=inconclusive
+```
+
+판단:
+
+```text
+mock target 기준으로는 02 payload_probe가 세 상태를 구분한다.
+baseline 정상 + payload SQL error는 vulnerable로 잡는다.
+baseline 정상 + payload 정상은 manual_required로 남긴다.
+baseline부터 500이면 inconclusive로 남긴다.
+```
+
+이 검증으로 확인한 것:
+
+```text
+checker의 02번 evidence 파이프라인은 DB 없이도 검증 가능하다.
+DB 장애 상태를 SQLi 취약으로 오판하는 문제는 보정됐다.
+```
+
+이 검증으로 확인하지 못한 것:
+
+```text
+실제 CARE /center/list.php의 SQL Injection 취약 여부
+실제 CARE 응답이 보고서 증거로 충분한지 여부
+```
+
 ## 다음 기록 템플릿
 
 ```markdown
