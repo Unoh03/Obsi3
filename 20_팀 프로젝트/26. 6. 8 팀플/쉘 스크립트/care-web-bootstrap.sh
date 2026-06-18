@@ -175,7 +175,7 @@ echo "[4/7] Configuring Apache site"
     DirectoryIndex index.php index.html
 
     <Directory ${DEST}>
-        Options -Indexes +FollowSymLinks
+        Options -Indexes -FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
