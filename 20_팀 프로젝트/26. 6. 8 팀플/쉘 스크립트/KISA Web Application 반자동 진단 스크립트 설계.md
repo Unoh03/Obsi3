@@ -164,6 +164,31 @@ state-changing 이상은 rollback checklist를 생성한다.
 
 v1의 목적은 “도구 구조가 맞는지” 검증하는 것이다. v1부터 강한 공격성 payload나 대량 요청을 넣지 않는다.
 
+## 8-1. v3 구현 순서 확정
+
+v3는 새로운 엔진 대공사가 아니라, 이미 존재하는 profile/check/payload/evidence 구조에 **앱 문맥이 필요한 항목**을 하나씩 붙이는 단계로 본다.
+
+현재 v3 후보의 판단은 다음과 같다.
+
+| 우선순위 | 번호 | 항목 | 판단 |
+|---:|---:|---|---|
+| 1 | 08 | SSRF | DB가 필요 없고, 기존 실습용 endpoint와 proof page가 있어 첫 v3 구현 대상으로 가장 적합 |
+| 2 | 12 | 취약한 비밀번호 복구 절차 | `/vuln/password-recovery/` 흐름이 있으나 인증번호, 세션, mailbox, reset 흐름을 함께 다뤄야 함 |
+| 3 | 13 | 프로세스 검증 누락 | 12번의 비밀번호 복구 흐름 위에서 `reset.php` 직접 호출을 확인해야 하므로 12번 이후가 자연스러움 |
+| 4 | 01 | 코드 인젝션 | OS Command, SSI, XPath, XXE, SSTI 등 하위 유형이 많아 단일 check로 묶기보다 별도 분해가 필요 |
+
+따라서 다음 구현 goal은 **08 SSRF check 설계와 구현**으로 시작한다.
+
+08번의 1차 구현 기준:
+
+```text
+profile에 ssrf_fetch, ssrf_internal_proof route를 둔다.
+check는 fetch.php에 target URL을 주입한다.
+조치 전에는 internal proof 문자열 노출을 vulnerable로 본다.
+조치 후에는 fetch.php에서 내부/loopback 요청이 차단되는 것을 not_vulnerable 또는 manual_required로 본다.
+DB, 로그인, 파일 업로드, 상태 변경, 대량 요청은 사용하지 않는다.
+```
+
 ## 9. 출력물 설계
 
 | 출력물 | 내용 |

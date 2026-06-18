@@ -1058,6 +1058,96 @@ DB 장애 상태를 SQLi 취약으로 오판하는 문제는 보정됐다.
 실제 CARE 응답이 보고서 증거로 충분한지 여부
 ```
 
+## 2026-06-18 v3 범위와 구현 순서 확정
+
+### 목적
+
+v2에서 02 SQL 인젝션은 checker 구조와 mock 검증까지는 끝났지만, 실제 CARE 증거는 DB가 꺼진 상태라 더 진행할 수 없었다.
+
+그래서 다음 단계는 v2 항목을 억지로 계속 붙이는 것이 아니라, DB 없이도 검증 가능한 v3 후보를 고르고 구현 순서를 확정하는 것으로 잡았다.
+
+### 현재 구현 coverage
+
+현재 `checks/`에 실제 구현된 항목은 다음뿐이다.
+
+```text
+02, 03, 04, 05, 15, 16, 17, 19, 21
+```
+
+01~21 전체 상태는 다음과 같다.
+
+| 번호 | 항목 | 현재 checker 상태 | 다음 처리 |
+|---:|---|---|---|
+| 01 | 코드 인젝션 | 미구현 | v3 후보. 하위 유형이 많아 08 이후 분해 필요 |
+| 02 | SQL 인젝션 | 구현됨. mock 검증 완료, 실제 CARE 증거는 DB 중단으로 보류 | DB가 켜지면 실제 evidence 재실행 |
+| 03 | 디렉터리 인덱싱 | 구현됨 | 유지 |
+| 04 | 에러 페이지 | 구현됨 | 유지 |
+| 05 | 정보 노출 | 구현됨 | 유지 |
+| 06 | XSS | 미구현 | reflected/stored 분리 후 v2 후속 |
+| 07 | CSRF | 미구현 | state-changing fixture가 필요하므로 v2 후속 |
+| 08 | SSRF | 미구현 | v3 1순위 구현 후보 |
+| 09 | 약한 비밀번호 정책 | 미구현 | 회원가입/수정 fixture 필요. v2 후속 |
+| 10 | 불충분한 인증 절차 | 미구현 | 로그인 세션과 회원정보 수정 흐름 필요. v2 후속 |
+| 11 | 불충분한 권한 검증 | 미구현 | 사용자 A/B와 object id fixture 필요. v2 후속 |
+| 12 | 취약한 비밀번호 복구 절차 | 미구현 | v3 후보. 13과 같은 복구 흐름에 묶임 |
+| 13 | 프로세스 검증 누락 | 미구현 | v3 후보. 12 구현 이후가 자연스러움 |
+| 14 | 악성 파일 업로드 | 미구현 | state-changing/upload fixture 필요. v2 후속 |
+| 15 | 파일 다운로드 | 구현됨 | 현재는 known candidate 확인. traversal 확장은 별도 판단 |
+| 16 | 불충분한 세션 관리 | 구현됨 | HTTPS/AWS 재검증 필요 |
+| 17 | 데이터 평문 전송 | 구현됨 | HTTPS/AWS 재검증 필요 |
+| 18 | 쿠키 변조 | 미구현 | 쿠키 기반 권한값이 있는지 먼저 확인 필요 |
+| 19 | 관리자 페이지 노출 | 구현됨 | 유지 |
+| 20 | 자동화 공격 | 미구현 | destructive-risk라 요청 상한/rollback 설계 필요 |
+| 21 | 불필요한 Method 악용 | 구현됨 | 유지 |
+
+### v3 후보 판단
+
+| 번호 | 후보 | 필요한 CARE 기능 / endpoint | profile route | fixture | mode | rollback | 자동화 가능성 | mock 필요 | 실제 보고서 evidence |
+|---:|---|---|---|---|---|---|---|---|---|
+| 01 | 코드 인젝션 | `/vuln/code-injection/` 아래 OS Command, SSI, XPath, XXE, SSTI endpoint | 하위 유형별 route 필요 | 유형별 proof 입력값 필요 | `attack-active` | SSI generated 파일 등 일부 정리 필요 | 부분 자동화 가능. 한 check로 묶으면 과함 | 유형별로 있으면 좋음 | 가능하지만 하위 유형별 스크린샷/응답 해석 필요 |
+| 08 | SSRF | `/vuln/ssrf/fetch.php`, `/vuln/ssrf/internal-proof.php` | `ssrf_fetch`, `ssrf_internal_proof` | proof 문자열과 target URL 정도면 충분 | `attack-active` | 상태 변경 없음. rollback 거의 없음 | 높음. request/response만으로 1차 판정 가능 | 선택 사항 | 매우 적합. proof 문자열 노출/차단이 명확함 |
+| 12 | 취약한 비밀번호 복구 절차 | `/vuln/password-recovery/request.php`, `verify.php` | request/verify route 필요 | victim 계정, 인증번호 mailbox, 세션 필요 | `state-changing` | 인증번호/세션/비밀번호 변경 흔적 정리 필요 | 반자동 | 있으면 좋음 | 가능하지만 업무 흐름과 서버 mailbox 증거가 필요 |
+| 13 | 프로세스 검증 누락 | `/vuln/password-recovery/reset.php` 직접 호출 | reset route 필요 | victim 계정, 새 비밀번호, 세션 상태 필요 | `state-changing` | 변경된 비밀번호 복구 필요 | 반자동 | 12 mock 이후가 자연스러움 | 가능하지만 12번 흐름과 함께 해석해야 함 |
+
+### v3 1순위 결정
+
+v3 첫 구현 대상은 **08 SSRF**로 잡는다.
+
+이유:
+
+| 기준 | 판단 |
+|---|---|
+| DB 필요 여부 | 필요 없음 |
+| 로그인 필요 여부 | 필요 없음 |
+| 상태 변경 여부 | 없음 |
+| 기존 CARE endpoint | `/vuln/ssrf/fetch.php`, `/vuln/ssrf/internal-proof.php`가 이미 노트에 정리됨 |
+| evidence 명확성 | 조치 전 proof 문자열 노출, 조치 후 차단으로 비교 가능 |
+| profile/check 구조 적합성 | `payload_probe` 또는 SSRF 전용 `url_probe` 형태로 확장하기 쉬움 |
+| 위험도 | 내부망 스캔 없이 통제된 proof URL만 쓰면 낮음 |
+
+따라서 다음 `/goal`은 다음 범위가 적절하다.
+
+```text
+08 SSRF check 설계와 구현
+-> profile에 ssrf_fetch / ssrf_internal_proof route 추가
+-> payloads/ssrf.yml 또는 inline target URL 구조 결정
+-> 조치 전 proof 문자열 노출을 vulnerable로 판정
+-> 조치 후 차단 응답은 not_vulnerable 또는 manual_required로 판정
+-> DB, 로그인, 파일 업로드, 상태 변경 없이 검증
+```
+
+다음 `/goal`에서 하지 않을 일:
+
+```text
+01 코드 인젝션 구현 금지
+12/13 비밀번호 복구 구현 금지
+06/07/09/10/11/14/20 구현 금지
+CARE PHP 코드 수정 금지
+DB 실행 또는 데이터 변경 금지
+ZAP/Nuclei 연동 금지
+MOC/index 수정 금지
+```
+
 ## 다음 기록 템플릿
 
 ```markdown
