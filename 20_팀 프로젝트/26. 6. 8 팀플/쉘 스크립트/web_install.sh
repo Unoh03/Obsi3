@@ -3,10 +3,10 @@
 ### ===== 변수 =====
 DEV_USER="user1"
 WEB_ROOT="/var/www/care"
-APACHE_PORT=8080
+APACHE_PORT=80
 DB_NAME="care"
 DB_USER="care"
-DB_PASS="123123"
+DB_PASS="1111"
 
 echo "▶ LAMP 환경 구성 시작 (/var/www/care 기준)"
 
@@ -17,16 +17,16 @@ sudo apt update -y
 sudo apt install -y apache2
 sudo systemctl enable --now apache2
 
-### 3. Apache 포트 설정 (8080)
-PORTS_CONF="/etc/apache2/ports.conf"
-if ! grep -q "Listen ${APACHE_PORT}" $PORTS_CONF; then
-    echo "Listen ${APACHE_PORT}" | sudo tee -a $PORTS_CONF
-fi
+# ### 3. Apache 포트 설정 (8080)
+# PORTS_CONF="/etc/apache2/ports.conf"
+# if ! grep -q "Listen ${APACHE_PORT}" $PORTS_CONF; then
+#     echo "Listen ${APACHE_PORT}" | sudo tee -a $PORTS_CONF
+# fi
 
-### 4. Apache 서버포트 및 웹최상위 경로 설정
-VHOST="/etc/apache2/sites-available/000-default.conf"
-sudo sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${APACHE_PORT}>/" $VHOST
-sudo sed -i "s|DocumentRoot .*|DocumentRoot ${WEB_ROOT}|" $VHOST
+# ### 4. Apache 서버포트 및 웹최상위 경로 설정
+# VHOST="/etc/apache2/sites-available/000-default.conf"
+# sudo sed -i "s/<VirtualHost \*:80>/<VirtualHost *:${APACHE_PORT}>/" $VHOST
+# sudo sed -i "s|DocumentRoot .*|DocumentRoot ${WEB_ROOT}|" $VHOST
 
 ### 5. 웹 디렉터리 생성
 sudo mkdir -p ${WEB_ROOT}
@@ -63,28 +63,28 @@ phpinfo();
 ?>
 EOF
 
-### 11. MySQL 설치
-sudo apt install -y mysql-server mysql-client
-sudo systemctl enable --now mysql
+# ### 11. MySQL 설치
+# sudo apt install -y mysql-server mysql-client
+# sudo systemctl enable --now mysql
 
-### 12. MySQL 문자셋 설정 (utf8mb4)
-MYSQL_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
-sudo sed -i '/\[mysqld\]/a character-set-server=utf8mb4\ncollation-server=utf8mb4_unicode_ci' $MYSQL_CNF
-sudo sed -i '/\[client\]/a default-character-set=utf8mb4' $MYSQL_CNF
-sudo sed -i '/\[mysql\]/a default-character-set=utf8mb4' $MYSQL_CNF
+# ### 12. MySQL 문자셋 설정 (utf8mb4)
+# MYSQL_CNF="/etc/mysql/mysql.conf.d/mysqld.cnf"
+# sudo sed -i '/\[mysqld\]/a character-set-server=utf8mb4\ncollation-server=utf8mb4_unicode_ci' $MYSQL_CNF
+# sudo sed -i '/\[client\]/a default-character-set=utf8mb4' $MYSQL_CNF
+# sudo sed -i '/\[mysql\]/a default-character-set=utf8mb4' $MYSQL_CNF
 
-sudo systemctl restart mysql
+# sudo systemctl restart mysql
 
-### 13. DB 및 계정 생성
-sudo mysql <<EOF
-CREATE DATABASE IF NOT EXISTS ${DB_NAME}
-DEFAULT CHARACTER SET utf8mb4
-COLLATE utf8mb4_unicode_ci;
+# ### 13. DB 및 계정 생성
+# sudo mysql <<EOF
+# CREATE DATABASE IF NOT EXISTS ${DB_NAME}
+# DEFAULT CHARACTER SET utf8mb4
+# COLLATE utf8mb4_unicode_ci;
 
-CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
-GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';
-FLUSH PRIVILEGES;
-EOF
+# CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';
+# GRANT ALL PRIVILEGES ON ${DB_NAME}.* TO '${DB_USER}'@'%';
+# FLUSH PRIVILEGES;
+# EOF
 
 ### 14. Apache 재시작
 sudo systemctl restart apache2

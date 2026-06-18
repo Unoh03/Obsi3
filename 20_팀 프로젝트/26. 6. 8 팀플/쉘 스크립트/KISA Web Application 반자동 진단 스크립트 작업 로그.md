@@ -294,7 +294,7 @@ python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checks-21 --mo
 ### 주요 결정
 
 - 16번과 17번을 VM/GNS에서 더 끌지 않고 AWS 후속 검증으로 분리했다.
-- AWS 후속 절차는 [[20_팀 프로젝트/26. 6. 8 팀플/웹 보안 모음/AWS 후속 조치와 재검증|AWS 후속 조치와 재검증]]에 정리했다.
+- AWS 후속 절차는 [[AWS 후속 조치와 재검증|AWS 후속 조치와 재검증]]에 정리했다.
 - v1 checker의 기본 구조는 유지한다.
 - 다음 작업은 v2로 넘어간다.
 
