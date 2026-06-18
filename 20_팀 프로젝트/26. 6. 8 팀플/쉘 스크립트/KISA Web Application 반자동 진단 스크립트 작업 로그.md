@@ -455,6 +455,301 @@ git diff --check
 
 권장 순서는 1번이다. 02번은 state-changing이 아니므로 v2 첫 실제 실행 검증 대상으로 가장 부담이 낮다.
 
+## 2026-06-18 다음 `/goal` 실행 전 상태 고정
+
+### 현재 확정된 흐름
+
+방금 완료한 goal은 v2 전체 완성이 아니라 다음 기반을 만드는 작업이었다.
+
+```text
+v2 공통 기반
+-> session 주입 구조
+-> fixture / rollback 기록 구조
+-> payload 파일 구조
+-> state-changing confirm gate
+-> generic payload_probe
+-> 02 SQL 인젝션 check 1개
+```
+
+따라서 다음 goal은 06, 07, 09, 10, 11, 14, 20을 바로 붙이는 작업이 아니라, 먼저 02번을 실제 CARE route에 제한 실행해서 v2 evidence 파이프라인이 제대로 작동하는지 확인하는 작업으로 잡는다.
+
+### 왜 02번을 먼저 실제 실행하는가
+
+02 SQL 인젝션은 현재 v2 후보 중 가장 부담이 낮다.
+
+| 이유 | 설명 |
+|---|---|
+| 상태 변경 없음 | 검색 route의 GET parameter에 payload를 넣는 구조라 글쓰기, 회원정보 수정, 업로드가 아니다. |
+| fixture 부담 낮음 | 로그인 세션, 테스트 계정, rollback 대상이 없어도 첫 검증이 가능하다. |
+| v2 엔진 검증에 적합 | `payload_probe`, `payloads/*.yml`, request/response evidence 저장이 실제로 맞는지 확인할 수 있다. |
+| 다음 확장의 기준점 | 02 evidence 품질이 괜찮아야 06 XSS, 07 CSRF 같은 더 복잡한 항목으로 넘어갈 수 있다. |
+
+### 다음 goal에서 할 일
+
+다음 goal은 다음 범위로 제한한다.
+
+```text
+02 SQL 인젝션만 제한 실행
+-> result.json / report.md / run.log 확인
+-> 02 request/response evidence 확인
+-> vulnerable / manual_required / inconclusive 판정이 근거와 맞는지 평가
+-> 부족하면 02 check rule 또는 로그/README만 최소 보정
+```
+
+실행 방식은 전체 checks를 한 번에 돌리는 것보다, 필요하면 임시 checks 디렉터리에 `02_sql_injection.yml`만 복사해서 돌리는 쪽이 안전하다.
+
+### 다음 goal에서 하지 않을 일
+
+```text
+06 XSS 구현 금지
+07 CSRF 구현 금지
+09, 10, 11, 14, 20 구현 금지
+state-changing 실행 금지
+DB 삭제, 글쓰기, 회원정보 수정, 파일 업로드 금지
+ZAP / Nuclei 연동 금지
+MOC / index 수정 금지
+```
+
+### 문장 해석 정리
+
+이전 판단의 다음 문장은 큰 방향이다.
+
+```text
+그다음 goal에서 02/06/07 같은 개별 check를 더 공격적으로 붙이면 된다.
+```
+
+현재 로그 기준으로는 이 큰 방향을 다음처럼 더 좁혀서 실행한다.
+
+```text
+v2 개별 check 확장 1단계
+= 02 SQL 인젝션 check를 실제 제한 실행하여 v2 evidence 파이프라인을 검증한다.
+```
+
+즉, 다음 goal은 “v2 후보 여러 개 구현”이 아니라 “02번 실제 증거 품질 확인”이다.
+
+## 2026-06-18 02 SQL 인젝션 제한 실행 시도
+
+### 목적
+
+02 SQL 인젝션 check만 실제로 실행해서 `payload_probe`가 request / response evidence를 보고서 재료로 쓸 수 있게 남기는지 확인하려 했다.
+
+이번 실행은 다음 범위로 제한했다.
+
+```text
+02_sql_injection.yml만 실행
+state-changing 없음
+DB 삭제, 글쓰기, 회원정보 수정, 파일 업로드 없음
+```
+
+### 실행 준비
+
+전체 `checks/`를 돌리지 않기 위해 임시 디렉터리에 02번 check와 payload만 복사했다.
+
+```powershell
+$tmpRoot = Join-Path $env:TEMP "kisa-checker-02-only"
+$tmpChecks = Join-Path $tmpRoot "checks"
+$tmpPayloads = Join-Path $tmpRoot "payloads"
+$tmpOut = Join-Path $tmpRoot "evidence"
+New-Item -ItemType Directory -Force -Path $tmpChecks, $tmpPayloads, $tmpOut | Out-Null
+Copy-Item -LiteralPath ".\checks\02_sql_injection.yml" -Destination $tmpChecks -Force
+Copy-Item -LiteralPath ".\payloads\sqli.yml" -Destination $tmpPayloads -Force
+```
+
+처음에는 02번 check만 복사했기 때문에 `payloads/sqli.yml` 상대 경로가 끊겼다.
+
+```text
+[ERROR] Missing dependency: PyYAML, and the built-in v0 YAML fallback could not parse ...
+File not found: ...\kisa-checker-02-only\payloads\sqli.yml
+```
+
+판단:
+
+```text
+02번만 임시 실행할 때도 checks/와 payloads/는 같은 임시 root 아래에 같이 복사해야 한다.
+```
+
+### validate-only 결과
+
+payload 파일까지 함께 둔 뒤 02번만 validate-only를 실행했다.
+
+```powershell
+python checker.py --profile profiles/care.yml --checks $tmpChecks --mode attack-active --validate-only --output $tmpOut
+```
+
+결과:
+
+```text
+[OK] run_id=20260618-111606
+[OK] evidence=C:\Users\Unoh\AppData\Local\Temp\kisa-checker-02-only\evidence\20260618-111606
+[passed] 02 SQL 인젝션
+```
+
+판단:
+
+```text
+02_sql_injection.yml, payloads/sqli.yml, board_search route 설정 자체는 통과한다.
+```
+
+### 실제 실행 1차: profile 기본값 `127.0.0.1`
+
+`profiles/care.yml`의 기본 `base_url`은 `http://127.0.0.1`이다. 이 값은 checker를 WEB 서버 내부에서 실행할 때 맞는 값이다.
+
+```powershell
+python checker.py --profile profiles/care.yml --checks $tmpChecks --mode attack-active --output $tmpOut
+```
+
+결과:
+
+```text
+[OK] run_id=20260618-111627
+[OK] evidence=C:\Users\Unoh\AppData\Local\Temp\kisa-checker-02-only\evidence\20260618-111627
+[error] 02 SQL 인젝션
+```
+
+`result.json`의 핵심 내용:
+
+```text
+Route `board_search` baseline request failed:
+<urlopen error [WinError 10061] 대상 컴퓨터에서 연결을 거부했으므로 연결하지 못했습니다>
+```
+
+생성된 baseline request:
+
+```http
+GET http://127.0.0.1/center/list.php?mode=search&find=subject&data=kisa-baseline HTTP/1.1
+User-Agent: kisa-webapp-checker-v2
+```
+
+판단:
+
+```text
+request 생성은 맞다.
+하지만 현재 Codex 실행 위치의 127.0.0.1에는 CARE 웹서버가 떠 있지 않아 baseline부터 실패했다.
+따라서 이 실행은 SQLi evidence로 쓸 수 없다.
+```
+
+### 실제 실행 2차: 임시 profile로 `172.168.10.10` 지정
+
+repo의 `profiles/care.yml`은 수정하지 않고, 임시 profile만 `base_url: "http://172.168.10.10"`으로 바꿔 실행했다.
+
+처음에는 Codex 실행 환경의 proxy 때문에 172.168.10.10으로 직접 나가지 못했다.
+
+확인된 proxy 환경:
+
+```text
+HTTP_PROXY=http://127.0.0.1:9
+HTTPS_PROXY=http://127.0.0.1:9
+ALL_PROXY=http://127.0.0.1:9
+NO_PROXY=localhost,127.0.0.1,::1
+```
+
+그래서 실행 프로세스에서만 proxy를 비우고 `NO_PROXY`에 `172.168.10.10`을 추가했다.
+
+```powershell
+$env:HTTP_PROXY=''
+$env:HTTPS_PROXY=''
+$env:ALL_PROXY=''
+$env:NO_PROXY='localhost,127.0.0.1,::1,172.168.10.10'
+python checker.py --profile $tmpProfile --checks $tmpChecks --mode attack-active --output $tmpOut
+```
+
+sandbox 밖 네트워크 접근으로도 한 번 재시도했다.
+
+결과:
+
+```text
+[OK] run_id=20260618-111901
+[OK] evidence=C:\Users\Unoh\AppData\Local\Temp\kisa-checker-02-only\evidence-172-nosandbox\20260618-111901
+[error] 02 SQL 인젝션
+```
+
+`result.json`의 핵심 내용:
+
+```text
+Route `board_search` baseline request failed:
+<urlopen error timed out>
+```
+
+생성된 baseline request:
+
+```http
+GET http://172.168.10.10/center/list.php?mode=search&find=subject&data=kisa-baseline HTTP/1.1
+User-Agent: kisa-webapp-checker-v2
+```
+
+판단:
+
+```text
+proxy 문제는 분리했다.
+하지만 현재 Codex 실행 위치에서는 172.168.10.10의 CARE 서버에도 도달하지 못했다.
+따라서 실제 SQLi payload probe evidence는 아직 확보하지 못했다.
+```
+
+### 현재 판정
+
+| 항목 | 판정 |
+|---|---|
+| 02번 설정 검증 | 통과 |
+| 02번 request 생성 | 정상 |
+| 02번 실제 SQLi payload 실행 | 미완료 |
+| 취약 / 비취약 판정 | 불가 |
+| 보고서용 SQLi evidence | 아직 부족 |
+
+이번 실행으로 확인된 것은 다음까지다.
+
+```text
+02번 check는 설정상 실행 가능하다.
+checker는 올바른 baseline request를 만든다.
+현재 Codex 실행 환경에서는 CARE 서버에 네트워크로 도달하지 못한다.
+```
+
+이번 실행으로 확인하지 못한 것은 다음이다.
+
+```text
+SQLi payload 전송 결과
+vulnerable / manual_required / inconclusive 중 실제 판정
+payload별 request / response evidence 품질
+```
+
+### 다음 재시도 기준
+
+02번 실제 evidence 확보는 다음 둘 중 하나가 필요하다.
+
+```text
+1. WEB 서버 내부에서 checker를 실행한다.
+   - 이 경우 profile 기본값 `http://127.0.0.1` 사용 가능.
+
+2. Codex/Windows 실행 위치에서 172.168.10.10:80 또는 실제 CARE 포트에 접근 가능하게 만든 뒤 실행한다.
+   - 이 경우 임시 profile 또는 profile의 base_url을 해당 주소로 맞춘다.
+```
+
+WEB 서버 내부에서 재시도할 때의 기준 명령:
+
+```bash
+cd ~/kisa-webapp-checker
+mkdir -p /tmp/kisa-checker-02-only/checks /tmp/kisa-checker-02-only/payloads
+cp checks/02_sql_injection.yml /tmp/kisa-checker-02-only/checks/
+cp payloads/sqli.yml /tmp/kisa-checker-02-only/payloads/
+python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checker-02-only/checks --mode attack-active
+```
+
+Windows에서 재시도할 때는 proxy 환경을 같이 정리한다.
+
+```powershell
+$env:HTTP_PROXY=''
+$env:HTTPS_PROXY=''
+$env:ALL_PROXY=''
+$env:NO_PROXY='localhost,127.0.0.1,::1,172.168.10.10'
+```
+
+### 다음 작업 기준
+
+```text
+다음에는 새 기능을 만들지 않는다.
+먼저 CARE 서버에 도달 가능한 위치에서 위 02번 제한 실행을 다시 수행한다.
+성공하면 result.json / report.md / run.log / 02_SQL request-response를 읽고 evidence 품질을 판단한다.
+```
+
 ## 다음 기록 템플릿
 
 ```markdown
