@@ -1,24 +1,17 @@
 ---
-
 type: lab  
 topic: web-security  
 source: 주요정보통신기반시설 기술적 취약점 분석·평가 방법 상세가이드  
 source_pages:
-
-- 779
-    
-- 780
-    
-- 781
-    
-- 782
-    
-- 783
-    
-- 784  
-    status: draft  
-    created: 2026-06-17  
-    tags:
+  - 779
+  - 780
+  - 781
+  - 782
+  - 783
+  - 784  
+status: draft  
+created: 2026-06-17  
+tags:
     
 - 🏷️과목/웹보안
     
@@ -209,15 +202,18 @@ GET, POST, OPTIONS, HEAD
 curl -i -X DELETE http://172.168.10.10/method-test.txt
 ```
 
-기대 결과는 다음 중 하나다.
+응답.
 
-```text
-405 Method Not Allowed
-403 Forbidden
-501 Not Implemented
+```http
+HTTP/1.1 405 Method Not Allowed
+Date: Fri, 19 Jun 2026 06:35:11 GMT
+Server: Apache
+Allow: POST,OPTIONS,HEAD,GET
+Content-Length: 388
+Content-Type: text/html; charset=iso-8859-1
 ```
 
-`DELETE`도 차단되면 21번은 B로 확정할 수 있다.
+`DELETE`도 차단되었으므로 21번은 B로 확정되었다.
 
 ## 5. 현재 서버 상태 요약
 
