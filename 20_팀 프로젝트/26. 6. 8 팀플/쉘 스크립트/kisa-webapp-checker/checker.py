@@ -34,7 +34,7 @@ MODES = {
 }
 
 VALID_STATUSES = {
-    "passed",
+    "ready",
     "vulnerable",
     "not_vulnerable",
     "not_applicable",
@@ -574,14 +574,14 @@ class CheckerRunner:
             )
 
         if self.validate_only:
-            self.log(f"{check_id}: validate-only passed")
+            self.log(f"{check_id}: validate-only ready")
             return CheckResult(
                 id=check_id,
                 name=name,
-                status="passed",
+                status="ready",
                 required_mode=required_mode,
                 evidence_dir=str(check_dir.relative_to(self.run_dir)),
-                summary="Configuration parsed successfully in validate-only mode.",
+                summary="Configuration is ready to run in validate-only mode.",
             )
 
         action_results: list[CheckResult] = []
@@ -656,7 +656,7 @@ class CheckerRunner:
                                 f"Route `{route_name}` has plaintext form action: {action}"
                             )
                         else:
-                            statuses.append("passed")
+                            statuses.append("not_vulnerable")
                             findings.append(
                                 f"Route `{route_name}` form action observed: {action}"
                             )
@@ -1137,7 +1137,7 @@ class CheckerRunner:
                             f"OPTIONS exposes risky methods: {', '.join(exposed)}"
                         )
                     else:
-                        statuses.append("passed")
+                        statuses.append("not_vulnerable")
                         findings.append(
                             f"OPTIONS allowed methods: {allow_header or '(empty)'}"
                         )
@@ -1339,7 +1339,7 @@ def reduce_status(statuses: list[str]) -> str:
         "inconclusive",
         "not_applicable",
         "not_vulnerable",
-        "passed",
+        "ready",
     ]
     for status in priority:
         if status in statuses:

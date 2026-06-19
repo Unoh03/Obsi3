@@ -249,7 +249,7 @@ evidence/<run_id>/
 
 | 상태 | 의미 |
 |---|---|
-| `passed` | 설정 검증 또는 정보 수집 단계 통과 |
+| `ready` | `--validate-only`에서 실행 준비 완료 |
 | `vulnerable` | 자동 rule 기준 취약 근거 확인 |
 | `not_vulnerable` | 자동 rule 기준 차단 또는 방어 근거 확인 |
 | `manual_required` | 브라우저, 스크린샷, 업무 흐름 판단 필요 |
