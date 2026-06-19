@@ -304,6 +304,53 @@ V.db 기반은 다음 필드를 사용한다.
 
 v1의 목적은 “도구 구조가 맞는지” 검증하는 것이다. v1부터 강한 공격성 payload나 대량 요청을 넣지 않는다.
 
+## 8-0. 2026-06-19 설계 리베이스
+
+기존 v1/v2/v3 계획은 실패한 계획이 아니라 **위험도와 구현 난이도 기준의 1차 로드맵**이었다. 다만 실제 구현 중 DB가 꺼진 환경에서 500 응답이 반복되면서, 단순한 v단계만으로는 판정 의미를 정확히 표현하기 어려워졌다.
+
+따라서 현재 로드맵은 다음 두 축으로 다시 본다.
+
+| 축 | 역할 | 상태 |
+|---|---|---|
+| v단계 | 어떤 항목을 어떤 순서로 구현할지 정하는 구현 순서 | 유지하되 재정렬 |
+| V.db | DB 없음, fallback, source-assisted 판정 의미를 표현하는 공통 기반 | 새로 추가된 필수 기반 |
+
+### 기존 계획 대비 현재 상태
+
+| 구분 | 기존 계획 | 현재 상태 | 판정 |
+|---|---|---|---|
+| v1 | 03, 04, 05, 15, 16, 17, 19, 21 같은 안전한 자동 점검 | 기본 check와 mode 구조가 들어가 있음 | 유지 |
+| v2 | 02, 06, 07, 09, 10, 11, 14, 20의 payload/state-changing 계열 | batch scaffold는 있으나 DB 의존성 때문에 실제 판정이 흔들림 | 수정 |
+| v3 | 01, 08, 12, 13 같은 앱 문맥/별도 기능 필요 항목 | 08 SSRF가 먼저 들어갔고, 12/13은 source-assisted 또는 DB 준비가 필요 | 수정 |
+| V.db | 기존 계획에 없었음 | `conditions`, `scope`, `runtime_fallback_route`, `source_assisted_fallback` 기반 추가 | 새 기준선 |
+
+### 유지 / 폐기 / 수정
+
+| 분류 | 항목 | 결정 |
+|---|---|---|
+| 유지 | 기존 status vocabulary | `vulnerable`, `not_vulnerable`, `manual_required`, `not_applicable`, `skipped_by_mode`, `inconclusive`, `error` 유지 |
+| 유지 | `ready` | validate-only 전용 상태로 유지 |
+| 유지 | profile/check/payload 분리 | CARE 전용 값을 `checker.py`에 넣지 않는 원칙 유지 |
+| 유지 | v1 안전 항목 | 경량 자동 점검 기준선으로 유지 |
+| 폐기 | v2를 한 번에 실제 공격 자동화하는 흐름 | DB, 세션, fixture, rollback 없이는 결과가 과장될 수 있어 폐기 |
+| 폐기 | fallback 전용 합성 status | `fallback_not_vulnerable` 같은 상태는 만들지 않음 |
+| 수정 | v2/v3 경계 | 번호 기준이 아니라 DB 의존도와 실행 위험도 기준으로 재배치 |
+| 수정 | DB 없는 판정 | status를 새로 만들지 않고 `conditions`, `scope`로 의미 제한 |
+| 수정 | source-assisted 판정 | 실제 runtime 성공/실패가 아니라 소스 근거 보조 진단으로 제한 |
+
+### 새 단계별 로드맵
+
+| 단계 | 목표 | 항목/작업 | 완료 기준 |
+|---|---|---|---|
+| R0 | 현재 기준선 고정 | V.db 기반, status 명칭, v1/v2/v3 재정렬 | 설계/로그에 기준선 기록 |
+| R1 | DB-independent 자동 점검 안정화 | 03, 04, 05, 15, 16, 17, 19, 21 | 실제 WEB VM에서 evidence와 report가 의미 있게 생성됨 |
+| R2 | attack-active 중 DB 없이 가능한 항목 안정화 | 06 reflected XSS fallback, 08 SSRF, 21 Method | `conditions/scope`가 의도대로 출력됨 |
+| R3 | source-assisted fallback 확장 | 07, 09, 10, 11, 12, 13 | 소스 근거는 기록하되 runtime 판정으로 과장하지 않음 |
+| R4 | DB/세션/fixture 기반 runtime 검증 | 02, 07, 09, 10, 11, 12, 13, 14, 20 | fixture, confirm flag, rollback 또는 cleanup 절차가 있음 |
+| R5 | 통합 실행과 보고서 품질 | 전체 check 실행, result/report 정리 | 항목별 status, conditions, scope, evidence가 읽히는 형태로 정리됨 |
+
+다음 구현은 R1/R2 중 하나를 고르는 것이 자연스럽다. 현재 DB가 불안정하므로, 바로 DB-required runtime으로 가지 말고 **R1: DB-independent 항목 실제 WEB VM evidence 안정화**를 먼저 한다.
+
 ## 8-1. v3 구현 순서 확정
 
 v3는 새로운 엔진 대공사가 아니라, 이미 존재하는 profile/check/payload/evidence 구조에 **앱 문맥이 필요한 항목**을 하나씩 붙이는 단계로 본다.

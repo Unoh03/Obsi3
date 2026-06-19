@@ -2036,3 +2036,60 @@ git diff --check
 - `xss_reflected_proof` route는 profile에 준비했지만, 실제 CARE 서버에 해당 proof route가 있어야 runtime fallback이 의미 있다.
 - `source_assisted_fallback`은 소스 코드 흔적 기반 보조 진단이다. 실제 회원정보 수정 차단 여부를 증명하려면 DB와 세션이 필요하다.
 - 조건/범위 출력은 공통 기반으로 들어갔지만, 모든 DB-backed recommended 항목에 적용한 것은 아니다.
+
+## 2026-06-19 16:08 KST 설계 리베이스
+
+### 배경
+
+기존 v1/v2/v3 계획은 구현 순서 기준이었고, V.db는 DB 없음과 fallback 판정 의미를 다루는 새 축이다. 두 개를 같은 단계처럼 이어가면 다음 작업이 꼬이므로 설계를 재검토했다.
+
+### 결론
+
+- v1/v2/v3 계획은 폐기하지 않는다.
+- v단계는 구현 순서 축으로 유지한다.
+- V.db는 모든 단계에 걸치는 판정 의미 축으로 둔다.
+- DB 없는 대체 진단 결과는 새 status로 만들지 않고 `conditions`, `scope`로 제한한다.
+- v2를 한 번에 실제 공격 자동화하는 흐름은 중단한다.
+- DB/세션/fixture가 필요한 항목은 source-assisted 또는 manual로만 보조하고, runtime 판정은 DB 준비 후로 미룬다.
+
+### 새 로드맵
+
+| 단계 | 목표 |
+|---|---|
+| R0 | V.db 기반과 리베이스 기준선 고정 |
+| R1 | DB-independent 자동 점검을 실제 WEB VM에서 안정화 |
+| R2 | DB 없이 가능한 attack-active 항목 안정화 |
+| R3 | source-assisted fallback을 07/09/10/11/12/13에 확장 |
+| R4 | DB/세션/fixture 기반 runtime 검증 |
+| R5 | 전체 실행과 report/evidence 품질 정리 |
+
+### 다음 goal 후보
+
+다음 goal은 R1로 잡는 것이 가장 안정적이다. DB가 꺼져 있거나 불안정한 상태에서도 진행 가능하고, checker의 실제 WEB VM 실행 품질을 먼저 잡을 수 있다.
+
+```text
+목표: KISA Web Application Checker의 R1 DB-independent 항목을 실제 WEB VM 기준으로 안정화한다.
+
+범위:
+- 현재 설계 문서와 작업 로그의 R0/R1 기준을 읽는다.
+- kisa-webapp-checker의 DB-independent 또는 거의 DB-independent 항목을 확인한다.
+- 우선 대상은 03, 04, 05, 15, 16, 17, 19, 21로 한다.
+- 실제 WEB VM에서 실행 가능한 검증 명령을 정리한다.
+- 필요하면 check YAML/profile의 경로, 기대 status, evidence 설명만 수정한다.
+- result/report가 사람이 읽기 좋은지 확인한다.
+
+금지:
+- DB-required 항목 구현 금지
+- source_assisted_fallback 확장 금지
+- 상태 변경 요청 금지
+- 로그인, 회원정보 수정, 게시글 작성, 파일 업로드 실행 금지
+- checker.py 대공사 금지
+- 취약점 노트, MOC/index 수정 금지
+
+완료 기준:
+- R1 대상 항목 목록과 제외 사유가 명확하다.
+- validate-only가 통과한다.
+- 실제 WEB VM에서 사용자가 실행할 명령이 준비된다.
+- result/report에서 status, evidence, conditions/scope가 혼동 없이 읽힌다.
+- 작업 로그에 다음 단계 R2 또는 R3 기준이 남는다.
+```
