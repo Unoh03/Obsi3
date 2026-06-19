@@ -1,6 +1,7 @@
 id: "19"
 name: "관리자 페이지 노출"
 kisa_section: "X. Web Application"
+db_dependency: "DB-independent"
 required_mode: "safe-active"
 description: "Profile-defined admin page candidates are requested and exposed status codes are recorded."
 steps:

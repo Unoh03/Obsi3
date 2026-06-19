@@ -2093,3 +2093,58 @@ git diff --check
 - result/report에서 status, evidence, conditions/scope가 혼동 없이 읽힌다.
 - 작업 로그에 다음 단계 R2 또는 R3 기준이 남는다.
 ```
+
+## 2026-06-19 16:24 KST R1 DB-independent 항목 안정화
+
+### 목적
+
+DB가 꺼져 있거나 불안정해도 실행 의미가 비교적 선명한 R1 항목을 실제 WEB VM에서 돌릴 수 있게 정리했다.
+
+### R1 대상
+
+| 번호 | 항목 | DB 의존도 | R1 포함 이유 |
+|---:|---|---|---|
+| 03 | 디렉터리 인덱싱 | `DB-independent` | 디렉터리 응답과 listing 패턴 중심 |
+| 04 | 에러 페이지 | `DB-independent` | 없는 경로와 에러 노출 패턴 중심 |
+| 05 | 정보 노출 | `DB-independent` | 민감 파일 직접 노출 후보 중심 |
+| 15 | 파일 다운로드 | `DB-backed recommended` | known candidate 직접 접근은 DB 없이 가능. 권한/소유권 검증은 후속 |
+| 16 | 불충분한 세션 관리 | `DB-backed recommended` | cookie flag 관찰은 DB 없이 가능. 로그인 후 세션 변화는 후속 |
+| 17 | 데이터 평문 전송 | `DB-independent` | HTTP/HTTPS scheme과 form action 중심 |
+| 19 | 관리자 페이지 노출 | `DB-independent` | 후보 관리자 URL 접근 가능 여부 중심 |
+| 21 | 불필요한 Method 악용 | `DB-independent` | HTTP method 응답 중심 |
+
+### 제외 기준
+
+- 02, 06, 08은 `attack-active` 이상이라 R1 실행에서는 `skipped_by_mode`가 정상이다.
+- 07, 09, 10, 11, 14는 state-changing 계열이라 R1에서 실행하지 않는다.
+- 20은 destructive-risk 계열이라 R1에서 실행하지 않는다.
+- 12, 13은 현재 check 파일이 없고, source-assisted 또는 DB 기반 흐름을 먼저 설계해야 한다.
+
+### 변경
+
+- R1 check YAML에 `db_dependency` 메타데이터를 추가했다.
+- README의 현재 로드맵을 R0~R5 기준으로 갱신했다.
+- README에 WEB VM 기준 R1 실행 명령을 추가했다.
+
+### WEB VM 실행 명령
+
+```bash
+cd ~/kisa-webapp-checker
+
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active --validate-only
+
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active
+```
+
+`safe-active`는 `passive` 항목도 포함하므로 16, 17도 함께 실행된다.
+
+### 다음 단계 기준
+
+R1 실제 실행 결과가 읽히는 형태로 나오면 다음은 R2가 자연스럽다.
+
+| 다음 단계 | 기준 |
+|---|---|
+| R2 | 06 reflected XSS fallback, 08 SSRF처럼 DB 없이 runtime evidence를 만들 수 있는 attack-active 항목 안정화 |
+| R3 | 07/09/10/11/12/13 source-assisted fallback 확장. 단 runtime 판정으로 과장하지 않음 |
+
+현재는 R1 실행 품질 확인이 우선이므로, R3 source-assisted 확장은 다음 goal로 바로 가지 않는다.

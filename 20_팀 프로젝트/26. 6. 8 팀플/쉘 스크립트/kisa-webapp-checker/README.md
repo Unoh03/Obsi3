@@ -1,12 +1,23 @@
-# KISA Web Application Checker v3
+# KISA Web Application Checker
 
 KISA X. Web Application 01~21 전체 진단을 목표로 하는 반자동 진단 프레임워크다.
 
-v3는 완성형 취약점 스캐너가 아니라, v1의 passive / safe-active 파이프라인과 v2의 payload 기반 검사 구조 위에 SSRF처럼 앱 문맥이 필요한 check를 하나씩 붙이는 단계다.
+현재 로드맵은 v1/v2/v3 이름보다 `R0~R5` 단계로 관리한다. v단계는 구현 순서의 흔적으로 남아 있고, V.db는 DB 없음과 fallback 판정 의미를 다루는 공통 기반이다.
 
 ```text
 profile -> check -> request -> evidence -> report
 ```
+
+## 현재 로드맵
+
+| 단계 | 목표 |
+|---|---|
+| R0 | V.db 기반과 리베이스 기준선 고정 |
+| R1 | DB-independent 자동 점검을 실제 WEB VM에서 안정화 |
+| R2 | DB 없이 가능한 attack-active 항목 안정화 |
+| R3 | source-assisted fallback 확장 |
+| R4 | DB/세션/fixture 기반 runtime 검증 |
+| R5 | 전체 실행과 report/evidence 품질 정리 |
 
 ## 현재 범위
 
@@ -35,6 +46,35 @@ profile -> check -> request -> evidence -> report
 07, 09, 10, 11, 14번은 `state-changing` scaffold다. 현재는 실제 회원정보 수정, 글쓰기, 업로드 요청을 보내지 않고 route, payload, fixture 전제만 report에 남긴다. 실제 실행은 항목별 후속 작업에서만 한다.
 
 20번은 반복 요청 위험이 있으므로 `destructive-risk` scaffold다. 현재는 brute force나 대량 요청을 보내지 않는다.
+
+## R1 WEB VM 실행
+
+R1은 DB가 꺼져 있어도 비교적 안정적으로 확인할 수 있는 항목을 먼저 점검한다.
+
+| 번호 | 항목 | R1 포함 이유 |
+|---:|---|---|
+| 03 | 디렉터리 인덱싱 | 후보 디렉터리 응답과 listing 패턴 중심 |
+| 04 | 에러 페이지 | 없는 경로와 노출 패턴 중심 |
+| 05 | 정보 노출 | 민감 파일 직접 노출 후보 중심 |
+| 15 | 파일 다운로드 | profile에 정의한 known candidate 직접 접근 중심 |
+| 16 | 불충분한 세션 관리 | cookie flag 관찰은 DB 없이 가능. 로그인 후 세션 변화는 R4 |
+| 17 | 데이터 평문 전송 | URL scheme과 form action 관찰 중심 |
+| 19 | 관리자 페이지 노출 | 후보 URL 접근 가능 여부 중심 |
+| 21 | 불필요한 Method 악용 | HTTP method 응답 중심 |
+
+WEB VM에서 `~/kisa-webapp-checker`에 있다고 가정하면:
+
+```bash
+cd ~/kisa-webapp-checker
+
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active --validate-only
+
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active
+```
+
+`safe-active`는 `passive` 항목도 포함하므로 16, 17도 함께 실행된다. 결과는 `evidence/<run_id>/report.md`와 `evidence/<run_id>/result.json`을 먼저 확인한다.
+
+R1 실행에서 02, 06, 07, 08, 09, 10, 11, 14, 20이 `skipped_by_mode`로 나오는 것은 정상이다.
 
 ## 설치
 
@@ -309,8 +349,9 @@ scope: db_independent_proof_only
 
 | 단계 | 구현 후보 |
 |---|---|
-| v2 scaffold 완료 | 06, 07, 09, 10, 11, 14, 20 |
-| v2 실제 검증 후보 | 06, 07, 09, 10, 11, 14, 20을 항목별로 분리 실행 |
-| v3 다음 후보 | 01, 12, 13 |
+| R2 | 06 reflected XSS fallback, 08 SSRF, 21 Method 같은 DB 없이 가능한 attack-active 항목 |
+| R3 | 07, 09, 10, 11, 12, 13 source-assisted fallback 확장 |
+| R4 | 02, 07, 09, 10, 11, 12, 13, 14, 20의 DB/세션/fixture 기반 runtime 검증 |
+| R5 | 전체 실행과 report/evidence 품질 정리 |
 
-`v2 batch scaffold`는 완료된 상태다. 다음 단계는 실제 WEB VM 공격 실행이 아니라, 항목별로 실행 전제와 rollback을 확인한 뒤 하나씩 evidence를 만든다.
+R1 이후에는 DB가 필요한 항목으로 바로 가지 말고, 먼저 R2에서 DB 없이도 runtime evidence를 만들 수 있는 attack-active 항목을 안정화한다.

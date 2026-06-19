@@ -1,6 +1,7 @@
 id: "21"
 name: "불필요한 Method 악용"
 kisa_section: "X. Web Application"
+db_dependency: "DB-independent"
 required_mode: "safe-active"
 description: "OPTIONS, TRACE, PUT, and DELETE behavior is recorded."
 steps:

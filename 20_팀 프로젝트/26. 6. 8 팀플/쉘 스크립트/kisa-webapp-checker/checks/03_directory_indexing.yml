@@ -1,6 +1,7 @@
 id: "03"
 name: "디렉터리 인덱싱"
 kisa_section: "X. Web Application"
+db_dependency: "DB-independent"
 required_mode: "safe-active"
 description: "Candidate directories are requested and directory listing patterns are checked."
 steps:

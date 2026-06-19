@@ -1,6 +1,7 @@
 id: "04"
 name: "에러 페이지"
 kisa_section: "X. Web Application"
+db_dependency: "DB-independent"
 required_mode: "safe-active"
 description: "A missing route is requested and verbose error disclosure patterns are checked."
 steps:

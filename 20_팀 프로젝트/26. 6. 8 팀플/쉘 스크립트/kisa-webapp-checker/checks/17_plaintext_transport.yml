@@ -1,6 +1,7 @@
 id: "17"
 name: "데이터 평문 전송"
 kisa_section: "X. Web Application"
+db_dependency: "DB-independent"
 required_mode: "passive"
 description: "HTTP/HTTPS scheme and sensitive route form actions are recorded."
 steps:

@@ -1,6 +1,7 @@
 id: "16"
 name: "불충분한 세션 관리"
 kisa_section: "X. Web Application"
+db_dependency: "DB-backed recommended"
 required_mode: "passive"
 description: "Session-related Set-Cookie headers are inspected for defensive flags."
 steps:

@@ -1,6 +1,7 @@
 id: "15"
 name: "파일 다운로드"
 kisa_section: "X. Web Application"
+db_dependency: "DB-backed recommended"
 required_mode: "safe-active"
 description: "Known download candidates from the target profile are requested without traversal payloads."
 steps:

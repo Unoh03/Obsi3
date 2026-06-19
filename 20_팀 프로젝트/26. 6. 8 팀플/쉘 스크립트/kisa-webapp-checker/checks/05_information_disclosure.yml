@@ -1,6 +1,7 @@
 id: "05"
 name: "정보 노출"
 kisa_section: "X. Web Application"
+db_dependency: "DB-independent"
 required_mode: "safe-active"
 description: "Configured sensitive file candidates are requested and source/config leakage patterns are checked."
 steps:
