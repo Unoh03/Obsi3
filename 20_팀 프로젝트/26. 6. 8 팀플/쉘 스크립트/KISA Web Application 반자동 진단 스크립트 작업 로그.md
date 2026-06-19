@@ -1634,6 +1634,49 @@ state-changing actual without confirm:
 
 다음 goal에서는 batch 구현이 아니라 항목 하나를 골라 실제 WEB VM evidence 생성 절차와 rollback을 확정한다.
 
+## 2026-06-19 status 명칭 정리
+
+### 목적
+
+`--validate-only` 결과의 `[passed]`가 실제 보안 판정처럼 읽히는 문제를 줄인다.
+
+### 구현 범위
+
+- `checker.py`의 validate-only 성공 상태를 `passed`에서 `ready`로 변경했다.
+- 실제 probe 내부에서 위험 신호가 없을 때 쓰던 `passed`도 `not_vulnerable`로 정리했다.
+- README 상태표도 `ready`, `vulnerable`, `not_vulnerable`, `manual_required`, `skipped_by_mode`, `inconclusive`, `error` 기준으로 맞췄다.
+
+### 주요 결정
+
+- `ready`: `--validate-only`에서 실행 준비 완료.
+- `vulnerable`: 취약 증거 확인.
+- `not_vulnerable`: 검사 기준상 차단 또는 방어 근거 확인.
+- `manual_required`: 자동 판정 불가.
+- `error`: 검사 실패.
+- `safe`는 전체 안전을 단정하는 표현이라 상태값으로 쓰지 않는다.
+
+### 검증 결과
+
+```powershell
+python -m py_compile "20_팀 프로젝트/26. 6. 8 팀플/쉘 스크립트/kisa-webapp-checker/checker.py"
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only
+git diff --check
+```
+
+확인 결과:
+
+```text
+[ready] 02 SQL 인젝션
+[ready] 03 디렉터리 인덱싱
+[ready] 04 에러 페이지
+[ready] 05 정보 노출
+[ready] 06 XSS
+[skipped_by_mode] 07 CSRF
+...
+```
+
+`ready`는 실행 준비 상태일 뿐이며, 취약/안전 판정이 아니다.
+
 ## 다음 기록 템플릿
 
 ```markdown
