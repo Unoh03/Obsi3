@@ -1413,6 +1413,102 @@ cp payloads/ssrf.yml /tmp/kisa-checker-08-only/payloads/
 python3 checker.py --profile profiles/care.yml --checks /tmp/kisa-checker-08-only/checks --mode attack-active
 ```
 
+## 2026-06-19 압축 전 다음 계획 고정
+
+### 목적
+
+컨텍스트 압축 전에 다음 작업 방향을 다시 고정했다.
+
+직전 대화에서 잠시 12번으로 바로 넘어가자는 제안이 나왔지만, 기존 설계와 맞지 않는 흐름으로 판단했다. 원래 단계 구분은 다음과 같다.
+
+| 단계 | 성격 | 항목 |
+|---|---|---|
+| `v1` | 안전하고 자동화 쉬운 항목 | 03, 04, 05, 15, 16, 17, 19, 21 |
+| `v2` | 로그인 세션, payload, 상태 변경 후보 | 02, 06, 07, 09, 10, 11, 14, 20 |
+| `v3` | 앱 문맥 또는 별도 기능이 필요한 항목 | 01, 08, 12, 13 |
+
+08 SSRF는 원래 v3 항목이지만 DB가 필요 없고 이미 실습 endpoint가 있어서 먼저 처리한 예외 케이스다.
+
+### 현재 확정된 다음 방향
+
+다음 작업은 12번으로 바로 가지 않는다. v2 미완성 항목으로 돌아간다.
+
+다만 v2 항목을 하나씩 구현하면 컨텍스트와 작업 전환 비용이 커진다. 따라서 다음 `/goal`은 항목별 실제 공격 실행이 아니라 **v2 batch scaffold 구현**으로 잡는다.
+
+```text
+v2 batch scaffold
+= 06, 07, 09, 10, 11, 14, 20의 check/profile/payload 구조를 한 번에 추가
+= 실제 WEB VM 공격 실행은 하지 않음
+= validate-only와 정적 검증까지만 수행
+```
+
+### 구현 단위와 실행 단위 구분
+
+| 작업 | 단위 | 판단 |
+|---|---|---|
+| check 파일 생성 | v2 batch | 한 번에 하는 게 맞음 |
+| profile route 후보 추가 | v2 batch | CARE 경로 근거가 있는 것만 추가 |
+| payload 파일 추가 | v2 batch | 실제 악성/대량 요청은 제외 |
+| engine 보강 | 공통 기반 | CARE 전용 if문 금지, 범용 action만 허용 |
+| validate-only | v2 batch | 안전하게 한 번에 가능 |
+| 실제 WEB VM 공격 실행 | 항목별 | 상태 변경, 업로드, 반복 요청이 섞이면 위험 |
+| 보고서 evidence 확정 | 항목별 | 스크린샷과 판정이 섞이지 않게 분리 |
+
+### 다음 `/goal` 핵심 범위
+
+다음 goal은 아래로 잡는다.
+
+```text
+목표: KISA Web Application Checker의 v2 batch scaffold를 구현한다.
+
+포함:
+- checks/06_xss.yml
+- checks/07_csrf.yml
+- checks/09_weak_password_policy.yml
+- checks/10_insufficient_authentication.yml
+- checks/11_insufficient_authorization.yml
+- checks/14_malicious_file_upload.yml
+- checks/20_automation_attack.yml
+- 필요한 payload 파일
+- profiles/care.yml의 route 후보
+- README의 v2 scaffold 설명
+- 작업 로그 갱신
+
+검증:
+- Python 문법 검증
+- attack-active validate-only
+- state-changing validate-only
+- state-changing 실제 실행 confirm 차단 확인
+- git diff --check
+```
+
+### 금지선
+
+다음 goal에서 하지 않을 일:
+
+```text
+실제 WEB VM 공격 실행 금지
+실제 글쓰기, 회원정보 수정, 업로드, 비밀번호 변경 금지
+DB 변경 금지
+CARE PHP 코드 수정 금지
+brute force / 대량 요청 금지
+실제 악성 파일 생성 금지
+01, 12, 13 구현 금지
+ZAP/Nuclei 연동 금지
+MOC/index 수정 금지
+커밋 금지
+```
+
+### 압축 후 재개 기준
+
+압축 후에는 이 섹션을 기준으로 재개한다.
+
+```text
+다음 작업 = v2 batch scaffold 구현
+구현은 batch
+실제 공격 검증은 항목별 후속 작업
+```
+
 ## 다음 기록 템플릿
 
 ```markdown
