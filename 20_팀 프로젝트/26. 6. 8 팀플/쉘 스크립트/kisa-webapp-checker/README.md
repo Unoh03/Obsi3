@@ -13,7 +13,7 @@ profile -> check -> request -> evidence -> report
 | 번호 | 항목 | mode | 동작 |
 |---:|---|---|---|
 | 02 | SQL 인젝션 | `attack-active` | payload 파일의 SQLi 문자열을 profile-defined route에 주입하고 오류/노출 패턴 확인 |
-| 06 | XSS | `attack-active` | reflected 후보는 payload probe, stored 후보는 manual scaffold로 route/payload만 준비 |
+| 06 | XSS | `attack-active` | reflected 후보는 payload probe, stored 후보는 별도 state-changing 후보로 보류 |
 | 07 | CSRF | `state-changing` | 회원정보 수정 route의 CSRF token 유무와 서버 측 검증을 manual scaffold로 준비 |
 | 08 | SSRF | `attack-active` | profile-defined URL fetch route에 통제된 loopback-only proof URL을 주입하고 proof 문자열 노출 또는 차단 근거 확인 |
 | 09 | 약한 비밀번호 정책 | `state-changing` | 회원가입/회원수정 route와 약한 비밀번호 후보를 manual scaffold로 준비 |
@@ -188,6 +188,23 @@ python checker.py --profile profiles/care.yml --checks checks --mode attack-acti
 python checker.py --profile profiles/care.yml --checks checks --mode state-changing --validate-only
 python checker.py --profile profiles/care.yml --checks checks --mode destructive-risk --validate-only
 ```
+
+특정 항목만 실행하려면 `--check-id`를 붙인다.
+
+```bash
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --check-id 06
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --check-id 06
+```
+
+06 XSS의 reflected 후보는 상태 변경 없이 `board_search` route에 payload를 넣고 raw request/response evidence를 남긴다. 결과 해석은 다음과 같다.
+
+| 상태 | 의미 |
+|---|---|
+| `vulnerable` | 응답 본문에 실행 가능한 `<script>` 또는 `onerror` payload가 그대로 반사됨 |
+| `not_vulnerable` | 응답 본문에서 payload가 HTML entity로 escape된 근거가 확인됨 |
+| `manual_required` | 응답은 받았지만 반사/escape 근거가 부족해 브라우저 또는 코드 확인 필요 |
+
+Stored XSS는 글쓰기 fixture가 필요하므로 현재 06 자동 check에는 포함하지 않는다. 이후 별도 `state-changing` 후보로 분리하고, controlled test post와 browser screenshot evidence를 붙인다.
 
 v2 batch scaffold를 확인할 때는 먼저 validate-only만 실행한다.
 

@@ -43,6 +43,7 @@ VALID_STATUSES = {
     "inconclusive",
     "error",
 }
+CONFIGURABLE_STATUSES = VALID_STATUSES - {"ready"}
 
 KNOWN_ACTIONS = {
     "inspect_transport",
@@ -509,7 +510,7 @@ class CheckerRunner:
         self.base_url = str(profile["base_url"]).rstrip("/")
         self.timeout = int(profile.get("timeout_seconds", 5))
         self.verify_tls = bool(profile.get("verify_tls", True))
-        self.run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+        self.run_id = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         self.run_dir = output_root / self.run_id
         self.log_lines: list[str] = []
 
@@ -700,7 +701,7 @@ class CheckerRunner:
         vulnerable_header_patterns = str_list(step.get("vulnerable_header_patterns"))
         status_only_vulnerable = bool(step.get("status_only_vulnerable", False))
         no_match_status = str(step.get("no_match_status", "inconclusive"))
-        if no_match_status not in VALID_STATUSES:
+        if no_match_status not in CONFIGURABLE_STATUSES:
             raise ConfigError(f"Invalid no_match_status: {no_match_status}")
 
         for index, route_name in enumerate(route_names, start=1):
@@ -893,7 +894,7 @@ class CheckerRunner:
         not_vulnerable_body_patterns = str_list(step.get("not_vulnerable_body_patterns"))
         not_vulnerable_header_patterns = str_list(step.get("not_vulnerable_header_patterns"))
         no_match_status = str(step.get("no_match_status", "inconclusive"))
-        if no_match_status not in VALID_STATUSES:
+        if no_match_status not in CONFIGURABLE_STATUSES:
             raise ConfigError(f"Invalid no_match_status: {no_match_status}")
 
         for route_index, route_name in enumerate(route_names, start=1):
@@ -1051,7 +1052,7 @@ class CheckerRunner:
             findings.append(note)
 
         status = str(step.get("status", "manual_required"))
-        if status not in VALID_STATUSES:
+        if status not in CONFIGURABLE_STATUSES:
             raise ConfigError(f"Invalid manual_check.status: {status}")
 
         return CheckResult(
@@ -1497,6 +1498,37 @@ def load_checks(checks_dir: Path) -> list[dict[str, Any]]:
     return checks
 
 
+def parse_check_ids(values: list[str] | None) -> set[str]:
+    if not values:
+        return set()
+    check_ids: set[str] = set()
+    for value in values:
+        for item in value.split(","):
+            check_id = normalize_check_id(item)
+            if check_id:
+                check_ids.add(check_id)
+    return check_ids
+
+
+def normalize_check_id(value: Any) -> str:
+    check_id = str(value).strip()
+    if check_id.isdigit():
+        return check_id.zfill(2)
+    return check_id
+
+
+def filter_checks(checks: list[dict[str, Any]], requested_ids: set[str]) -> list[dict[str, Any]]:
+    if not requested_ids:
+        return checks
+
+    selected = [check for check in checks if normalize_check_id(check.get("id")) in requested_ids]
+    found_ids = {normalize_check_id(check.get("id")) for check in selected}
+    missing_ids = sorted(requested_ids - found_ids)
+    if missing_ids:
+        raise ConfigError(f"Unknown check id(s): {', '.join(missing_ids)}")
+    return selected
+
+
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="KISA Web Application semi-automatic checker v2"
@@ -1518,6 +1550,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--validate-only",
         action="store_true",
         help="Validate profile/check parsing without HTTP requests",
+    )
+    parser.add_argument(
+        "--check-id",
+        action="append",
+        default=[],
+        help="Run only the selected check id. Repeat or pass comma-separated ids.",
     )
     parser.add_argument(
         "--confirm-state-changing",
@@ -1543,6 +1581,7 @@ def main(argv: list[str]) -> int:
 
         profile = load_yaml(profile_path)
         checks = load_checks(checks_dir)
+        checks = filter_checks(checks, parse_check_ids(args.check_id))
         require_allowed_target(profile)
 
         runner = CheckerRunner(

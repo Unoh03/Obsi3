@@ -1677,6 +1677,111 @@ git diff --check
 
 `ready`는 실행 준비 상태일 뿐이며, 취약/안전 판정이 아니다.
 
+## 2026-06-19 06 XSS 단독 실행 안정화
+
+### 목적
+
+v2 batch scaffold 이후 첫 항목별 실제 검증 대상으로 06 XSS를 안정화한다.
+
+### 구현 범위
+
+- `checker.py`에 `--check-id` 옵션을 추가했다.
+  - `--check-id 06`
+  - `--check-id 6`
+  - `--check-id "06,08"`
+  모두 동작하도록 숫자 ID를 두 자리로 정규화했다.
+- `ready`는 validate-only 전용 상태로 유지하고, check YAML의 `manual_check.status`나 `no_match_status`에는 지정할 수 없게 막았다.
+- `run_id`를 초 단위에서 microsecond 포함 형식으로 바꿨다.
+  - 이전: `20260619-110033`
+  - 이후: `20260619-110429-859313`
+  - 빠르게 여러 번 실행해도 evidence 폴더가 덮일 위험을 줄이기 위함이다.
+- `checks/06_xss.yml`은 reflected XSS 자동 검사만 담당하도록 정리했다.
+- `vulnerable_statuses: [599]` 같은 우회값을 제거하고, 본문 패턴 기반 판정으로 명확히 바꿨다.
+- stored XSS는 글쓰기 fixture와 브라우저 증거가 필요하므로 현재 06 자동 check에서 제외하고, 이후 별도 `state-changing` 후보로 남겼다.
+- README에 06 단독 실행 명령과 상태 해석을 추가했다.
+
+### 주요 결정
+
+- 06 자동 check의 최종 status는 reflected XSS 자동 검사 결과를 직접 표현해야 한다.
+- stored XSS를 같은 check 안에 `manual_required`로 넣으면 reflected가 `not_vulnerable`이어도 전체 status가 `manual_required`가 되어 판정이 흐려진다.
+- 따라서 이번 goal에서는 reflected XSS만 자동화하고, stored XSS는 별도 후속 작업으로 분리한다.
+
+### 검증 결과
+
+실행한 검증:
+
+```powershell
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --check-id 06 --output "$env:TEMP\kisa-xss-final-06c"
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --output "$env:TEMP\kisa-xss-final-all2"
+python -c "import py_compile, tempfile; f=tempfile.NamedTemporaryFile(delete=False, suffix='.pyc'); f.close(); py_compile.compile('checker.py', cfile=f.name, doraise=True); print('py_compile ok')"
+git diff --check
+```
+
+`ready` runtime 사용 차단 후 재검증:
+
+```powershell
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --check-id 06 --output "$env:TEMP\kisa-xss-ready-only-06"
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --output "$env:TEMP\kisa-xss-ready-only-all"
+```
+
+확인 결과:
+
+```text
+[OK] run_id=20260619-110429-859313
+[ready] 06 XSS
+
+[OK] run_id=20260619-110429-995349
+[ready] 02 SQL 인젝션
+[ready] 03 디렉터리 인덱싱
+[ready] 04 에러 페이지
+[ready] 05 정보 노출
+[ready] 06 XSS
+[skipped_by_mode] 07 CSRF
+...
+
+py_compile ok
+git diff --check 통과
+```
+
+`checker.py` 안에 CARE 전용 URL, 계정, 게시글 번호, `KISA_XSS`, `board_search` 같은 대상별 값이 들어가지 않았는지도 확인했다.
+
+### WEB VM 실제 실행 명령
+
+WEB VM에서 실제 reflected XSS evidence를 만들 때:
+
+```bash
+cd ~/kisa-webapp-checker
+python3 checker.py --profile profiles/care.yml --checks checks --mode attack-active --check-id 06
+```
+
+기대 판정:
+
+| status | 의미 |
+|---|---|
+| `vulnerable` | 응답 본문에 실행 가능한 `<script>` 또는 `onerror` payload가 그대로 반사됨 |
+| `not_vulnerable` | payload가 HTML entity로 escape된 근거가 확인됨 |
+| `manual_required` | 응답은 받았지만 반사/escape 근거가 부족해 브라우저 또는 코드 확인 필요 |
+| `error` | WEB 서버 접근 실패, route 오류, 요청 실패 |
+
+결과 확인:
+
+```bash
+cat evidence/<RUN_ID>/result.json
+cat evidence/<RUN_ID>/report.md
+find evidence/<RUN_ID>/06_XSS -type f | sort
+```
+
+### 현재 한계
+
+- 이 goal은 reflected XSS 자동 검사만 안정화했다.
+- stored XSS는 controlled test post, 로그인 세션, 브라우저 screenshot evidence가 필요하므로 후속 `state-changing` 작업으로 남긴다.
+- 로컬 Codex 환경에서는 WEB VM의 CARE 서버에 직접 접근하지 않고, validate-only와 구조 검증까지만 수행했다.
+
+### 다음 작업 기준
+
+1. 사용자가 WEB VM에서 06 실제 실행 결과를 가져오면 `result.json`, `report.md`, raw response 기준으로 판정이 맞는지 본다.
+2. 06 reflected 결과가 안정되면 다음 항목은 10 불충분한 인증 절차 또는 11 불충분한 권한 검증으로 넘어간다.
+
 ## 다음 기록 템플릿
 
 ```markdown
