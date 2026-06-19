@@ -1,0 +1,18 @@
+id: "20"
+name: "자동화 공격"
+kisa_section: "X. Web Application"
+required_mode: "destructive-risk"
+description: "Login and post creation routes are identified for rate-limit and replay-resistance review."
+steps:
+  - id: automation_attack_manual
+    action: manual_check
+    summary: "Automation attack testing can create repeated requests; this scaffold records capped test candidates only and sends no requests."
+    routes:
+      - login_submit
+      - board_write_submit
+    payloads_file: "payloads/automation.yml"
+    payload_group: "capped_replay_markers"
+    status: "manual_required"
+    notes:
+      - "Do not run brute force or large request loops from this scaffold."
+      - "Later execution must use a very small cap, delay, explicit confirmation, and rollback evidence."

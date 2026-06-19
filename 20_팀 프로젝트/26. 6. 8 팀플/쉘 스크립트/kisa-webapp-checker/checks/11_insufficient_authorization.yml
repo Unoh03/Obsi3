@@ -1,0 +1,20 @@
+id: "11"
+name: "불충분한 권한 검증"
+kisa_section: "X. Web Application"
+required_mode: "state-changing"
+description: "Member and board routes are identified for object/user identifier tampering review."
+steps:
+  - id: member_and_object_authorization_manual
+    action: manual_check
+    summary: "Authorization checks require fixture users and object IDs; no request is sent by this scaffold."
+    routes:
+      - member_modify_submit
+      - member_delete_submit
+      - board_view_candidate
+      - download_known_candidate
+    payloads_file: "payloads/authorization.yml"
+    payload_group: "id_and_object_tampering"
+    status: "manual_required"
+    notes:
+      - "CARE member modify/delete should be checked for server-side use of session id rather than client supplied id."
+      - "Public board view and file download may belong to other KISA items unless private ownership is defined."

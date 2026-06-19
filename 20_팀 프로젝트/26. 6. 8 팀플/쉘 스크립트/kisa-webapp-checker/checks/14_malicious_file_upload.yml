@@ -1,0 +1,19 @@
+id: "14"
+name: "악성 파일 업로드"
+kisa_section: "X. Web Application"
+required_mode: "state-changing"
+description: "Upload form, upload handler, and known proof file routes are identified for controlled upload testing."
+steps:
+  - id: upload_surface_manual
+    action: manual_check
+    summary: "File upload testing requires a logged-in session and controlled proof file; no upload is sent by this scaffold."
+    routes:
+      - board_write
+      - board_write_submit
+      - data_upload_proof
+    payloads_file: "payloads/upload_proof.yml"
+    payload_group: "harmless_php_proof"
+    status: "manual_required"
+    notes:
+      - "Only harmless proof files are allowed; do not generate or execute a real webshell."
+      - "Later checks should distinguish upload acceptance, direct web access, and server-side execution/403 blocking."

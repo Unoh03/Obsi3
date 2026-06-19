@@ -13,7 +13,13 @@ profile -> check -> request -> evidence -> report
 | 번호 | 항목 | mode | 동작 |
 |---:|---|---|---|
 | 02 | SQL 인젝션 | `attack-active` | payload 파일의 SQLi 문자열을 profile-defined route에 주입하고 오류/노출 패턴 확인 |
+| 06 | XSS | `attack-active` | reflected 후보는 payload probe, stored 후보는 manual scaffold로 route/payload만 준비 |
+| 07 | CSRF | `state-changing` | 회원정보 수정 route의 CSRF token 유무와 서버 측 검증을 manual scaffold로 준비 |
 | 08 | SSRF | `attack-active` | profile-defined URL fetch route에 통제된 loopback-only proof URL을 주입하고 proof 문자열 노출 또는 차단 근거 확인 |
+| 09 | 약한 비밀번호 정책 | `state-changing` | 회원가입/회원수정 route와 약한 비밀번호 후보를 manual scaffold로 준비 |
+| 10 | 불충분한 인증 절차 | `state-changing` | 회원정보 수정 전 현재 비밀번호 재인증 여부를 manual scaffold로 준비 |
+| 11 | 불충분한 권한 검증 | `state-changing` | 회원/게시글/다운로드 후보 route와 ID/object 변조 후보를 manual scaffold로 준비 |
+| 14 | 악성 파일 업로드 | `state-changing` | 업로드 form/handler/proof file 후보를 manual scaffold로 준비 |
 | 03 | 디렉터리 인덱싱 | `safe-active` | 후보 디렉터리 요청 후 listing 패턴 확인 |
 | 04 | 에러 페이지 | `safe-active` | 없는 경로 요청 후 stack trace, local path, version 노출 확인 |
 | 05 | 정보 노출 | `safe-active` | 후보 민감 파일 요청 후 설정/소스 노출 패턴 확인 |
@@ -21,9 +27,14 @@ profile -> check -> request -> evidence -> report
 | 16 | 불충분한 세션 관리 | `passive` | session cookie의 `HttpOnly`, `SameSite`, `Secure` 조건 확인 |
 | 17 | 데이터 평문 전송 | `passive` | base URL scheme, 민감 route 후보, form action 기록 |
 | 19 | 관리자 페이지 노출 | `safe-active` | 후보 관리자 페이지 접근 가능 여부 확인 |
+| 20 | 자동화 공격 | `destructive-risk` | 로그인/게시글 반복 요청 후보와 매우 작은 cap 후보만 manual scaffold로 준비 |
 | 21 | 불필요한 Method 악용 | `safe-active` | `OPTIONS`, `TRACE`, `PUT`, `DELETE` 응답 기록 |
 
-02번과 08번은 기본 실행에서는 동작하지 않는다. `--mode attack-active`를 명시해야 실행된다.
+02번, 06번, 08번은 기본 실행에서는 동작하지 않는다. `--mode attack-active`를 명시해야 실행된다.
+
+07, 09, 10, 11, 14번은 `state-changing` scaffold다. 현재는 실제 회원정보 수정, 글쓰기, 업로드 요청을 보내지 않고 route, payload, fixture 전제만 report에 남긴다. 실제 실행은 항목별 후속 작업에서만 한다.
+
+20번은 반복 요청 위험이 있으므로 `destructive-risk` scaffold다. 현재는 brute force나 대량 요청을 보내지 않는다.
 
 ## 설치
 
@@ -175,6 +186,27 @@ python checker.py --profile profiles/care.yml --checks checks --mode passive --v
 python checker.py --profile profiles/care.yml --checks checks --mode safe-active --validate-only
 python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only
 python checker.py --profile profiles/care.yml --checks checks --mode state-changing --validate-only
+python checker.py --profile profiles/care.yml --checks checks --mode destructive-risk --validate-only
+```
+
+v2 batch scaffold를 확인할 때는 먼저 validate-only만 실행한다.
+
+```bash
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing --validate-only
+python checker.py --profile profiles/care.yml --checks checks --mode destructive-risk --validate-only
+```
+
+`state-changing` 실제 실행은 confirm 없이는 차단되어야 정상이다.
+
+```bash
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing
+```
+
+기대 결과:
+
+```text
+[ERROR] `state-changing` mode requires --confirm-state-changing
 ```
 
 ## mode 주의
@@ -239,7 +271,8 @@ evidence/<run_id>/
 
 | 단계 | 구현 후보 |
 |---|---|
-| v2 추가 후보 | 06, 07, 09, 10, 11, 14, 20 |
+| v2 scaffold 완료 | 06, 07, 09, 10, 11, 14, 20 |
+| v2 실제 검증 후보 | 06, 07, 09, 10, 11, 14, 20을 항목별로 분리 실행 |
 | v3 다음 후보 | 01, 12, 13 |
 
-다음 구현 단위는 `v2 batch scaffold`다. 06, 07, 09, 10, 11, 14, 20의 check/profile/payload 구조를 한 번에 준비하되, 실제 WEB VM 공격 실행과 보고서 evidence 확정은 항목별 후속 작업으로 분리한다.
+`v2 batch scaffold`는 완료된 상태다. 다음 단계는 실제 WEB VM 공격 실행이 아니라, 항목별로 실행 전제와 rollback을 확인한 뒤 하나씩 evidence를 만든다.

@@ -1,0 +1,19 @@
+id: "07"
+name: "CSRF"
+kisa_section: "X. Web Application"
+required_mode: "state-changing"
+description: "State-changing member update routes are identified for CSRF token and Origin/Referer review."
+steps:
+  - id: member_modify_csrf_manual
+    action: manual_check
+    summary: "CSRF requires a logged-in victim session and controlled member update rollback; no request is sent by this scaffold."
+    routes:
+      - member_modify
+      - member_modify_submit
+    payloads_file: "payloads/csrf.yml"
+    payload_group: "member_modify_hidden_form"
+    status: "manual_required"
+    notes:
+      - "Check whether member_modify contains a CSRF token hidden field."
+      - "Check whether member_modify_submit validates the token server-side before updating member data."
+      - "XSS output encoding can block one delivery path, but it is not a replacement for CSRF token validation."

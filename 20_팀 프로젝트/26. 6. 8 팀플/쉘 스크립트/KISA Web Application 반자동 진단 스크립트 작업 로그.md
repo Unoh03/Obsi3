@@ -1509,6 +1509,131 @@ MOC/index 수정 금지
 실제 공격 검증은 항목별 후속 작업
 ```
 
+## 2026-06-19 v2 batch scaffold 구현
+
+### 목적
+
+v2 미완성 항목을 하나씩 실제 공격으로 밀기 전에, 06, 07, 09, 10, 11, 14, 20의 check/profile/payload 구조를 한 번에 준비했다.
+
+이번 작업은 실제 WEB VM 공격 실행이 아니라 scaffold 작업이다.
+
+```text
+check 파일 생성
+-> profile route 후보 추가
+-> payload 후보 분리
+-> validate-only 통과
+-> 실제 공격/evidence는 항목별 후속 작업
+```
+
+### 구현 범위
+
+추가한 check:
+
+| 번호 | 항목 | required mode | 현재 자동화 수준 |
+|---:|---|---|---|
+| 06 | XSS | `attack-active` | 검색 route reflected 후보는 `payload_probe`, 게시글 stored 후보는 `manual_check` |
+| 07 | CSRF | `state-changing` | 회원정보 수정 route와 hidden form 후보를 `manual_check`로 기록 |
+| 09 | 약한 비밀번호 정책 | `state-changing` | 회원가입/회원수정 route와 약한 비밀번호 후보를 `manual_check`로 기록 |
+| 10 | 불충분한 인증 절차 | `state-changing` | 회원정보 수정 전 현재 비밀번호 재인증 확인 후보를 `manual_check`로 기록 |
+| 11 | 불충분한 권한 검증 | `state-changing` | ID/object 변조 후보를 `manual_check`로 기록 |
+| 14 | 악성 파일 업로드 | `state-changing` | 업로드 form/handler/proof file 후보를 `manual_check`로 기록 |
+| 20 | 자동화 공격 | `destructive-risk` | 반복 요청 후보와 cap/delay 후보만 `manual_check`로 기록 |
+
+추가한 payload:
+
+```text
+payloads/xss.yml
+payloads/csrf.yml
+payloads/weak_passwords.yml
+payloads/authentication.yml
+payloads/authorization.yml
+payloads/upload_proof.yml
+payloads/automation.yml
+```
+
+추가한 CARE route 후보:
+
+```text
+login_submit
+register_submit
+member_modify_submit
+member_delete
+member_delete_submit
+board_write
+board_write_submit
+board_view_candidate
+data_upload_proof
+```
+
+### 주요 결정
+
+- `checker.py`에는 CARE 전용 URL, 계정, 게시글 번호, payload를 넣지 않았다.
+- CARE 경로와 자리표시자 값은 `profiles/care.yml`에만 둔다.
+- 공격 문자열은 `payloads/*.yml`에 둔다.
+- KISA 항목별 실행 의도는 `checks/*.yml`에 둔다.
+- state-changing 항목은 지금 단계에서 실제 요청을 보내지 않는다.
+- 반복 요청 위험이 있는 20번은 `destructive-risk`로 둔다.
+- 새 범용 action으로 `manual_check`를 추가했다. 이 action은 HTTP 요청을 보내지 않고 route, payload, 수동 확인 조건을 report에 남기는 scaffold용 action이다.
+
+### 검증 결과
+
+실행한 검증:
+
+```powershell
+python -c "import py_compile, tempfile; py_compile.compile('checker.py', cfile=tempfile.NamedTemporaryFile(delete=False).name, doraise=True); print('py_compile ok')"
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --output "$env:TEMP\kisa-checker-v2-batch-attack-validate"
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing --validate-only --output "$env:TEMP\kisa-checker-v2-batch-state-validate"
+python checker.py --profile profiles/care.yml --checks checks --mode destructive-risk --validate-only --output "$env:TEMP\kisa-checker-v2-batch-destructive-validate"
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing --output "$env:TEMP\kisa-checker-v2-batch-state-block"
+```
+
+확인 결과:
+
+```text
+py_compile ok
+
+attack-active validate-only:
+06 XSS passed
+07, 09, 10, 11, 14 skipped_by_mode
+20 skipped_by_mode
+
+state-changing validate-only:
+06, 07, 09, 10, 11, 14 passed
+20 skipped_by_mode
+
+destructive-risk validate-only:
+02, 03, 04, 05, 06, 07, 08, 09, 10, 11, 14, 15, 16, 17, 19, 20, 21 passed
+
+state-changing actual without confirm:
+[ERROR] `state-changing` mode requires --confirm-state-changing
+```
+
+### 현재 한계
+
+- 06 reflected 후보 외에는 실제 HTTP 요청을 보내지 않는 scaffold다.
+- 07, 09, 10, 11, 14는 실제 세션, fixture, rollback을 정한 뒤 항목별로 실행해야 한다.
+- 20은 `destructive-risk`라 대량 요청이나 brute force를 구현하지 않았다.
+- 14의 upload proof는 harmless proof 후보만 payload로 분리했다. 실제 악성코드나 웹쉘은 만들지 않는다.
+- mock target은 추가하지 않았다. 이번 goal의 검증 기준은 validate-only와 confirm 차단이다.
+
+### 다음 작업 기준
+
+다음 단계는 v2 항목별 실제 검증을 하나씩 분리한다.
+
+우선순위 후보:
+
+| 우선순위 | 항목 | 이유 |
+|---:|---:|---|
+| 1 | 06 XSS | reflected GET 후보는 상태 변경 없이 먼저 확인 가능. stored는 별도 글쓰기 fixture 필요 |
+| 2 | 10 불충분한 인증 절차 | 회원정보 수정 route와 현재 비밀번호 재확인 여부가 비교적 명확 |
+| 3 | 11 불충분한 권한 검증 | 실제 취약보다는 방어/분류 확인 성격이 강하므로 안전하게 검토 가능 |
+| 4 | 07 CSRF | 세션과 rollback이 필요하므로 10 이후가 자연스러움 |
+| 5 | 09 약한 비밀번호 정책 | 테스트 계정 생성/수정 fixture 필요 |
+| 6 | 14 악성 파일 업로드 | 업로드 및 파일 정리 필요 |
+| 7 | 20 자동화 공격 | 반복 요청 위험이 있어 가장 나중에 매우 작은 cap으로만 실행 |
+
+다음 goal에서는 batch 구현이 아니라 항목 하나를 골라 실제 WEB VM evidence 생성 절차와 rollback을 확정한다.
+
 ## 다음 기록 템플릿
 
 ```markdown

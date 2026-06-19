@@ -1,0 +1,37 @@
+id: "06"
+name: "XSS"
+kisa_section: "X. Web Application"
+required_mode: "attack-active"
+description: "Reflected candidates are probed with XSS payloads; stored XSS remains a manual state-changing scaffold."
+steps:
+  - id: reflected_search_xss_probe
+    action: payload_probe
+    summary: "Search-like input parameter is checked for reflected XSS indicators. No state-changing request is sent."
+    routes:
+      - board_search
+    parameter: data
+    baseline_value: "kisa-baseline"
+    payloads_file: "payloads/xss.yml"
+    payload_group: "reflected_basic"
+    vulnerable_statuses:
+      - 599
+    vulnerable_body_patterns:
+      - '<script>alert\("KISA_XSS"\)</script>'
+      - 'onerror=alert\("KISA_XSS"\)'
+    not_vulnerable_body_patterns:
+      - '&lt;script&gt;alert'
+      - '&lt;img'
+    no_match_status: "manual_required"
+  - id: stored_board_xss_manual
+    action: manual_check
+    summary: "Stored XSS requires a logged-in post creation fixture and browser evidence; this scaffold records the route and payload candidates only."
+    routes:
+      - board_write
+      - board_write_submit
+      - board_view_candidate
+    payloads_file: "payloads/xss.yml"
+    payload_group: "stored_basic"
+    status: "manual_required"
+    notes:
+      - "Stored XSS must be verified later with a controlled test post and screenshot evidence."
+      - "Do not create posts during this scaffold validation."

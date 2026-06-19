@@ -1,0 +1,4 @@
+groups:
+  missing_current_password:
+    - "pw=1234&pwCheck=1234&name=kisa-auth&mobile=010-0000-0000&address=kisa&email=kisa@example.local"
+    - "currentPw=wrong-password&pw=1234&pwCheck=1234&name=kisa-auth&mobile=010-0000-0000&address=kisa&email=kisa@example.local"

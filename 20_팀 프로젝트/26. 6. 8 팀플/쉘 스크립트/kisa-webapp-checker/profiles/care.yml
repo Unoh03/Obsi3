@@ -27,14 +27,55 @@ routes:
     method: GET
     path: "/member/login.php"
     sensitive: true
+  login_submit:
+    method: POST
+    path: "/member/loginModel.php"
+    sensitive: true
+    data:
+      id: "kisa-v2-user"
+      pw: "kisa-v2-password"
   register:
     method: GET
     path: "/member/register.php"
     sensitive: true
+  register_submit:
+    method: POST
+    path: "/member/registerModel.php"
+    sensitive: true
+    data:
+      id: "kisa-v2-user"
+      pw: "1234"
+      pwCheck: "1234"
+      name: "kisa-v2-user"
+      mobile: "010-0000-0000"
+      address: "kisa-v2-address"
+      email: "kisa-v2@example.local"
   member_modify:
     method: GET
     path: "/member/modify.php"
     sensitive: true
+  member_modify_submit:
+    method: POST
+    path: "/member/modifyModel.php"
+    sensitive: true
+    data:
+      pw: "1234"
+      pwCheck: "1234"
+      name: "kisa-v2-name"
+      mobile: "010-0000-0000"
+      address: "kisa-v2-address"
+      email: "kisa-v2@example.local"
+  member_delete:
+    method: GET
+    path: "/member/delete.php"
+    sensitive: true
+  member_delete_submit:
+    method: POST
+    path: "/member/deleteModel.php"
+    sensitive: true
+    data:
+      pw: "1234"
+      pwCheck: "1234"
   board_search:
     method: GET
     path: "/center/list.php"
@@ -42,6 +83,22 @@ routes:
       mode: "search"
       find: "subject"
       data: "kisa-baseline"
+  board_write:
+    method: GET
+    path: "/center/write.php"
+    sensitive: true
+  board_write_submit:
+    method: POST
+    path: "/center/writeModel.php"
+    sensitive: true
+    data:
+      subject: "kisa-v2-subject"
+      content: "kisa-v2-content"
+  board_view_candidate:
+    method: GET
+    path: "/center/view.php"
+    params:
+      num: "1"
   ssrf_fetch:
     method: GET
     path: "/vuln/ssrf/fetch.php"
@@ -77,6 +134,9 @@ routes:
   download_known_candidate:
     method: GET
     path: "/center/download.php?filename=14_fake_webshell_proof.php"
+  data_upload_proof:
+    method: GET
+    path: "/data/14_fake_webshell_proof.php"
   admin_root:
     method: GET
     path: "/admin/"

@@ -50,6 +50,7 @@ KNOWN_ACTIONS = {
     "path_probe",
     "inspect_cookies",
     "payload_probe",
+    "manual_check",
 }
 
 
@@ -448,6 +449,13 @@ def validate_check_steps(profile: dict[str, Any], check: dict[str, Any]) -> None
             route_name = str(step.get("route", "method_probe"))
             if not isinstance(profile.get(route_name), dict):
                 raise ConfigError(f"profile.{route_name} must be a mapping")
+        elif action == "manual_check":
+            route_names = step.get("routes", [])
+            if route_names:
+                for route_name in list_step_routes(step):
+                    get_route(profile, route_name)
+            if step.get("payloads") or step.get("payloads_file"):
+                load_payload_values(check, step)
 
 
 @dataclass
@@ -591,6 +599,8 @@ class CheckerRunner:
                 action_results.append(self.inspect_cookies(check, step, check_dir))
             elif action == "payload_probe":
                 action_results.append(self.payload_probe(check, step, check_dir))
+            elif action == "manual_check":
+                action_results.append(self.manual_check(check, step, check_dir))
             else:
                 raise ConfigError(f"check {check_id}: unknown action `{action}`")
 
@@ -1016,6 +1026,48 @@ class CheckerRunner:
             summary=str(step.get("summary", "Payload probes executed and compared with configured rules.")),
             findings=findings,
             evidence=evidence,
+        )
+
+    def manual_check(
+        self, check: dict[str, Any], step: dict[str, Any], check_dir: Path
+    ) -> CheckResult:
+        findings: list[str] = []
+
+        route_names = step.get("routes", [])
+        if route_names:
+            for route_name in list_step_routes(step):
+                route = get_route(self.profile, route_name)
+                method = str(route.get("method", "GET")).upper()
+                path = str(route.get("path", "/"))
+                findings.append(
+                    f"Manual route candidate `{route_name}`: {method} {path}"
+                )
+
+        if step.get("payloads") or step.get("payloads_file"):
+            payload_count = len(load_payload_values(check, step))
+            findings.append(f"Manual payload candidates loaded: {payload_count}.")
+
+        for note in str_list(step.get("notes")):
+            findings.append(note)
+
+        status = str(step.get("status", "manual_required"))
+        if status not in VALID_STATUSES:
+            raise ConfigError(f"Invalid manual_check.status: {status}")
+
+        return CheckResult(
+            id=str(check["id"]),
+            name=str(check["name"]),
+            status=status,
+            required_mode=str(check.get("required_mode", "state-changing")),
+            evidence_dir=str(check_dir.relative_to(self.run_dir)),
+            summary=str(
+                step.get(
+                    "summary",
+                    "Manual scaffold only. No HTTP request was sent by this step.",
+                )
+            ),
+            findings=findings,
+            evidence=[],
         )
 
     def build_payload_request(

@@ -13,6 +13,8 @@ remotely-save-sync.db
 *credentials*
 *secret*
 *password*
+!20_팀 프로젝트/26. 6. 8 팀플/쉘 스크립트/kisa-webapp-checker/checks/09_weak_password_policy.yml
+!20_팀 프로젝트/26. 6. 8 팀플/쉘 스크립트/kisa-webapp-checker/payloads/weak_passwords.yml
 *token*
 *access_key*
 *.env

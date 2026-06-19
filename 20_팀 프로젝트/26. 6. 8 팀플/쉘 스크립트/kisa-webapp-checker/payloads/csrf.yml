@@ -1,0 +1,3 @@
+groups:
+  member_modify_hidden_form:
+    - '<form method="POST" action="/member/modifyModel.php"><input type="hidden" name="pw" value="123"><input type="hidden" name="pwCheck" value="123"><input type="hidden" name="name" value="kisa-csrf"></form>'

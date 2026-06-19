@@ -1,0 +1,7 @@
+groups:
+  reflected_basic:
+    - '<script>alert("KISA_XSS")</script>'
+    - '<img src=x onerror=alert("KISA_XSS")>'
+  stored_basic:
+    - '<script>alert("KISA_XSS")</script>'
+    - '<img src=x onerror=alert("KISA_XSS")>'

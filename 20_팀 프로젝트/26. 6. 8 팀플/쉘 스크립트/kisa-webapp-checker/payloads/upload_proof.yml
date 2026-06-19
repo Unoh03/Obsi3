@@ -1,0 +1,5 @@
+groups:
+  harmless_php_proof:
+    - "filename=14_fake_webshell_proof.php"
+    - "<?php echo \"KISA_UPLOAD_PROOF\"; ?>"
+    - "content-type=application/x-php"

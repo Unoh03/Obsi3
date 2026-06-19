@@ -1,0 +1,18 @@
+id: "10"
+name: "불충분한 인증 절차"
+kisa_section: "X. Web Application"
+required_mode: "state-changing"
+description: "Sensitive member update routes are identified for re-authentication checks."
+steps:
+  - id: member_modify_reauthentication_manual
+    action: manual_check
+    summary: "Re-authentication checks require a logged-in session and controlled member update attempt; no request is sent by this scaffold."
+    routes:
+      - member_modify
+      - member_modify_submit
+    payloads_file: "payloads/authentication.yml"
+    payload_group: "missing_current_password"
+    status: "manual_required"
+    notes:
+      - "Verify whether member_modify asks for the current password before sensitive changes."
+      - "Verify whether member_modify_submit rejects requests that omit or mismatch currentPw."

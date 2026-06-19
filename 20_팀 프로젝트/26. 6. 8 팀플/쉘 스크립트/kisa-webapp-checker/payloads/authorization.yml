@@ -1,0 +1,6 @@
+groups:
+  id_and_object_tampering:
+    - "id=victim"
+    - "id=admin"
+    - "num=1"
+    - "filename=14_fake_webshell_proof.php"
