@@ -1,6 +1,7 @@
 id: "10"
 name: "불충분한 인증 절차"
 kisa_section: "X. Web Application"
+db_dependency: "DB-backed recommended"
 required_mode: "state-changing"
 description: "Sensitive member update routes are identified for re-authentication checks."
 steps:
@@ -16,3 +17,19 @@ steps:
     notes:
       - "Verify whether member_modify asks for the current password before sensitive changes."
       - "Verify whether member_modify_submit rejects requests that omit or mismatch currentPw."
+  - id: member_modify_reauthentication_source_assisted
+    action: source_assisted_fallback
+    summary: "Source-assisted fallback checks for current-password re-authentication code without sending a state-changing request."
+    files:
+      - "member/modify.php"
+      - "member/modifyModel.php"
+    conditions:
+      - source_assisted_fallback
+    scope: "source_assisted_evidence_only"
+    not_vulnerable_patterns:
+      - 'name\s*=\s*["'']currentPw["'']'
+      - '\$_POST\s*\[\s*["'']currentPw["'']\s*\]'
+      - '(password_verify|mysqli_num_rows|SELECT\b.*\bpw\b)'
+    not_vulnerable_match: "all"
+    no_match_status: "manual_required"
+    missing_source_status: "manual_required"

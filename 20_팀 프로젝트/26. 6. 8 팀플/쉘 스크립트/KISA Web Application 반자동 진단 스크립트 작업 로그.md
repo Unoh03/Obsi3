@@ -1989,3 +1989,50 @@ scope: db_independent_proof_only
 | `source_assisted_fallback` | 07, 09, 10, 11, 12, 13 | `source_root`가 profile에 있을 때 PHP 소스를 읽어 방어 코드 흔적을 보조 증거로 기록. 강한 근거 없으면 `manual_required` 또는 `inconclusive` |
 
 중요: fallback 전용 합성 status는 만들지 않는다. 결과 status는 기존 vocabulary를 유지하고, DB 없음과 fallback 사용 여부는 `conditions: [db_unavailable, fallback_used]`와 `scope`에 기록한다.
+
+## 2026-06-19 15:54 KST V.db 기반 구현
+
+### 목적
+
+DB-backed recommended 항목을 전부 구현하지 않고, DB 없음과 fallback 사용 여부를 공통적으로 표현할 수 있는 기반만 먼저 만들었다.
+
+### 구현 범위
+
+| 파일 | 변경 |
+|---|---|
+| `kisa-webapp-checker/checker.py` | `CheckResult.conditions`, `CheckResult.scope` 추가. result/report 출력에 반영 |
+| `kisa-webapp-checker/checker.py` | `payload_probe`에 `fallback_routes`, `fallback_conditions`, `fallback_scope` 처리 추가 |
+| `kisa-webapp-checker/checker.py` | `source_assisted_fallback` action 추가 |
+| `kisa-webapp-checker/profiles/care.yml` | `source_root: "/var/www/html/care"`와 `xss_reflected_proof` route 추가 |
+| `kisa-webapp-checker/checks/06_xss.yml` | DB baseline 실패 시 `xss_reflected_proof` fallback route 실행 가능하게 설정 |
+| `kisa-webapp-checker/checks/10_insufficient_authentication.yml` | `source_assisted_fallback` 대표 적용 |
+| `kisa-webapp-checker/README.md` | `source_root`, `conditions`, `scope` 설명 추가 |
+| `KISA Web Application 반자동 진단 스크립트 설계.md` | V.db 구현 필드와 대표 적용 항목 기록 |
+
+### 핵심 결정
+
+- 새 status는 만들지 않는다.
+- DB 없음과 fallback 사용 여부는 `conditions`와 `scope`로 표현한다.
+- 06은 `runtime_fallback_route` 대표다.
+- 10은 `source_assisted_fallback` 대표다.
+- 07/09/11/12/13 전체 구현은 하지 않았다.
+- 20은 `DB-required` 유지다.
+
+### 검증 기준
+
+다음 명령을 통과해야 한다.
+
+```bash
+python -m py_compile checker.py
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --check-id 06
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing --validate-only --check-id 10
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only
+python checker.py --profile profiles/care.yml --checks checks --mode state-changing --validate-only
+git diff --check
+```
+
+### 현재 한계
+
+- `xss_reflected_proof` route는 profile에 준비했지만, 실제 CARE 서버에 해당 proof route가 있어야 runtime fallback이 의미 있다.
+- `source_assisted_fallback`은 소스 코드 흔적 기반 보조 진단이다. 실제 회원정보 수정 차단 여부를 증명하려면 DB와 세션이 필요하다.
+- 조건/범위 출력은 공통 기반으로 들어갔지만, 모든 DB-backed recommended 항목에 적용한 것은 아니다.

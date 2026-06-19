@@ -51,6 +51,7 @@ KNOWN_ACTIONS = {
     "path_probe",
     "inspect_cookies",
     "payload_probe",
+    "source_assisted_fallback",
     "manual_check",
 }
 
@@ -322,6 +323,25 @@ def str_list(values: Any, default: list[str] | None = None) -> list[str]:
     return [str(value) for value in values]
 
 
+def unique_strings(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for value in values:
+        normalized = str(value).strip()
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            result.append(normalized)
+    return result
+
+
+def step_conditions(step: dict[str, Any]) -> list[str]:
+    return unique_strings(str_list(step.get("conditions")))
+
+
+def step_scope(step: dict[str, Any]) -> str:
+    return str(step.get("scope", "")).strip()
+
+
 def find_regex_matches(text: str, patterns: list[str]) -> list[str]:
     matches: list[str] = []
     for pattern in patterns:
@@ -446,10 +466,22 @@ def validate_check_steps(profile: dict[str, Any], check: dict[str, Any]) -> None
                 get_route(profile, route_name)
             if action == "payload_probe":
                 load_payload_values(check, step)
+                fallback_routes = step.get("fallback_routes", [])
+                if fallback_routes:
+                    for route_name in list_step_routes(
+                        {"action": "payload_probe.fallback", "routes": fallback_routes}
+                    ):
+                        get_route(profile, route_name)
         elif action == "http_methods":
             route_name = str(step.get("route", "method_probe"))
             if not isinstance(profile.get(route_name), dict):
                 raise ConfigError(f"profile.{route_name} must be a mapping")
+        elif action == "source_assisted_fallback":
+            files = str_list(step.get("files"))
+            if not files:
+                raise ConfigError("source_assisted_fallback.files must be a non-empty list")
+            str_list(step.get("vulnerable_patterns"))
+            str_list(step.get("not_vulnerable_patterns"))
         elif action == "manual_check":
             route_names = step.get("routes", [])
             if route_names:
@@ -475,9 +507,11 @@ class CheckResult:
     summary: str = ""
     findings: list[str] = field(default_factory=list)
     evidence: list[EvidenceItem] = field(default_factory=list)
+    conditions: list[str] = field(default_factory=list)
+    scope: str = ""
 
     def to_json(self) -> dict[str, Any]:
-        return {
+        data = {
             "id": self.id,
             "name": self.name,
             "status": self.status,
@@ -487,6 +521,11 @@ class CheckResult:
             "findings": self.findings,
             "evidence": [item.__dict__ for item in self.evidence],
         }
+        if self.conditions:
+            data["conditions"] = self.conditions
+        if self.scope:
+            data["scope"] = self.scope
+        return data
 
 
 class CheckerRunner:
@@ -600,6 +639,8 @@ class CheckerRunner:
                 action_results.append(self.inspect_cookies(check, step, check_dir))
             elif action == "payload_probe":
                 action_results.append(self.payload_probe(check, step, check_dir))
+            elif action == "source_assisted_fallback":
+                action_results.append(self.source_assisted_fallback(check, step, check_dir))
             elif action == "manual_check":
                 action_results.append(self.manual_check(check, step, check_dir))
             else:
@@ -879,6 +920,8 @@ class CheckerRunner:
         findings: list[str] = []
         evidence: list[EvidenceItem] = []
         statuses: list[str] = []
+        conditions = step_conditions(step)
+        scope = step_scope(step)
 
         route_names = list_step_routes(step)
         payloads = load_payload_values(check, step)
@@ -900,6 +943,13 @@ class CheckerRunner:
         no_match_status = str(step.get("no_match_status", "inconclusive"))
         if no_match_status not in CONFIGURABLE_STATUSES:
             raise ConfigError(f"Invalid no_match_status: {no_match_status}")
+        fallback_route_names = str_list(step.get("fallback_routes"))
+        fallback_conditions = (
+            unique_strings(str_list(step.get("fallback_conditions"), ["fallback_used"]))
+            if fallback_route_names
+            else []
+        )
+        fallback_scope = str(step.get("fallback_scope", "")).strip()
 
         for route_index, route_name in enumerate(route_names, start=1):
             route = get_route(self.profile, route_name)
@@ -942,10 +992,30 @@ class CheckerRunner:
                     baseline_expected_statuses
                     and response.status_code not in baseline_expected_statuses
                 ):
-                    statuses.append(baseline_unexpected_status)
                     findings.append(
                         f"Route `{route_name}` baseline returned unexpected status {response.status_code}; payload comparison is not reliable."
                     )
+                    if fallback_route_names:
+                        findings.append(
+                            "Fallback payload route(s) triggered because the primary baseline was not reliable."
+                        )
+                        fallback_step = dict(step)
+                        fallback_step["routes"] = fallback_route_names
+                        fallback_step.pop("fallback_routes", None)
+                        fallback_step.pop("fallback_conditions", None)
+                        fallback_step.pop("fallback_scope", None)
+                        fallback_step["conditions"] = fallback_conditions
+                        if fallback_scope:
+                            fallback_step["scope"] = fallback_scope
+                        fallback_result = self.payload_probe(check, fallback_step, check_dir)
+                        statuses.append(fallback_result.status)
+                        findings.extend(fallback_result.findings)
+                        evidence.extend(fallback_result.evidence)
+                        conditions = unique_strings(conditions + fallback_result.conditions)
+                        if fallback_result.scope:
+                            scope = ", ".join(unique_strings([scope, fallback_result.scope]))
+                    else:
+                        statuses.append(baseline_unexpected_status)
                     continue
                 baseline_body_matches = find_regex_matches(
                     response.text, vulnerable_body_patterns
@@ -1040,6 +1110,8 @@ class CheckerRunner:
             summary=str(step.get("summary", "Payload probes executed and compared with configured rules.")),
             findings=findings,
             evidence=evidence,
+            conditions=conditions,
+            scope=scope,
         )
 
     def manual_check(
@@ -1082,6 +1154,147 @@ class CheckerRunner:
             ),
             findings=findings,
             evidence=[],
+        )
+
+    def source_assisted_fallback(
+        self, check: dict[str, Any], step: dict[str, Any], check_dir: Path
+    ) -> CheckResult:
+        findings: list[str] = []
+        evidence: list[EvidenceItem] = []
+        statuses: list[str] = []
+        conditions = step_conditions(step)
+        scope = step_scope(step)
+
+        missing_source_status = str(step.get("missing_source_status", "manual_required"))
+        if missing_source_status not in CONFIGURABLE_STATUSES:
+            raise ConfigError(f"Invalid missing_source_status: {missing_source_status}")
+        no_match_status = str(step.get("no_match_status", "manual_required"))
+        if no_match_status not in CONFIGURABLE_STATUSES:
+            raise ConfigError(f"Invalid no_match_status: {no_match_status}")
+
+        files = str_list(step.get("files"))
+        vulnerable_patterns = str_list(step.get("vulnerable_patterns"))
+        not_vulnerable_patterns = str_list(step.get("not_vulnerable_patterns"))
+        not_vulnerable_match = str(step.get("not_vulnerable_match", "all"))
+        if not_vulnerable_match not in {"all", "any"}:
+            raise ConfigError("source_assisted_fallback.not_vulnerable_match must be all or any")
+
+        source_root_value = self.profile.get("source_root")
+        evidence_lines = [
+            f"check_id={check.get('id')}",
+            f"step_id={step.get('id', 'source_assisted_fallback')}",
+            f"source_root={source_root_value or '(not configured)'}",
+            "",
+        ]
+
+        if not source_root_value:
+            statuses.append(missing_source_status)
+            findings.append("profile.source_root is not configured; source-assisted fallback cannot run.")
+        else:
+            source_root = Path(str(source_root_value)).expanduser()
+            if not source_root.is_absolute():
+                source_root = Path.cwd() / source_root
+            source_root = source_root.resolve()
+
+            if not source_root.exists():
+                statuses.append(missing_source_status)
+                findings.append(f"profile.source_root does not exist: {source_root}")
+            else:
+                source_chunks: list[str] = []
+                missing_files: list[str] = []
+                for file_name in files:
+                    relative_path = Path(file_name)
+                    if relative_path.is_absolute() or ".." in relative_path.parts:
+                        raise ConfigError(
+                            "source_assisted_fallback.files must be relative paths under source_root"
+                        )
+                    source_path = (source_root / relative_path).resolve()
+                    try:
+                        source_path.relative_to(source_root)
+                    except ValueError as exc:
+                        raise ConfigError(
+                            "source_assisted_fallback.files must stay under source_root"
+                        ) from exc
+                    if not source_path.exists():
+                        missing_files.append(file_name)
+                        continue
+                    source_chunks.append(
+                        f"\n--- {file_name} ---\n"
+                        + source_path.read_text(encoding="utf-8", errors="replace")
+                    )
+
+                if missing_files:
+                    findings.append(f"Source file(s) missing: {', '.join(missing_files)}")
+                if not source_chunks:
+                    statuses.append(missing_source_status)
+                    findings.append("No source files could be read for source-assisted fallback.")
+                else:
+                    source_text = "\n".join(source_chunks)
+                    vulnerable_matches = find_regex_matches(source_text, vulnerable_patterns)
+                    not_vulnerable_matches = find_regex_matches(
+                        source_text, not_vulnerable_patterns
+                    )
+                    evidence_lines.extend(
+                        [
+                            "files:",
+                            *[f"- {file_name}" for file_name in files],
+                            "",
+                            "vulnerable_matches:",
+                            *[f"- {pattern}" for pattern in vulnerable_matches],
+                            "",
+                            "not_vulnerable_matches:",
+                            *[f"- {pattern}" for pattern in not_vulnerable_matches],
+                            "",
+                        ]
+                    )
+
+                    if vulnerable_matches:
+                        statuses.append("vulnerable")
+                        findings.append(
+                            "Source-assisted fallback found vulnerable pattern(s): "
+                            + ", ".join(vulnerable_matches)
+                        )
+                    elif not_vulnerable_patterns and (
+                        (not_vulnerable_match == "all"
+                         and len(not_vulnerable_matches) == len(not_vulnerable_patterns))
+                        or (not_vulnerable_match == "any" and not_vulnerable_matches)
+                    ):
+                        statuses.append("not_vulnerable")
+                        findings.append(
+                            "Source-assisted fallback found configured defense pattern(s): "
+                            + ", ".join(not_vulnerable_matches)
+                        )
+                    else:
+                        statuses.append(no_match_status)
+                        findings.append(
+                            "Source-assisted fallback did not find enough configured evidence."
+                        )
+
+        evidence_path = check_dir / f"source_{slugify(str(step.get('id', 'fallback')))}.txt"
+        evidence_path.write_text("\n".join(evidence_lines) + "\n", encoding="utf-8")
+        evidence.append(
+            EvidenceItem(
+                "source-assisted fallback evidence",
+                str(evidence_path.relative_to(self.run_dir)),
+            )
+        )
+
+        return CheckResult(
+            id=str(check["id"]),
+            name=str(check["name"]),
+            status=reduce_status(statuses),
+            required_mode=str(check.get("required_mode", "state-changing")),
+            evidence_dir=str(check_dir.relative_to(self.run_dir)),
+            summary=str(
+                step.get(
+                    "summary",
+                    "Source-assisted fallback inspected configured source patterns.",
+                )
+            ),
+            findings=findings,
+            evidence=evidence,
+            conditions=conditions,
+            scope=scope,
         )
 
     def build_payload_request(
@@ -1371,9 +1584,14 @@ def merge_step_results(
     statuses = [result.status for result in results]
     findings: list[str] = []
     evidence: list[EvidenceItem] = []
+    conditions: list[str] = []
+    scopes: list[str] = []
     for result in results:
         findings.extend(result.findings)
         evidence.extend(result.evidence)
+        conditions.extend(result.conditions)
+        if result.scope:
+            scopes.append(result.scope)
 
     return CheckResult(
         id=check_id,
@@ -1384,6 +1602,8 @@ def merge_step_results(
         summary="; ".join(result.summary for result in results if result.summary),
         findings=findings,
         evidence=evidence,
+        conditions=unique_strings(conditions),
+        scope=", ".join(unique_strings(scopes)),
     )
 
 
@@ -1432,7 +1652,7 @@ def format_simple_response(response: SimpleResponse) -> str:
 
 def render_report(result_json: dict[str, Any]) -> str:
     lines = [
-        "# KISA Web Application Checker v2 Report",
+        "# KISA Web Application Checker Report",
         "",
         f"- run_id: `{result_json['run_id']}`",
         f"- profile: `{result_json['profile']}`",
@@ -1442,18 +1662,24 @@ def render_report(result_json: dict[str, Any]) -> str:
         "",
         "## Summary",
         "",
-        "| ID | Name | Status | Evidence |",
-        "|---|---|---|---|",
+        "| ID | Name | Status | Conditions | Scope | Evidence |",
+        "|---|---|---|---|---|---|",
     ]
     for check in result_json["checks"]:
+        conditions = ", ".join(check.get("conditions", [])) or "-"
+        scope = check.get("scope", "-")
         lines.append(
-            f"| {check['id']} | {check['name']} | {check['status']} | `{check['evidence_dir']}` |"
+            f"| {check['id']} | {check['name']} | {check['status']} | {conditions} | {scope} | `{check['evidence_dir']}` |"
         )
 
     lines.extend(["", "## Findings", ""])
     for check in result_json["checks"]:
         lines.extend([f"### {check['id']} {check['name']}", ""])
         lines.append(f"- status: `{check['status']}`")
+        if check.get("conditions"):
+            lines.append(f"- conditions: `{', '.join(check['conditions'])}`")
+        if check.get("scope"):
+            lines.append(f"- scope: `{check['scope']}`")
         lines.append(f"- summary: {check.get('summary') or '-'}")
         if check.get("findings"):
             for finding in check["findings"]:

@@ -62,6 +62,14 @@ target_allowlist:
 
 CARE 전용 경로 후보는 `profiles/care.yml`에만 둔다. `checker.py`에는 CARE URL, 계정, payload를 넣지 않는다.
 
+소스 보조 진단이 필요한 항목은 profile의 `source_root`를 사용한다.
+
+```yaml
+source_root: "/var/www/html/care"
+```
+
+`source_root`는 07/09/10/11/12/13처럼 DB 없이 런타임 판정을 내리기 어려운 항목에서 방어 코드 흔적을 확인하기 위한 보조 입력이다. 소스 보조 진단은 실제 공격 성공/실패 판정이 아니므로, report의 `scope`를 함께 확인한다.
+
 로그인된 세션이 필요한 항목은 profile에 쿠키나 헤더를 직접 넣어 주입한다.
 
 ```yaml
@@ -274,6 +282,18 @@ evidence/<run_id>/
 | `skipped_by_mode` | 현재 mode에서 실행 금지 |
 | `inconclusive` | 응답은 받았지만 자동 판정 근거 부족 |
 | `error` | 요청 실패 또는 실행 오류 |
+
+DB가 없어서 대체 진단을 실행한 경우에도 새 status를 만들지 않는다. status는 위 표의 값을 그대로 쓰고, `conditions`와 `scope`로 의미를 제한한다.
+
+예:
+
+```text
+status: not_vulnerable
+conditions: db_unavailable, fallback_used
+scope: db_independent_proof_only
+```
+
+이 뜻은 “DB 없는 대체 route에서는 방어 근거가 확인됐지만, 원래 CARE 기능은 DB 장애로 직접 판정하지 못했다”는 것이다.
 
 ## 안전 원칙
 

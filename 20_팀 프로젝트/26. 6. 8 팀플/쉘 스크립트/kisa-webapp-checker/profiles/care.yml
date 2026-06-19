@@ -1,5 +1,6 @@
 name: care
 base_url: "http://127.0.0.1"
+source_root: "/var/www/html/care"
 target_allowlist:
   - "127.0.0.1"
   - "localhost"
@@ -82,6 +83,11 @@ routes:
     params:
       mode: "search"
       find: "subject"
+      data: "kisa-baseline"
+  xss_reflected_proof:
+    method: GET
+    path: "/vuln/xss/reflected.php"
+    params:
       data: "kisa-baseline"
   board_write:
     method: GET

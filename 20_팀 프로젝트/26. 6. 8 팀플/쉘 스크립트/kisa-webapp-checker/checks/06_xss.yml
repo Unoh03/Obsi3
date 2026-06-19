@@ -1,6 +1,7 @@
 id: "06"
 name: "XSS"
 kisa_section: "X. Web Application"
+db_dependency: "DB-backed recommended"
 required_mode: "attack-active"
 description: "Reflected candidates are probed with XSS payloads; stored XSS is deferred to a separate state-changing scaffold."
 steps:
@@ -14,6 +15,12 @@ steps:
     baseline_expected_statuses:
       - 200
     baseline_unexpected_status: "error"
+    fallback_routes:
+      - xss_reflected_proof
+    fallback_conditions:
+      - db_unavailable
+      - fallback_used
+    fallback_scope: "db_independent_proof_only"
     payloads_file: "payloads/xss.yml"
     payload_group: "reflected_basic"
     vulnerable_statuses: []
