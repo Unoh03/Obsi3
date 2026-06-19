@@ -1957,3 +1957,35 @@ scope: db_independent_proof_only
 
 ### 다음 작업 기준
 ```
+
+## 2026-06-19 15:18 KST DB 의존도 재검토
+
+### 타임스탬프 기록 원칙
+
+로그가 길어질수록 모든 내용을 다시 읽는 비용이 커진다. 앞으로 큰 판단 변경은 `YYYY-MM-DD HH:mm KST` 헤더로 남기고, 다음 작업 때는 해당 시점 이후만 우선 읽는다. 타임스탬프 자체가 토큰을 줄이는 것은 아니지만, 읽을 범위를 지정할 수 있어 실제 컨텍스트 비용을 줄인다.
+
+### DB-required 재검토 결과
+
+기존 `DB-required` 항목을 다시 보니, “runtime exploit 판정”과 “source/static 보조 진단”을 분리해야 한다.
+
+| 항목 | 재검토 판단 | 이유 |
+|---:|---|---|
+| 02 SQL Injection | `DB-required` 유지 | DB 쿼리 오류, 결과 차이, 인증 우회가 핵심이라 DB 없는 fallback으로 방어 판정을 내리면 과장 |
+| 07 CSRF | 부분적으로 `DB-backed recommended` | token hidden field, server-side token 검증 코드 흔적은 DB 없이 확인 가능. 실제 상태 변경 차단은 DB 필요 |
+| 09 약한 비밀번호 정책 | 부분적으로 `DB-backed recommended` | 비밀번호 길이, 복잡도, blocklist, id 포함 금지 같은 정책 코드 흔적은 DB 없이 확인 가능 |
+| 10 불충분한 인증 절차 | 부분적으로 `DB-backed recommended` | `currentPw` 같은 재인증 입력과 서버 검증 코드 흔적은 DB 없이 확인 가능 |
+| 11 불충분한 권한 검증 | 부분적으로 `DB-backed recommended` | 요청 파라미터 사용자 id를 신뢰하는지, 세션 id를 기준으로 처리하는지 소스에서 일부 확인 가능 |
+| 12 취약한 비밀번호 복구 절차 | 부분적으로 `DB-backed recommended` | 인증번호 노출, 저장, reset 단계 검증 흐름은 소스에서 일부 확인 가능 |
+| 13 프로세스 검증 누락 | 부분적으로 `DB-backed recommended` | 단계 token, session flag, 이전 단계 검증 코드 흔적은 소스에서 일부 확인 가능 |
+| 20 자동화 공격 | `DB-required` 유지 | 반복 요청, 실패 횟수, rate limit은 상태 저장이 핵심. 코드/설정 흔적은 보조 정보일 뿐 fallback 판정으로 충분하지 않음 |
+
+### 다음 구현 준비
+
+`DB-backed recommended` fallback은 두 계열로 준비한다.
+
+| fallback 계열 | 대상 | 구현 방향 |
+|---|---|---|
+| `runtime_fallback_route` | 06, 14, 15, 16, 18 일부 | DB 없는 proof route나 HTTP 응답을 실제 요청하고 기존 status로 판정하되 `conditions`, `scope`를 함께 기록 |
+| `source_assisted_fallback` | 07, 09, 10, 11, 12, 13 | `source_root`가 profile에 있을 때 PHP 소스를 읽어 방어 코드 흔적을 보조 증거로 기록. 강한 근거 없으면 `manual_required` 또는 `inconclusive` |
+
+중요: fallback 전용 합성 status는 만들지 않는다. 결과 status는 기존 vocabulary를 유지하고, DB 없음과 fallback 사용 여부는 `conditions: [db_unavailable, fallback_used]`와 `scope`에 기록한다.

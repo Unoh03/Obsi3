@@ -210,23 +210,45 @@ scope: db_independent_proof_only
 | 04 | 에러 페이지 | `DB-independent` | 없는 경로나 일반 오류 응답 확인. 단 DB 오류 노출을 별도 증거로 볼 때는 DB 영향 있음 |
 | 05 | 정보 노출 | `DB-independent` | 민감 파일 직접 노출 확인 중심 |
 | 06 | XSS | `DB-backed recommended` | reflected proof route는 DB 없이 가능. CARE 게시판 검색/조회 XSS는 DB 정상 동작 필요. stored XSS는 DB-required에 가까움 |
-| 07 | CSRF | `DB-required` | 상태 변경 결과와 rollback 확인이 필요 |
+| 07 | CSRF | `DB-backed recommended` / runtime은 `DB-required` | form token 존재와 처리 코드 흔적은 DB 없이 확인 가능. 실제 상태 변경과 rollback은 DB 필요 |
 | 08 | SSRF | `DB-independent` | URL fetch sink와 internal proof page 중심 |
-| 09 | 약한 비밀번호 정책 | `DB-required` | 회원가입/수정 fixture가 필요 |
-| 10 | 불충분한 인증 절차 | `DB-required` | 회원정보 수정 전 재인증과 실제 수정 결과 확인 필요 |
-| 11 | 불충분한 권한 검증 | `DB-required` | 사용자 A/B, 객체 ID, 파일 소유권 fixture 필요 |
-| 12 | 취약한 비밀번호 복구 절차 | `DB-required` | 계정 존재, 인증번호, reset 흐름 저장 필요 |
-| 13 | 프로세스 검증 누락 | `DB-required` | 단계 우회와 상태 변화 확인 필요 |
+| 09 | 약한 비밀번호 정책 | `DB-backed recommended` / runtime은 `DB-required` | 비밀번호 정책 코드 흔적은 DB 없이 확인 가능. 회원가입/수정 결과 검증은 DB 필요 |
+| 10 | 불충분한 인증 절차 | `DB-backed recommended` / runtime은 `DB-required` | 현재 비밀번호 재확인 코드 흔적은 DB 없이 확인 가능. 실제 변경 차단 여부는 DB 필요 |
+| 11 | 불충분한 권한 검증 | `DB-backed recommended` / runtime은 `DB-required` | 세션 사용자 기준 처리인지 소스에서 일부 확인 가능. 사용자 A/B, 객체 ID 변조 영향은 DB 필요 |
+| 12 | 취약한 비밀번호 복구 절차 | `DB-backed recommended` / runtime은 `DB-required` | 인증번호 저장/노출/검증 코드 흐름은 DB 없이 일부 확인 가능. 계정 존재와 reset 결과는 DB 필요 |
+| 13 | 프로세스 검증 누락 | `DB-backed recommended` / runtime은 `DB-required` | 단계 토큰, 세션 플래그, 이전 단계 검증 코드 흔적은 DB 없이 일부 확인 가능. 실제 우회 성공 여부는 DB 필요 |
 | 14 | 악성 파일 업로드 | `DB-backed recommended` 또는 `DB-required` | 단순 파일 업로드 sink는 FS 중심. CARE 게시판 업로드 흐름은 DB 글/첨부 기록과 엮임 |
 | 15 | 파일 다운로드 | `DB-backed recommended` | known file 직접 다운로드는 DB 없이 가능. 권한/소유권 기반 다운로드는 DB 필요 |
 | 16 | 불충분한 세션 관리 | `DB-backed recommended` | 쿠키 flag는 DB 없이 가능. 로그인 후 세션 변화와 timeout은 DB 필요 |
 | 17 | 데이터 평문 전송 | `DB-independent` | HTTP/HTTPS, form action, transport 관찰 중심 |
 | 18 | 쿠키 변조 | `DB-backed recommended` 또는 `DB-required` | 쿠키 속성 관찰은 DB 없이 가능. 변조 영향 확인은 로그인/권한/상태 필요 |
 | 19 | 관리자 페이지 노출 | `DB-independent` | 후보 URL 접근 가능 여부 중심 |
-| 20 | 자동화 공격 | `DB-required` | 로그인 반복, 게시글 반복 등록, rate limit 확인은 상태 저장 필요 |
+| 20 | 자동화 공격 | `DB-required` | 로그인 반복, 게시글 반복 등록, rate limit 확인은 상태 저장 필요. rate limit 코드/설정 흔적은 보조 정보일 뿐 fallback 판정으로 승격하지 않음 |
 | 21 | 불필요한 Method 악용 | `DB-independent` | HTTP method 응답 중심 |
 
-## 7-2. DB 의존도 기반 실행 전략
+## 7-2. DB-required 재검토 결론
+
+DB가 없을 때 실행 가능한 대체 진단은 두 종류로 나눈다.
+
+| 대체 진단 종류 | 의미 | 최종 status 처리 |
+|---|---|---|
+| `runtime_fallback_route` | DB를 쓰지 않는 proof route를 실제 HTTP로 요청 | 기존 status 사용 가능. 단 `conditions: [db_unavailable, fallback_used]`, `scope`를 함께 기록 |
+| `source_assisted_fallback` | profile에 `source_root`가 있을 때 PHP 소스에서 방어 코드 흔적 확인 | 자동 판정은 보수적으로 처리. 강한 근거 없으면 `manual_required` 또는 `inconclusive` |
+
+재검토 결과:
+
+| 번호 | 기존 판단 | 재검토 판단 | 이유 |
+|---:|---|---|---|
+| 02 | `DB-required` | 유지 | SQLi는 DB 쿼리 결과, 오류, 인증 우회가 핵심이다. DB 없는 proof route나 소스 grep만으로 원래 route의 방어 판정을 내리면 과장이다 |
+| 07 | `DB-required` | 부분 승격 | CSRF token hidden field와 서버 검증 코드 흔적은 DB 없이 확인 가능하다. 실제 회원정보 변경 차단은 DB 필요 |
+| 09 | `DB-required` | 부분 승격 | 비밀번호 정책 함수, 길이/복잡도/blocklist 검증 코드는 DB 없이 확인 가능하다. 실제 가입/수정 거부는 DB 필요 |
+| 10 | `DB-required` | 부분 승격 | `currentPw` 같은 재인증 입력과 서버 검증 코드는 DB 없이 확인 가능하다. 실제 수정 차단은 DB 필요 |
+| 11 | `DB-required` | 부분 승격 | 요청 파라미터의 사용자 id를 신뢰하는지, 세션 id를 기준으로 처리하는지 소스에서 일부 확인 가능하다. 권한 우회 성공은 DB 필요 |
+| 12 | `DB-required` | 부분 승격 | 인증번호 노출, 서버 저장, reset 단계 검증 흐름은 소스에서 일부 확인 가능하다. 실제 reset 결과는 DB 필요 |
+| 13 | `DB-required` | 부분 승격 | 이전 단계 완료 플래그, token, session state 검증 흔적은 소스에서 일부 확인 가능하다. 실제 단계 우회 성공은 DB 필요 |
+| 20 | `DB-required` | 유지 | 자동화 공격은 반복 요청에 대한 상태 저장, 실패 횟수, rate limit이 핵심이다. 코드/설정 흔적은 보조 정보일 뿐 대체 진단으로 충분하지 않다 |
+
+## 7-3. DB 의존도 기반 실행 전략
 
 앞으로 check는 다음 순서로 실행한다.
 
