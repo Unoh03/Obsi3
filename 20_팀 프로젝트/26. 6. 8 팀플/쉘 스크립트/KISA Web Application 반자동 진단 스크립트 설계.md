@@ -128,7 +128,7 @@ DB 의존도는 다음 세 단계로 분류한다.
 |---|---|---|
 | `DB-independent` | DB 없이도 원래 항목을 신뢰성 있게 점검 가능 | DB preflight 없이 실행 가능 |
 | `DB-backed recommended` | DB 없이 proof route로 일부 검증 가능하지만, 실제 앱 기능 검증 신뢰도는 낮아짐 | 원 route baseline 실패 시 DB-less fallback을 실행할 수 있음 |
-| `DB-required` | DB, 세션, fixture, 상태 저장이 없으면 원래 항목 점검 의미가 거의 없음 | fallback으로 `not_vulnerable`을 내지 말고 `error` 또는 `manual_required`로 남김 |
+| `DB-required` | DB, 세션, fixture, 상태 저장이 없으면 원래 항목 점검 의미가 거의 없음 | fallback으로 원래 항목의 방어 판정을 내지 않고, DB 준비 후 재실행하거나 `manual_required` / `inconclusive`로 남김 |
 
 ### DB-less fallback 원칙
 
@@ -147,23 +147,24 @@ board_search가 DB 오류로 500
 올바른 표현:
 
 ```text
-primary_status: error
-condition: db_unavailable
-fallback_status: not_vulnerable
-fallback_scope: db_independent_proof_only
+status: not_vulnerable
+conditions: [db_unavailable, fallback_used]
+scope: db_independent_proof_only
 ```
 
 즉 보고서에는 다음처럼 표현한다.
 
 ```text
-[db_unavailable, fallback_not_vulnerable]
+status: not_vulnerable
+conditions: db_unavailable, fallback_used
+scope: db_independent_proof_only
 ```
 
-이 의미는 **DB 없는 대체 route에서는 방어 근거가 확인됐지만, 원래 CARE 기능은 DB 장애로 판정하지 못했다**는 것이다.
+이 의미는 **DB 없는 대체 route에서는 방어 근거가 확인됐지만, 원래 CARE 기능은 DB 장애로 판정하지 못했다**는 것이다. fallback 전용 합성 status를 새로 만들지 않는다.
 
 ### fallback 금지선
 
-`DB-required` 항목에는 자동 fallback을 걸지 않는다. 예를 들어 CSRF, 약한 비밀번호 정책, 불충분한 인증 절차는 실제 DB 상태 변경과 rollback이 있어야 의미가 있다. 이 경우 DB가 없으면 `error` 또는 `manual_required`로 남기고, DB를 켠 뒤 다시 실행한다.
+`DB-required` 항목에는 자동 fallback을 걸지 않는다. 예를 들어 CSRF, 약한 비밀번호 정책, 불충분한 인증 절차는 실제 DB 상태 변경과 rollback이 있어야 의미가 있다. 이 경우 DB가 없으면 `manual_required` 또는 `inconclusive`로 남기고, DB를 켠 뒤 다시 실행한다.
 
 ## 7. KISA Web Application 01~21 자동화 가능성 분류
 
@@ -235,7 +236,7 @@ fallback_scope: db_independent_proof_only
 3. baseline이 500이면 DB 오류인지 일반 route 오류인지 분류
 4. DB-backed recommended이면 fallback route 실행 가능
 5. DB-required이면 fallback하지 않고 DB 준비 후 재실행
-6. result/report에는 primary status와 fallback status를 분리 기록
+6. result/report에는 최종 `status`와 별도로 `conditions`, `scope`, primary/fallback route 기록을 남김
 ```
 
 예시:

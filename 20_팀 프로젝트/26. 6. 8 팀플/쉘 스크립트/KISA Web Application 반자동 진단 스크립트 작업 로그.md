@@ -1889,19 +1889,20 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode attack-act
 표현 기준:
 
 ```text
-primary_status: error
-condition: db_unavailable
-fallback_status: not_vulnerable
-fallback_scope: db_independent_proof_only
+status: not_vulnerable
+conditions: [db_unavailable, fallback_used]
+scope: db_independent_proof_only
 ```
 
 보고서 요약 표현:
 
 ```text
-[db_unavailable, fallback_not_vulnerable]
+status: not_vulnerable
+conditions: db_unavailable, fallback_used
+scope: db_independent_proof_only
 ```
 
-이 의미는 “DB 없는 대체 route에서는 방어 근거가 확인됐지만, 원래 CARE 기능은 DB 장애로 판정하지 못했다”는 것이다.
+이 의미는 “DB 없는 대체 route에서는 방어 근거가 확인됐지만, 원래 CARE 기능은 DB 장애로 판정하지 못했다”는 것이다. fallback 전용 합성 status는 만들지 않는다.
 
 ### fallback 금지
 
@@ -1926,9 +1927,9 @@ fallback_scope: db_independent_proof_only
 
 1. check YAML에 `db_dependency` 필드 추가
 2. `DB-backed recommended` 항목에 `fallback_step` 또는 `fallback_route` 추가
-3. baseline 500이 DB 오류 패턴이면 `condition: db_unavailable` 기록
-4. fallback 결과는 `fallback_status`로 따로 기록
-5. `result.json`과 `report.md`에서 primary와 fallback을 분리 출력
+3. baseline 500이 DB 오류 패턴이면 `conditions: [db_unavailable]` 기록
+4. fallback 실행 여부는 `conditions: [fallback_used]`와 `scope`로 따로 기록
+5. `result.json`과 `report.md`에서 최종 `status`와 primary/fallback route 근거를 분리 출력
 
 우선 적용 후보:
 
