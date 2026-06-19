@@ -893,6 +893,10 @@ class CheckerRunner:
         not_vulnerable_statuses = int_set(step.get("not_vulnerable_statuses"), [])
         not_vulnerable_body_patterns = str_list(step.get("not_vulnerable_body_patterns"))
         not_vulnerable_header_patterns = str_list(step.get("not_vulnerable_header_patterns"))
+        baseline_expected_statuses = int_set(step.get("baseline_expected_statuses"), [])
+        baseline_unexpected_status = str(step.get("baseline_unexpected_status", "inconclusive"))
+        if baseline_unexpected_status not in CONFIGURABLE_STATUSES:
+            raise ConfigError(f"Invalid baseline_unexpected_status: {baseline_unexpected_status}")
         no_match_status = str(step.get("no_match_status", "inconclusive"))
         if no_match_status not in CONFIGURABLE_STATUSES:
             raise ConfigError(f"Invalid no_match_status: {no_match_status}")
@@ -934,6 +938,15 @@ class CheckerRunner:
                 findings.append(
                     f"Route `{route_name}` baseline returned {response.status_code}."
                 )
+                if (
+                    baseline_expected_statuses
+                    and response.status_code not in baseline_expected_statuses
+                ):
+                    statuses.append(baseline_unexpected_status)
+                    findings.append(
+                        f"Route `{route_name}` baseline returned unexpected status {response.status_code}; payload comparison is not reliable."
+                    )
+                    continue
                 baseline_body_matches = find_regex_matches(
                     response.text, vulnerable_body_patterns
                 )

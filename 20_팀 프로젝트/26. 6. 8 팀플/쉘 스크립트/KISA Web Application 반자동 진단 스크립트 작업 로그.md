@@ -1782,6 +1782,86 @@ find evidence/<RUN_ID>/06_XSS -type f | sort
 1. 사용자가 WEB VM에서 06 실제 실행 결과를 가져오면 `result.json`, `report.md`, raw response 기준으로 판정이 맞는지 본다.
 2. 06 reflected 결과가 안정되면 다음 항목은 10 불충분한 인증 절차 또는 11 불충분한 권한 검증으로 넘어간다.
 
+## 2026-06-19 06 XSS WEB VM 결과 반영
+
+### 관찰 결과
+
+WEB VM에서 06 XSS를 실제 실행했을 때 다음 결과가 나왔다.
+
+```bash
+cd ~/kisa-webapp-checker
+python3 checker.py --profile profiles/care.yml --checks checks --mode attack-active --check-id 06
+```
+
+```text
+[OK] run_id=20260619-053520-080912
+[manual_required] 06 XSS
+```
+
+`result.json` 기준 findings:
+
+```text
+Route `board_search` baseline returned 500.
+Route `board_search` payload #1 returned 500; no configured exposure or blocking pattern matched.
+Route `board_search` payload #2 returned 500; no configured exposure or blocking pattern matched.
+```
+
+### 판단
+
+이 결과는 XSS가 애매하다는 뜻이 아니라, baseline부터 500이라서 XSS payload 비교가 신뢰 불가능하다는 뜻이다.
+
+정상적인 reflected XSS 검사는 baseline 검색 요청이 먼저 200으로 동작해야 한다. baseline이 500이면 route, DB, PHP 오류, 설정 문제 같은 선행 오류를 먼저 해결해야 한다.
+
+### 보강 내용
+
+- `payload_probe`에 `baseline_expected_statuses`와 `baseline_unexpected_status`를 추가했다.
+- 06 XSS check에는 다음 기준을 넣었다.
+
+```yaml
+baseline_expected_statuses:
+  - 200
+baseline_unexpected_status: "error"
+```
+
+이제 WEB VM에서 같은 상황이 나오면 `manual_required`가 아니라 `error`로 떨어지는 것이 맞다.
+
+### 재검증
+
+로컬 구조 검증:
+
+```powershell
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --check-id 06 --output "$env:TEMP\kisa-xss-baseline-status-06"
+python checker.py --profile profiles/care.yml --checks checks --mode attack-active --validate-only --output "$env:TEMP\kisa-xss-baseline-status-all"
+python -c "import py_compile, tempfile; f=tempfile.NamedTemporaryFile(delete=False, suffix='.pyc'); f.close(); py_compile.compile('checker.py', cfile=f.name, doraise=True); print('py_compile ok')"
+git diff --check
+```
+
+확인 결과:
+
+```text
+[ready] 06 XSS
+py_compile ok
+git diff --check 통과
+```
+
+### 다음 확인
+
+WEB VM에서 다시 실행한다.
+
+```bash
+cd ~/kisa-webapp-checker
+python3 checker.py --profile profiles/care.yml --checks checks --mode attack-active --check-id 06
+```
+
+예상:
+
+| 결과 | 의미 |
+|---|---|
+| `error` | baseline이 여전히 500이라 검사 대상 route가 먼저 고장난 상태 |
+| `vulnerable` | baseline은 정상이고 payload가 실행 가능한 형태로 반사됨 |
+| `not_vulnerable` | baseline은 정상이고 payload가 escape된 근거 확인 |
+| `manual_required` | baseline은 정상이나 자동 rule로 반사/escape 판단 부족 |
+
 ## 다음 기록 템플릿
 
 ```markdown

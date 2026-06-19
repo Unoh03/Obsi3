@@ -203,6 +203,7 @@ python checker.py --profile profiles/care.yml --checks checks --mode attack-acti
 | `vulnerable` | 응답 본문에 실행 가능한 `<script>` 또는 `onerror` payload가 그대로 반사됨 |
 | `not_vulnerable` | 응답 본문에서 payload가 HTML entity로 escape된 근거가 확인됨 |
 | `manual_required` | 응답은 받았지만 반사/escape 근거가 부족해 브라우저 또는 코드 확인 필요 |
+| `error` | baseline이 200이 아니어서 XSS 비교 자체가 신뢰 불가능함 |
 
 Stored XSS는 글쓰기 fixture가 필요하므로 현재 06 자동 check에는 포함하지 않는다. 이후 별도 `state-changing` 후보로 분리하고, controlled test post와 browser screenshot evidence를 붙인다.
 

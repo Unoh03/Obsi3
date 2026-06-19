@@ -11,6 +11,9 @@ steps:
       - board_search
     parameter: data
     baseline_value: "kisa-baseline"
+    baseline_expected_statuses:
+      - 200
+    baseline_unexpected_status: "error"
     payloads_file: "payloads/xss.yml"
     payload_group: "reflected_basic"
     vulnerable_statuses: []
