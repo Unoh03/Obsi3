@@ -1862,6 +1862,83 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode attack-act
 | `not_vulnerable` | baseline은 정상이고 payload가 escape된 근거 확인 |
 | `manual_required` | baseline은 정상이나 자동 rule로 반사/escape 판단 부족 |
 
+## 2026-06-19 DB 의존도 축 추가 결정
+
+### 배경
+
+06 XSS 실행 중 `board_search` baseline이 500을 반환했다. 이 때문에 XSS payload가 반사되는지, escape되는지 비교할 수 없었다.
+
+이 문제는 단순히 06 XSS만의 문제가 아니다. SQL Injection, XSS, CSRF처럼 DB 또는 상태 저장 기능과 엮인 항목은 DB가 꺼져 있거나 fixture가 없으면 진단 결과가 왜곡된다.
+
+### 결정
+
+설계 문서에 DB 의존도 축을 추가했다.
+
+| DB 의존도 | 의미 |
+|---|---|
+| `DB-independent` | DB 없이도 신뢰성 있게 점검 가능 |
+| `DB-backed recommended` | DB 없이 proof route로 일부 검증 가능하지만 실제 앱 기능 검증 신뢰도는 낮아짐 |
+| `DB-required` | DB, 세션, fixture, 상태 저장이 없으면 원래 항목 점검 의미가 거의 없음 |
+
+### fallback 정책
+
+`DB-backed recommended` 항목은 원 route가 DB 오류로 500을 내면 DB-less fallback route를 실행할 수 있다.
+
+하지만 fallback 결과를 원 route의 최종 안전 판정으로 승격하지 않는다.
+
+표현 기준:
+
+```text
+primary_status: error
+condition: db_unavailable
+fallback_status: not_vulnerable
+fallback_scope: db_independent_proof_only
+```
+
+보고서 요약 표현:
+
+```text
+[db_unavailable, fallback_not_vulnerable]
+```
+
+이 의미는 “DB 없는 대체 route에서는 방어 근거가 확인됐지만, 원래 CARE 기능은 DB 장애로 판정하지 못했다”는 것이다.
+
+### fallback 금지
+
+`DB-required` 항목은 fallback하지 않는다.
+
+예:
+
+- 02 SQL Injection
+- 07 CSRF
+- 09 약한 비밀번호 정책
+- 10 불충분한 인증 절차
+- 11 불충분한 권한 검증
+- 12 취약한 비밀번호 복구 절차
+- 13 프로세스 검증 누락
+- 20 자동화 공격
+
+이 항목들은 DB/세션/fixture/상태 변경이 핵심이라, 대체 proof route를 돌려도 원래 취약점 진단으로 보기 어렵다.
+
+### 다음 구현 기준
+
+다음 코드 작업에서는 다음을 검토한다.
+
+1. check YAML에 `db_dependency` 필드 추가
+2. `DB-backed recommended` 항목에 `fallback_step` 또는 `fallback_route` 추가
+3. baseline 500이 DB 오류 패턴이면 `condition: db_unavailable` 기록
+4. fallback 결과는 `fallback_status`로 따로 기록
+5. `result.json`과 `report.md`에서 primary와 fallback을 분리 출력
+
+우선 적용 후보:
+
+| 우선순위 | 항목 | 이유 |
+|---:|---:|---|
+| 1 | 06 XSS | 현재 board_search 500으로 실제 문제가 드러남 |
+| 2 | 15 파일 다운로드 | known file 직접 다운로드와 DB 기반 권한 검증을 분리하기 좋음 |
+| 3 | 16 세션 관리 | cookie flag 관찰과 로그인 후 세션 변화 확인을 분리해야 함 |
+| 4 | 14 악성 파일 업로드 | FS 기반 업로드 proof와 게시판 DB 연동 업로드를 분리해야 함 |
+
 ## 다음 기록 템플릿
 
 ```markdown

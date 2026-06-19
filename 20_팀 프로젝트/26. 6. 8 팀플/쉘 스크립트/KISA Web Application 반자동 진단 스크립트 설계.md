@@ -118,6 +118,53 @@ mode가 높아질수록 명시적 flag와 confirm을 요구한다.
 state-changing 이상은 rollback checklist를 생성한다.
 ```
 
+## 6-1. DB 의존도와 대체 진단 정책
+
+KISA Web Application 항목은 실행 위험도뿐 아니라 **DB 의존도**도 함께 봐야 한다. 실행 mode가 낮아도 DB가 꺼져 있으면 baseline route가 500이 되어 진단 결과가 왜곡될 수 있다.
+
+DB 의존도는 다음 세 단계로 분류한다.
+
+| DB 의존도 | 의미 | 처리 원칙 |
+|---|---|---|
+| `DB-independent` | DB 없이도 원래 항목을 신뢰성 있게 점검 가능 | DB preflight 없이 실행 가능 |
+| `DB-backed recommended` | DB 없이 proof route로 일부 검증 가능하지만, 실제 앱 기능 검증 신뢰도는 낮아짐 | 원 route baseline 실패 시 DB-less fallback을 실행할 수 있음 |
+| `DB-required` | DB, 세션, fixture, 상태 저장이 없으면 원래 항목 점검 의미가 거의 없음 | fallback으로 `not_vulnerable`을 내지 말고 `error` 또는 `manual_required`로 남김 |
+
+### DB-less fallback 원칙
+
+`DB-backed recommended` 항목은 원래 CARE route가 DB 오류로 500을 내는 경우, profile에 정의된 DB 없는 proof route를 대체 진단으로 실행할 수 있다.
+
+다만 fallback 결과는 원래 기능의 최종 안전 판정으로 승격하지 않는다.
+
+잘못된 표현:
+
+```text
+board_search가 DB 오류로 500
+-> reflected proof route가 escape됨
+-> 06 XSS는 not_vulnerable
+```
+
+올바른 표현:
+
+```text
+primary_status: error
+condition: db_unavailable
+fallback_status: not_vulnerable
+fallback_scope: db_independent_proof_only
+```
+
+즉 보고서에는 다음처럼 표현한다.
+
+```text
+[db_unavailable, fallback_not_vulnerable]
+```
+
+이 의미는 **DB 없는 대체 route에서는 방어 근거가 확인됐지만, 원래 CARE 기능은 DB 장애로 판정하지 못했다**는 것이다.
+
+### fallback 금지선
+
+`DB-required` 항목에는 자동 fallback을 걸지 않는다. 예를 들어 CSRF, 약한 비밀번호 정책, 불충분한 인증 절차는 실제 DB 상태 변경과 rollback이 있어야 의미가 있다. 이 경우 DB가 없으면 `error` 또는 `manual_required`로 남기고, DB를 켠 뒤 다시 실행한다.
+
 ## 7. KISA Web Application 01~21 자동화 가능성 분류
 
 | 번호 | 항목 | 자동화 수준 | 기본 mode | 설계 판단 |
@@ -150,6 +197,55 @@ state-changing 이상은 rollback checklist를 생성한다.
 01~21을 모두 설계 대상으로 포함한다.
 하지만 21개를 모두 완전 자동화 가능하다고 보지 않는다.
 업무 흐름, 권한, 복구 절차, SSRF sink처럼 앱 문맥이 필요한 항목은 반자동 또는 수동으로 남긴다.
+```
+
+## 7-1. 항목별 DB 의존도
+
+| 번호 | 항목 | DB 의존도 | DB 영향 판단 |
+|---:|---|---|---|
+| 01 | 코드 인젝션 | `DB-independent` 또는 `DB-backed recommended` | OS Command, SSI, XXE, SSTI는 DB 없이 가능. XPath/LDAP처럼 저장소가 필요한 하위 유형은 별도 분류 |
+| 02 | SQL 인젝션 | `DB-required` | DB 쿼리 오류, 결과 차이, 인증 우회 여부가 핵심이라 DB 없으면 신뢰도 크게 하락 |
+| 03 | 디렉터리 인덱싱 | `DB-independent` | 디렉터리 응답만 확인 |
+| 04 | 에러 페이지 | `DB-independent` | 없는 경로나 일반 오류 응답 확인. 단 DB 오류 노출을 별도 증거로 볼 때는 DB 영향 있음 |
+| 05 | 정보 노출 | `DB-independent` | 민감 파일 직접 노출 확인 중심 |
+| 06 | XSS | `DB-backed recommended` | reflected proof route는 DB 없이 가능. CARE 게시판 검색/조회 XSS는 DB 정상 동작 필요. stored XSS는 DB-required에 가까움 |
+| 07 | CSRF | `DB-required` | 상태 변경 결과와 rollback 확인이 필요 |
+| 08 | SSRF | `DB-independent` | URL fetch sink와 internal proof page 중심 |
+| 09 | 약한 비밀번호 정책 | `DB-required` | 회원가입/수정 fixture가 필요 |
+| 10 | 불충분한 인증 절차 | `DB-required` | 회원정보 수정 전 재인증과 실제 수정 결과 확인 필요 |
+| 11 | 불충분한 권한 검증 | `DB-required` | 사용자 A/B, 객체 ID, 파일 소유권 fixture 필요 |
+| 12 | 취약한 비밀번호 복구 절차 | `DB-required` | 계정 존재, 인증번호, reset 흐름 저장 필요 |
+| 13 | 프로세스 검증 누락 | `DB-required` | 단계 우회와 상태 변화 확인 필요 |
+| 14 | 악성 파일 업로드 | `DB-backed recommended` 또는 `DB-required` | 단순 파일 업로드 sink는 FS 중심. CARE 게시판 업로드 흐름은 DB 글/첨부 기록과 엮임 |
+| 15 | 파일 다운로드 | `DB-backed recommended` | known file 직접 다운로드는 DB 없이 가능. 권한/소유권 기반 다운로드는 DB 필요 |
+| 16 | 불충분한 세션 관리 | `DB-backed recommended` | 쿠키 flag는 DB 없이 가능. 로그인 후 세션 변화와 timeout은 DB 필요 |
+| 17 | 데이터 평문 전송 | `DB-independent` | HTTP/HTTPS, form action, transport 관찰 중심 |
+| 18 | 쿠키 변조 | `DB-backed recommended` 또는 `DB-required` | 쿠키 속성 관찰은 DB 없이 가능. 변조 영향 확인은 로그인/권한/상태 필요 |
+| 19 | 관리자 페이지 노출 | `DB-independent` | 후보 URL 접근 가능 여부 중심 |
+| 20 | 자동화 공격 | `DB-required` | 로그인 반복, 게시글 반복 등록, rate limit 확인은 상태 저장 필요 |
+| 21 | 불필요한 Method 악용 | `DB-independent` | HTTP method 응답 중심 |
+
+## 7-2. DB 의존도 기반 실행 전략
+
+앞으로 check는 다음 순서로 실행한다.
+
+```text
+1. DB 의존도 확인
+2. baseline route 정상성 확인
+3. baseline이 500이면 DB 오류인지 일반 route 오류인지 분류
+4. DB-backed recommended이면 fallback route 실행 가능
+5. DB-required이면 fallback하지 않고 DB 준비 후 재실행
+6. result/report에는 primary status와 fallback status를 분리 기록
+```
+
+예시:
+
+```text
+06 XSS
+- primary route: board_search
+- DB가 켜져 있으면 board_search로 실제 CARE 검색 XSS 진단
+- DB가 꺼져 board_search baseline이 500이면 reflected_xss_proof 같은 DB-less route로 fallback 가능
+- 단, fallback 결과는 CARE 게시판 검색의 최종 판정이 아니라 checker/payload/escape 동작의 대체 증거로만 기록
 ```
 
 ## 8. MVP 구현 순서
