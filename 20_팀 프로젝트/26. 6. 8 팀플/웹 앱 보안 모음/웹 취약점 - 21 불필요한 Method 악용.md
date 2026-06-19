@@ -217,12 +217,12 @@ Content-Type: text/html; charset=iso-8859-1
 
 ## 5. 현재 서버 상태 요약
 
-|Method|점검 명령|실제 결과|판단|
-|---|---|---|---|
-|`OPTIONS`|`curl -i -X OPTIONS http://172.168.10.10/`|`200 OK`, CARE 메인 HTML 반환|허용됨. 단독 취약은 아님|
-|`TRACE`|`curl -i -X TRACE http://172.168.10.10/`|`405 Method Not Allowed`|차단됨|
-|`PUT`|`curl -i -X PUT --data "method-test" http://172.168.10.10/method-test.txt`|`405 Method Not Allowed`, `Allow: GET,POST,OPTIONS,HEAD`|차단됨|
-|`DELETE`|미수행|미확인|추가 확인 필요|
+| Method    | 점검 명령                                                                      | 실제 결과                                                    | 판단             |
+| --------- | -------------------------------------------------------------------------- | -------------------------------------------------------- | -------------- |
+| `OPTIONS` | `curl -i -X OPTIONS http://172.168.10.10/`                                 | `200 OK`, CARE 메인 HTML 반환                                | 허용됨. 단독 취약은 아님 |
+| `TRACE`   | `curl -i -X TRACE http://172.168.10.10/`                                   | `405 Method Not Allowed`                                 | 차단됨            |
+| `PUT`     | `curl -i -X PUT --data "method-test" http://172.168.10.10/method-test.txt` | `405 Method Not Allowed`, `Allow: GET,POST,OPTIONS,HEAD` | 차단됨            |
+| `DELETE`  | `curl -i -X DELETE http://172.168.10.10/method-test.txt`                   | `405 Method Not Allowed`, `Allow: POST,OPTIONS,HEAD,GET` | 차단됨.           |
 
 현재까지 확인한 결과, `TRACE`와 `PUT`은 차단되어 있다. `OPTIONS`는 허용되지만, 응답상 위험한 Method 허용 근거는 확인되지 않았다.
 
@@ -329,7 +329,7 @@ curl -i -X PUT --data "method-test" http://172.168.10.10/method-test.txt
 ### DELETE
 
 -  `DELETE /method-test.txt` 요청 확인 필요
-    
+![[Pasted image 20260619153805.png]]
 
 ```bash
 curl -i -X DELETE http://172.168.10.10/method-test.txt
