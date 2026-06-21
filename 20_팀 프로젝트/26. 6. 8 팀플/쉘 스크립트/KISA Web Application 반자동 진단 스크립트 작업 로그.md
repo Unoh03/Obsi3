@@ -2233,3 +2233,55 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode attack-act
 
 - R2의 08 SSRF은 별도 evidence로 다시 확인한다.
 - 06 stored XSS는 DB가 준비된 뒤 state-changing R4에서 검증한다.
+
+## 2026-06-21 16:32 KST R2 08 SSRF WEB VM 확인과 R2 완료
+
+### 실행
+
+```bash
+python3 checker.py --profile profiles/care.yml --checks checks --mode attack-active --check-id 08
+```
+
+```text
+[OK] run_id=20260621-163232-931266
+[not_vulnerable] 08 SSRF
+```
+
+### Evidence
+
+baseline request는 `fetch.php?url=http://172.168.10.10/`에 HTTP 200으로 도달했다. 응답 본문에는 application 내부 `curl`의 5초 timeout이 기록됐다.
+
+```text
+[HTTP_CODE]
+0
+
+[ERROR]
+Connection timed out after 5003 milliseconds
+```
+
+이는 external baseline 대상의 연결성 문제이며, loopback 요청이 허용됐다는 증거는 아니다.
+
+payload request는 `fetch.php?url=http://127.0.0.1/vuln/ssrf/internal-proof.php`를 사용했고, 응답은 다음 차단 근거를 반환했다.
+
+```text
+HTTP 200 OK
+
+허용되지 않은 요청 대상입니다.
+```
+
+08 check는 HTTP 200만으로 성공을 판단하지 않는다. 응답 body의 configured blocking pattern을 매칭했으므로 `not_vulnerable`로 판정했다.
+
+### R2 완료 판정
+
+| 항목 | WEB VM 결과 | 판정 범위 |
+|---|---|---|
+| 06 XSS | `not_vulnerable` | DB-less reflected proof route의 HTML escaping 근거. board search/stored XSS는 R4 |
+| 08 SSRF | `not_vulnerable` | controlled loopback proof URL 차단 근거. 외부 URL 연결성 평가는 범위 밖 |
+
+R2는 실제 WEB VM에서 evidence를 생성하고, status와 범위를 구분하는 목표를 충족했다.
+
+### 다음 기준
+
+- 다음 단계는 R3 source-assisted fallback 설계다.
+- 우선 범위는 07 CSRF, 09 약한 비밀번호 정책, 11 불충분한 권한 검증, 12 취약한 비밀번호 복구 절차, 13 프로세스 검증 누락이다.
+- R3에서는 DB fixture, 로그인, 상태 변경 요청을 실행하지 않는다.

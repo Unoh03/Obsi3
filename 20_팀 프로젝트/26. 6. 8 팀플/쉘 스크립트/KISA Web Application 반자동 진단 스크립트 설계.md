@@ -369,29 +369,41 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode attack-act
 
 이 `not_vulnerable`은 proof route의 HTML escaping 근거에 한정한다. DB-backed `board_search`의 stored/reflected XSS 안전 판정은 아니며, DB와 fixture가 준비된 R4에서 별도로 검증한다.
 
-## 8-1. v3 구현 순서 확정
+### R2 08 SSRF 실제 실행 결과
 
-v3는 새로운 엔진 대공사가 아니라, 이미 존재하는 profile/check/payload/evidence 구조에 **앱 문맥이 필요한 항목**을 하나씩 붙이는 단계로 본다.
+WEB VM에서 controlled loopback proof URL을 payload로 실행했다.
 
-현재 v3 후보의 판단은 다음과 같다.
+```text
+python3 checker.py --profile profiles/care.yml --checks checks --mode attack-active --check-id 08
+-> [not_vulnerable] 08 SSRF
+```
+
+payload response는 HTTP 200이지만 `허용되지 않은 요청 대상입니다.`라는 `fetch.php`의 차단 문구를 포함했다. 따라서 HTTP status만으로 판단하지 않고 body의 configured blocking evidence로 `not_vulnerable`을 판정했다.
+
+baseline의 외부 URL은 application 내부 `curl` timeout을 본문에 기록했지만, 이는 외부 대상 연결성 문제일 뿐 loopback 차단 규칙의 우회 성공 증거는 아니다. R2의 06과 08은 모두 제한된 proof route 또는 controlled payload 범위에서 실제 WEB VM evidence를 생성했다.
+
+## 8-1. R2 완료와 R3 시작점
+
+R2는 완료했다. 다음은 DB 없는 상태에서 원래 runtime 판정을 흉내 내는 작업이 아니라, 이미 있는 `source_assisted_fallback`을 보수적으로 확장하는 R3다.
+
+R3는 새로운 engine 대공사가 아니라, 이미 존재하는 profile/check/payload/evidence 구조에 **앱 문맥이 필요한 항목의 소스 근거**를 하나씩 붙이는 단계로 본다. 10번의 재인증 검사 정의를 대표 구조로 삼는다.
 
 | 우선순위 | 번호 | 항목 | 판단 |
 |---:|---:|---|---|
-| 1 | 08 | SSRF | DB가 필요 없고, 기존 실습용 endpoint와 proof page가 있어 첫 v3 구현 대상으로 가장 적합 |
-| 2 | 12 | 취약한 비밀번호 복구 절차 | `/vuln/password-recovery/` 흐름이 있으나 인증번호, 세션, mailbox, reset 흐름을 함께 다뤄야 함 |
-| 3 | 13 | 프로세스 검증 누락 | 12번의 비밀번호 복구 흐름 위에서 `reset.php` 직접 호출을 확인해야 하므로 12번 이후가 자연스러움 |
-| 4 | 01 | 코드 인젝션 | OS Command, SSI, XPath, XXE, SSTI 등 하위 유형이 많아 단일 check로 묶기보다 별도 분해가 필요 |
+| 1 | 07 | CSRF | token hidden field와 서버 검증 코드 흔적은 source-assisted로 볼 수 있음. 실제 상태 변경은 R4 |
+| 2 | 09 | 약한 비밀번호 정책 | 길이·복잡도·blocklist 검증 함수의 존재를 보조 근거로 기록 가능 |
+| 3 | 11 | 불충분한 권한 검증 | 요청 id 대신 세션 기준 처리가 있는지 확인 가능. 사용자 A/B 우회는 R4 |
+| 4 | 12, 13 | 비밀번호 복구 / 프로세스 검증 | 구현된 `/vuln/password-recovery/` 흐름의 token·session·단계 검증을 소스 근거로 확인 |
 
-따라서 다음 구현 goal은 **08 SSRF check 설계와 구현**으로 시작한다.
+다음 goal은 **R3 대상의 source-assisted 적용 가능 범위와 공통 rule을 설계**하는 것이다. 이 goal에서는 runtime 요청, DB fixture, 회원정보 수정, reset, 파일 업로드를 실행하지 않는다.
 
-08번의 1차 구현 기준:
+R3의 1차 완료 기준:
 
 ```text
-profile에 ssrf_fetch, ssrf_internal_proof route를 둔다.
-check는 fetch.php에 target URL을 주입한다.
-조치 전에는 internal proof 문자열 노출을 vulnerable로 본다.
-조치 후에는 fetch.php에서 내부/loopback 요청이 차단되는 것을 not_vulnerable 또는 manual_required로 본다.
-DB, 로그인, 파일 업로드, 상태 변경, 대량 요청은 사용하지 않는다.
+07, 09, 11, 12, 13의 source files와 판단 가능한 방어/취약 pattern을 확정한다.
+각 check는 source 근거만으로 runtime 안전 판정을 과장하지 않는다.
+source_root가 없거나 파일이 없으면 manual_required 또는 inconclusive로 남긴다.
+DB, 로그인, 상태 변경, 대량 요청은 사용하지 않는다.
 ```
 
 ## 9. 출력물 설계
