@@ -216,3 +216,174 @@ function h($value) {
 조치 후에는 `htmlspecialchars()`를 이용해 제목과 내용을 HTML Entity로 변환하여 출력했고, 같은 payload가 스크립트로 실행되지 않고 문자열로 표시되는 것을 확인했다.
 
 본 항목의 핵심은 입력값을 단순히 DB에 저장하지 않는 것이 아니라, **사용자 입력값이 HTML 문서로 나갈 때 브라우저가 코드로 해석하지 못하도록 출력 인코딩을 적용하는 것**이다.
+
+## 8. 저장형 XSS, 반사형 XSS와 06번 진단의 범위
+
+> [!summary]
+> 이 노트의 CARE 게시판 실습은 **저장형 XSS**다. KISA checker의 06번은 상태 변경 없이 HTTP 응답을 비교하기 위해 **반사형 XSS 후보**를 먼저 확인한다. DB가 꺼져 있을 때 사용하는 `reflected.php`는 checker의 출력 인코딩 판정을 위한 DB 없는 proof route이며, 게시판 저장형 XSS의 최종 안전 판정은 아니다.
+
+### 8.1 두 유형의 차이
+
+| 구분 | 저장형 XSS | 반사형 XSS |
+|---|---|---|
+| 입력 위치 | 게시글 작성, 회원정보 등 저장 기능 | 검색어, 오류 메시지, URL query 등 요청 값 |
+| 저장 여부 | DB나 파일에 저장됨 | 저장하지 않고 현재 응답에 바로 반영됨 |
+| 실행 시점 | 다른 사용자가 저장된 글을 조회할 때 | 공격자가 만든 URL을 열었을 때 |
+| 이번 CARE 근거 | `writeModel.php` -> DB -> `view.php` | `/vuln/xss/reflected.php?data=...` proof route |
+| DB 필요성 | 실제 재현에는 필요 | proof route 기준 필요 없음 |
+| checker 06의 역할 | 이후 state-changing fixture로 별도 점검 | 현재 `attack-active`에서 HTTP 응답 자동 비교 |
+
+현재 CARE에서 실제 증거가 있는 것은 저장형 XSS다. 따라서 `reflected.php` 결과가 `not_vulnerable`이어도, 그것은 게시판의 저장형 XSS가 안전하다는 뜻이 아니다.
+
+### 8.2 06번 checker의 진단 원리
+
+checker는 브라우저를 열어 JavaScript 실행 여부를 직접 보지 않는다. 정상 요청과 payload 요청의 **HTTP 응답 본문**을 비교한다.
+
+```text
+1. baseline: data=kisa-baseline 요청이 200인지 확인
+2. payload: data에 XSS marker를 넣어 GET 요청
+3. raw <script> 또는 onerror marker가 응답에 남으면 vulnerable
+4. &lt;script&gt; 또는 &lt;img처럼 escape되면 not_vulnerable
+5. 어느 근거도 없으면 manual_required
+6. DB-backed baseline이 실패하면 DB 없는 proof route로 fallback
+```
+
+현재 profile의 primary route는 `center/list.php` 검색 기능이다. DB가 없으면 이 route가 500을 내므로, 06번은 `xss_reflected_proof`로 fallback하고 다음 메타데이터를 남긴다.
+
+```text
+conditions: [db_unavailable, fallback_used]
+scope: db_independent_proof_only
+```
+
+이 상태의 `not_vulnerable`은 **DB 없는 proof route에서 출력 인코딩 근거를 확인했다**는 뜻이다. 게시판 검색이나 저장형 XSS의 runtime 결과를 대신하지 않는다.
+
+핵심 실행 분기는 다음과 같다.
+
+```python
+# checker.py의 payload_probe() 핵심 흐름
+if response.status_code not in baseline_expected_statuses:
+    # 예: DB가 없는 board_search가 500
+    fallback_result = self.payload_probe(check, fallback_step, check_dir)
+    statuses.append(fallback_result.status)
+
+body_matches = find_regex_matches(response.text, vulnerable_body_patterns)
+if response.status_code in vulnerable_statuses or body_matches:
+    statuses.append("vulnerable")
+elif find_regex_matches(response.text, not_vulnerable_body_patterns):
+    statuses.append("not_vulnerable")
+else:
+    statuses.append("manual_required")
+```
+
+> [!note]- 06번 XSS 진단 정의 전문 (`checks/06_xss.yml`)
+> ```yaml
+> id: "06"
+> name: "XSS"
+> kisa_section: "X. Web Application"
+> db_dependency: "DB-backed recommended"
+> required_mode: "attack-active"
+> description: "A reflected candidate is probed with XSS payloads. The DB-backed board search can fall back to a profile-defined DB-independent proof route; stored XSS remains a separate state-changing check."
+> steps:
+>   - id: reflected_search_xss_probe
+>     action: payload_probe
+>     summary: "Search-like input parameter is checked for reflected XSS indicators. No state-changing request is sent."
+>     routes:
+>       - board_search
+>     parameter: data
+>     baseline_value: "kisa-baseline"
+>     baseline_expected_statuses:
+>       - 200
+>     baseline_unexpected_status: "error"
+>     fallback_routes:
+>       - xss_reflected_proof
+>     fallback_conditions:
+>       - db_unavailable
+>       - fallback_used
+>     fallback_scope: "db_independent_proof_only"
+>     payloads_file: "payloads/xss.yml"
+>     payload_group: "reflected_basic"
+>     vulnerable_statuses: []
+>     vulnerable_body_patterns:
+>       - '<script[^>]*>\\s*alert\(["'']KISA_XSS["'']\)\\s*</script>'
+>       - '<img\\b[^>]*\\bonerror\\s*=\\s*alert\(["'']KISA_XSS["'']\)'
+>     not_vulnerable_body_patterns:
+>       - '&lt;script&gt;alert'
+>       - '&lt;img'
+>     no_match_status: "manual_required"
+> ```
+
+### 8.3 DB 없는 반사형 XSS proof route
+
+`/vuln/xss/reflected.php`는 DB, 로그인, 게시글 작성 없이 query의 `data` 값을 현재 응답에 반영한다.
+
+| mode | 동작 | 용도 |
+|---|---|---|
+| `safe` | `htmlspecialchars()`로 escape 후 출력 | checker의 방어 근거 확인 기본값 |
+| `vulnerable` | `data`를 그대로 출력 | 조치 전 반사형 XSS 비교 실습 |
+
+checker profile은 항상 `mode=safe`를 보낸다.
+
+```yaml
+xss_reflected_proof:
+  method: GET
+  path: "/vuln/xss/reflected.php"
+  params:
+    mode: "safe"
+    data: "kisa-baseline"
+```
+
+> [!example]- 반사형 XSS proof page 전문 (`vuln/xss/reflected.php`)
+> ```php
+> <?php
+> declare(strict_types=1);
+>
+> header('Content-Type: text/html; charset=UTF-8');
+>
+> $mode = $_GET['mode'] ?? 'safe';
+> $data = $_GET['data'] ?? 'kisa-baseline';
+>
+> if (!is_string($mode) || !in_array($mode, ['safe', 'vulnerable'], true)) {
+>     http_response_code(400);
+>     exit('mode must be safe or vulnerable.');
+> }
+>
+> if (!is_string($data)) {
+>     http_response_code(400);
+>     exit('data must be a string.');
+> }
+>
+> function h(string $value): string
+> {
+>     return htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML5, 'UTF-8', false);
+> }
+>
+> $reflection = $mode === 'vulnerable' ? $data : h($data);
+> ?>
+> <!doctype html>
+> <html lang="ko">
+> <head>
+>     <meta charset="UTF-8">
+>     <title>Reflected XSS Proof Lab</title>
+> </head>
+> <body>
+>     <h1>Reflected XSS Proof Lab</h1>
+>     <p>DB를 사용하지 않는 반사형 XSS와 06번 checker의 출력 인코딩 판정용 실습 페이지다.</p>
+>     <p>mode: <strong><?= h($mode) ?></strong></p>
+>
+>     <h2>Reflection</h2>
+>     <div id="reflection"><?= $reflection ?></div>
+>
+>     <p>기본값은 <code>safe</code>이며, 사용자 입력을 HTML entity로 출력한다.</p>
+>     <p><code>?mode=vulnerable&amp;data=...</code>은 조치 전 반사형 XSS 비교 실습용이다.</p>
+> </body>
+> </html>
+> ```
+
+### 8.4 자동 진단의 한계
+
+> [!important]
+> HTTP 응답에 marker가 남았다는 사실만으로 모든 XSS 실행 가능성을 증명할 수는 없다. HTML attribute, JavaScript string, URL, DOM sink처럼 출력 위치가 달라지면 browser/DOM 확인이 필요하다.
+
+- checker 06은 반사형 후보의 raw reflection 또는 기본 escape 근거를 빠르게 분류한다.
+- 실제 CARE 게시판의 저장형 XSS는 DB, controlled test post, `view.php` 확인, cleanup이 필요한 별도 state-changing 진단으로 남긴다.
+- 따라서 이 proof route는 checker의 DB 없는 fallback을 검증하는 장치이며, 기존 6절의 저장형 XSS 증거를 대체하지 않는다.
