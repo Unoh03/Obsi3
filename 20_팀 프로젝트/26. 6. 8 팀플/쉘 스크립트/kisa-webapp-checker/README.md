@@ -13,7 +13,7 @@ profile -> check -> request -> evidence -> report
 | 단계 | 목표 |
 |---|---|
 | R0 | V.db 기반과 리베이스 기준선 고정 |
-| R1 | DB-independent 자동 점검을 실제 WEB VM에서 안정화 |
+| R1 | DB-independent 중심 자동 점검을 실제 WEB VM에서 안정화 |
 | R2 | DB 없이 가능한 attack-active 항목 안정화 |
 | R3 | source-assisted fallback 확장 |
 | R4 | DB/세션/fixture 기반 runtime 검증 |
@@ -49,18 +49,18 @@ profile -> check -> request -> evidence -> report
 
 ## R1 WEB VM 실행
 
-R1은 DB가 꺼져 있어도 비교적 안정적으로 확인할 수 있는 항목을 먼저 점검한다.
+R1은 `DB-independent` 항목을 실제 WEB VM에서 먼저 점검한다. 15와 16은 함께 관찰할 수 있지만 `DB-backed recommended`이므로, 권한·소유권이나 로그인 후 세션 변화까지 판정하지 않는다.
 
-| 번호 | 항목 | R1 포함 이유 |
-|---:|---|---|
-| 03 | 디렉터리 인덱싱 | 후보 디렉터리 응답과 listing 패턴 중심 |
-| 04 | 에러 페이지 | 없는 경로와 노출 패턴 중심 |
-| 05 | 정보 노출 | 민감 파일 직접 노출 후보 중심 |
-| 15 | 파일 다운로드 | profile에 정의한 known candidate 직접 접근 중심 |
-| 16 | 불충분한 세션 관리 | cookie flag 관찰은 DB 없이 가능. 로그인 후 세션 변화는 R4 |
-| 17 | 데이터 평문 전송 | URL scheme과 form action 관찰 중심 |
-| 19 | 관리자 페이지 노출 | 후보 URL 접근 가능 여부 중심 |
-| 21 | 불필요한 Method 악용 | HTTP method 응답 중심 |
+| 번호 | 항목 | DB 의존도 | R1 포함 이유 |
+|---:|---|---|---|
+| 03 | 디렉터리 인덱싱 | `DB-independent` | 후보 디렉터리 응답과 listing 패턴 중심 |
+| 04 | 에러 페이지 | `DB-independent` | 없는 경로와 노출 패턴 중심 |
+| 05 | 정보 노출 | `DB-independent` | 민감 파일 직접 노출 후보 중심 |
+| 15 | 파일 다운로드 | `DB-backed recommended` | known candidate 직접 접근만 관찰. 권한/소유권은 R4 |
+| 16 | 불충분한 세션 관리 | `DB-backed recommended` | cookie flag 관찰만 수행. 로그인 후 세션 변화는 R4 |
+| 17 | 데이터 평문 전송 | `DB-independent` | URL scheme과 form action 관찰 중심 |
+| 19 | 관리자 페이지 노출 | `DB-independent` | 후보 URL 접근 가능 여부 중심 |
+| 21 | 불필요한 Method 악용 | `DB-independent` | HTTP method 응답 중심 |
 
 WEB VM에서 `~/kisa-webapp-checker`에 있다고 가정하면:
 
@@ -349,7 +349,7 @@ scope: db_independent_proof_only
 
 | 단계 | 구현 후보 |
 |---|---|
-| R2 | 06 reflected XSS fallback, 08 SSRF, 21 Method 같은 DB 없이 가능한 attack-active 항목 |
+| R2 | 06 reflected XSS fallback, 08 SSRF 같은 DB 없이 가능한 attack-active 항목 |
 | R3 | 07, 09, 10, 11, 12, 13 source-assisted fallback 확장 |
 | R4 | 02, 07, 09, 10, 11, 12, 13, 14, 20의 DB/세션/fixture 기반 runtime 검증 |
 | R5 | 전체 실행과 report/evidence 품질 정리 |
