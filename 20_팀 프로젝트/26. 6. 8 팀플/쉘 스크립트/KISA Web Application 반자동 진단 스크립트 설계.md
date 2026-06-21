@@ -406,6 +406,74 @@ source_root가 없거나 파일이 없으면 manual_required 또는 inconclusive
 DB, 로그인, 상태 변경, 대량 요청은 사용하지 않는다.
 ```
 
+### R3 source-assisted 적용 판단
+
+`source_assisted_fallback`은 파일에 특정 문자열이 있다는 사실만 확인한다. 현재 구현은 여러 파일을 하나의 문자열로 합쳐 pattern을 찾고, `vulnerable_patterns`는 하나라도 일치하면 `vulnerable`을 우선한다. 따라서 **방어 코드가 없다는 사실만으로 취약하다고 판정하거나, 취약/조치 분기가 공존하는 실습 코드를 하나의 status로 판정하면 안 된다.**
+
+| 번호 | 적용 판단 | 읽을 파일 | source 근거 후보 | 자동 판정 범위 | R4 runtime으로 남길 범위 |
+|---:|---|---|---|---|---|
+| 07 CSRF | evidence-only, 현재는 `manual_required` | `member/modify.php`, `member/modifyModel.php` | hidden `csrf_token`, session token 저장, `$_POST['csrf_token']`, `hash_equals()` | 방어 pattern이 모두 있을 때만 “token 검증 코드 존재”를 기록. 현재 파일에 pattern이 없다는 사실만으로 취약 확정 금지 | 로그인된 피해자 세션, cross-site form, 실제 회원정보 변경과 rollback |
+| 09 약한 비밀번호 정책 | evidence-only, 현재는 `manual_required` | `member/registerModel.php`, `vuln/password-recovery/reset.php` | 공통 password-policy helper 호출, 최소 길이, 복잡도, blocklist, id 포함/반복 문자 검증 | 특정 handler가 정책 helper를 서버에서 호출하는지 확인. 회원가입과 reset의 정책이 다르면 하나의 안전 판정 금지 | 약한 비밀번호 가입·변경 거부와 test account cleanup |
+| 11 불충분한 권한 검증 | 제한적으로 적용 가능 | `member/modifyModel.php`, `member/deleteModel.php` | `$id = $_SESSION['id']`, `UPDATE`/`DELETE ... WHERE id='$id'` | **회원 수정·탈퇴에서 client-supplied id 대신 session subject를 쓰는지**만 `not_vulnerable` 근거로 기록 가능 | 사용자 A/B, 게시글/파일 소유권, 역할 기반 권한, IDOR 실제 우회 |
+| 12 취약한 비밀번호 복구 절차 | 현재 engine으로 자동 status 금지 | `vuln/password-recovery/request.php`, `verify.php`, `reset.php` | 취약 branch의 고정 코드/화면 노출, 조치 branch의 `random_int`, `password_hash`, 만료·시도 횟수·`password_verify` | source에 취약·조치 mode가 함께 있으므로 branch 목록만 기록. 한 status로 취약/안전 판정 금지 | 등록된 계정, 코드 전달, 만료, 시도 횟수, reset 결과 |
+| 13 프로세스 검증 누락 | 현재 engine으로 자동 status 금지 | `vuln/password-recovery/verify.php`, `reset.php` | 조치 branch의 `verified`, `user_id`, `verified_at`, 만료 확인과 취약 branch의 직접 reset 경로 | 12번과 같은 dual-mode 구조이므로 단계 검증 코드 존재만 기록 | request/verify 생략 후 reset 성공/차단과 DB rollback |
+
+### 공통 YAML rule 형태
+
+현재 engine으로 구현 가능한 제한적 규칙은 다음 형태다. 이는 runtime 안전 판정이 아니라 source evidence의 범위를 명시한다.
+
+```yaml
+- id: bounded_server_side_check
+  action: source_assisted_fallback
+  files:
+    - "member/modifyModel.php"
+  conditions:
+    - source_assisted_evidence_only
+  scope: "member_modify_session_subject_only"
+  not_vulnerable_patterns:
+    - "...server-side session subject pattern..."
+    - "...sensitive query bound to that subject..."
+  not_vulnerable_match: "all"
+  no_match_status: "manual_required"
+  missing_source_status: "manual_required"
+```
+
+이 규칙을 `not_vulnerable` 근거로 사용할 수 있는 조건은 모두 충족해야 한다.
+
+1. 한 endpoint와 한 보안 속성으로 범위가 좁다.
+2. 서버 측 방어 코드가 긍정적으로 확인된다. 단순한 pattern 부재는 근거가 아니다.
+3. 실제 값, DB 상태, 로그인 사용자 조합, mode 분기에 따라 의미가 바뀌지 않는다.
+4. `scope`에 source가 증명한 속성만 쓴다.
+
+### profile 필요값
+
+현재 R3 source-assisted check에 필요한 profile 값은 배포된 앱 소스 루트 하나다.
+
+```yaml
+source_root: "/var/www/html/care"
+```
+
+이 값은 HTTP base URL, 계정, DB 연결값과 다르며, checker가 source evidence를 읽을 WEB VM의 코드 경로다. 07·09·11은 이 값만으로 설계할 수 있다. 12·13은 취약/조치 branch가 공존하므로 향후 `source_variant: vuln|safe` 같은 명시값을 추가하더라도, branch를 실제로 해석하는 engine 지원 전에는 profile에 넣지 않는다.
+
+07·09는 현재 파일에 긍정 방어 근거가 없어 `manual_required`로 남긴다. 12·13은 dual-mode branch를 인식할 수 있는 rule이 아직 없으므로 source evidence 목록만 설계하고 구현하지 않는다.
+
+향후 12·13을 자동화하려면 현재 engine에 다음 중 적어도 하나가 필요하다.
+
+```text
+- vulnerable pattern도 all-match를 요구하는 vulnerable_match: all
+- file별로 pattern을 묶는 per_file_patterns
+- profile이 검사 대상의 vuln/safe branch를 명시하는 source_variant 또는 branch selector
+```
+
+이 확장은 R3의 후속 설계 대상이며, 현재 goal에서는 구현하지 않는다.
+
+### R3 구현 순서
+
+1. 11번의 회원 수정 endpoint부터 session subject binding source check를 추가한다.
+2. 같은 방식으로 회원 탈퇴 endpoint를 별도 source step으로 추가할지 검토한다. 두 endpoint를 한 pattern 묶음으로 합쳐 판정하지 않는다.
+3. 07·09는 source evidence-only 결과 형식이 필요할 때만 추가한다. pattern 부재를 `vulnerable`로 바꾸지 않는다.
+4. 12·13은 branch-aware rule 설계가 끝나기 전까지 `manual_required` scaffold를 유지한다.
+
 ## 9. 출력물 설계
 
 | 출력물 | 내용 |
