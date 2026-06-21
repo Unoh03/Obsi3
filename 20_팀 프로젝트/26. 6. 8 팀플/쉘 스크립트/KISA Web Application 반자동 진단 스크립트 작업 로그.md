@@ -2180,3 +2180,56 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode safe-activ
 - R1의 중심은 `DB-independent`인 03, 04, 05, 17, 19, 21이다. 15와 16은 `DB-backed recommended` 관찰 항목으로 유지한다.
 - 다음 단계 R2는 `06 reflected XSS fallback`과 `08 SSRF`만 다룬다. 21 Method는 이미 R1의 `safe-active` 항목이므로 R2에 넣지 않는다.
 - 이번 기록에서는 `checker.py`, check YAML, profile YAML의 동작을 변경하지 않았다.
+
+## 2026-06-21 16:17 KST R2 06 XSS fallback timeout 보정과 WEB VM 확인
+
+### 관찰
+
+`board_search` baseline은 DB 연결 대기로 5초 timeout이 났다.
+
+```text
+Route `board_search` baseline request failed:
+HTTPConnectionPool(host='127.0.0.1', port=80): Read timed out. (read timeout=5)
+```
+
+동시에 DB 없는 proof route는 정상 동작했다.
+
+```bash
+curl -i 'http://127.0.0.1/vuln/xss/reflected.php?mode=safe&data=kisa-baseline'
+```
+
+```text
+HTTP/1.1 200 OK
+<div id="reflection">kisa-baseline</div>
+```
+
+### 원인과 보정
+
+기존 `payload_probe`는 primary baseline이 HTTP 500처럼 예상 밖 status를 반환할 때만 `fallback_routes`를 실행했다. timeout은 `RequestFailed` 예외로 처리되어 즉시 `error`가 되었고 fallback으로 넘어가지 않았다.
+
+06번처럼 fallback route가 명시된 check에서는 baseline request 실패도 fallback 실행 조건으로 처리하도록 `checker.py`를 보정했다. fallback이 없는 check의 request 실패는 계속 `error`다.
+
+timeout만으로 DB 장애를 단정할 수 없으므로, 06번의 fallback 조건은 `db_unavailable` 대신 `db_backed_primary_unavailable`과 `fallback_used`를 사용한다.
+
+### WEB VM 검증
+
+checker repository를 `8c7805b`까지 pull한 뒤 실행했다.
+
+```bash
+python3 checker.py --profile profiles/care.yml --checks checks --mode attack-active --check-id 06
+```
+
+```text
+[not_vulnerable] 06 XSS
+```
+
+### 판정 범위
+
+- proof route의 `safe` mode에서 XSS payload가 HTML escaping된다는 자동 근거는 확인했다.
+- 이 결과는 `scope: db_independent_proof_only`로 제한한다.
+- DB-backed `board_search`와 stored XSS의 실제 판정은 DB, fixture, 브라우저 증거가 필요한 R4로 남긴다.
+
+### 다음 기준
+
+- R2의 08 SSRF은 별도 evidence로 다시 확인한다.
+- 06 stored XSS는 DB가 준비된 뒤 state-changing R4에서 검증한다.
