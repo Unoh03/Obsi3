@@ -2435,3 +2435,29 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode safe-activ
 ```
 
 - WEB VM 결과에서도 07·09는 `manual_required`, 10도 manual step 때문에 `manual_required`가 정상이다. 10의 source evidence file에는 세 defense pattern이 기록되는지 확인한다.
+
+## 2026-06-22 R3 07·09·10 WEB VM source evidence 확인
+
+### 실행
+
+```text
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active --check-id 07,09,10
+-> run_id=20260622-020251-035025
+-> [manual_required] 07 CSRF
+-> [manual_required] 09 약한 비밀번호 정책
+-> [manual_required] 10 불충분한 인증 절차
+```
+
+### evidence 결과
+
+| 번호 | source file | 확인 결과 | 해석 |
+|---:|---|---|---|
+| 07 | `member/modify.php`, `member/modifyModel.php` | CSRF hidden field, POST token, `hash_equals()` pattern 0개 | source evidence에 방어 pattern이 없지만, 실제 cross-site 변경 전에는 취약 확정 금지 |
+| 09 | `member/registerModel.php`, `member/modifyModel.php` | 공통 password-policy helper pattern 0개 | 주 계정 처리 handler에 해당 helper가 없다는 범위의 evidence이며, 실제 약한 비밀번호 허용은 R4에서 확인 |
+| 10 | `member/modify.php`, `member/modifyModel.php` | `currentPw` input, `$_POST['currentPw']`, DB 재확인 pattern 3개 | 회원 수정 재인증 방어 코드가 배포 source에 존재한다는 제한적 근거 |
+
+### 경계
+
+- 세 check의 `manual_required`는 실패가 아니라 manual step이 의도적으로 병합된 결과다.
+- HTTP request, DB, 로그인, 회원 가입·수정은 실행하지 않았다.
+- 07·09·10의 runtime verdict와 rollback은 R4 DB·세션·fixture 작업으로 남긴다.

@@ -19,10 +19,10 @@ created: 2026-06-17
 | 04 | 에러 페이지 | - [x] safe-active check | - [x] `not_vulnerable` | — | R1 WEB VM evidence 확보 |
 | 05 | 정보 누출 | - [x] safe-active check | - [ ] 실행 결과 `inconclusive` | — | 후보 응답의 추가 근거 필요 |
 | 06 | XSS | - [x] reflected check·fallback 구현 | - [x] reflected proof route `not_vulnerable` | - [ ] board/stored XSS, DB fixture·브라우저 evidence | R2 DB-less 범위만 완료 |
-| 07 | CSRF | - [x] manual·source evidence check | - [ ] WEB VM source evidence | - [ ] 로그인 세션·cross-site form·rollback | token pattern 부재만으로 취약 확정하지 않음 |
+| 07 | CSRF | - [x] manual·source evidence check | - [x] WEB VM에서 CSRF defense pattern 0개 확인 | - [ ] 로그인 세션·cross-site form·rollback | pattern 부재만으로 취약 확정하지 않음 |
 | 08 | SSRF | - [x] attack-active check | - [x] controlled loopback 차단 `not_vulnerable` | — | R2 WEB VM evidence 확보 |
-| 09 | 약한 비밀번호 정책 | - [x] manual·source evidence check | - [ ] WEB VM source evidence | - [ ] 가입/수정 거부와 test account cleanup | policy helper 부재만으로 취약 확정하지 않음 |
-| 10 | 불충분한 인증 절차 | - [x] manual·source-assisted rule | - [ ] source-assisted check WEB VM 실행 | - [ ] 현재 비밀번호 재인증 runtime evidence | local source pattern 3개 일치. WEB VM 확인 필요 |
+| 09 | 약한 비밀번호 정책 | - [x] manual·source evidence check | - [x] WEB VM에서 policy helper pattern 0개 확인 | - [ ] 가입/수정 거부와 test account cleanup | helper 부재만으로 취약 확정하지 않음 |
+| 10 | 불충분한 인증 절차 | - [x] manual·source-assisted rule | - [x] WEB VM에서 재인증 pattern 3개 확인 | - [ ] 현재 비밀번호 재인증 runtime evidence | source evidence 확보. 실제 변경 차단은 R4 필요 |
 | 11 | 불충분한 권한 검증 | - [x] manual·session subject source rule | - [x] WEB VM deployed source에서 session subject pattern 확인 | - [ ] 사용자 A/B·객체 IDOR evidence | R3 회원 수정 범위의 source evidence 확보. 전체 권한 검증은 R4 필요 |
 | 12 | 취약한 비밀번호 복구 절차 | - [x] R3 dual-mode 경계 설계 | - [ ] branch-aware rule | - [ ] 코드 전달·만료·reset 결과 evidence | check YAML 미구현 |
 | 13 | 프로세스 검증 누락 | - [x] R3 dual-mode 경계 설계 | - [ ] branch-aware rule | - [ ] 단계 생략 reset·rollback evidence | check YAML 미구현 |
@@ -508,7 +508,7 @@ source_root: "/var/www/html/care"
 
 1. 11번의 회원 수정 endpoint session subject binding source check를 추가했고, WEB VM run `20260622-014631-686408`에서 `member/modifyModel.php`의 두 pattern을 확인했다. 전체 status는 manual step 때문에 `manual_required`이며, A/B IDOR은 R4에 남긴다.
 2. 같은 방식으로 회원 탈퇴 endpoint를 별도 source step으로 추가할지 검토한다. 두 endpoint를 한 pattern 묶음으로 합쳐 판정하지 않는다.
-3. 07·09는 source evidence-only 결과 형식이 필요할 때만 추가한다. pattern 부재를 `vulnerable`로 바꾸지 않는다.
+3. 07·09 source evidence check를 추가했고, WEB VM에서 defense/helper pattern 부재를 기록했다. pattern 부재를 `vulnerable`로 바꾸지 않는다.
 4. 12·13은 branch-aware rule 설계가 끝나기 전까지 `manual_required` scaffold를 유지한다.
 
 11번 check의 `required_mode`는 `safe-active`다. 현재 포함된 manual step과 source step은 HTTP 요청을 보내지 않으므로 `--confirm-state-changing`이 필요하지 않다. 다만 manual step의 `manual_required`가 source step의 `not_vulnerable`보다 높은 우선순위로 병합되므로, 최종 check status는 의도적으로 `manual_required`다. source evidence는 findings와 evidence 파일에서만 확인한다.
