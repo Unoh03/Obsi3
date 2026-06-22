@@ -2402,3 +2402,36 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode safe-activ
 ### 다음 단계
 
 - 다음 source-assisted 후보는 `member/deleteModel.php`의 session subject binding을 별도 step으로 추가하는 일이다.
+
+## 2026-06-22 R3 07·09·10 source evidence 묶음 구현
+
+### 변경 범위
+
+- `07_csrf.yml`, `09_weak_password_policy.yml`, `10_insufficient_authentication.yml`의 `required_mode`를 `safe-active`로 조정했다.
+- 세 check 모두 manual step을 유지하므로 전체 status는 runtime 검증 전까지 `manual_required`다.
+- 07은 `member/modify.php`, `member/modifyModel.php`에서 CSRF token hidden field·POST token·`hash_equals()` pattern을 찾는다.
+- 09는 주 회원가입·회원수정 handler에서 공통 password-policy helper 호출 pattern을 찾는다.
+- 10은 기존 현재 비밀번호 입력·POST 수신·DB 재확인 pattern을 source evidence로 읽는다.
+
+### 로컬 정적 검증
+
+```text
+python -m compileall -q checker.py
+python checker.py --profile profiles/care.yml --checks checks --mode safe-active --validate-only --check-id 07,09,10
+-> [ready] 07 CSRF
+-> [ready] 09 약한 비밀번호 정책
+-> [ready] 10 불충분한 인증 절차
+```
+
+CARE local source 대조 결과는 07 token pattern 0개, 09 policy helper pattern 0개, 10 re-authentication pattern 3개 일치였다. 이 결과는 source evidence 설계의 기준일 뿐, 07·09를 자동 `vulnerable`로 바꾸지 않는다.
+
+### 미실행 범위와 다음 확인
+
+- 위 검증은 `--validate-only`와 로컬 source read만 수행했다. HTTP 요청, DB, 로그인, 계정 생성·수정은 실행하지 않았다.
+- 다음 WEB VM 확인은 repository 동기화 후 아래 command로 07·09·10 source evidence를 한 번에 생성하는 일이다.
+
+```bash
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active --check-id 07,09,10
+```
+
+- WEB VM 결과에서도 07·09는 `manual_required`, 10도 manual step 때문에 `manual_required`가 정상이다. 10의 source evidence file에는 세 defense pattern이 기록되는지 확인한다.

@@ -19,10 +19,10 @@ created: 2026-06-17
 | 04 | 에러 페이지 | - [x] safe-active check | - [x] `not_vulnerable` | — | R1 WEB VM evidence 확보 |
 | 05 | 정보 누출 | - [x] safe-active check | - [ ] 실행 결과 `inconclusive` | — | 후보 응답의 추가 근거 필요 |
 | 06 | XSS | - [x] reflected check·fallback 구현 | - [x] reflected proof route `not_vulnerable` | - [ ] board/stored XSS, DB fixture·브라우저 evidence | R2 DB-less 범위만 완료 |
-| 07 | CSRF | - [x] manual scaffold·R3 source 범위 설계 | - [ ] source evidence-only check | - [ ] 로그인 세션·cross-site form·rollback | R3 설계만 완료 |
+| 07 | CSRF | - [x] manual·source evidence check | - [ ] WEB VM source evidence | - [ ] 로그인 세션·cross-site form·rollback | token pattern 부재만으로 취약 확정하지 않음 |
 | 08 | SSRF | - [x] attack-active check | - [x] controlled loopback 차단 `not_vulnerable` | — | R2 WEB VM evidence 확보 |
-| 09 | 약한 비밀번호 정책 | - [x] manual scaffold·R3 source 범위 설계 | - [ ] source evidence-only check | - [ ] 가입/수정 거부와 test account cleanup | R3 설계만 완료 |
-| 10 | 불충분한 인증 절차 | - [x] manual·source-assisted rule | - [ ] source-assisted check WEB VM 실행 | - [ ] 현재 비밀번호 재인증 runtime evidence | source rule 존재 |
+| 09 | 약한 비밀번호 정책 | - [x] manual·source evidence check | - [ ] WEB VM source evidence | - [ ] 가입/수정 거부와 test account cleanup | policy helper 부재만으로 취약 확정하지 않음 |
+| 10 | 불충분한 인증 절차 | - [x] manual·source-assisted rule | - [ ] source-assisted check WEB VM 실행 | - [ ] 현재 비밀번호 재인증 runtime evidence | local source pattern 3개 일치. WEB VM 확인 필요 |
 | 11 | 불충분한 권한 검증 | - [x] manual·session subject source rule | - [x] WEB VM deployed source에서 session subject pattern 확인 | - [ ] 사용자 A/B·객체 IDOR evidence | R3 회원 수정 범위의 source evidence 확보. 전체 권한 검증은 R4 필요 |
 | 12 | 취약한 비밀번호 복구 절차 | - [x] R3 dual-mode 경계 설계 | - [ ] branch-aware rule | - [ ] 코드 전달·만료·reset 결과 evidence | check YAML 미구현 |
 | 13 | 프로세스 검증 누락 | - [x] R3 dual-mode 경계 설계 | - [ ] branch-aware rule | - [ ] 단계 생략 reset·rollback evidence | check YAML 미구현 |
@@ -213,10 +213,10 @@ scope: db_independent_proof_only
 | 04 | 에러 페이지 적용 미흡 | 자동 | `safe-active` | 오류 유발 요청 후 path, stack, version 노출 확인 |
 | 05 | 정보 누출 | 자동 | `safe-active` | 민감 파일 후보 URL 접근과 본문 패턴 확인 |
 | 06 | XSS | 자동 / 반자동 | `attack-active` | reflected/stored 여부 확인, 브라우저 실행 증거는 수동 가능 |
-| 07 | CSRF | 반자동 | `state-changing` | token 부재와 상태 변경 요청 재전송 확인 |
+| 07 | CSRF | 반자동 | `safe-active` source / `state-changing` runtime | token·서버 검증 source evidence와 실제 상태 변경 요청 재전송을 분리 |
 | 08 | SSRF | 반자동 / 앱 구현 필요 | `attack-active` | 서버가 URL을 대신 요청하는 sink와 proof target 필요 |
-| 09 | 약한 비밀번호 정책 | 반자동 | `state-changing` | 회원가입/변경 route와 약한 비밀번호 fixture 필요 |
-| 10 | 불충분한 인증 절차 | 반자동 | `state-changing` | 중요 기능 접근 전 재인증 요구 여부 확인 |
+| 09 | 약한 비밀번호 정책 | 반자동 | `safe-active` source / `state-changing` runtime | policy helper source evidence와 회원가입/변경 fixture를 분리 |
+| 10 | 불충분한 인증 절차 | 반자동 | `safe-active` source / `state-changing` runtime | 재인증 source evidence와 중요 기능 변경 차단 runtime을 분리 |
 | 11 | 불충분한 권한 검증 | 반자동 | `state-changing` | 사용자 A/B 권한 fixture와 ID/num 변조 필요 |
 | 12 | 취약한 비밀번호 복구 절차 | 앱 구현 필요 | `state-changing` | 비밀번호 복구 기능이 없으면 manual 또는 N/A |
 | 13 | 프로세스 검증 누락 | 앱 구현 필요 | `state-changing` | 정상 업무 순서와 우회 endpoint 정의 필요 |
