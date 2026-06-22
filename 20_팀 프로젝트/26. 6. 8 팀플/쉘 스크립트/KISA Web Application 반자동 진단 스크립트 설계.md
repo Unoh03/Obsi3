@@ -23,7 +23,7 @@ created: 2026-06-17
 | 08 | SSRF | - [x] attack-active check | - [x] controlled loopback 차단 `not_vulnerable` | — | R2 WEB VM evidence 확보 |
 | 09 | 약한 비밀번호 정책 | - [x] manual scaffold·R3 source 범위 설계 | - [ ] source evidence-only check | - [ ] 가입/수정 거부와 test account cleanup | R3 설계만 완료 |
 | 10 | 불충분한 인증 절차 | - [x] manual·source-assisted rule | - [ ] source-assisted check WEB VM 실행 | - [ ] 현재 비밀번호 재인증 runtime evidence | source rule 존재 |
-| 11 | 불충분한 권한 검증 | - [x] manual·session subject source rule | - [ ] session subject source check WEB VM 실행 | - [ ] 사용자 A/B·객체 IDOR evidence | R3 회원 수정 rule 구현 완료 |
+| 11 | 불충분한 권한 검증 | - [x] manual·session subject source rule | - [x] WEB VM deployed source에서 session subject pattern 확인 | - [ ] 사용자 A/B·객체 IDOR evidence | R3 회원 수정 범위의 source evidence 확보. 전체 권한 검증은 R4 필요 |
 | 12 | 취약한 비밀번호 복구 절차 | - [x] R3 dual-mode 경계 설계 | - [ ] branch-aware rule | - [ ] 코드 전달·만료·reset 결과 evidence | check YAML 미구현 |
 | 13 | 프로세스 검증 누락 | - [x] R3 dual-mode 경계 설계 | - [ ] branch-aware rule | - [ ] 단계 생략 reset·rollback evidence | check YAML 미구현 |
 | 14 | 악성 파일 업로드 | - [x] state-changing manual scaffold | - [ ] 파일 처리 source/proof evidence | - [ ] 게시글 DB 연동 업로드·cleanup evidence | check 존재 |
@@ -506,7 +506,7 @@ source_root: "/var/www/html/care"
 
 ### R3 구현 순서
 
-1. 11번의 회원 수정 endpoint session subject binding source check를 추가했다. `member/modifyModel.php`에서 session id 대입과 `UPDATE ... WHERE id='$id'`를 함께 확인한다.
+1. 11번의 회원 수정 endpoint session subject binding source check를 추가했고, WEB VM run `20260622-014631-686408`에서 `member/modifyModel.php`의 두 pattern을 확인했다. 전체 status는 manual step 때문에 `manual_required`이며, A/B IDOR은 R4에 남긴다.
 2. 같은 방식으로 회원 탈퇴 endpoint를 별도 source step으로 추가할지 검토한다. 두 endpoint를 한 pattern 묶음으로 합쳐 판정하지 않는다.
 3. 07·09는 source evidence-only 결과 형식이 필요할 때만 추가한다. pattern 부재를 `vulnerable`로 바꾸지 않는다.
 4. 12·13은 branch-aware rule 설계가 끝나기 전까지 `manual_required` scaffold를 유지한다.

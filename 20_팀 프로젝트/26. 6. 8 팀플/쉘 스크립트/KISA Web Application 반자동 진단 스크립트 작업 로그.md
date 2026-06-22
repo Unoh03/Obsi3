@@ -2376,3 +2376,29 @@ git diff --check 통과
 
 - WEB VM에 checker 변경을 반영한 뒤 `safe-active --check-id 11`을 실행해 source evidence file과 `manual_required` 병합 결과를 확인한다.
 - 다음 code change 후보는 `member/deleteModel.php`를 별도 source step으로 추가하는 일이다. 07·09·12·13으로 확장하지 않는다.
+
+## 2026-06-22 R3 11번 WEB VM source evidence 확인
+
+### 실행
+
+```text
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active --check-id 11
+-> run_id=20260622-014631-686408
+-> [manual_required] 11 불충분한 권한 검증
+```
+
+### 확인된 근거
+
+- WEB VM의 `source_root=/var/www/html/care`에서 `member/modifyModel.php`를 읽었다.
+- `\$id = \$_SESSION['id']`와 `UPDATE member ... WHERE id='$id'` pattern이 모두 evidence file에 `not_vulnerable_matches`로 기록됐다.
+- 이 source step은 HTTP request, 로그인, DB fixture, 상태 변경을 실행하지 않았다.
+
+### 결과 해석
+
+- 전체 status가 `manual_required`인 것은 manual route 후보가 함께 남아 있기 때문이다. source pattern 확인 실패가 아니다.
+- 확인 범위는 `member_modify_session_subject_only`다. 회원 수정 대상이 client-supplied id가 아니라 세션 subject로 좁혀지는지만 확인했다.
+- 사용자 A/B, 게시글·파일 객체 소유권, 역할 권한, 실제 IDOR 우회는 아직 검증하지 않았으며 R4 DB·세션·fixture runtime evidence로 남긴다.
+
+### 다음 단계
+
+- 다음 source-assisted 후보는 `member/deleteModel.php`의 session subject binding을 별도 step으로 추가하는 일이다.
