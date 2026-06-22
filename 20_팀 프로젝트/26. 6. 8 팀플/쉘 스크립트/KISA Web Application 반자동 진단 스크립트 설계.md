@@ -7,6 +7,43 @@ created: 2026-06-17
 
 # KISA Web Application 반자동 진단 스크립트 설계
 
+## 체크리스트
+
+이 표는 **진단 결과의 안전성 표가 아니라 checker 진도표**다. `[x]`는 해당 경로에서 WEB VM checker evidence가 실제로 생성되고 판정까지 확인됐다는 뜻이다. `vulnerable`도 증거 확보가 끝났으면 `[x]`로 표시한다. `inconclusive`, 설정 검증만 완료, 로컬 정규식 검증만 완료한 경우는 `[ ]`로 남긴다.
+
+| 번호 | 항목 | DB 없음: 정적 / proof / DB-less evidence | DB·세션·fixture runtime evidence | 현재 상태 |
+|---:|---|---|---|---|
+| 01 | 코드 인젝션 | - [ ] 하위 유형별 대상 기능과 check 미구현 | — | LDAP·SSI·XXE·SSTI 등 하위 유형 분해 필요 |
+| 02 | SQL 인젝션 | — | - [ ] DB query 결과·오류·인증 우회 evidence | check 존재, DB-required |
+| 03 | 디렉터리 인덱싱 | - [x] `not_vulnerable` | — | R1 WEB VM evidence 확보 |
+| 04 | 에러 페이지 | - [x] `not_vulnerable` | — | R1 WEB VM evidence 확보 |
+| 05 | 정보 누출 | - [ ] 실행 결과 `inconclusive` | — | 후보 응답의 추가 근거 필요 |
+| 06 | XSS | - [x] reflected proof route `not_vulnerable` | - [ ] board/stored XSS, DB fixture·브라우저 evidence | R2 DB-less 범위만 완료 |
+| 07 | CSRF | - [ ] source evidence-only check 미구현 | - [ ] 로그인 세션·cross-site form·rollback | R3 설계만 완료 |
+| 08 | SSRF | - [x] controlled loopback 차단 `not_vulnerable` | — | R2 WEB VM evidence 확보 |
+| 09 | 약한 비밀번호 정책 | - [ ] source evidence-only check 미구현 | - [ ] 가입/수정 거부와 test account cleanup | R3 설계만 완료 |
+| 10 | 불충분한 인증 절차 | - [ ] source-assisted check WEB VM 실행 대기 | - [ ] 현재 비밀번호 재인증 runtime evidence | source rule은 존재 |
+| 11 | 불충분한 권한 검증 | - [ ] session subject source check WEB VM 실행 대기 | - [ ] 사용자 A/B·객체 IDOR evidence | R3 회원 수정 source rule 구현 완료 |
+| 12 | 취약한 비밀번호 복구 절차 | - [ ] dual-mode branch-aware rule 미구현 | - [ ] 코드 전달·만료·reset 결과 evidence | R3 설계만 완료 |
+| 13 | 프로세스 검증 누락 | - [ ] dual-mode branch-aware rule 미구현 | - [ ] 단계 생략 reset·rollback evidence | R3 설계만 완료 |
+| 14 | 악성 파일 업로드 | - [ ] 파일 처리 source/proof evidence 미확보 | - [ ] 게시글 DB 연동 업로드·cleanup evidence | check는 manual scaffold |
+| 15 | 파일 다운로드 | - [x] known download candidate `vulnerable` | - [ ] 소유권/권한 기반 다운로드 evidence | R1 직접 다운로드 경로 완료 |
+| 16 | 불충분한 세션 관리 | - [ ] 비로그인 관찰 결과 `inconclusive` | - [ ] 로그인 후 세션 변화·timeout evidence | cookie 관찰만 수행 |
+| 17 | 데이터 평문 전송 | - [x] HTTP transport `vulnerable` | — | R1 WEB VM evidence 확보 |
+| 18 | 쿠키 변조 | - [ ] cookie role/value source·관찰 evidence 미구현 | - [ ] 로그인·권한 영향 runtime evidence | check 미구현 |
+| 19 | 관리자 페이지 노출 | - [x] `not_vulnerable` | — | R1 WEB VM evidence 확보 |
+| 20 | 자동화 공격 | — | - [ ] 반복 요청·rate limit·cleanup evidence | check는 destructive-risk scaffold |
+| 21 | 불필요한 Method 악용 | - [x] `not_vulnerable` | — | R1 WEB VM evidence 확보 |
+
+체크 순서 규칙:
+
+```text
+1. check YAML이 존재해도 [x]로 처리하지 않는다.
+2. source evidence는 WEB VM의 source_root에서 실제 실행되어 evidence file이 생긴 뒤 체크한다.
+3. DB·세션·fixture runtime은 테스트 데이터와 rollback/cleanup 근거까지 남긴 뒤 체크한다.
+4. 한 칸의 [x]는 다른 칸의 안전 판정이나 완료를 대신하지 않는다.
+```
+
 ## 1. 설계 목적
 
 이 문서는 `주요정보통신기반시설 기술적 취약점 분석·평가 방법 상세가이드`의 **X. Web Application(웹)** 항목을 반자동으로 점검하기 위한 스크립트 설계안이다.
