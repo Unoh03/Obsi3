@@ -2461,3 +2461,41 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode safe-activ
 - 세 check의 `manual_required`는 실패가 아니라 manual step이 의도적으로 병합된 결과다.
 - HTTP request, DB, 로그인, 회원 가입·수정은 실행하지 않았다.
 - 07·09·10의 runtime verdict와 rollback은 R4 DB·세션·fixture 작업으로 남긴다.
+
+## 2026-06-22 R3 12·13 named source variant 구현
+
+### 구현
+
+- 기존 `source_assisted_fallback`에 `variants`를 추가했다. 각 variant는 `id`, `patterns`, `match: all|any`, `summary`를 가진다.
+- variant가 있는 step은 `variant_status: manual_required`만 허용한다. vuln/safe code pattern이 모두 일치해도 `vulnerable` 또는 `not_vulnerable`으로 승격하지 않는다.
+- 12번은 고정 인증번호 화면 노출, 랜덤 코드·hash·만료·시도 횟수 저장, 서버 측 code verification pattern을 각각 기록한다.
+- 13번은 vulnerable direct-reset branch, safe verified state·subject·만료 확인, verify 단계의 verified state 기록 pattern을 각각 기록한다.
+
+### 로컬 source fixture 검증
+
+```text
+python checker.py --profile profiles/care.yml --checks checks --mode safe-active --validate-only --check-id 12,13
+-> [ready] 12 취약한 비밀번호 복구 절차
+-> [ready] 13 프로세스 검증 누락
+
+local source_root=D:\care, safe-active source-only run
+-> 12=manual_required
+-> 13=manual_required
+-> 12 variant 3개 all matched
+-> 13 variant 3개 all matched
+```
+
+- YAML fallback parser도 두 신규 check file을 읽었다.
+- 이 검증은 HTTP 요청, DB, 로그인, 인증번호 발급, 비밀번호 변경을 실행하지 않았다.
+
+### WEB VM 확인과 R4 경계
+
+WEB VM에서 GitHub 동기화 후 다음 command로 source evidence를 생성한다.
+
+```bash
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active --check-id 12,13
+```
+
+- 기대 overall status는 두 항목 모두 `manual_required`다.
+- evidence file의 `variants`에서 각 `matched: true`를 확인한다.
+- 실제 인증번호 노출, 만료, 시도 횟수, direct reset 우회, safe reset 차단과 DB rollback은 R4에서 검증한다.

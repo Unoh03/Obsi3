@@ -24,8 +24,8 @@ created: 2026-06-17
 | 09 | 약한 비밀번호 정책 | - [x] manual·source evidence check | - [x] WEB VM에서 policy helper pattern 0개 확인 | - [ ] 가입/수정 거부와 test account cleanup | helper 부재만으로 취약 확정하지 않음 |
 | 10 | 불충분한 인증 절차 | - [x] manual·source-assisted rule | - [x] WEB VM에서 재인증 pattern 3개 확인 | - [ ] 현재 비밀번호 재인증 runtime evidence | source evidence 확보. 실제 변경 차단은 R4 필요 |
 | 11 | 불충분한 권한 검증 | - [x] manual·session subject source rule | - [x] WEB VM deployed source에서 session subject pattern 확인 | - [ ] 사용자 A/B·객체 IDOR evidence | R3 회원 수정 범위의 source evidence 확보. 전체 권한 검증은 R4 필요 |
-| 12 | 취약한 비밀번호 복구 절차 | - [x] R3 dual-mode 경계 설계 | - [ ] branch-aware rule | - [ ] 코드 전달·만료·reset 결과 evidence | check YAML 미구현 |
-| 13 | 프로세스 검증 누락 | - [x] R3 dual-mode 경계 설계 | - [ ] branch-aware rule | - [ ] 단계 생략 reset·rollback evidence | check YAML 미구현 |
+| 12 | 취약한 비밀번호 복구 절차 | - [x] manual·source variant check | - [ ] WEB VM source variant evidence | - [ ] 코드 전달·만료·reset 결과 evidence | local source fixture에서 vuln/safe variant 3개 확인 |
+| 13 | 프로세스 검증 누락 | - [x] manual·source variant check | - [ ] WEB VM source variant evidence | - [ ] 단계 생략 reset·rollback evidence | local source fixture에서 vuln/safe variant 3개 확인 |
 | 14 | 악성 파일 업로드 | - [x] state-changing manual scaffold | - [ ] 파일 처리 source/proof evidence | - [ ] 게시글 DB 연동 업로드·cleanup evidence | check 존재 |
 | 15 | 파일 다운로드 | - [x] safe-active check | - [x] known download candidate `vulnerable` | - [ ] 소유권/권한 기반 다운로드 evidence | R1 직접 다운로드 경로 완료 |
 | 16 | 불충분한 세션 관리 | - [x] passive check | - [ ] 비로그인 관찰 결과 `inconclusive` | - [ ] 로그인 후 세션 변화·timeout evidence | cookie 관찰만 수행 |
@@ -452,8 +452,8 @@ DB, 로그인, 상태 변경, 대량 요청은 사용하지 않는다.
 | 07 CSRF | evidence-only, 현재는 `manual_required` | `member/modify.php`, `member/modifyModel.php` | hidden `csrf_token`, session token 저장, `$_POST['csrf_token']`, `hash_equals()` | 방어 pattern이 모두 있을 때만 “token 검증 코드 존재”를 기록. 현재 파일에 pattern이 없다는 사실만으로 취약 확정 금지 | 로그인된 피해자 세션, cross-site form, 실제 회원정보 변경과 rollback |
 | 09 약한 비밀번호 정책 | evidence-only, 현재는 `manual_required` | `member/registerModel.php`, `vuln/password-recovery/reset.php` | 공통 password-policy helper 호출, 최소 길이, 복잡도, blocklist, id 포함/반복 문자 검증 | 특정 handler가 정책 helper를 서버에서 호출하는지 확인. 회원가입과 reset의 정책이 다르면 하나의 안전 판정 금지 | 약한 비밀번호 가입·변경 거부와 test account cleanup |
 | 11 불충분한 권한 검증 | 제한적으로 적용 가능 | `member/modifyModel.php`, `member/deleteModel.php` | `$id = $_SESSION['id']`, `UPDATE`/`DELETE ... WHERE id='$id'` | **회원 수정·탈퇴에서 client-supplied id 대신 session subject를 쓰는지**만 `not_vulnerable` 근거로 기록 가능 | 사용자 A/B, 게시글/파일 소유권, 역할 기반 권한, IDOR 실제 우회 |
-| 12 취약한 비밀번호 복구 절차 | 현재 engine으로 자동 status 금지 | `vuln/password-recovery/request.php`, `verify.php`, `reset.php` | 취약 branch의 고정 코드/화면 노출, 조치 branch의 `random_int`, `password_hash`, 만료·시도 횟수·`password_verify` | source에 취약·조치 mode가 함께 있으므로 branch 목록만 기록. 한 status로 취약/안전 판정 금지 | 등록된 계정, 코드 전달, 만료, 시도 횟수, reset 결과 |
-| 13 프로세스 검증 누락 | 현재 engine으로 자동 status 금지 | `vuln/password-recovery/verify.php`, `reset.php` | 조치 branch의 `verified`, `user_id`, `verified_at`, 만료 확인과 취약 branch의 직접 reset 경로 | 12번과 같은 dual-mode 구조이므로 단계 검증 코드 존재만 기록 | request/verify 생략 후 reset 성공/차단과 DB rollback |
+| 12 취약한 비밀번호 복구 절차 | source variant evidence-only | `vuln/password-recovery/request.php`, `verify.php` | 취약 branch의 고정 코드/화면 노출, 조치 branch의 `random_int`, `password_hash`, 만료·시도 횟수·`password_verify` | named pattern set별 일치 여부만 기록하고 전체 status는 `manual_required`로 고정 | 등록된 계정, 코드 전달, 만료, 시도 횟수, reset 결과 |
+| 13 프로세스 검증 누락 | source variant evidence-only | `vuln/password-recovery/verify.php`, `reset.php` | 조치 branch의 `verified`, `user_id`, `verified_at`, 만료 확인과 취약 branch의 직접 reset 경로 | named pattern set별 일치 여부만 기록하고 전체 status는 `manual_required`로 고정 | request/verify 생략 후 reset 성공/차단과 DB rollback |
 
 ### 공통 YAML rule 형태
 
@@ -490,11 +490,11 @@ DB, 로그인, 상태 변경, 대량 요청은 사용하지 않는다.
 source_root: "/var/www/html/care"
 ```
 
-이 값은 HTTP base URL, 계정, DB 연결값과 다르며, checker가 source evidence를 읽을 WEB VM의 코드 경로다. 07·09·11은 이 값만으로 설계할 수 있다. 12·13은 취약/조치 branch가 공존하므로 향후 `source_variant: vuln|safe` 같은 명시값을 추가하더라도, branch를 실제로 해석하는 engine 지원 전에는 profile에 넣지 않는다.
+이 값은 HTTP base URL, 계정, DB 연결값과 다르며, checker가 source evidence를 읽을 WEB VM의 코드 경로다. 07·09·10·11·12·13은 이 값만으로 source evidence를 만들 수 있다. 12·13은 YAML `variants`의 named pattern set으로 vuln/safe code 흔적을 따로 기록한다.
 
-07·09는 현재 파일에 긍정 방어 근거가 없어 `manual_required`로 남긴다. 12·13은 dual-mode branch를 인식할 수 있는 rule이 아직 없으므로 source evidence 목록만 설계하고 구현하지 않는다.
+07·09는 현재 파일에 긍정 방어 근거가 없어 `manual_required`로 남긴다. 12·13 variant 기능은 PHP AST나 조건문 block을 해석하지 않는다. 지정한 pattern 묶음이 모두 같은 source set에 있는지만 확인하며, `variant_status: manual_required`를 강제한다.
 
-향후 12·13을 자동화하려면 현재 engine에 다음 중 적어도 하나가 필요하다.
+향후 12·13에 branch별 자동 runtime verdict가 꼭 필요해지면 다음 중 적어도 하나가 추가로 필요하다.
 
 ```text
 - vulnerable pattern도 all-match를 요구하는 vulnerable_match: all
@@ -502,14 +502,14 @@ source_root: "/var/www/html/care"
 - profile이 검사 대상의 vuln/safe branch를 명시하는 source_variant 또는 branch selector
 ```
 
-이 확장은 R3의 후속 설계 대상이며, 현재 goal에서는 구현하지 않는다.
+이는 R3 source evidence 범위를 넘으므로 현재 goal에서는 구현하지 않는다.
 
 ### R3 구현 순서
 
 1. 11번의 회원 수정 endpoint session subject binding source check를 추가했고, WEB VM run `20260622-014631-686408`에서 `member/modifyModel.php`의 두 pattern을 확인했다. 전체 status는 manual step 때문에 `manual_required`이며, A/B IDOR은 R4에 남긴다.
 2. 같은 방식으로 회원 탈퇴 endpoint를 별도 source step으로 추가할지 검토한다. 두 endpoint를 한 pattern 묶음으로 합쳐 판정하지 않는다.
 3. 07·09 source evidence check를 추가했고, WEB VM에서 defense/helper pattern 부재를 기록했다. pattern 부재를 `vulnerable`로 바꾸지 않는다.
-4. 12·13은 branch-aware rule 설계가 끝나기 전까지 `manual_required` scaffold를 유지한다.
+4. 12·13 named source variant rule을 추가했고, local source fixture에서 각 vuln/safe pattern set이 일치하는지 확인했다. WEB VM evidence와 R4 runtime은 남긴다.
 
 11번 check의 `required_mode`는 `safe-active`다. 현재 포함된 manual step과 source step은 HTTP 요청을 보내지 않으므로 `--confirm-state-changing`이 필요하지 않다. 다만 manual step의 `manual_required`가 source step의 `not_vulnerable`보다 높은 우선순위로 병합되므로, 최종 check status는 의도적으로 `manual_required`다. source evidence는 findings와 evidence 파일에서만 확인한다.
 
