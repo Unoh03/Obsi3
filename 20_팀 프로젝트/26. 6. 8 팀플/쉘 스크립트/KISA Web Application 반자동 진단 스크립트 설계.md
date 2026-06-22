@@ -551,6 +551,17 @@ cleanup: run fixture만 삭제·원복
 4. 11은 실제 private object endpoint가 있는지 확인한 뒤 workflow 또는 `not_applicable`로 결정한다.
 5. 20은 request cap, delay, 중단 조건을 갖춘 뒤 마지막에 다룬다.
 
+#### 다음 묶음의 선행 조건
+
+| 항목 | 현재 source 확인 | R4 자동 runtime 전 필요한 조건 |
+|---:|---|---|
+| 06 Stored XSS | `center/writeModel.php`는 게시글을 생성하고 `view.php`가 내용을 escape 없이 출력한다. | 생성한 게시글 한 건만 되돌릴 수 있는 application cleanup endpoint 또는 별도 승인된 DB cleanup 계약. 브라우저 실행 여부는 별도 evidence로 남긴다. |
+| 07 CSRF | `member/modifyModel.php`에 CSRF token 검증은 없지만 현재 비밀번호 재인증은 있다. | 재인증에 막혔다고 CSRF 방어 완료로 판정하지 않는다. token/Origin 검증을 실제 도입하거나, 같은 authenticated request를 cross-site context로 재현할 별도 설계가 필요하다. |
+| 11 권한 검증 | 회원 수정은 session id를 사용하지만, 게시글/다운로드는 private ownership model이 없다. | A/B session isolation과 private object endpoint가 있어야 IDOR runtime verdict가 가능하다. 없으면 범위를 `not_applicable` 또는 source scope로 제한한다. |
+| 14 파일 업로드 | `writeModel.php`는 multipart upload와 DB row/file 생성을 함께 수행한다. | generic multipart support와 run별 업로드 파일·게시글을 함께 제거할 cleanup 계약. 현재 CARE에는 게시글 단건 삭제 endpoint가 없다. |
+
+위 조건이 충족되기 전에는 06/14에 파일·게시글을 자동 생성하거나, 07을 `not_vulnerable`로 판정하거나, 11을 전체 권한 검증 완료로 주장하지 않는다.
+
 #### Pass 1 구현 계약
 
 `workflow_probe`는 실제 대상에 종속되지 않는 `workflow` YAML을 사용한다.
@@ -560,6 +571,8 @@ cleanup: run fixture만 삭제·원복
 | `variables` | `run_id`, `fixture_prefix`, `random_token`을 조합해 run별 fixture 값을 만든다. |
 | `redact_variables`, `redact_values`, `extract.redact` | password, code, session/token이 request, response, ledger에 남지 않게 `<REDACTED>`로 마스킹한다. |
 | `workflow` | `setup -> probe -> verify -> cleanup` 순서의 동일 session 요청을 정의한다. |
+| `workflow_probe.required_mode` | check 전체를 실행하지 않더라도 state-changing workflow step만 현재 mode에서 건너뛴다. source/manual evidence는 기존 mode에서 유지한다. |
+| `when`, `set_context`, `outcomes.*.set_context` | 취약/방어 결과에 따라 다음 step과 cleanup 실행 조건을 결정한다. 생성되지 않은 fixture를 삭제하려 하지 않는다. |
 | `expect` | 각 step의 정상 진행 조건(status, body/header pattern)을 정의한다. 불일치면 `error`다. |
 | `extract` | setup 응답에서 token 같은 다음 step용 값을 추출한다. |
 | `outcomes` | probe 응답을 `vulnerable`, `not_vulnerable`, `inconclusive` 중 하나로 판정한다. |
@@ -567,7 +580,11 @@ cleanup: run fixture만 삭제·원복
 
 setup이 하나라도 성공한 뒤 probe/verify가 실패해도 cleanup은 실행한다. cleanup 실패는 probe의 정상 결과보다 우선해 전체 status를 `error`로 만든다. setup이 전혀 성공하지 않았으면 cleanup을 실행하지 않고 ledger에 `skipped` 사유를 남긴다.
 
+runtime workflow가 `vulnerable` 또는 `not_vulnerable`을 만들면 source/manual scaffold보다 우선한다. 반대로 runtime이 `inconclusive`이면 기존 source/manual evidence를 숨기지 않는다. 이 구분은 실제 HTTP 근거가 보조 정적 evidence보다 강하되, 판정 불가 응답을 억지 결론으로 바꾸지 않기 위한 것이다.
+
 Pass 1은 `mock_targets/workflow_fixture_mock.py`, `profiles/mock_workflow.yml`, `mock_targets/workflow_checks/99_workflow_probe.yml`로만 검증한다. 이 mock은 메모리 fixture를 사용하므로 CARE, WEB VM, DB에 요청하거나 데이터를 만들지 않는다.
+
+stdlib HTTP fallback도 cookie jar를 유지하도록 구성했다. 따라서 `requests`가 없는 환경에서도 workflow의 로그인 session을 다음 step으로 전달할 수 있다.
 
 ## 9. 출력물 설계
 
