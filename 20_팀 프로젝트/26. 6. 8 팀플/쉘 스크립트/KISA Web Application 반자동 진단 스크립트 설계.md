@@ -469,10 +469,12 @@ source_root: "/var/www/html/care"
 
 ### R3 구현 순서
 
-1. 11번의 회원 수정 endpoint부터 session subject binding source check를 추가한다.
+1. 11번의 회원 수정 endpoint session subject binding source check를 추가했다. `member/modifyModel.php`에서 session id 대입과 `UPDATE ... WHERE id='$id'`를 함께 확인한다.
 2. 같은 방식으로 회원 탈퇴 endpoint를 별도 source step으로 추가할지 검토한다. 두 endpoint를 한 pattern 묶음으로 합쳐 판정하지 않는다.
 3. 07·09는 source evidence-only 결과 형식이 필요할 때만 추가한다. pattern 부재를 `vulnerable`로 바꾸지 않는다.
 4. 12·13은 branch-aware rule 설계가 끝나기 전까지 `manual_required` scaffold를 유지한다.
+
+11번 check의 `required_mode`는 `safe-active`다. 현재 포함된 manual step과 source step은 HTTP 요청을 보내지 않으므로 `--confirm-state-changing`이 필요하지 않다. 다만 manual step의 `manual_required`가 source step의 `not_vulnerable`보다 높은 우선순위로 병합되므로, 최종 check status는 의도적으로 `manual_required`다. source evidence는 findings와 evidence 파일에서만 확인한다.
 
 ## 9. 출력물 설계
 

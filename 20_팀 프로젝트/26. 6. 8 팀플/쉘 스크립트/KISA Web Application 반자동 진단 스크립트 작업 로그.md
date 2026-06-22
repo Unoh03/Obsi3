@@ -2336,3 +2336,43 @@ source_root: "/var/www/html/care"
 2. 회원 탈퇴 endpoint는 별도 source step으로 추가 여부를 검토한다.
 3. 07·09는 source evidence-only report 표현이 필요한 시점에 추가한다.
 4. 12·13은 branch-aware rule 설계 전까지 manual scaffold를 유지한다.
+
+## 2026-06-22 R3 11번 session subject binding source check 구현
+
+### 변경
+
+`checks/11_insufficient_authorization.yml`에 `member_modify_session_subject_source_assisted` step을 추가했다.
+
+| 항목 | 값 |
+|---|---|
+| 읽는 파일 | `member/modifyModel.php` |
+| 확인 pattern 1 | `$id = $_SESSION['id']` |
+| 확인 pattern 2 | `UPDATE member ... WHERE id='$id'` |
+| conditions | `source_assisted_evidence_only` |
+| scope | `member_modify_session_subject_only` |
+
+이 step은 client request의 id가 아니라 로그인 세션의 id를 회원 수정 대상에 쓰는지 확인한다. 게시글, 파일 다운로드, 역할 권한, 사용자 A/B IDOR은 범위 밖이다.
+
+### mode와 결과 해석
+
+11번 check는 현재 HTTP 요청을 보내지 않는 manual/source evidence 조합이므로 `required_mode`를 `state-changing`에서 `safe-active`로 변경했다.
+
+manual step은 실제 사용자 A/B runtime 검증을 요구하므로 전체 check status는 `manual_required`로 남는다. source step이 두 pattern을 모두 확인해도 전체 `not_vulnerable`로 승격하지 않는다. source 근거는 findings와 evidence file에 제한된다.
+
+### 정적 검증
+
+```text
+python checker.py --profile profiles/care.yml --checks checks --mode safe-active --check-id 11 --validate-only
+-> [ready] 11 불충분한 권한 검증
+
+member/modifyModel.php regex check
+-> session id pattern matched
+-> UPDATE target pattern matched
+
+git diff --check 통과
+```
+
+### 다음 구현 기준
+
+- WEB VM에 checker 변경을 반영한 뒤 `safe-active --check-id 11`을 실행해 source evidence file과 `manual_required` 병합 결과를 확인한다.
+- 다음 code change 후보는 `member/deleteModel.php`를 별도 source step으로 추가하는 일이다. 07·09·12·13으로 확장하지 않는다.
