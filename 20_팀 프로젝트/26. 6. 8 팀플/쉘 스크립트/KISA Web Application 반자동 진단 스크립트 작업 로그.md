@@ -2499,3 +2499,31 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode safe-activ
 - 기대 overall status는 두 항목 모두 `manual_required`다.
 - evidence file의 `variants`에서 각 `matched: true`를 확인한다.
 - 실제 인증번호 노출, 만료, 시도 횟수, direct reset 우회, safe reset 차단과 DB rollback은 R4에서 검증한다.
+
+## 2026-06-22 R3 12·13 WEB VM source variant evidence 확인
+
+### 실행
+
+```text
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active --check-id 12,13
+-> run_id=20260622-022635-901264
+-> [manual_required] 12 취약한 비밀번호 복구 절차
+-> [manual_required] 13 프로세스 검증 누락
+```
+
+### evidence 결과
+
+| 번호 | variant | 결과 |
+|---:|---|---|
+| 12 | `vulnerable_fixed_code_exposure` | `matched: true` |
+| 12 | `safe_random_code_storage` | `matched: true` |
+| 12 | `safe_code_verification` | `matched: true` |
+| 13 | `vulnerable_direct_reset_branch` | `matched: true` |
+| 13 | `safe_verified_state_required` | `matched: true` |
+| 13 | `safe_verify_stage_sets_state` | `matched: true` |
+
+### 해석
+
+- 이 결과는 WEB VM에 배포된 CARE source에 취약 branch와 조치 branch의 pattern set이 모두 존재한다는 증거다.
+- `manual_required`는 실패가 아니다. 두 branch가 공존하는 source를 runtime 취약·안전 한 값으로 단정하지 않기 위한 의도된 status다.
+- DB 없이 source evidence까지는 완료됐다. 실제 인증번호 발급·노출, 만료·시도 횟수, reset 우회·차단, 비밀번호 rollback은 R4 DB·세션·fixture runtime으로 남긴다.

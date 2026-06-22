@@ -24,8 +24,8 @@ created: 2026-06-17
 | 09 | 약한 비밀번호 정책 | - [x] manual·source evidence check | - [x] WEB VM에서 policy helper pattern 0개 확인 | - [ ] 가입/수정 거부와 test account cleanup | helper 부재만으로 취약 확정하지 않음 |
 | 10 | 불충분한 인증 절차 | - [x] manual·source-assisted rule | - [x] WEB VM에서 재인증 pattern 3개 확인 | - [ ] 현재 비밀번호 재인증 runtime evidence | source evidence 확보. 실제 변경 차단은 R4 필요 |
 | 11 | 불충분한 권한 검증 | - [x] manual·session subject source rule | - [x] WEB VM deployed source에서 session subject pattern 확인 | - [ ] 사용자 A/B·객체 IDOR evidence | R3 회원 수정 범위의 source evidence 확보. 전체 권한 검증은 R4 필요 |
-| 12 | 취약한 비밀번호 복구 절차 | - [x] manual·source variant check | - [ ] WEB VM source variant evidence | - [ ] 코드 전달·만료·reset 결과 evidence | local source fixture에서 vuln/safe variant 3개 확인 |
-| 13 | 프로세스 검증 누락 | - [x] manual·source variant check | - [ ] WEB VM source variant evidence | - [ ] 단계 생략 reset·rollback evidence | local source fixture에서 vuln/safe variant 3개 확인 |
+| 12 | 취약한 비밀번호 복구 절차 | - [x] manual·source variant check | - [x] WEB VM에서 vuln/safe variant 3개 확인 | - [ ] 코드 전달·만료·reset 결과 evidence | source variant evidence 완료. runtime은 R4 필요 |
+| 13 | 프로세스 검증 누락 | - [x] manual·source variant check | - [x] WEB VM에서 vuln/safe variant 3개 확인 | - [ ] 단계 생략 reset·rollback evidence | source variant evidence 완료. runtime은 R4 필요 |
 | 14 | 악성 파일 업로드 | - [x] state-changing manual scaffold | - [ ] 파일 처리 source/proof evidence | - [ ] 게시글 DB 연동 업로드·cleanup evidence | check 존재 |
 | 15 | 파일 다운로드 | - [x] safe-active check | - [x] known download candidate `vulnerable` | - [ ] 소유권/권한 기반 다운로드 evidence | R1 직접 다운로드 경로 완료 |
 | 16 | 불충분한 세션 관리 | - [x] passive check | - [ ] 비로그인 관찰 결과 `inconclusive` | - [ ] 로그인 후 세션 변화·timeout evidence | cookie 관찰만 수행 |
@@ -509,7 +509,7 @@ source_root: "/var/www/html/care"
 1. 11번의 회원 수정 endpoint session subject binding source check를 추가했고, WEB VM run `20260622-014631-686408`에서 `member/modifyModel.php`의 두 pattern을 확인했다. 전체 status는 manual step 때문에 `manual_required`이며, A/B IDOR은 R4에 남긴다.
 2. 같은 방식으로 회원 탈퇴 endpoint를 별도 source step으로 추가할지 검토한다. 두 endpoint를 한 pattern 묶음으로 합쳐 판정하지 않는다.
 3. 07·09 source evidence check를 추가했고, WEB VM에서 defense/helper pattern 부재를 기록했다. pattern 부재를 `vulnerable`로 바꾸지 않는다.
-4. 12·13 named source variant rule을 추가했고, local source fixture에서 각 vuln/safe pattern set이 일치하는지 확인했다. WEB VM evidence와 R4 runtime은 남긴다.
+4. 12·13 named source variant rule을 추가했고, WEB VM run `20260622-022635-901264`에서 각 vuln/safe pattern set 3개가 모두 일치했다. R4 runtime은 남긴다.
 
 11번 check의 `required_mode`는 `safe-active`다. 현재 포함된 manual step과 source step은 HTTP 요청을 보내지 않으므로 `--confirm-state-changing`이 필요하지 않다. 다만 manual step의 `manual_required`가 source step의 `not_vulnerable`보다 높은 우선순위로 병합되므로, 최종 check status는 의도적으로 `manual_required`다. source evidence는 findings와 evidence 파일에서만 확인한다.
 
