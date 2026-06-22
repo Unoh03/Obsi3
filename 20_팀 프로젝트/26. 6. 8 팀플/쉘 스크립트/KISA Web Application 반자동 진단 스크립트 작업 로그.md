@@ -2554,3 +2554,26 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode safe-activ
 - `skipped_by_mode`는 현재 `safe-active`에서 실행 금지된 check의 정상 결과다.
 - `manual_required`는 R4 DB·세션·fixture runtime 검증이 남았다는 뜻이다.
 - 다음 대기 단계는 DB가 준비된 뒤 R4 fixture, cleanup, state-changing runtime 범위를 설계·구현하는 일이다.
+
+## 2026-06-22 R4 Pass 1 runtime workflow 계약 확정
+
+### 출발점
+
+DB 연결 후 전체 `attack-active` run `20260622-025207-907441`에서 02 SQL 인젝션은 실제 `vulnerable`로 확인됐지만, 06·07·09·10·11·12·13은 source evidence 또는 현재 payload rule만으로 runtime verdict를 내리지 못해 `manual_required`로 남았다.
+
+이 상태는 취약점이 본질적으로 수동이라는 뜻이 아니라, fixture 생성·로그인 세션·before/after 검증·cleanup을 수행하는 generic workflow engine이 아직 없다는 뜻이다.
+
+### R4 결정
+
+- `manual_required`를 status hack으로 없애지 않는다.
+- engine은 template 변수, request sequence, assertion, evidence, ledger, cleanup만 제공한다.
+- CARE route, form field, 취약/차단 문구, fixture workflow는 profile/check/payload YAML에 둔다.
+- 실제 state-changing run은 `--confirm-state-changing`과 별도 실행 승인 후에만 수행한다.
+- fixture는 `test_prefix + run_id`로 생성하고, cleanup은 그 run의 fixture만 대상으로 한다.
+- cleanup 실패는 성공으로 덮지 않고 `error` 또는 남은 rollback 항목으로 기록한다.
+
+### Pass 1 범위
+
+1. `workflow_probe` configuration과 run context를 정의한다.
+2. mock target으로 setup/probe/verify/cleanup evidence 및 cleanup 실패 처리를 검증한다.
+3. 실제 CARE request, DB write, 계정/게시글/파일 생성·삭제는 실행하지 않는다.

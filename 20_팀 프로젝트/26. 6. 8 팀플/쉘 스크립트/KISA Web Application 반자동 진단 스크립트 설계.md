@@ -514,6 +514,43 @@ source_root: "/var/www/html/care"
 
 11번 check의 `required_mode`는 `safe-active`다. 현재 포함된 manual step과 source step은 HTTP 요청을 보내지 않으므로 `--confirm-state-changing`이 필요하지 않다. 다만 manual step의 `manual_required`가 source step의 `not_vulnerable`보다 높은 우선순위로 병합되므로, 최종 check status는 의도적으로 `manual_required`다. source evidence는 findings와 evidence 파일에서만 확인한다.
 
+### R4 runtime workflow 계약
+
+R4의 목적은 `manual_required`를 억지로 `vulnerable` 또는 `not_vulnerable`로 바꾸는 것이 아니라, **run별 fixture와 rollback을 가진 실제 HTTP workflow**로 runtime 근거를 만드는 것이다. engine에는 CARE URL, 필드명, 계정, 성공 문구를 넣지 않고 profile/check YAML에 둔다.
+
+| 구성 | 책임 |
+|---|---|
+| engine | template 변수, 같은 session의 request sequence, assertion, raw evidence, fixture ledger, cleanup 실행·실패 기록 |
+| profile | target URL, route, fixture prefix, 실제 계정·파일을 만들지 않는 기본값 |
+| check YAML | setup/probe/verify/cleanup 단계, request data, body/status assertion, 기대 status, scope |
+| payload YAML | 약한 비밀번호, CSRF form, XSS, upload proof 등 입력 후보 |
+
+#### run context와 evidence
+
+- 모든 fixture 이름은 `test_prefix`와 `run_id`로 생성한다. 기존 계정·글·파일을 이름만으로 삭제하지 않는다.
+- runtime request body의 비밀번호, 인증번호, 세션 값은 evidence/report에서 redaction한다.
+- 각 run에는 `fixture_ledger.json`을 남긴다. 생성 attempted/succeeded, probe 결과, cleanup attempted/succeeded, 남은 조치 항목을 기록한다.
+- setup 또는 cleanup이 실패하면 성공 status로 덮지 않고 `error` 또는 `inconclusive`으로 남긴다.
+
+#### workflow 단계
+
+```text
+setup: run별 fixture account/post/file 생성 또는 로그인
+probe: 취약 여부를 가르는 controlled request
+verify: before/after, 차단 문구, DB-backed 화면 결과 확인
+cleanup: run fixture만 삭제·원복
+```
+
+`state-changing` check는 `--confirm-state-changing` 없이는 실행되지 않는다. cleanup은 workflow에 명시된 run fixture만 대상으로 하며, 자동 cleanup 실패 시 ledger와 rollback checklist에 남긴다.
+
+#### 구현 순서
+
+1. generic `workflow_probe`와 template·assertion·fixture ledger를 mock으로 검증한다. 실제 CARE 요청은 보내지 않는다.
+2. 09, 10, 12, 13을 run별 disposable account workflow로 묶는다.
+3. 07 CSRF, 06 stored XSS, 14 upload은 별도 evidence/cleanup 조건을 붙인다.
+4. 11은 실제 private object endpoint가 있는지 확인한 뒤 workflow 또는 `not_applicable`로 결정한다.
+5. 20은 request cap, delay, 중단 조건을 갖춘 뒤 마지막에 다룬다.
+
 ## 9. 출력물 설계
 
 | 출력물 | 내용 |
