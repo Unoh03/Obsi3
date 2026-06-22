@@ -551,6 +551,24 @@ cleanup: run fixture만 삭제·원복
 4. 11은 실제 private object endpoint가 있는지 확인한 뒤 workflow 또는 `not_applicable`로 결정한다.
 5. 20은 request cap, delay, 중단 조건을 갖춘 뒤 마지막에 다룬다.
 
+#### Pass 1 구현 계약
+
+`workflow_probe`는 실제 대상에 종속되지 않는 `workflow` YAML을 사용한다.
+
+| YAML 요소 | 역할 |
+|---|---|
+| `variables` | `run_id`, `fixture_prefix`, `random_token`을 조합해 run별 fixture 값을 만든다. |
+| `redact_variables`, `redact_values`, `extract.redact` | password, code, session/token이 request, response, ledger에 남지 않게 `<REDACTED>`로 마스킹한다. |
+| `workflow` | `setup -> probe -> verify -> cleanup` 순서의 동일 session 요청을 정의한다. |
+| `expect` | 각 step의 정상 진행 조건(status, body/header pattern)을 정의한다. 불일치면 `error`다. |
+| `extract` | setup 응답에서 token 같은 다음 step용 값을 추출한다. |
+| `outcomes` | probe 응답을 `vulnerable`, `not_vulnerable`, `inconclusive` 중 하나로 판정한다. |
+| `fixture_ledger.json` | run별 fixture 문맥, step 수행 여부, cleanup 성공/실패를 기록한다. |
+
+setup이 하나라도 성공한 뒤 probe/verify가 실패해도 cleanup은 실행한다. cleanup 실패는 probe의 정상 결과보다 우선해 전체 status를 `error`로 만든다. setup이 전혀 성공하지 않았으면 cleanup을 실행하지 않고 ledger에 `skipped` 사유를 남긴다.
+
+Pass 1은 `mock_targets/workflow_fixture_mock.py`, `profiles/mock_workflow.yml`, `mock_targets/workflow_checks/99_workflow_probe.yml`로만 검증한다. 이 mock은 메모리 fixture를 사용하므로 CARE, WEB VM, DB에 요청하거나 데이터를 만들지 않는다.
+
 ## 9. 출력물 설계
 
 | 출력물 | 내용 |
