@@ -2527,3 +2527,30 @@ python3 checker.py --profile profiles/care.yml --checks checks --mode safe-activ
 - 이 결과는 WEB VM에 배포된 CARE source에 취약 branch와 조치 branch의 pattern set이 모두 존재한다는 증거다.
 - `manual_required`는 실패가 아니다. 두 branch가 공존하는 source를 runtime 취약·안전 한 값으로 단정하지 않기 위한 의도된 status다.
 - DB 없이 source evidence까지는 완료됐다. 실제 인증번호 발급·노출, 만료·시도 횟수, reset 우회·차단, 비밀번호 rollback은 R4 DB·세션·fixture runtime으로 남긴다.
+
+## 2026-06-22 R3 이후 전체 safe-active 회귀 실행
+
+### 실행
+
+```text
+python3 checker.py --profile profiles/care.yml --checks checks --mode safe-active
+-> run_id=20260622-024115-030986
+```
+
+### 결과 요약
+
+| 결과 | 항목 |
+|---|---|
+| `not_vulnerable` | 03 디렉터리 인덱싱, 04 에러 페이지, 19 관리자 페이지 노출, 21 불필요한 Method 악용 |
+| `vulnerable` | 15 파일 다운로드, 17 데이터 평문 전송 |
+| `inconclusive` | 05 정보 노출, 16 불충분한 세션 관리 |
+| `manual_required` | 07 CSRF, 09 약한 비밀번호 정책, 10 불충분한 인증 절차, 11 불충분한 권한 검증, 12 취약한 비밀번호 복구 절차, 13 프로세스 검증 누락 |
+| `skipped_by_mode` | 02 SQL 인젝션, 06 XSS, 08 SSRF, 14 악성 파일 업로드, 20 자동화 공격 |
+
+### 판정
+
+- R3 source-only 확장 후 현재 구현 check 전체가 한 번에 실행됐다.
+- 예상 밖 `error`는 없었다.
+- `skipped_by_mode`는 현재 `safe-active`에서 실행 금지된 check의 정상 결과다.
+- `manual_required`는 R4 DB·세션·fixture runtime 검증이 남았다는 뜻이다.
+- 다음 대기 단계는 DB가 준비된 뒤 R4 fixture, cleanup, state-changing runtime 범위를 설계·구현하는 일이다.

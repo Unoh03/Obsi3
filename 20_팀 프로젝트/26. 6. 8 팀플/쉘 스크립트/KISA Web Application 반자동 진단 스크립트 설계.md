@@ -510,6 +510,7 @@ source_root: "/var/www/html/care"
 2. 같은 방식으로 회원 탈퇴 endpoint를 별도 source step으로 추가할지 검토한다. 두 endpoint를 한 pattern 묶음으로 합쳐 판정하지 않는다.
 3. 07·09 source evidence check를 추가했고, WEB VM에서 defense/helper pattern 부재를 기록했다. pattern 부재를 `vulnerable`로 바꾸지 않는다.
 4. 12·13 named source variant rule을 추가했고, WEB VM run `20260622-022635-901264`에서 각 vuln/safe pattern set 3개가 모두 일치했다. R4 runtime은 남긴다.
+5. R3 source-only 구현 후 WEB VM run `20260622-024115-030986`으로 전체 `safe-active` 회귀 실행을 마쳤다. 예상 밖 `error`는 없었고, R4 대상은 `manual_required` 또는 `skipped_by_mode`로 남았다.
 
 11번 check의 `required_mode`는 `safe-active`다. 현재 포함된 manual step과 source step은 HTTP 요청을 보내지 않으므로 `--confirm-state-changing`이 필요하지 않다. 다만 manual step의 `manual_required`가 source step의 `not_vulnerable`보다 높은 우선순위로 병합되므로, 최종 check status는 의도적으로 `manual_required`다. source evidence는 findings와 evidence 파일에서만 확인한다.
 
