@@ -143,12 +143,12 @@ apache2ctl -S
 grep -R "DocumentRoot" /etc/apache2/sites-enabled/ /etc/apache2/sites-available/ 2>/dev/null
 ```
 
-이 노트는 CARE 서버의 DocumentRoot가 `/var/www/care`라고 가정한다.
+이 노트는 CARE 서버의 DocumentRoot가 `/var/www/html/care`라고 가정한다.
 
 실습용 변수를 지정한다.
 
 ```bash
-APP_ROOT=/var/www/care
+APP_ROOT=/var/www/html/care
 SERVER=http://172.168.10.10
 TEST_PHP="$APP_ROOT/web08-upload-test.php"
 TEST_CONF="/etc/apache2/conf-available/web-08-limit-test.conf"
@@ -315,7 +315,7 @@ sudo tee "$TEST_CONF" > /dev/null <<EOF
 EOF
 ```
 
-이 설정은 `/var/www/care` 아래 요청 본문 크기를 약 5MB로 제한한다.
+이 설정은 `/var/www/html/care` 아래 요청 본문 크기를 약 5MB로 제한한다.
 
 ### 6-2. 실습용 설정 활성화
 
@@ -427,7 +427,7 @@ grep -R "DocumentRoot" /etc/apache2/sites-enabled/ /etc/apache2/sites-available/
 ```
 
 ```bash
-APP_ROOT=/var/www/care
+APP_ROOT=/var/www/html/care
 SERVER=http://172.168.10.10
 TEST_PHP="$APP_ROOT/web08-upload-test.php"
 TEST_CONF="/etc/apache2/conf-available/web-08-limit-test.conf"
