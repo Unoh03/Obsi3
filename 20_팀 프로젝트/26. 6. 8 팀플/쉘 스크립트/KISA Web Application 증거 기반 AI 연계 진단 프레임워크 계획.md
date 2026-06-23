@@ -4,7 +4,7 @@ type: project-plan
 topic: security-project
 status: active
 created: 2026-06-23
-project: KISA Web Application 진단 스크립트
+project: KISA Web Application 증거 기반 AI 연계 진단 프레임워크
 tags:
 
 - 보안교육
@@ -12,12 +12,13 @@ tags:
 - 웹보안
 - KISA
 - evidence
-- presentation
+- AI-assisted
+- human-review
 
 ---
-# KISA Web Application AI 연계 진단 스크립트 계획
+# KISA Web Application 증거 기반 AI 연계 진단 프레임워크 계획
 
-> 이 문서는 구현을 더 늘리기 위한 계획이 아니라, 현재까지의 구현과 검증 결과를 발표·보고서로 정확하게 제출하기 위한 기준 문서다.
+> 이 문서는 현재 구현을 동결한 뒤, evidence collector와 AI·사람의 판정 역할을 결합하는 진단 프레임워크를 발표·보고서 수준으로 구체화하기 위한 기준 문서다. 실제 제출 여부와 무관하게 사용한다.
 
 ## 1. 출발점과 방향 전환
 
@@ -38,7 +39,7 @@ KISA Web Application 항목별 요청·응답·소스 근거를
 재현 가능한 형태로 수집하는 선언형 evidence collector prototype
 ```
 
-이 제출 계획은 이 시행착오를 실패로 지우지 않는다. 자동 판정의 한계를 실제 실행 결과로 확인했고, 그 한계를 V.db 분류, evidence 범위 표기, 향후 fixture runtime과 human-reviewed AI assistance 설계로 보정했다는 흐름을 발표와 보고서의 중심으로 삼는다.
+이 계획은 이 시행착오를 실패로 지우지 않는다. 자동 판정의 한계를 실제 실행 결과로 확인했고, 그 한계를 V.db 분류, evidence 범위 표기, 향후 fixture runtime과 human-reviewed AI assistance 설계로 보정했다는 흐름을 프레임워크의 중심으로 삼는다. 이후 발표나 보고서를 만들 경우에도 이 흐름을 그대로 사용한다.
 
 ## 2. 이 문서의 역할
 
@@ -48,7 +49,7 @@ KISA Web Application 항목별 요청·응답·소스 근거를
 |---|---|
 | 구현됨 | 현재 checker에 존재하는 구조와 기능 |
 | WEB VM에서 검증됨 | 실제 실행 로그와 evidence가 있는 결과 |
-| 후속 설계 | R4 fixture runtime, AI review, human review처럼 필요성은 확인했지만 이번 제출에서 구현 완료를 주장하지 않는 범위 |
+| 후속 설계 | R4 fixture runtime, AI review, human review처럼 필요성은 확인했지만 현재 구현 완료를 주장하지 않는 범위 |
 
 기술적 세부 설계와 작업 이력은 아래 문서에 보존한다.
 
@@ -56,11 +57,11 @@ KISA Web Application 항목별 요청·응답·소스 근거를
 - [[KISA Web Application 반자동 진단 스크립트 작업 로그]]
 - [[KISA Web Application 진단 스크립트 방향 전환 노트]]
 
-## 3. 이번 제출의 동결 원칙
+## 3. 현재 단계의 동결 원칙
 
 ```text
 - kisa-webapp-checker/는 더 이상 수정하거나 실행하지 않는다.
-- 현재 코드와 기존 WEB VM evidence는 제출 근거로만 사용한다.
+- 현재 코드와 기존 WEB VM evidence는 이후 발표·보고서 작성에 쓸 수 있는 근거로 보존한다.
 - R4 fixture runtime, AI review 자동화, 신규 KISA check는 후속 계획으로만 다룬다.
 - 구현 사실, 실행 검증 사실, 설계 제안을 같은 문장이나 표에서 섞지 않는다.
 ```
