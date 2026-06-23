@@ -114,12 +114,12 @@ apache2ctl -S
 grep -R "DocumentRoot" /etc/apache2/sites-enabled/ /etc/apache2/sites-available/ 2>/dev/null
 ```
 
-이 노트는 CARE 서버의 DocumentRoot가 `/var/www/care`라고 가정한다.
+이 노트는 CARE 서버의 DocumentRoot가 `/var/www/html/care`라고 가정한다.
 
 실습용 변수를 지정한다.
 
 ```bash
-APP_ROOT=/var/www/care
+APP_ROOT=/var/www/html/care
 SERVER=http://172.168.10.10
 PUBLIC_DIR="$APP_ROOT/web06-public"
 PROTECTED_DIR="$APP_ROOT/web06-protected"
@@ -368,7 +368,7 @@ grep -R "web06-protected\|AllowOverride AuthConfig" /etc/apache2/apache2.conf /e
 기대 결과는 다음과 같다.
 
 ```text
-<Directory /var/www/care/web06-protected>
+<Directory /var/www/html/care/web06-protected>
     AllowOverride AuthConfig
 ```
 
@@ -397,7 +397,7 @@ command -v htpasswd
 ### 8-2. 취약 재현
 
 ```bash
-APP_ROOT=/var/www/care
+APP_ROOT=/var/www/html/care
 SERVER=http://172.168.10.10
 PUBLIC_DIR="$APP_ROOT/web06-public"
 PROTECTED_DIR="$APP_ROOT/web06-protected"
