@@ -166,7 +166,7 @@ cgid_module (shared)
 ### 5-1. 실습용 변수 지정
 
 ```bash
-APP_ROOT=/var/www/care
+APP_ROOT=/var/www/html/care
 TEST_DIR="$APP_ROOT/cgi-test"
 TEST_CONF="/etc/apache2/conf-available/web-05-cgi-test.conf"
 ```
