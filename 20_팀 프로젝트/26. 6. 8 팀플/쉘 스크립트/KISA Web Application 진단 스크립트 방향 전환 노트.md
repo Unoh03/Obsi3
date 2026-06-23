@@ -1134,3 +1134,151 @@ R4는 버리지 않고 fixture-first로 재정렬한다.
 4. 15번은 not_vulnerable로 재분류할 것인가, inconclusive로 둘 것인가?
 5. R4 fixture lifecycle은 09 check에 통합할 것인가, 별도 00_fixture_lifecycle check로 만들 것인가?
 ```
+
+---
+
+## 23. 제출 목표 재정의 (2026-06-23)
+
+마감 전에는 구현 범위를 더 넓히지 않는다.
+
+이 프로젝트의 제출 목표는 다음으로 고정한다.
+
+```text
+KISA Web Application 항목을 기준으로 한
+선언형 evidence collector prototype의 설계·구현·검증 결과와,
+완전 자동 판정의 한계를 실제 오탐 사례로 분석한 개선 설계.
+```
+
+따라서 제출물은 "21개 항목을 완전 자동으로 판정하는 스캐너"를 주장하지 않는다.
+AI review layer도 이번 제출 범위에서는 **구현 완료 기능이 아니라 다음 단계 설계**로만 다룬다.
+
+### 23.1 동결 범위
+
+마감 전 다음 작업은 하지 않는다.
+
+```text
+- R4 fixture runtime 추가 구현 또는 실제 state-changing 실행
+- AI API 연동, agent 실행, AI review 자동화 구현
+- 새 KISA check 추가
+- VM/DB/GNS 환경을 다시 구성하는 검증
+- 기존 checker 구조의 대규모 재작성
+```
+
+필요한 경우에도 코드 수정 대신 보고서에서 "확인된 한계"와 "후속 구현 계획"으로 분리한다.
+
+### 23.2 제출에서 주장 가능한 것
+
+| 구분 | 주장 가능한 내용 | 근거 |
+|---|---|---|
+| 구현 | `profile -> check -> request -> evidence -> report` 구조, mode gate, run별 evidence 저장, status/conditions/scope 출력 | checker 코드와 WEB VM 실행 로그 |
+| 검증 | DB-independent/R1, DB-less/R2, source-assisted/R3의 일부 항목을 실제 WEB VM에서 실행 | 각 run의 `result.json`, `report.md`, request/response evidence |
+| 분석 | DB 의존도 축(V.db)과 fallback 결과의 범위 제한을 도입 | 설계 문서와 실행 결과 |
+| 실패 분석 | 15번 파일 다운로드에서 HTTP 200만으로 취약 판정하면 오탐이 생김 | check rule, response, `download.php` 방어 로직 |
+| 후속 설계 | R4 fixture runtime과 AI-assisted review/human review는 필요한 이유와 안전 경계를 설계 | 이 방향 전환 노트 |
+
+### 23.3 제출에서 주장하면 안 되는 것
+
+```text
+- KISA Web Application 01~21 전체를 구현하거나 검증했다.
+- checker 결과가 모든 환경에서 최종 취약/양호 판정이다.
+- source pattern 일치만으로 runtime 안전성을 증명했다.
+- AI가 오탐을 자동으로 제거하거나 최종 판정한다.
+- R4의 state-changing runtime을 실제로 완료했다.
+```
+
+R4 Pass 1처럼 현재 작업 트리에만 있고 실제 runtime evidence가 없는 구성은
+"구현 준비 또는 설계"로 표현하며, "runtime verified"로 승격하지 않는다.
+
+---
+
+## 24. 제출용 이야기 구조
+
+발표와 보고서는 기능 목록이 아니라 다음 문제 해결 흐름으로 구성한다.
+
+```text
+1. 문제: KISA 웹 항목은 요청을 보내는 것보다 결과를 올바르게 해석하는 일이 어렵다.
+2. 초기 구현: 선언형 check와 evidence 저장 구조를 만들었다.
+3. 실제 실행: 안전한 항목부터 WEB VM에서 검증했다.
+4. 한계 발견: DB/세션/업무 흐름이 필요한 항목과 15번 HTTP 200 오탐이 나타났다.
+5. 보정: V.db, conditions, scope, source-assisted evidence를 도입했다.
+6. 결론: checker는 최종 판정기가 아니라 재현 가능한 evidence collector다.
+7. 후속 계획: fixture runtime과 human-reviewed AI assistance를 승인 경계 아래 추가한다.
+```
+
+### 24.1 보고서 구성
+
+| 순서 | 보고서 절 | 핵심 산출물 |
+|---:|---|---|
+| 1 | 목표와 범위 | 자동 판정기가 아닌 반자동 evidence collector라는 범위 선언 |
+| 2 | 아키텍처 | `profile -> check -> request -> evidence -> report` 다이어그램 |
+| 3 | 안전장치 | mode gate, target allowlist, run별 evidence, rollback checklist |
+| 4 | 구현 및 실행 결과 | R1/R2/R3 항목별 status·conditions·scope 요약표 |
+| 5 | 대표 사례 | 15번 파일 다운로드 false positive 분석 |
+| 6 | 한계와 제외 범위 | DB, 세션, fixture, 브라우저, 권한 모델이 필요한 이유 |
+| 7 | 후속 설계 | R4와 AI review/human review의 역할 및 승인 경계 |
+| 8 | 결론 | 자동화 가능한 증거 수집과 사람의 최종 판단을 분리한 이유 |
+
+### 24.2 발표 슬라이드 최소 구성
+
+```text
+1. 문제 정의와 목표 범위
+2. 전체 아키텍처
+3. 실행 mode와 안전장치
+4. R1/R2/R3 실행 결과 요약
+5. V.db와 fallback 판정 의미
+6. 15번 false positive 사례
+7. 왜 R4와 AI review가 다음 단계인가
+8. 결론과 후속 계획
+```
+
+---
+
+## 25. 발표 전 마감 계획
+
+### P0. 주장과 증거 동결
+
+```text
+- 제출에 사용할 checker revision, 실행 run_id, source revision을 기록한다.
+- "구현됨", "WEB VM에서 검증됨", "설계만 됨"을 표에서 분리한다.
+- 15번 raw vulnerable은 최종 취약 확정이 아니라 오탐 분석 사례로 표시한다.
+```
+
+### P1. 제출 문서 작성
+
+```text
+- 24.1 순서로 보고서 뼈대를 만든다.
+- run별 raw evidence는 부록 또는 링크로 두고, 본문에는 결론과 근거만 쓴다.
+- AI-assisted review는 구현 사실처럼 쓰지 않고 future design으로 분리한다.
+```
+
+### P2. 발표 증거 선별
+
+```text
+- 명확한 자동 판정 1개: 03 또는 21
+- 방어 확인 1개: 08 SSRF 또는 06 proof route
+- 한계/오탐 사례 1개: 15 파일 다운로드
+```
+
+### P3. 예상 질문 대비
+
+| 질문 | 답변 원칙 |
+|---|---|
+| 왜 manual_required가 많은가 | DB·세션·권한·업무 흐름 근거가 없는 상태에서 취약/양호를 단정하지 않았기 때문 |
+| 왜 AI를 붙이나 | 자동 판정 대체가 아니라 evidence 해석과 후속 검증 설계 보조를 위해서 |
+| 왜 AI가 최종 판정하지 않나 | 환각, 오탐, prompt injection, 실제 환경 차이 때문에 사람 승인과 원본 evidence가 필요하기 때문 |
+| 15번은 왜 vulnerable이었나 | HTTP 200을 성공으로 과해석한 raw rule의 한계를 발견한 사례이기 때문 |
+| 다음 구현은 무엇인가 | 승인된 fixture lifecycle로 runtime evidence를 만드는 R4 |
+
+---
+
+## 26. 제출 완료 기준
+
+다음 조건을 만족하면 구현을 더 늘리지 않고 제출 단계로 전환한다.
+
+```text
+- 현재 구현 범위와 미구현 범위가 한 표에서 구분된다.
+- 실제 run evidence를 최소 3개 대표 사례에 연결할 수 있다.
+- 15번 false positive의 raw rule, response 해석 문제, 개선 방향을 설명할 수 있다.
+- R4와 AI review를 계획으로만 제시하고, 구현 완료처럼 표현하지 않는다.
+- 발표자가 manual_required, source evidence, V.db를 각각 한 문장으로 설명할 수 있다.
+```
