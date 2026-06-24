@@ -164,7 +164,7 @@ DocumentRoot /var/www/care
 
 ### 4-4. 실습용 변수 지정
 
-이 노트는 CARE 서버의 DocumentRoot가 `/var/www/care`라고 가정한다.
+이 노트는 CARE 서버의 DocumentRoot가 `/var/www/html/care`라고 가정한다.
 
 ```bash
 APP_ROOT=/var/www/care
