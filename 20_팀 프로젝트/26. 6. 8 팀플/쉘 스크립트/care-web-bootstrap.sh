@@ -25,7 +25,7 @@ set -euo pipefail
 REPO_URL="${REPO_URL:-https://github.com/Unoh03/care.git}"
 BRANCH="${BRANCH:-main}"
 SRC="${SRC:-/opt/care-src}"
-DEST="${DEST:-/var/www/html/care}"
+DEST="${DEST:-/var/www/care}"
 SITE_NAME="${SITE_NAME:-care}"
 SITE_CONF="/etc/apache2/sites-available/${SITE_NAME}.conf"
 HEALTH_URL="${HEALTH_URL:-http://127.0.0.1/}"
