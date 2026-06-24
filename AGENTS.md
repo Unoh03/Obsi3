@@ -43,6 +43,36 @@ keep study notes, MOCs, and templates in Korean unless asked otherwise.
   links, also check that the basename is not ambiguous.
 - Use `90_템플릿/` for templates and `40_자료/` for source materials and assets.
 
+## Vault Architecture Changes
+
+Requests to overhaul, redesign, reorganize, migrate, or audit vault indexes,
+MOCs, or navigation are architecture tasks, not simple Markdown-edit tasks.
+Do not reduce them to adding MOC files, replacing links, or passing a link
+check without first defining the intended navigation outcome.
+
+Before the first repository-specific tool call for such work, state the
+provisional outcome, scope, exclusions, discovery plan, decision points, and
+outcome-level verification. Then perform read-only discovery before proposing
+edits.
+
+For index or MOC work, inventory the relevant navigation artifacts in scope.
+Depending on the requested area, this includes `Home.md`, folder and topic
+MOCs, project entry documents, dashboards, classification tables, restart
+points, source-material indexes, and templates. Distinguish navigation
+structure from status records, source catalogs, raw logs, and concrete notes.
+
+Before edits, present the evidence-backed target navigation model and migration
+scope when more than one materially different structure is plausible. Do not
+ask the user for a full vault specification; resolve factual questions through
+inspection and ask only the smallest consolidated question needed for choices
+that would change the intended result.
+
+For architecture work, completion requires the agreed outcome-level checks in
+addition to Markdown and link checks. State the coverage policy, changed
+navigation paths, deliberately excluded artifacts, unresolved decisions, and
+any dimensions not verified. Never claim a vault-wide index overhaul is
+complete solely because all added links resolve.
+
 ## Git And File Hygiene
 
 - Never track local workspaces, plugin bundles, sync secrets, or generated
