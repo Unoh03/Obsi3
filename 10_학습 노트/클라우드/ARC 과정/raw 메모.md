@@ -35,3 +35,6 @@ AWS 관리형
 
 # 기타
 AWS Cost Explorer: 가계부.
+AWS Skill Builder      : 다양한 동영상 과정
+AWS Events             : AWSome Day 온라인 컨퍼런스, Tech Camp(약 3시간, 각 분야 / 주제 별로 내용)
+AWS Documentation : AWS에 오픈 할 수 있는 만큼의 AWS의 모든 서비스들의 기술적 자료
