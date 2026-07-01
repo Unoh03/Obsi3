@@ -5,8 +5,8 @@ version: "7.10.4"
 module: "모듈 1: 아키텍팅 기본 사항"
 source: "Architecting on AWS 7.10.4 (모듈1 아키텍팅 기본 사항).pdf"
 source_pages:
-  file_pages: [1-5]
-  textbook_pages: [27-31]
+  file_pages: [1-41]
+  textbook_pages: [27-67]
 status: draft
 ---
 # Architecting on AWS - 모듈 1 아키텍팅 기본 사항 Source Digest
