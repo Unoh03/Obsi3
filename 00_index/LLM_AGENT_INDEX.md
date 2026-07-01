@@ -1,18 +1,19 @@
 # LLM Agent Index
 
-이 파일은 사람용 목차가 아니라 Codex, Claude, Gemini 같은 LLM/agent가 이 vault를 탐색할 때 먼저 읽는 운영 인덱스다.
+이 파일은 사람용 목차가 아니라 Codex, Claude, Gemini 같은 LLM/agent가 vault 탐색 규칙이 필요할 때 읽는 운영 인덱스다.
 
 이 파일은 `00_index/Home.md`를 대체하지 않는다. 실제 탐색 구조의 기준은 여전히 `Home → 영역 목차 → 주제/프로젝트 목차 → 실제 노트`다.
 
 ## Agent read order
 
+일반 탐색은 `Home.md`에서 시작한다. 이 파일은 vault navigation, MOC/index architecture, source/RAW 분리, stale-index cleanup, inventory 작업처럼 agent 운영 규칙이 필요한 경우에만 읽는다.
+
 1. `AGENTS.md`
-2. `00_index/LLM_AGENT_INDEX.md`
-3. `00_index/Home.md`
-4. 관련 영역 MOC
-5. 관련 주제/프로젝트 MOC
-6. 대상 노트
-7. RAW, source, PDF, 캡처, 로그는 근거 확인이 필요할 때만 읽는다.
+2. `00_index/Home.md`
+3. 관련 영역 MOC
+4. 관련 주제/프로젝트 MOC
+5. 대상 노트
+6. RAW, source, PDF, 캡처, 로그는 근거 확인이 필요할 때만 읽는다.
 
 ## Operating rules
 
@@ -40,8 +41,8 @@
 
 | Task intent | Start here | Then inspect | Avoid |
 |---|---|---|---|
-| AWS 학습·실습 재개 | [[10_학습 노트/클라우드/AWS/00_AWS_목차]] | 현재 재시작 지점, RAW 메모, 관련 실습 노트 | 오래된 PDF 기준만 보고 현재 Console 동작을 단정하지 말 것 |
-| AWS 공식 강사 / Architecting on AWS 수업 | [[10_학습 노트/클라우드/공식 Arc 과정/raw 메모]] | `40_자료/강의 자료/AWS Arc/`, 모듈별 PDF, 클라우드/AWS MOC 반영 여부 | 기존 `AWS기초.pdf` 학원 수업 흐름과 섞지 말 것 |
+| AWS기초 완료 흐름 재사용·후속 정리 | [[10_학습 노트/클라우드/AWS/00_AWS_목차]] | 학원 AWS기초 완료 흐름, 학습 범위 지도, 후속 정리 후보, 관련 개념/실습 노트 | 공식 Arc 현재 수업 재시작점으로 보지 말 것 |
+| AWS 공식 강사 / Architecting on AWS 수업 | [[10_학습 노트/클라우드/00_클라우드_목차]] | [[10_학습 노트/클라우드/공식 Arc 과정/raw 메모]], `40_자료/강의 자료/AWS Arc/`, 모듈별 PDF | 기존 `AWS기초.pdf` 학원 수업 흐름과 섞지 말 것 |
 | 웹보안 개념·실습 정리 | [[10_학습 노트/시스템보안/웹보안/00_웹보안_목차]] | 정리 지도, 개념 노트, 실습 기록, 현재 재시작 지점 | RAW/source를 핵심 개념 노트로 오인하지 말 것 |
 | 시스템보안 전체 라우팅 | [[10_학습 노트/시스템보안/00_시스템보안_목차]] | 웹보안, 네트워크보안 하위 MOC | 네트워크 장비 학습과 공격·방어 실습을 섞지 말 것 |
 | KISA 웹 서비스 진단 프로젝트 | [[20_팀 프로젝트/26. 6. 8 팀플/00_팀플_목차]] | 웹 서비스 보안 모음, 웹 앱 보안 모음, 결과/스크립트/원문 구분 | 진단 원문 로그를 최종 결과로 취급하지 말 것 |
@@ -85,7 +86,7 @@
 
 | Marker | Evidence to check | Agent behavior |
 |---|---|---|
-| AWS class split | `Home.md`, `10_학습 노트/00_학습노트_목차.md`, AWS MOC | 학원 AWS 수업 완료분과 AWS 공식 강사 수업을 섞지 않는다. |
+| AWS class split | `Home.md`, 클라우드 MOC, AWS MOC, 공식 Arc RAW | `AWS기초.pdf` 흐름은 완료/legacy로 보고, 공식 Arc 현재진행 RAW와 섞지 않는다. |
 | Old AWS material | AWS MOC의 `AWS기초.pdf` 기준 시점 경고 | Console UI, 비용, Free Tier, 보안 기본값은 현재 기준으로 재확인한다. |
 | RAW promoted into core path | MOC 섹션명과 링크 대상 파일 성격 | RAW를 제거하기보다 RAW/source 섹션으로 분리한다. |
 | MOC overgrowth | 긴 MOC가 파일 목록처럼 변한 경우 | 핵심 경로, 재시작 지점, source catalog, inventory를 분리한다. |
@@ -113,5 +114,5 @@ After editing:
 |---|---|---|
 | 전체 AI inventory 미작성 | 현재 이 파일은 운영 인덱스 MVP이며 전체 파일 목록이 아님 | 다음 루프에서 `rg --files` 기반 inventory 초안을 만들지 결정 |
 | frontmatter 통일 안 됨 | 기존 vault 전반에 `type`, `status`, `parent_moc`, `source`가 일관되지 않을 가능성 높음 | 핵심 MOC와 stable concept/lab 노트부터 표본 적용 |
-| AWS 공식 강사 / ARC 과정 MOC 미연결 | ARC raw와 `AWS Arc` PDF 묶음은 있으나 클라우드/AWS MOC에는 정식 연결이 없음 | ARC 과정 재시작 지점과 source catalog를 클라우드/AWS MOC에 반영할지 결정 |
+| AWS 공식 강사 / ARC 안정 MOC 미작성 | ARC RAW는 클라우드 MOC에 연결됐지만, 별도 안정 MOC나 source catalog는 아직 없음 | 수업 종료 또는 재사용 시점에 ARC 과정 재시작 지점과 source catalog를 만들지 결정 |
 | source/RAW catalog 미분리 | PDF, 캡처, RAW, 진단 원문이 영역별로 섞여 있을 수 있음 | `40_자료`와 프로젝트 evidence 계층을 분리 검토 |
