@@ -4,9 +4,10 @@
 - 현재 vault 보존 위치: `쉘 스크립트/구닥다리/web-comp_5_9_.sh`
 - 설명 기준: 작성 당시 5.9 파일 내용 기준
 - 실행 대상: WEB 서버
+- 현재 실행 기준: `쉘 스크립트/webCompZzinFinal.sh` (사용자 확인)
 
-> [!warning] 현재 저장소 위치
-> 이 설명서는 `web-comp_5_9_.sh`를 설명하지만, 현재 vault에서는 해당 파일이 `쉘 스크립트/구닥다리/web-comp_5_9_.sh`에 보존되어 있다. `쉘 스크립트/web-comp_final.sh` 또는 `쉘 스크립트/webCompZzinFinal.sh`를 현재 실행 기준으로 삼을지는 이 문서만으로 단정하지 않는다.
+> [!warning] 현재 저장소 위치와 최신 기준
+> 이 설명서는 `web-comp_5_9_.sh`를 설명하지만, 현재 vault에서는 해당 파일이 `쉘 스크립트/구닥다리/web-comp_5_9_.sh`에 보존되어 있다. 사용자 확인 기준 마지막 WEB 통합 스크립트는 `쉘 스크립트/webCompZzinFinal.sh`이다. 이 문서의 실행 예시는 5.9 스크립트 설명용으로 보고 현재 실행 기준으로 쓰지 않는다.
 
 이 문서는 `web-comp_5_9_.sh`가 WEB 서버를 어떻게 설치, 재구축, 배포, 보안 패치, NFS 연결, 로그 수집 상태로 만드는지 설명한다.
 
@@ -366,7 +367,7 @@ Promtail 실패는 기본적으로 WEB 설치 자체를 막지 않는다. 로그
 | 검증 | 설명 |
 |---|---|
 | `systemctl is-active tomcat.service` | Tomcat active 상태 확인 |
-| `ss -ltn | grep ':8080 '` | 8080 listen 확인 |
+| `ss -ltn \| grep ':8080 '` | 8080 listen 확인 |
 | `curl http://127.0.0.1:8080/` | 애플리케이션 루트 응답 확인 |
 | `curl http://127.0.0.1:8080/css/header.css` | CSS 정적 리소스 배포 확인 |
 | `findmnt --mountpoint .../webapps/upload` | NFS mount 확인 |
