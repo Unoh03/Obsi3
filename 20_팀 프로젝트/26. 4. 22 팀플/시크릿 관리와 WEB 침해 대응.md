@@ -1,6 +1,6 @@
 # 시크릿 관리와 WEB 침해 대응
 
-상태: 보고서 초안  
+상태: 보고서 초안
 작성 목적: 팀프로젝트에서 WEB 서버 침해가 DB 침해로 이어지는 과정을 설명하고, 하드코딩된 DB 접속정보를 제거하는 이유와 적용 방법을 정리한다.
 
 ## 1. 이 문서를 쓰는 이유
@@ -34,11 +34,11 @@ WEB1 서버가 tomcat 권한으로 침해되었을 때,
 
 | 구분 | 위치 | 보안 관점 |
 |---|---|---|
-| Spring Boot WAR | `쉘 스크립트/boot.war` | 배포물 안에 설정 파일이 들어갈 수 있음 |
-| WAR 분석 결과 | `쉘 스크립트/boot-war-inspect/` | WAR 내부 파일을 풀어본 결과라 secret 포함 여부 확인 필요 |
+| Spring Boot WAR | 현재 vault 보존 경로 미확인 | 배포물 안에 설정 파일이 들어갈 수 있음 |
+| WAR 분석 결과 | 현재 vault 보존 경로 미확인 | WAR 내부 파일을 풀어본 결과라 secret 포함 여부 확인 필요 |
 | Spring 설정 | `WEB-INF/classes/application.properties` | DB URL, ID, PW가 들어가기 쉬운 위치 |
-| WEB 설치 스크립트 | `쉘 스크립트/web.sh` | 배포 과정에서 DB 설정을 수정할 수 있음 |
-| DB 설치 스크립트 | `쉘 스크립트/db.sh` | DB 계정 생성, 권한, 비밀번호가 들어가기 쉬움 |
+| WEB 설치 스크립트 | `쉘 스크립트/webCompZzinFinal.sh` | 배포 과정에서 DB 설정을 수정할 수 있음 |
+| DB 설치 스크립트 | `쉘 스크립트/구닥다리/db.sh` | 보존된 초기 후보. 현재 운영 DB 구축 기준으로 단정하지 않음 |
 | NFS upload | `/opt/tomcat/tomcat-10/webapps/upload` | webapps 아래라 업로드 파일 실행 위험 검토 필요 |
 
 주의: 이 문서는 실제 비밀번호 값을 기록하지 않는다. secret은 문서, Git, 보고서, 캡처에 남기지 않는 것이 원칙이다.

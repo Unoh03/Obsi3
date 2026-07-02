@@ -21,6 +21,7 @@
 - 인덱스는 탐색 경로와 현재 분류만 관리한다. 긴 실습 로그, PDF 구조 분석, 원본 자료는 해당 노트나 자료 폴더에 둔다.
 - 새 노트는 먼저 가장 가까운 주제 또는 프로젝트 MOC에 연결한다.
 - 장기 검색·회상 구조는 [[00_index/Vault_Retrieval_Architecture_v1]]을 기준으로 정리한다.
+- repo-wide 정리 작업 큐는 [[00_index/Vault_Curation_Checklist]]에서 관리한다.
 - AI/agent가 vault 탐색 규칙이 필요하면 [[00_index/LLM_AGENT_INDEX|LLM Agent Index]]를 참조한다.
 
 ## 장기 정리
