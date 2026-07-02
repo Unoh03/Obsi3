@@ -12,11 +12,23 @@ scope: repo-wide navigation and retrieval audit
 
 ## 사용 방법
 
-1. 새 루프는 아래 `P0 / P1` 중 하나만 고른다.
+1. 새 루프는 먼저 `Current priority override`를 확인하고, 아래 작업 큐에서 해당 영역의 P0/P1을 하나만 고른다.
 2. 먼저 `Home → 영역 MOC → 주제/프로젝트 MOC`를 따라가며 실제 상태를 확인한다.
 3. 현재진행 영역은 대공사하지 않는다. `draft`, `raw`, `source` 표시와 최소 진입점만 유지한다.
 4. 완료·구버전 영역은 현재 재시작점처럼 보이면 MOC에서 격하하거나 경고한다.
 5. 수정 후에는 `git diff --check`, targeted diff, wiki-link target check, table pipe check를 수행한다.
+
+## Current priority override
+
+사용자 확인 기준 현재 우선순위는 `10_학습 노트/`와 `90_템플릿/`이다.
+Goal 재개 시 프로젝트 P0를 자동으로 이어가기보다, 먼저 학습 노트와 템플릿의 장기 회상 구조를 점검한다.
+
+현재 우선순위:
+
+1. `10_학습 노트/`: concept / lab / RAW / source / restart 경계
+2. `90_템플릿/`: 이후 새 노트가 같은 구조를 유지하게 하는 작성 틀
+3. `20_팀 프로젝트/`: 이미 처리 중인 P0나 오판 위험이 큰 경우에만
+4. `40_자료/`: source 확인용, 필요할 때만
 
 ## Non-goals
 
@@ -46,7 +58,43 @@ scope: repo-wide navigation and retrieval audit
 - [ ] 새 wiki link는 존재가 확인되어 있다.
 - [ ] 마지막 검증에서 `git diff --check`, targeted diff, wiki-link target check, table pipe check가 통과한다.
 
-## P0 - 오판을 바로 만드는 경로
+## P0 - 현재 우선순위: 학습 노트와 템플릿
+
+- [ ] 학습 노트 전체 라우팅 점검
+  - Start: [[10_학습 노트/00_학습노트_목차]]
+  - Scope: 시스템보안, 웹보안, 클라우드/AWS, 네트워크, 리눅스 등 주요 학습 영역의 concept / lab / RAW / source / restart 경계.
+  - Risk: 오래된 MOC가 현재 재시작 지점처럼 보이거나, source/RAW가 안정 정리본처럼 보이면 장기 회상과 AI 검색이 동시에 흔들린다.
+  - 2026-07-02 loop result: 상위 학습노트 MOC에 stable note, RAW/source, restart point, legacy/stale 경계를 추가했다. 하위 MOC 전수 점검은 남아 있다.
+  - 2026-07-02 loop result: 네트워크, 리눅스, Spring/Java 웹 도구 MOC에 restart point와 RAW/source/legacy 주의를 추가했다. 시스템보안 세부와 웹보안 재시작점 평가는 남아 있다.
+  - Next check: 먼저 학습노트 MOC와 주요 하위 MOC를 읽고, 실제 노트 전수 수정 전에 경계가 무너진 지점만 목록화한다.
+
+- [ ] 템플릿 구조 점검
+  - Start: [[90_템플릿/00_템플릿_목차]]
+  - Scope: 개념정리, 실습기록, 트러블슈팅, 명령어정리, 인덱스/MOC 템플릿.
+  - Risk: 템플릿이 현재 vault의 `concept / lab / RAW / source / restart` 경계를 반영하지 못하면 새 노트가 계속 같은 혼선을 만든다.
+  - 2026-07-02 loop result: 핵심 학습 템플릿에 상위 MOC, 원자료/RAW, 재시작 용도, 검증 환경 경계를 추가했다. 프로젝트·자격증 템플릿 적용 여부는 남아 있다.
+  - Next check: frontmatter, 사용 예시, 빈 wiki-link placeholder, source/RAW/stable 구분 필드를 확인한다.
+
+## P1 - 학습 노트 세부 후보
+
+- [ ] 웹보안 stable / RAW / PDF source 경계 점검
+  - Start: [[10_학습 노트/시스템보안/웹보안/00_웹보안_목차]]
+  - Current state: PDF source, 구조 지도, 종합 복습 프로젝트, RAW 작업 메모가 분리되어 있음.
+  - 2026-07-02 loop result: 웹보안 현재 재시작 지점을 `SQL Injection 방어`와 `세션과 쿠키` 중심으로 좁혔고, PDF 구조 지도·SQL Injection source-digest·프로젝트 RAW 작업 메모를 stable note로 오인하지 않도록 MOC에 경계를 추가했다.
+  - Next check: `현재 재시작 지점`과 `PDF 정리 예정`이 실제 학습 재개에 충분히 작은 단위인지 확인한다.
+
+- [ ] 시스템보안 전체 재시작 지점 점검
+  - Start: [[10_학습 노트/시스템보안/00_시스템보안_목차]]
+  - Risk: 웹보안과 네트워크보안의 다음 재시작 지점이 너무 넓거나 오래되면 AI가 RAW/PDF로 바로 뛰어들 수 있다.
+  - 2026-07-02 loop result: 시스템보안 상위 MOC의 웹보안 재시작점을 source 근거가 있는 최소 후보로 풀어썼고, 네트워크보안 후보의 출발점을 Dynamic ARP Inspection으로 표시했다.
+  - Next check: SQL Injection 방어, 세션과 쿠키, DHCP Snooping, IP Source Guard, Wireshark 필터를 실제 후보 노트 단위로 쪼갤지 판단한다.
+
+- [ ] 클라우드/AWS 후속 정리 후보는 재사용 시점까지 보류
+  - Start: [[10_학습 노트/클라우드/00_클라우드_목차]]
+  - Current state: AWS기초는 완료/legacy, 공식 Arc는 현재진행 RAW/source.
+  - Next check: 수업 종료 또는 재사용 시점에만 공식 Arc 안정 MOC 또는 source catalog 확장 여부를 결정한다.
+
+## P2 - 프로젝트 오판 방지
 
 - [x] AWS기초 완료 흐름과 공식 Arc 현재진행 흐름 분리
   - Evidence: [[10_학습 노트/클라우드/00_클라우드_목차]], [[10_학습 노트/클라우드/AWS/00_AWS_목차]], [[40_자료/강의 자료/AWS Arc/개요,목차]]
@@ -64,24 +112,7 @@ scope: repo-wide navigation and retrieval audit
   - Risk: 후보표, 분류표, 보고서, dashboard, proof 파일, RAW 로그가 같은 위상처럼 보이면 최종 판단을 오판한다.
   - Next check: 최종 보고서와 evidence collector, proof 파일, RAW 로그가 MOC에서 충분히 분리되어 있는지 확인한다.
 
-## P1 - 장기 회상 효율을 크게 올리는 경로
-
-- [ ] 웹보안 stable / RAW / PDF source 경계 점검
-  - Start: [[10_학습 노트/시스템보안/웹보안/00_웹보안_목차]]
-  - Current state: PDF source, 구조 지도, 종합 복습 프로젝트, RAW 작업 메모가 분리되어 있음.
-  - Next check: `현재 재시작 지점`과 `PDF 정리 예정`이 실제 학습 재개에 충분히 작은 단위인지 확인한다.
-
-- [ ] 시스템보안 전체 재시작 지점 점검
-  - Start: [[10_학습 노트/시스템보안/00_시스템보안_목차]]
-  - Risk: 웹보안과 네트워크보안의 다음 재시작 지점이 너무 넓거나 오래되면 AI가 RAW/PDF로 바로 뛰어들 수 있다.
-  - Next check: SQL Injection 방어, 세션과 쿠키, DHCP Snooping, IP Source Guard, Wireshark 필터를 실제 후보 노트 단위로 쪼갤지 판단한다.
-
-- [ ] 클라우드/AWS 후속 정리 후보는 재사용 시점까지 보류
-  - Start: [[10_학습 노트/클라우드/00_클라우드_목차]]
-  - Current state: AWS기초는 완료/legacy, 공식 Arc는 현재진행 RAW/source.
-  - Next check: 수업 종료 또는 재사용 시점에만 공식 Arc 안정 MOC 또는 source catalog 확장 여부를 결정한다.
-
-## P2 - 구조 품질과 토큰 절약
+## P3 - 구조 품질과 토큰 절약
 
 - [ ] `40_자료/` source catalog 과밀도 점검
   - Start: [[40_자료/00_자료_목차]]
@@ -98,11 +129,11 @@ scope: repo-wide navigation and retrieval audit
   - Risk: 전수 통일을 바로 하면 비용이 크다.
   - Next check: `type`, `status`, `source`, `parent_moc`는 핵심 노트 몇 개에서만 표본 적용 후 확장 여부를 판단한다.
 
-## P3 - 사람 눈에 보이는 정돈
+## P4 - 사람 눈에 보이는 정돈
 
 - [ ] 템플릿 사용 예시 보강
   - Start: [[90_템플릿/00_템플릿_목차]]
-  - Current state: 템플릿 목록은 있으나 사용 예시와 빈 wiki link placeholder 정리가 남아 있음.
+  - Current state: P0 템플릿 구조 점검 이후, 사람 눈에 보이는 사용 예시를 보강할지 결정한다.
 
 - [ ] 자격증 복습 경로 보강
   - Start: [[30_자격증/00_자격증_목차]]
