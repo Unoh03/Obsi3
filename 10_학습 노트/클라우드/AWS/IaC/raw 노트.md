@@ -1,5 +1,3 @@
-https://registry.terraform.io/providers/hashicorp/aws/latest
-
 테라폼, 앤서블, 쿠버네티스 등의 개념을 확실하게 잡아야 나중에 안헷갈릴듯.
 
 선언적 언어는 재실행성이 좋다고 해석할 수 있나?
@@ -45,3 +43,27 @@ D:\terraform 랑 D:\terraform\workspace 만들기
 
 https://developer.hashicorp.com/terraform/install
 다운 받고 압축 풀고 D:\terraform에 . exe 넣기
+
+윈 + R → sysdm.cpl
+고급 → 환경 변수 → 시스템 변수에서 Path 더블클릭 → D:\terraform 추가.
+
+VSC에서 실행. 테라폼 플러그인 깔기를 강추.
+
+https://registry.terraform.io/providers/hashicorp/aws/latest
+→ 오른쪽 밑의 `## How to use this provider` 의 코드 복붙
+```terraform
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+
+provider "aws" {
+  # Configuration options
+}
+```
+{옵시디언 코드블록은 테라폼 지원 안하나? 플러그인 따로 뭐 깔아야하나?}
+버전만 수정했음. 근데 뭔 뜻이지. 저 버전 이상으로 가장 최신 쓰라는건가?
