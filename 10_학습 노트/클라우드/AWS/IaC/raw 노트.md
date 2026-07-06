@@ -6,3 +6,16 @@ https://registry.terraform.io/providers/hashicorp/aws/latest
 그럼 테라폼은 실행하면 우선 현재 상태를 파악하나?
 	terraform state  와 plan 이 딱 내가 말한거인듯?
 
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "*",
+            "Resource": "*"
+        }
+    ]
+}
+```
+	이거 해석이 필요해.
