@@ -23,6 +23,7 @@ tags:
 - [[IaC PDF Obsidian 노트화 계획 v2]]
 - [[IaC - Source Digest v2]]
 - [[IaC - 공식 검증 노트]]
+- [[raw 노트]]
 
 ## Concept Notes
 
@@ -36,7 +37,13 @@ tags:
 - [[Terraform Module]]
 - [[Terraform Backend와 Remote State]]
 
+## Lab Notes
+
+- [[Terraform AWS CLI 초기 설정 실습]]
+
 ## Pending
 
 - AWS 프로젝트에 Terraform 적용하기
-- Lab Note 작성 여부 판단
+- Terraform EC2 생성 수정 삭제 실습
+- Terraform Resource 참조 실습
+- Terraform Data Source 실습
