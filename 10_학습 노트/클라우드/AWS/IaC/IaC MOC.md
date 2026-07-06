@@ -40,10 +40,14 @@ tags:
 ## Lab Notes
 
 - [[Terraform AWS CLI 초기 설정 실습]]
+  - AWS CLI/Profile/Terraform 설치
+  - VPC/Subnet/EC2 최소 골격 실습
 
 ## Pending
 
 - AWS 프로젝트에 Terraform 적용하기
-- Terraform EC2 생성 수정 삭제 실습
-- Terraform Resource 참조 실습
+- Terraform Public Subnet 구성 실습
+- Terraform Security Group 명시 실습
+- Terraform EC2 접속 검증 실습
+- Terraform Resource 참조 심화 실습
 - Terraform Data Source 실습
