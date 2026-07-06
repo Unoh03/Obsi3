@@ -7,6 +7,7 @@ source:
   - Iac.pdf
   - IaC - Source Digest v2.md
   - IaC - 공식 검증 노트.md
+  - raw 노트.md
 source_pages:
   - p.6-p.8
 tags:
@@ -26,6 +27,7 @@ tags:
 | 강의자료 기반 핵심 내용 | PDF | `Iac.pdf`, `IaC - Source Digest v2.md` 기준 |
 | Terraform 현재 동작 검증 | 인터넷 고신뢰 정보 | `IaC - 공식 검증 노트.md`와 HashiCorp 공식 문서 기준 |
 | 설명 재구성 | 내장 지식 | PDF와 공식 검증 내용을 학습 노트 형태로 재배열 |
+| 수업 중 의문/문제의식 | 사용자 raw 메모 | `raw 노트.md` 기준 보강 |
 | 커뮤니티 의견 | 인터넷 비공식 고품질 의견 | 이 노트에서는 사용하지 않음 |
 
 ## 한 줄 정의
@@ -61,6 +63,23 @@ PDF 예시의 핵심:
 | 서버 수를 10 → 15로 변경 |
 | 절차적 방식 | 기존 10대에 새로 15대를 더 만들어 총 25대가 될 수 있음 |
 | 선언적 방식 | 최종 목표가 15대이므로 5대만 추가되어 총 15대 유지 |
+
+## 선언적 언어와 재실행성
+
+수업 raw 노트의 질문처럼 “선언적 언어는 재실행성이 좋다”고 이해해도 어느 정도 맞다. 다만 더 정확한 표현은 다음이다.
+
+```text
+Terraform은 코드에 적힌 목표 상태와 현재 상태를 비교해서,
+필요한 변경만 계획하려고 한다.
+```
+
+즉, 같은 코드를 다시 실행한다고 해서 무조건 같은 리소스를 계속 새로 만드는 것이 아니다. Terraform은 state와 provider를 통해 파악한 현재 상태를 기준으로 “이미 목표 상태와 같으면 바꿀 것이 없음”에 가깝게 동작한다.
+
+주의할 점:
+
+- “재실행해도 항상 안전하다”는 뜻은 아니다.
+- 코드, state, 실제 클라우드 리소스 상태가 어긋나면 예상과 다른 plan이 나올 수 있다.
+- `plan`으로 변경 예정 사항을 확인하고 `apply`해야 한다.
 
 ## Terraform의 장점
 
@@ -113,6 +132,80 @@ provider "aws" {
 | `region` | 리소스를 생성할 AWS Region |
 | `profile` | AWS CLI 인증정보 Profile |
 
+## Provider version constraint
+
+수업 raw 노트에는 Terraform Registry의 AWS Provider 예시를 복사하면서 다음 코드가 나온다.
+
+```hcl
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"
+    }
+  }
+}
+```
+
+여기서 `~> 6.0`은 “6.0 이상이면 아무 최신 버전이나 사용”이라는 뜻이 아니다. 실무적으로는 다음처럼 이해하면 된다.
+
+```text
+~> 6.0
+= 6.x 계열 안에서 허용 가능한 최신 버전을 사용
+= 보통 >= 6.0.0, < 7.0.0 범위로 이해
+```
+
+비교:
+
+| 표현 | 의미 감각 |
+|---|---|
+| `~> 5.0` | 5.x 계열 허용 |
+| `~> 6.0` | 6.x 계열 허용 |
+| `>= 6.0` | 6.0 이상이면 major version 상승도 허용될 수 있어 더 넓음 |
+
+PDF 예시는 `~> 5.0`이고, 수업 중 Registry 최신 예시는 `~> 6.0`이다. 따라서 노트 작성 시 둘을 섞지 말고 다음처럼 구분한다.
+
+```text
+PDF 재현: PDF의 provider version 사용
+현재 실습: Registry에서 확인한 현재 provider version 사용
+프로젝트: 공식 문서와 호환성 확인 후 version pinning
+```
+
+## AWS Provider 실습 권한 예시
+
+raw 노트에는 다음 IAM Policy JSON이 있다.
+
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": "*",
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+해석:
+
+| 필드 | 의미 |
+|---|---|
+| `Version` | IAM Policy 문법 버전. 날짜 형식이지만 정책 작성일이 아니라 정책 언어 버전 |
+| `Statement` | 권한 규칙 목록 |
+| `Effect: Allow` | 허용 규칙 |
+| `Action: "*"` | 모든 AWS API 작업 허용 |
+| `Resource: "*"` | 모든 리소스 대상 허용 |
+
+결론:
+
+```text
+모든 AWS 리소스에 대해 모든 작업을 허용하는 매우 강한 권한이다.
+```
+
+실습에서는 편의상 이런 넓은 권한을 줄 수 있지만, 실제 프로젝트나 장기 운영 계정에서는 최소 권한 원칙에 맞춰 제한해야 한다.
+
 ## HCL 기본
 
 PDF p.10 기준:
@@ -125,6 +218,21 @@ PDF p.10 기준:
 - `main.tf`: Terraform 설정 및 Provider 지정 파일로 사용
 - `{ }`: Attribute Block 정의
 - `terraform fmt`: HCL 문법 정리 명령어
+
+## Obsidian 코드블록 표기
+
+Terraform 코드는 HCL 기반이므로 Obsidian 코드블록에서는 우선 `hcl`을 쓰는 것이 안전하다.
+
+````markdown
+```hcl
+resource "aws_instance" "example" {
+  ami           = "ami-xxxxxxxx"
+  instance_type = "t2.micro"
+}
+```
+````
+
+환경에 따라 `terraform` 코드블록이 동작할 수도 있지만, 색상이 제대로 안 먹으면 `hcl`로 통일한다.
 
 ## 주의
 
