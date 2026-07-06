@@ -40,3 +40,8 @@ aws Configure --profile Terra-user
 만약 남의 컴에서 cli 과정 했으면 사용자 폴더의 . aws 폴더 날리기.
 ![[Pasted image 20260706134714.png]]
 {질문: 프로필 지정 안했으면 키도 not set 나와야하는거 아닌가?}
+
+D:\terraform 랑 D:\terraform\workspace 만들기
+
+https://developer.hashicorp.com/terraform/install
+다운 받고 압축 풀고 D:\terraform에 . exe 넣기
