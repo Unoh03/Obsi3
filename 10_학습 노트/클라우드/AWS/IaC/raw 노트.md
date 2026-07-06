@@ -4,3 +4,5 @@ https://registry.terraform.io/providers/hashicorp/aws/latest
 
 선언적 언어는 재실행성이 좋다고 해석할 수 있나?
 그럼 테라폼은 실행하면 우선 현재 상태를 파악하나?
+	terraform state  와 plan 이 딱 내가 말한거인듯?
+
