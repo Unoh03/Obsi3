@@ -4,6 +4,10 @@ topic: network-acl
 status: draft
 created: "{{date:YYYY-MM-DD}}"
 project:
+parent_moc:
+source:
+evidence:
+environment:
 tags:
   - 🏷️노트/보안정책
   - 🏷️주제/ACL
@@ -11,6 +15,16 @@ tags:
 ---
 
 # {{title}}
+
+## 노트 경계
+
+- 역할: security policy / lab design note
+- 상위 MOC:
+- 원자료/source:
+- 실제 검증 evidence:
+- 적용 환경:
+
+---
 
 ## 목표
 
