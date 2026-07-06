@@ -1,6 +1,7 @@
 ---
-title: IaC - Source Digest
+title: IaC - Source Digest v2
 created: 2026-07-06
+updated: 2026-07-06
 status: active
 type: source-digest
 source_pdf: Iac.pdf
@@ -26,6 +27,22 @@ tags:
 | 1차 출처 분류 | PDF |
 | 외부 검증 | 수행하지 않음 |
 | 이미지 보존 | `assets/Iac_page_01.png` ~ `assets/Iac_page_52.png` 전체 페이지 렌더링 포함 |
+
+## 2차 검수 결과
+
+| 검수 항목 | 결과 |
+|---|---|
+| PDF 페이지 수 | 52쪽 확인 |
+| Page Digest 수 | p.1-p.52 전체 존재 |
+| Coverage Map | p.1-p.52 전체 존재 |
+| 페이지 이미지 | `assets/Iac_page_01.png` ~ `assets/Iac_page_52.png` 존재 |
+| 1차본의 주요 약점 | 이미지 속 코드/터미널/도식이 이미지로는 보존되었으나, LLM 검색용 텍스트 전사가 부족함 |
+| 2차 보강 | 문서 말미에 `2차 검수 보강 Appendix` 추가: 고위험 코드 페이지 전사, 터미널 출력 요약, 실습 아키텍처 구조 색인 |
+| 여전히 필요한 검증 | Terraform/AWS 공식 문서 대조, 실제 실행 검증, 이미지 속 코드 전사본의 문자 단위 검수 |
+
+> 기준: 정보 손실 방지를 위해 원본 페이지 이미지를 최종 기준으로 유지한다. 아래 전사본은 검색성과 노트 분리를 돕는 보강본이며, 애매한 문자는 반드시 원본 이미지와 대조한다.
+
+---
 
 ## 보존 정책
 
@@ -1396,3 +1413,1280 @@ Iac ( Infrastructure as Code ) : Terraform
 3. 먼저 `Terraform Resource와 Data Source.md`, `Terraform Backend와 Remote State.md`를 만들지 말고, 전체 Concept Note 후보를 확정한다.
 4. 이미지 속 코드가 필요한 실습 페이지는 별도 `Lab Note`로 전사한다.
 5. 확인 필요 항목은 공식 문서 대조 후 Concept Note에 반영한다.
+
+
+---
+
+# 2차 검수 보강 Appendix
+
+## A. 검수 목적
+
+1차 `Source Digest`는 PDF 52쪽 전체를 페이지 이미지와 선택 가능한 텍스트로 보존했다.  
+다만 Terraform 코드, 터미널 출력, AWS 아키텍처 도식은 이미지 안에 포함된 정보가 많아 LLM 검색성과 Concept Note 분리에 손실 위험이 있었다.
+
+이 Appendix는 다음 페이지를 중심으로 **이미지 속 핵심 정보**를 텍스트로 추가 보존한다.
+
+| 유형 | 대상 페이지 |
+|---|---|
+| Terraform 설정/코드 | p.10, p.13, p.16, p.20, p.21, p.24, p.25, p.30-p.35, p.39-p.41, p.43-p.47, p.49-p.51 |
+| Terraform 터미널 출력 | p.11, p.14-p.15, p.17, p.19, p.22, p.26, p.35, p.45, p.47 |
+| 실습 아키텍처 도식 | p.27-p.28, p.36-p.37, p.43 |
+| 실습 요구조건 | p.48, p.52 |
+
+> 전사 기준: 이미지에서 판독 가능한 내용을 우선 보존했다. 공식 문서 검증이나 실제 실행 검증은 수행하지 않았다.
+
+---
+
+## B. 고위험 코드 페이지 전사
+
+### p.10 — `main.tf` 기본 Provider 설정
+
+```hcl
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region  = "ap-northeast-2"
+  profile = "terraform_user"
+}
+```
+
+- 작업 경로: `C:\Terraform\main.tf`
+- `terraform { ... }`: Terraform 설정 정의 영역
+- `provider { ... }`: Provider 지정 영역
+- `required_providers { ... }`: Provider 설정 정의 영역
+- `region`: AWS Resource를 생성할 Region
+- `profile`: AWS CLI 인증정보를 담고 있는 Profile
+- `terraform fmt`: HCL 문법 정리 명령어
+
+---
+
+### p.11 — `terraform init` 출력
+
+```text
+C:\Terraform>terraform init
+
+Initializing the backend...
+
+Initializing provider plugins...
+- Finding hashicorp/aws versions matching "~> 5.0"...
+- Installing hashicorp/aws v5.10.0...
+- Installed hashicorp/aws v5.10.0 (signed by HashiCorp)
+
+Terraform has created a lock file .terraform.lock.hcl to record the provider selections it made above.
+Include this file in your version control repository so that Terraform can guarantee to make the same
+selections by default when you run "terraform init" in the future.
+
+Terraform has been successfully initialized!
+```
+
+- PDF 설명:
+  - Provider Resource, Data Source 다운로드 및 Terraform 초기구성 작업
+  - Provider 설정 변경 시 초기구성 작업을 다시 수행
+  - 초기구성 완료 후 `.terraform.lock.hcl` 생성
+  - `.terraform.lock.hcl`을 잠금 파일로 설명함
+- 확인 필요:
+  - `.terraform.lock.hcl`의 실제 역할은 공식 문서 대조 필요
+
+---
+
+### p.13 — EC2 Resource 기본 구조
+
+```hcl
+resource "<PROVIDER>_<TYPE>" "<NAME>" {
+  [ CONFIG ... ]
+}
+
+# 의미
+# <PROVIDER> : 공급자 이름
+# <TYPE>     : 공급자의 리소스 유형 (EC2, VPC 등)
+# <NAME>     : 다른 Terraform 코드에서 해당 리소스를 참조하기 위한 식별 이름
+# [CONFIG]   : 특정 리소스를 생성하기 위한 설정 값 (AMI, INSTANCE 유형 등)
+```
+
+```hcl
+resource "aws_instance" "Example" {
+  ami           = "ami-0ea4d4b8dc1e46212"
+  instance_type = "t2.micro"
+}
+```
+
+- Resource는 VPC, EC2 Instance 등의 Resource를 정의한다.
+- EC2 Resource Docs URL이 페이지에 포함됨:
+  - `https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/instance`
+
+---
+
+### p.14 — `terraform plan` 예시 출력
+
+```text
+C:\Terraform>terraform plan
+
+Terraform used the selected providers to generate the following execution plan.
+
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # aws_instance.Example will be created
+  + resource "aws_instance" "Example" {
+      + ami           = "ami-0ea4d4b8dc1e46212"
+      ... 생략 ...
+      + instance_type = "t2.micro"
+      ... 생략 ...
+    }
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+```
+
+- `+`: 추가
+- `-`: 삭제
+- `~`: 변경
+- `terraform plan`: Terraform 코드 실행 전 변경사항을 체크한다.
+
+---
+
+### p.15 — `terraform apply`로 EC2 생성
+
+```text
+C:\Terraform>terraform apply
+
+[ ... Plan 수행 ... ]
+
+Terraform will perform the following actions:
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+Enter a value: yes
+
+aws_instance.Example: Creating...
+aws_instance.Example: Still creating... [10s elapsed]
+aws_instance.Example: Creation complete after 32s [id=i-0814ae8ce9bc3ce67]
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+```
+
+- AWS 콘솔 EC2 메뉴에서 새로운 Instance 생성 여부 확인.
+
+---
+
+### p.16 — EC2 Resource 수정: Tag 지정
+
+```hcl
+provider "aws" {
+  region  = "ap-northeast-2"
+  profile = "terraform_user"
+}
+
+resource "aws_instance" "Example" {
+  ami           = "ami-0ea4d4b8dc1e46212"
+  instance_type = "t2.micro"
+
+  tags = {
+    Name = "Terraform_EC2_Example"
+  }
+}
+```
+
+- 기존 EC2 Resource 코드를 수정 후 재배포.
+- Instance Tag 지정 부분이 빨간 박스로 강조되어 있음.
+
+---
+
+### p.17 — EC2 Tag 수정 `apply` 출력
+
+```text
+C:\Terraform>terraform apply
+
+[ ... Plan 수행 ... ]
+
+Terraform will perform the following actions:
+
+Plan: 0 to add, 1 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+Enter a value: yes
+
+aws_instance.Example: Modifying... [id=i-0814ae8ce9bc3ce67]
+aws_instance.Example: Modifications complete after 0s [id=i-0814ae8ce9bc3ce67]
+
+Apply complete! Resources: 0 added, 1 changed, 0 destroyed.
+```
+
+---
+
+### p.19 — EC2 삭제 명령 및 출력
+
+```text
+C:\Terraform>terraform destory
+```
+
+> 원문에는 `destory`로 표기되어 있다. 실제 Terraform 명령과 대조 필요.
+
+```text
+[ ... Plan 수행 ... ]
+
+Terraform will perform the following actions:
+
+Plan: 0 to add, 0 to change, 1 to destroy.
+
+Do you really want to destroy all resources?
+  Terraform will destroy all your managed infrastructure, as shown above.
+  There is no undo. Only 'yes' will be accepted to confirm.
+
+Enter a value: yes
+
+aws_instance.Example: Destroying... [id=i-0814ae8ce9bc3ce67]
+aws_instance.Example: Still destroying... [id=i-0814ae8ce9bc3ce67, 10s elapsed]
+aws_instance.Example: Destruction complete after 40s
+
+Destroy complete! Resources: 1 destroyed.
+```
+
+---
+
+### p.20 — Resource 참조 구문
+
+```hcl
+<PROVIDER>_<TYPE>.<NAME>.<ATTRIBUTE>
+```
+
+- `<PROVIDER>`: 공급자 이름
+- `<TYPE>`: 공급자의 리소스 유형, 예: EC2, Security_Group 등
+- `<NAME>`: 다른 Terraform 코드에서 해당 리소스를 참조하기 위한 식별 이름
+- `<ATTRIBUTE>`: `NAME`에서 지정된 리소스가 내보낸 속성
+- 예시 설명:
+  - Security Group ID Attribute
+  - `id = Security Group 식별값`
+
+---
+
+### p.21 — Security Group Resource와 EC2 참조
+
+```hcl
+# SSH 원격접속을 위한 Security-Group Resource 정의
+resource "aws_security_group" "Example_sg" {
+  name        = "Example Instance Connection"
+  description = "Allow SSH Traffic"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+```
+
+```hcl
+resource "aws_instance" "Example" {
+  ami           = "ami-0ea4d4b8dc1e46212"
+  instance_type = "t2.micro"
+  vpc_security_group_ids = [aws_security_group.Example_sg.id]
+
+  tags = {
+    Name = "Terraform_EC2_Example"
+  }
+}
+```
+
+- EC2 Instance에서는 여러 Security Group을 참조할 수 있으므로 `List Type`으로 참조를 정의한다고 설명한다.
+- `vpc_security_group_ids = [aws_security_group.Example_sg.id]`가 핵심 참조 지점이다.
+
+---
+
+### p.22 — Security Group + EC2 생성 `apply`
+
+```text
+C:\Terraform>terraform apply
+
+[ ... Plan 수행 ... ]
+
+Terraform will perform the following actions:
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+Enter a value: yes
+
+aws_instance.Example: Creating...
+aws_instance.Example: Still creating... [10s elapsed]
+aws_instance.Example: Creation complete after 32s [id=i-076682fc57f273426]
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+```
+
+- 페이지 설명:
+  - AWS 콘솔 VPC 메뉴에서 Security Group 생성 및 EC2 Instance 연결 여부 확인
+  - 생성 확인 후 테스트 Resource는 Destroy 명령으로 삭제
+
+---
+
+### p.24 — Data Source 구문
+
+```hcl
+data "<PROVIDER>_<TYPE>" "<NAME>" {
+  [ CONFIG ... ]
+}
+```
+
+```hcl
+data.<PROVIDER>_<TYPE>.<NAME>.<ATTRIBUTE>
+```
+
+- Data Source는 외부 공급자(AWS)에서 가져온 읽기 전용 정보라고 설명한다.
+- 새롭게 정보가 생성되는 것이 아니라 기존 데이터 정보만 가져와 현재 Terraform 코드에 적용할 때 사용한다고 설명한다.
+- 예시: VPC 정보, Subnet 정보, AMI 정보, IAM 자격증명 정보 등
+
+---
+
+### p.25 — VPC Data Source + Subnet Resource
+
+```hcl
+# VPC Data Source 정의
+data "aws_vpc" "default_vpc" {
+  default = true # default VPC로 지정 된 VPC 지정
+}
+
+# Data Source를 활용한 Resource VPC Subnet 정의
+resource "aws_subnet" "default_vpc_subnet" {
+  vpc_id     = data.aws_vpc.default_vpc.id # Subnet을 생성 할 VPC ID
+  cidr_block = "172.31.64.0/20"            # Subnet CIDR
+
+  tags = {
+    Name = "Terraform_Subnet" # Subnet Tag
+  }
+}
+```
+
+---
+
+### p.26 — Subnet 생성 `apply`
+
+```text
+C:\Terraform>terraform apply
+
+[ ... Plan 수행 ... ]
+
+Terraform will perform the following actions:
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+
+Do you want to perform these actions?
+  Terraform will perform the actions described above.
+  Only 'yes' will be accepted to approve.
+
+Enter a value: yes
+
+aws_subnet.default_vpc_subnet: Creating...
+aws_subnet.default_vpc_subnet: Creation complete after 0s [id=subnet-051ada35b3eb3d577]
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+```
+
+---
+
+### p.30 — Variable 기본 구문
+
+```hcl
+variable "<NAME>" {
+  description = "설명"
+  default     = "기본값 정의"
+  type        = "변수 유형"
+}
+```
+
+- `"NAME"`: 입력 변수 이름
+- `"DESCRIPTION"`: 변수 설명. `plan`, `apply` 명령어를 실행할 때 함께 출력
+- `"DEFAULT"`: 정의된 변수에 값이 지정되지 않았을 경우 사용될 기본 값
+- `"TYPE"`: Terraform 사용자가 해당 변수에게 전달할 인자값의 유형 정의
+- TYPE 종류:
+  - `any`
+  - `string`
+  - `number`
+  - `bool`
+  - `list`
+  - `map`
+  - `set`
+  - `object`
+  - `tuple`
+
+---
+
+### p.31 — Variable Type 예시
+
+```hcl
+variable "ex1" {
+  description = "Number Variable"
+  type        = number
+  default     = 1000
+}
+```
+
+```hcl
+variable "ex2" {
+  description = "List Variable"
+  type        = list(any)
+  default     = ["A", "B", "C"]
+}
+```
+
+```hcl
+variable "ex3" {
+  description = "List + Number Variable"
+  type        = list(number)
+  // List Type + Number Type
+  default = [10, 20, 30]
+}
+```
+
+```hcl
+variable "ex4" {
+  description = "Map Variable"
+  type        = map(any)
+  default = {
+    key1 = val1
+    key2 = val2
+  }
+}
+```
+
+```hcl
+variable "ex5" {
+  description = "Object Variable"
+  type = object({
+    name = string
+    age  = number
+    flag = bool
+  })
+  default = {
+    name = "TEST"
+    age  = 20
+    flag = true
+  }
+}
+```
+
+---
+
+### p.32 — Variable 값 지정 방법
+
+```bash
+# 1. Terraform 명령줄 옵션 "-var" 사용
+terraform (apply or plan) -var "ex1=100"
+
+# 2. 환경변수 사용
+export TF_VAR_ex1=100
+terraform plan
+
+# 3. 대화식 변수처리
+terraform apply
+var.ex1
+Number Variable
+Enter a value : 100
+```
+
+- 테라폼 모듈 구조가 아닌 환경에서 입력변수에 값을 지정하는 방법:
+  1. 명령줄 옵션
+  2. 환경변수 등록
+  3. 대화식 처리
+- 테라폼 모듈 구조에서는 코드 내에서 입력변수 값을 지정하여 사용한다고 설명한다.
+
+---
+
+### p.33 — Variable 참조
+
+```hcl
+var."<VARIABLE_NAME>"
+```
+
+```hcl
+variable "ssh_port" {
+  description = "The Port the Server Will use for SSH Service"
+  type        = number
+}
+```
+
+```hcl
+resource "aws_security_group" "SG_1" {
+  name = "terraform-instance"
+
+  ingress {
+    from_port   = var.ssh_port
+    to_port     = var.ssh_port
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+```
+
+- 입력변수를 Resource 정의 시 연결하여 사용한다.
+- `from_port`와 `to_port`가 `var.ssh_port`를 참조하는 부분이 강조되어 있다.
+
+---
+
+### p.34 — Output 기본 구문
+
+```hcl
+output "<NAME>" {
+  value       = <VALUE>
+  description = "설명"
+  sensitive   = <Bool>
+}
+```
+
+- `"NAME"`: 출력 변수 이름
+- `"DESCRIPTION"`: 출력 변수에 대한 설명
+- `"SENSITIVE"`: 출력 변수 값을 화면에 표시하지 않음. `true` 사용. 예: 개인키 or 패스워드
+- 출력변수 사용 예시:
+  - EC2 인스턴스의 Public IP 주소를 `apply` 명령 실행 후 화면에 출력
+
+---
+
+### p.35 — Output 예시와 명령어
+
+```hcl
+output "EC2_Pub_IP" {
+  value       = aws_instance.ExampleEC2.public_ip
+  description = "EC2 Instance Public IP Address"
+}
+```
+
+```text
+terraform apply
+
+aws_instance.ExampleEC2: Still creating... [20s elapsed]
+aws_instance.ExampleEC2: Creation complete after 22s [id=i-038a3910b33acb968]
+
+Apply complete! Resources: 1 added, 0 changed, 0 destroyed.
+
+Outputs:
+public_ip = 54.123.45.6
+
+terraform output
+public_ip = 54.123.45.6
+
+terraform output public_ip
+54.123.45.6
+```
+
+> 확인 필요: 코드 블록의 output 이름은 `EC2_Pub_IP`로 보이지만, 출력 예시는 `public_ip`로 표기된다. 둘의 관계는 PDF 내 다른 페이지/실제 코드와 대조 필요.
+
+---
+
+### p.39 — `count` 반복문
+
+```python
+# Python Code
+for i in range(0,3,1):
+    resource "aws_iam_user" "count_ex1" {
+        name = "Terra[i]"
+    }
+```
+
+> 페이지에서는 범용 프로그래밍 언어의 반복문 형식은 실행 불가라고 표시한다.
+
+```hcl
+# Terraform Count 활용
+resource "aws_iam_user" "count_ex1" {
+  count = 3
+  name  = "Terra.${count.index}"
+  # "${...}" = interpolation(보간)
+  # 문자열 리터럴 내부에 특정값(변수, 참조)을 추가하기 위해 사용
+}
+```
+
+예상 plan 출력 일부:
+
+```text
+# aws_iam_user.count_ex1[0] will be created
++ resource "aws_iam_user" "count_ex1" {
+    + arn           = (known after apply)
+    + force_destroy = false
+    + id            = (known after apply)
+    + name          = "Terra.0"
+    + path          = "/"
+    + tags_all      = (known after apply)
+    + unique_id     = (known after apply)
+  }
+
+# aws_iam_user.count_ex1[1] will be created
++ resource "aws_iam_user" "count_ex1" {
+    ...
+    + name = "Terra.1"
+    ...
+  }
+```
+
+- AWS IAM User의 이름은 계정 내에서 유일해야 한다.
+- 서로 다른 IAM User 이름 정의를 위해 반복 Index를 활용한다.
+- Terraform Count에서는 반복 Index를 지원한다고 설명한다.
+
+---
+
+### p.40 — `for_each` 기본 구문
+
+```hcl
+resource "<PROVIDER>_<TYPE>" "<NAME>" {
+  for_each = <COLLECTION>
+  [ CONFIG ... ]
+}
+```
+
+- `<PROVIDER>`: 공급자 이름
+- `<TYPE>`: 공급자의 리소스 유형, 예: EC2, VPC 등
+- `<NAME>`: 다른 Terraform 코드에서 해당 리소스를 참조하기 위한 식별 이름
+- `<COLLECTION>`: 반복 루프를 처리할 집합(`set`) 또는 맵(`map`)
+- `[CONFIG]`: 특정 리소스를 생성하기 위한 설정 값, 예: AMI, INSTANCE 유형 등
+- 페이지 설명:
+  - Resource 내부에서 `for_each` 표현식을 사용하는 경우 리스트는 지원되지 않는다고 설명한다.
+  - `count`, `for_each`는 Module 내부에서는 사용 불가라고 설명한다.
+- 확인 필요:
+  - `count`, `for_each`와 Module 관련 제약은 현재 Terraform 공식 문서 대조 필요.
+
+---
+
+### p.41 — 조건문 예시
+
+```hcl
+variable "env" {
+  type        = string
+  description = "dev or prod ?"
+  default     = "dev"
+}
+
+resource "aws_instance" "Conditionals_ex1" {
+  ami           = "ami-0ea4d4b8dc1e46212"
+  instance_type = "t2.micro"
+  count         = var.env == "dev" ? 1 : 2
+
+  tags = {
+    Name = "Conditionals_Test"
+  }
+}
+```
+
+```text
+C:\Terraform>terraform plan -var "env=dev"
+
+# aws_instance.Conditionals_ex1[0] will be created
++ resource "aws_instance" "Conditionals_ex1"
+
+Plan: 1 to add, 0 to change, 0 to destroy.
+```
+
+```text
+C:\Terraform>terraform plan -var "env=prod"
+
+# aws_instance.Conditionals_ex1[0] will be created
++ resource "aws_instance" "Conditionals_ex1"
+# aws_instance.Conditionals_ex1[1] will be created
++ resource "aws_instance" "Conditionals_ex1"
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+```
+
+- PDF 원문에는 `Conunt` 오탈자 가능성이 있는 표기가 있다.
+- 조건문 형태: `condition ? true_val : false_val`.
+
+---
+
+### p.43 — Module 폴더 구조 도식
+
+```text
+global
+└─ s3
+   └─ main.tf                 # Terraform Status Management
+
+modules
+├─ vpc
+│  ├─ main.tf
+│  ├─ outputs.tf
+│  └─ variables.tf
+└─ web-cluster
+   ├─ main.tf
+   ├─ outputs.tf
+   └─ variables.tf
+
+prod
+└─ Application-1
+   ├─ main.tf
+   └─ variables.tf            # Prod Root Module
+
+stage
+└─ Application-1
+   ├─ main.tf
+   └─ variables.tf            # Stage Root Module
+```
+
+- `modules/vpc`, `modules/web-cluster`: Child Module(Local)
+- `prod/Application-1`, `stage/Application-1`: Root Module
+- `global/s3/main.tf`: Terraform Status Management
+- Root Module에서 참조 중인 Module에 변경사항이 발생하면 반드시 `terraform init`을 다시 수행해야 한다고 설명한다.
+
+---
+
+### p.44 — Module 참조와 Registry 사용
+
+```hcl
+module "<NAME>" {
+  source = "<SOURCE>"
+  [ CONFIG ... ]
+}
+```
+
+- `<NAME>`: 모듈 식별 이름
+- `<SOURCE>`: 모듈 파일 경로
+- `[CONFIG]`: 해당 모듈을 사용하기 위한 설정 값
+
+Local Module 예시:
+
+```hcl
+module "local-vpc" {
+  source = "../../modules/vpc"
+
+  name = var.vpc_name
+  cidr = var.vpc_cidr
+}
+```
+
+외부 Module 예시:
+
+```hcl
+module "reg-vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "4.0.2"
+
+  name = var.vpc_name
+  cidr = var.vpc_cidr
+}
+```
+
+Registry 사용 절차:
+
+1. `https://registry.terraform.io/` 접속
+2. Search All Resource: `AWS` 검색
+3. AWS Provider 선택(Official Mark)
+4. `terraform-aws-modules / vpc` 클릭
+5. Provision Instructions 코드 복사 후 Terraform 코드로 붙여넣기
+6. `terraform init`으로 모듈 다운로드 후 사용
+
+- Terraform 외부 모듈 사용에는 Git 설치가 필요하다고 설명한다.
+- 외부 모듈 다운로드는 GitHub Source Code Download와 같다고 설명한다.
+
+---
+
+### p.45 — 원격 Backend와 `backend.hcl`
+
+Terraform 설정:
+
+```hcl
+terraform {
+  backend "s3" {
+    key = "prod/terraform.tfstate"
+  }
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
+}
+
+provider "aws" {
+  region  = "ap-northeast-2"
+  profile = "terraform_user"
+}
+```
+
+`backend.hcl` 내용:
+
+```hcl
+bucket         = "myterraform-bucket-state-choi-t"
+region         = "ap-northeast-2"
+profile        = "terraform_user"
+dynamodb_table = "myTerraform-bucket-lock-choi-t"
+encrypt        = true
+```
+
+Backend 변경 시 명령:
+
+```text
+C:\Terraform_module\prod\Application-1>terraform init -backend-config="C:\Terraform_module\global\s3\backend.hcl"
+```
+
+출력 일부:
+
+```text
+Initializing the backend...
+
+Initializing provider plugins...
+- Reusing previous version of hashicorp/aws from the dependency lock file
+- Using previously-installed hashicorp/aws v5.12.0
+
+Terraform has been successfully initialized!
+```
+
+- 상태파일 저장 위치는 `key = "prod/terraform.tfstate"`로 정의되어 있다.
+- Backend 구성정보 변경 시 `-backend-config` 옵션 사용.
+
+---
+
+### p.46 — Local Module 활용
+
+```hcl
+module "vpc" {
+  source = "../../modules/vpc"      // Local Module 경로
+
+  vpc_cidr       = "10.10.0.0/16"   // Module Variable
+  public-1_cidr  = "10.10.1.0/24"
+  public-2_cidr  = "10.10.2.0/24"
+  private-1_cidr = "10.10.10.0/24"
+  private-2_cidr = "10.10.20.0/24"
+  ssh_port       = 22
+}
+```
+
+```hcl
+output "EC2_Pub_IP" {
+  value       = module.vpc.EC2_Pub_IP
+  description = "Stage BastionHost Public IP Address"
+}
+```
+
+- Stage 환경에 맞는 입력 변수 값을 정의한다.
+- Output 영역은 Module에서 정의한 Output 내용을 참조하여 재정의한다.
+
+---
+
+### p.47 — Local Module 구성 오류와 `terraform_remote_state`
+
+명령:
+
+```text
+C:\Terraform_module\stage\Application-1>terraform plan
+```
+
+오류 1:
+
+```text
+Error: Reference to undeclared resource
+
+on ..\..\modules\web-cluster\main.tf line 6, in resource "aws_security_group" "http_sg":
+6: vpc_id = aws_vpc.my_vpc.id
+
+A managed resource "aws_vpc" "my_vpc" has not been declared in module.web-cluster.
+```
+
+오류 2:
+
+```text
+Error: Reference to undeclared resource
+
+on ..\..\modules\web-cluster\main.tf line 130, in resource "aws_lb_target_group" "my_lb_tg":
+130: vpc_id = aws_vpc.my_vpc.id
+
+A managed resource "aws_vpc" "my_vpc" has not been declared in module.web-cluster.
+```
+
+- Web-Cluster Module에는 `my_vpc` Resource가 존재하지 않는다고 설명한다.
+- 서로 다른 모듈(VPC <-> Web-Cluster)로 구성된 Resource 간 참조를 위해서는 `terraform_remote_state`를 사용해야 한다고 설명한다.
+- `terraform_remote_state`는 Terraform 상태파일에 저장된 정보를 Data Source로 사용하는 것이라고 설명한다.
+
+---
+
+### p.48 — 실습 3 요구조건
+
+```text
+[실습.3] Terraform Module 활용
+
+Terraform Code를 작성하여 문제 조건에 맞는 AWS Resorce를 생성하시오.
+
+요구조건: 반드시 Stage 환경 Resource 삭제 후 작업
+
+1. Prod 환경 배포작업 수행
+   - Local Module 활용
+   - VPC, WEB-Cluster
+
+2. 상태파일 저장 경로(Backend Key)
+   - prod/terraform.tfstate
+
+3. VPC_CIDR
+   - 192.168.0.0/16
+   - Public, Private "24 Bit Network로 적절히 구성"
+
+4. Instance Type
+   - m4.large
+   - ASG Min: 2
+   - ASG Max: 4
+
+5. Terraform Remote State 활용하여 Module 간 참조 구현
+
+모든 테스트 완료 후 반드시 Resource 삭제 작업 수행
+```
+
+> 원문에는 `Resorce` 표기가 있다. 오탈자 가능성 확인 필요.
+
+---
+
+### p.49 — 외부 VPC Module 활용
+
+```hcl
+# 예제.5 : Terraform 외부 Module 활용 (VPC)
+module "stage_vpc" {
+  source  = "terraform-aws-modules/vpc/aws" # 외부 VPC Module 정의
+  version = "5.1.1"                         # 외부 VPC Module 버전 정의
+
+  name = "stage_vpc"        # VPC 이름
+  cidr = local.stage_cidr    # CIDR
+
+  azs             = local.azs
+  public_subnets  = local.public_subnets
+  private_subnets = local.private_subnets
+
+  enable_dns_hostnames = "true" # DNS Hostname 사용
+  enable_dns_support   = "true" # DNS Support 사용
+
+  enable_nat_gateway     = true  # NAT Gateway 사용
+  single_nat_gateway     = true  # Single NAT Gateway 설정
+  one_nat_gateway_per_az = false # Single NAT Gateway 설정 시 false
+
+  tags = {
+    "TerraformManaged" = "true" # 스마트 태그
+  }
+}
+```
+
+- 오른쪽에는 Terraform Registry의 Provision Instructions 화면이 있음.
+- 외부 Module Input Variable 예시로 `public_subnets`, `private_subnets`가 보임.
+- 페이지 주석상 `locals`를 지역변수로 사용한다고 강조한다.
+
+---
+
+### p.50 — 외부 Security Group Module 활용
+
+```hcl
+# 예제.6 : Terraform 외부 Module 활용 (Security Group)
+module "SSH_security-group" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "5.1.0"
+  name        = "SSH_SG"      # Security-Group 이름 정의
+  description = "SSH Port"    # Security-Group 설명
+  vpc_id      = module.stage_vpc.vpc_id # 보안그룹이 생성 될 VPC 정의(모듈)
+  use_name_prefix = "false"   # 이름 뒤 고유번호를 붙이지 않음
+
+  # 지역변수를 활용 한 InBound 규칙 정의
+  ingress_with_cidr_blocks = [
+    {
+      from_port   = local.ssh_port       # 시작 포트번호
+      to_port     = local.ssh_port       # 끝나는 포트번호
+      protocol    = local.tcp_protocol   # 프로토콜 타입
+      description = "SSH"                # 설명
+      cidr_blocks = local.all_network    # 허용 IP 범위
+    }
+  ]
+}
+```
+
+페이지 오른쪽 하단 `locals`:
+
+```hcl
+locals {
+  stage_cidr      = "10.10.0.0/16"
+  azs             = ["ap-northeast-2a", "ap-northeast-2c"]
+  public_subnets  = ["10.10.1.0/24", "10.10.2.0/24"]
+  private_subnets = ["10.10.10.0/24", "10.10.20.0/24"]
+  ssh_port        = 22
+  http_port       = 80
+  https_port      = 443
+  any_port        = 0
+  any_protocol    = "-1"
+  tcp_protocol    = "tcp"
+  all_network     = "0.0.0.0/0"
+}
+```
+
+- `locals`는 Stage Root Module에서만 사용 가능한 지역변수로 설명된다.
+- 변경 불가능한 지역변수(`Locals`) 사용이라고 표시되어 있다.
+
+---
+
+### p.51 — 외부 Module + Local Module WEB-Cluster
+
+```hcl
+module "web-cluster" {
+  source        = "../../modules/web-cluster"
+  instance_type = "t2.micro"
+  min_size      = "1"
+  max_size      = "1"
+
+  vpc_id          = data.terraform_remote_state.remote_data.outputs.vpc_id
+  public_subnet1  = data.terraform_remote_state.remote_data.outputs.public_subnets[0]
+  public_subnet2  = data.terraform_remote_state.remote_data.outputs.public_subnets[1]
+  private_subnet1 = data.terraform_remote_state.remote_data.outputs.private_subnets[0]
+  private_subnet2 = data.terraform_remote_state.remote_data.outputs.private_subnets[1]
+  ssh_sg_id       = data.terraform_remote_state.remote_data.outputs.ssh_sg_id
+  alb_sg_id       = data.terraform_remote_state.remote_data.outputs.alb_sg_id
+
+  # 외부 모듈을 이용하여 Output 된 Subnet 정보는 List Format이므로, Index를 이용하여 각 Subnet을 선택
+}
+```
+
+```hcl
+output "ALB-DNS" {
+  value       = module.web-cluster.ALB_DNS
+  description = "Stage Load Balancer Domain Name"
+}
+```
+
+- 외부 Module의 Output을 정의하여 Terraform Remote State Data로 활용한다고 설명한다.
+- 기존 `web-cluster` Module 수정이라고 표시되어 있다.
+
+---
+
+### p.52 — 실습 4 요구조건
+
+```text
+[실습.4] Terraform 외부 Module 활용
+
+Terraform Code를 작성하여 문제 조건에 맞는 AWS Resorce를 생성하시오.
+
+요구조건: 반드시 Stage 환경 Resource 삭제 후 작업
+
+1. Prod 환경 배포작업 수행
+   - 외부 Module: VPC, Security-Group
+   - Local Module: Web-Cluster
+
+2. 상태파일 저장 경로(Backend Key)
+   - prod/terraform.tfstate
+
+3. VPC_CIDR
+   - 192.168.0.0/16
+   - Public, Private "24 Bit Network로 적절히 구성"
+
+4. Instance Type
+   - m4.large
+   - ASG Min: 2
+   - ASG Max: 4
+
+5. Terraform Remote State 활용하여 Module 간 참조 구현
+
+모든 테스트 완료 후 반드시 Resource 삭제 작업 수행
+```
+
+> 원문에는 `Resorce` 표기가 있다. 오탈자 가능성 확인 필요.
+
+---
+
+## C. 실습 아키텍처 도식 상세 색인
+
+### p.27 — 실습 1: Terraform Resource & Data Source
+
+도식 구성:
+
+```text
+AWS Cloud
+└─ Region
+   └─ Virtual private cloud (VPC)
+      ├─ Internet gateway
+      └─ Availability Zone
+         ├─ Public subnet
+         │  ├─ Route table
+         │  └─ Security group
+         │     └─ Amazon EC2
+         └─ Private subnet
+            ├─ Route table
+            └─ Security group
+               └─ Amazon EC2
+```
+
+- Public subnet과 Private subnet이 같은 Availability Zone 안에 배치됨.
+- Internet Gateway는 VPC 내부 상단에 표시됨.
+- 각 subnet 내부에 Route table과 Security group/EC2가 배치됨.
+- 실습 지시:
+  - Terraform Code 작성
+  - 제시된 AWS Architecture 구현
+  - DOCS 문서 활용
+
+---
+
+### p.28 — 실습 2: Resource & Data Source 확장 아키텍처
+
+도식 구성:
+
+```text
+Region: ap-northeast-2
+└─ VPC: 192.168.0.0/16
+   ├─ Availability Zone: ap-northeast-2a
+   │  ├─ Public subnet_1: 192.168.1.0/24
+   │  │  └─ NAT-GW
+   │  └─ Private subnet_1: 192.168.10.0/24
+   │     └─ Security group
+   │        └─ Web-EC2
+   ├─ Internet Gateway
+   └─ Availability Zone: ap-northeast-2c
+      ├─ Public subnet_2: 192.168.2.0/24
+      │  └─ Security Group: Allow SSH Traffic
+      │     └─ BastionHost
+      └─ Private subnet_2: 192.168.20.0/24
+```
+
+- BastionHost는 `ap-northeast-2c`의 Public subnet_2에 배치됨.
+- Web-EC2는 `ap-northeast-2a`의 Private subnet_1에 배치됨.
+- NAT-GW는 `ap-northeast-2a`의 Public subnet_1에 배치됨.
+
+---
+
+### p.36 — EX.1: Variable_Input & Output - VPC
+
+도식 구성:
+
+```text
+Region: ap-northeast-2
+└─ VPC: 192.168.0.0/16
+   ├─ Availability Zone: ap-northeast-2a
+   │  ├─ Public subnet_1: 192.168.1.0/24
+   │  │  └─ NAT-GW
+   │  └─ Private subnet_1: 192.168.10.0/24
+   ├─ Internet Gateway
+   └─ Availability Zone: ap-northeast-2c
+      ├─ Public subnet_2: 192.168.2.0/24
+      │  └─ Security Group: Allow SSH Traffic
+      │     └─ BastionHost
+      └─ Private subnet_2: 192.168.20.0/24
+```
+
+- p.28에서 Web-EC2가 제거되고 BastionHost 중심 VPC 구성으로 제시됨.
+- Variable/Input/Output을 사용한 VPC 실습 예제로 보임.
+
+---
+
+### p.37 — EX.2: Variable_Input & Output - ALB & ASG
+
+도식 구성:
+
+```text
+Region: ap-northeast-2
+└─ VPC: 192.168.0.0/16
+   ├─ Availability Zone: ap-northeast-2a
+   │  ├─ Public subnet_1: 192.168.1.0/24
+   │  │  └─ NAT-GW
+   │  └─ Private subnet_1: 192.168.10.0/24
+   │     └─ WEB Server
+   ├─ Internet Gateway
+   ├─ Application Load Balancer
+   ├─ Auto Scaling
+   └─ Availability Zone: ap-northeast-2c
+      ├─ Public subnet_2: 192.168.2.0/24
+      │  └─ Security Group: Allow SSH Traffic
+      │     └─ BastionHost
+      └─ Private subnet_2: 192.168.20.0/24
+         └─ Security Group: Allow HTTP Traffic
+            └─ WEB Server
+```
+
+- Private subnet 2개에 WEB Server가 배치됨.
+- 중앙에 Application Load Balancer와 Auto Scaling이 표시됨.
+- Web tier는 점선 박스로 두 AZ에 걸쳐 표현됨.
+
+---
+
+### p.43 — Module 구조 도식
+
+도식은 Terraform 상태 관리, Root Module, Child Module(Local)의 관계를 보여준다.
+
+```text
+global/s3/main.tf
+  -> Terraform Status Management
+
+modules/vpc
+modules/web-cluster
+  -> Child Module(Local)
+
+prod/Application-1
+stage/Application-1
+  -> Root Module
+```
+
+- Prod/Stage Root Module이 Child Module을 참조하는 구조다.
+- Global 영역은 상태 파일 관리와 연결된다.
+
+---
+
+## D. 2차 검수 후 확인 필요 항목 업데이트
+
+| 항목 | 위치 | 상태 | 처리 |
+|---|---:|---|---|
+| 이미지 속 코드 검색성 부족 | p.10, p.13, p.16, p.20-p.21, p.24-p.25, p.30-p.35, p.39-p.47, p.49-p.51 | 2차 보강 | 핵심 코드 육안 전사 추가. 원본 이미지는 계속 최종 기준 |
+| 터미널 출력 검색성 부족 | p.11, p.14-p.15, p.17, p.19, p.22, p.26, p.35, p.45, p.47 | 2차 보강 | 주요 출력 육안 전사 추가 |
+| 아키텍처 도식 검색성 부족 | p.27-p.28, p.36-p.37, p.43 | 2차 보강 | 구조 트리 추가 |
+| `terraform destory` | p.9, p.19 | 확인 필요 | 원문 보존. 실제 명령어는 공식 문서 대조 필요 |
+| `.terraform.lock.hcl` 설명 | p.11 | 확인 필요 | 원문 보존. 실제 lock file 역할 공식 문서 대조 필요 |
+| `count`, `for_each`와 Module 제약 | p.40 | 확인 필요 | 원문 보존. 현재 Terraform 문법/제약 공식 문서 대조 필요 |
+| output 이름 `EC2_Pub_IP` vs `public_ip` | p.35 | 확인 필요 | 이미지상 코드와 출력명이 다르게 보임. 실제 파일/강의 맥락 확인 필요 |
+| `Conunt`, `Resorce`, `엑섹스` | p.41, p.48, p.52, p.43 | 확인 필요 | 원문 오탈자 가능성. 원문 보존 |
+
+---
+
+## E. 2차 검수 체크리스트
+
+- [x] 기존 Source Digest 1차본 보존
+- [x] PDF 1-52쪽 Page Digest 존재 확인
+- [x] Coverage Map p.1-p.52 존재 확인
+- [x] `assets/Iac_page_01.png` ~ `assets/Iac_page_52.png` 존재 확인
+- [x] 이미지 속 주요 Terraform 코드 육안 전사 추가
+- [x] 터미널 출력 핵심부 육안 전사 추가
+- [x] 실습 아키텍처 도식 구조 트리 추가
+- [x] 확인 필요 항목 업데이트
+- [ ] 공식 Terraform 문서로 명령어/문법 최신성 검증
+- [ ] 실제 Terraform 실행 가능 코드로 정리
+- [ ] Concept Note 작성
+- [ ] Lab Note 작성 여부 확정
+- [ ] MOC 작성
+
+---
+
+## F. 다음 작업 권장 순서
+
+1. `IaC - Source Digest v2.md`를 기준본으로 사용한다.
+2. Concept Note를 바로 만들기 전에 `확인 필요 항목` 중 공식 문서 대조가 필요한 항목을 분리한다.
+3. 개념 노트는 다음 순서로 작성한다.
+   - `IaC 개념.md`
+   - `IaC 도구 분류.md`
+   - `Terraform 개요.md`
+   - `Terraform Workflow.md`
+   - `Terraform Resource와 Data Source.md`
+   - `Terraform Variable과 Output.md`
+   - `Terraform 반복문과 조건문.md`
+   - `Terraform Module.md`
+   - `Terraform Backend와 Remote State.md`
+4. 실습 노트는 코드 실행 전용으로 별도 분리한다.
+   - `Terraform EC2 생성 수정 삭제 실습.md`
+   - `Terraform Resource 참조 실습.md`
+   - `Terraform Data Source 실습.md`
+   - `Terraform Module Backend Remote State 실습.md`
