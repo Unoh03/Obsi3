@@ -1379,7 +1379,374 @@ Internet Gateway
 따라서 이 코드는 “완성형 AWS 아키텍처”가 아니라 **Terraform으로 AWS 리소스를 처음 생성해 보는 최소 골격 실습**으로 분류한다.
 
 
-## 23. 초기화 후 검증 체크리스트
+---
+
+## 23. 2차 실습: Public/Private Subnet 분리와 EC2 배치
+
+이번 실습 요구사항은 다음이다.
+
+```text
+VPC 1개
+Public Subnet 1개
+Private Subnet 1개
+Public Subnet에 EC2 Instance 1개
+Private Subnet에 EC2 Instance 1개
+```
+
+이 단계의 핵심은 **Subnet을 2개로 분리하고, 각 EC2가 의도한 Subnet에 들어가도록 `subnet_id` 참조를 연결하는 것**이다.
+
+### 23-1. 작성한 `main.tf` 초안
+
+> [!note]- `main.tf` 초안 - Public/Private Subnet + EC2 2대
+> ```hcl
+> terraform {
+>   required_providers {
+>     aws = {
+>       source  = "hashicorp/aws"
+>       version = "~> 6.0"
+>     }
+>   }
+> }
+> 
+> provider "aws" {
+>   profile = "Terra-user"
+> }
+> 
+> resource "aws_vpc" "terra_vpc" {
+>   cidr_block = "10.0.0.0/16"
+> 
+>   tags = {
+>     Name = "terra_vpc"
+>   }
+> }
+> 
+> resource "aws_subnet" "terra_open_subnet" {
+>   vpc_id     = aws_vpc.terra_vpc.id
+>   cidr_block = "10.0.1.0/24"
+> 
+>   tags = {
+>     Name = "terra_open_subnet"
+>   }
+> }
+> 
+> resource "aws_subnet" "terra_close_subnet" {
+>   vpc_id     = aws_vpc.terra_vpc.id
+>   cidr_block = "10.0.2.0/24"
+> 
+>   tags = {
+>     Name = "terra_close_subnet"
+>   }
+> }
+> 
+> # resource "aws_security_group" "open_sg" {
+> #   name        = "open_sg"
+> #   vpc_id      = aws_vpc.terra_vpc.id
+> 
+> #   tags = {
+> #     Name = "open_sg"
+> #   }
+> # }
+> 
+> # resource "aws_security_group" "close_sg" {
+> #   name        = "close_sg"
+> #   vpc_id      = aws_vpc.terra_vpc.id
+> 
+> #   tags = {
+> #     Name = "close_sg"
+> #   }
+> # }
+> 
+> resource "aws_instance" "terra_web" {
+>   ami           = "ami-0b1cb107a74bad43e"
+>   instance_type = "t3.micro"
+>   subnet_id     = aws_subnet.terra_close_subnet.id
+>   key_name      = "asd-close"
+>   # security_groups = [aws_security_group.close_sg.name]
+> 
+>   tags = {
+>     Name = "terra_web"
+>   }
+> }
+> 
+> resource "aws_instance" "terra_bastion" {
+>   ami           = "ami-0b1cb107a74bad43e"
+>   instance_type = "t3.micro"
+>   subnet_id     = aws_subnet.terra_open_subnet.id
+>   key_name      = "asd-open"
+>   # security_groups = [aws_security_group.open_sg.name]
+> 
+>   tags = {
+>     Name = "terra_bastion"
+>   }
+> }
+> ```
+
+---
+
+### 23-2. 필수 조건 판정
+
+| 요구사항 | 현재 코드 | 판정 |
+|---|---|---|
+| VPC 1개 | `aws_vpc.terra_vpc` | 만족 |
+| Public Subnet 1개 | `aws_subnet.terra_open_subnet` | 이름/배치 구조상 만족 |
+| Private Subnet 1개 | `aws_subnet.terra_close_subnet` | 이름/배치 구조상 만족 |
+| Public Subnet에 EC2 1개 | `terra_bastion` → `terra_open_subnet` | 만족 |
+| Private Subnet에 EC2 1개 | `terra_web` → `terra_close_subnet` | 만족 |
+
+정확한 판정은 다음과 같다.
+
+```text
+리소스 개수와 배치 조건:
+만족
+
+AWS 네트워크 의미상 Public/Private Subnet:
+아직 미완성
+```
+
+현재 코드는 **Subnet 2개와 EC2 2개를 만들고, EC2를 서로 다른 Subnet에 배치하는 조건**은 충족한다.
+
+하지만 `terra_open_subnet`이 이름 그대로 실제 public subnet이 되려면 추가 구성이 필요하다.
+
+---
+
+### 23-3. 현재 코드의 리소스 관계
+
+현재 관계는 다음과 같다.
+
+```text
+aws_vpc.terra_vpc
+├─ aws_subnet.terra_open_subnet
+│  └─ aws_instance.terra_bastion
+└─ aws_subnet.terra_close_subnet
+   └─ aws_instance.terra_web
+```
+
+핵심 참조는 두 줄이다.
+
+```hcl
+subnet_id = aws_subnet.terra_close_subnet.id
+```
+
+```hcl
+subnet_id = aws_subnet.terra_open_subnet.id
+```
+
+이 때문에 Terraform은 다음을 알 수 있다.
+
+```text
+terra_web은 terra_close_subnet이 있어야 생성 가능
+terra_bastion은 terra_open_subnet이 있어야 생성 가능
+두 subnet은 terra_vpc가 있어야 생성 가능
+```
+
+따라서 이 실습은 Terraform의 resource 참조 학습에 적절하다.
+
+---
+
+### 23-4. 왜 아직 진짜 Public Subnet이 아닌가
+
+현재 `terra_open_subnet`은 이름만 open/public 역할이다.
+
+```hcl
+resource "aws_subnet" "terra_open_subnet" {
+  vpc_id     = aws_vpc.terra_vpc.id
+  cidr_block = "10.0.1.0/24"
+}
+```
+
+이 설정만으로는 인터넷과 연결되지 않는다.
+
+실제 public subnet에 가까워지려면 보통 다음이 필요하다.
+
+```text
+Internet Gateway
+Public Route Table
+0.0.0.0/0 → Internet Gateway route
+Route Table Association
+Public IP 자동 할당 설정
+```
+
+즉, 지금 코드는 다음 단계로 가기 전의 중간 상태다.
+
+```text
+현재:
+Subnet을 2개로 나누고 EC2를 각각 배치함
+
+아직:
+Public subnet / Private subnet의 라우팅 의미는 완성하지 않음
+```
+
+---
+
+### 23-5. AZ를 지정하지 않았는데 2c로 간 이유
+
+실습 결과, AZ를 명시하지 않았는데 private subnet과 web server가 `ap-northeast-2c`에 생성되었다.
+
+이것은 Terraform이 고가용성을 판단해 “센스 있게” 배치한 것이 아니다.
+
+정확한 해석은 다음이다.
+
+```text
+1. aws_subnet.terra_close_subnet에서 availability_zone을 지정하지 않음
+2. Subnet 생성 요청 시 AWS가 AZ 하나를 선택함
+3. 그 결과 terra_close_subnet이 ap-northeast-2c에 생성됨
+4. terra_web은 terra_close_subnet.id를 참조함
+5. 따라서 terra_web도 ap-northeast-2c에 배치됨
+```
+
+즉, EC2가 직접 AZ를 고른 것이 아니다.
+
+```text
+Subnet이 2c에 생겼고,
+EC2는 그 Subnet 안에 들어갔을 뿐이다.
+```
+
+이 관찰은 중요하다.
+
+Terraform은 의존성 관계를 잘 계산하지만, 사람이 의도한 고가용성 배치까지 자동 설계해주지는 않는다.  
+AZ를 명확히 나누고 싶으면 코드에 `availability_zone`을 직접 적는 편이 좋다.
+
+예:
+
+```hcl
+resource "aws_subnet" "terra_open_subnet" {
+  vpc_id            = aws_vpc.terra_vpc.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "ap-northeast-2a"
+
+  tags = {
+    Name = "terra_open_subnet"
+  }
+}
+
+resource "aws_subnet" "terra_close_subnet" {
+  vpc_id            = aws_vpc.terra_vpc.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "ap-northeast-2c"
+
+  tags = {
+    Name = "terra_close_subnet"
+  }
+}
+```
+
+---
+
+### 23-6. Public IP 자동 할당이 꺼져 있던 이유
+
+실습 결과, `terra_open_subnet`에서 Public IP 자동 할당이 켜져 있지 않았다.
+
+이것도 정상적인 결과다.
+
+현재 코드에는 다음 설정이 없다.
+
+```hcl
+map_public_ip_on_launch = true
+```
+
+따라서 subnet 설정에서 새 인스턴스에 public IPv4를 자동 할당하도록 지정하지 않았다.
+
+Public Subnet 역할을 더 명확히 하려면 open subnet에 다음 옵션을 넣는다.
+
+```hcl
+resource "aws_subnet" "terra_open_subnet" {
+  vpc_id                  = aws_vpc.terra_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "ap-northeast-2a"
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name = "terra_open_subnet"
+  }
+}
+```
+
+다만 이것만으로 충분하지 않다.
+
+```text
+map_public_ip_on_launch = true
+```
+
+는 “이 Subnet에서 새 EC2를 만들 때 Public IP를 자동 부여할 수 있게 하는 설정”이다.
+
+하지만 인터넷 통신이 되려면 여전히 다음이 필요하다.
+
+```text
+Internet Gateway
+0.0.0.0/0 → Internet Gateway route
+해당 Route Table과 Public Subnet 연결
+Security Group ingress/egress
+```
+
+---
+
+### 23-7. Security Group 주석에 대한 메모
+
+초안에는 Security Group 리소스가 주석 처리되어 있다.
+
+```hcl
+# resource "aws_security_group" "open_sg" {
+#   name        = "open_sg"
+#   vpc_id      = aws_vpc.terra_vpc.id
+# }
+```
+
+현재 실습 조건이 “EC2를 각 Subnet에 배치”라면 Security Group은 필수 조건이 아닐 수 있다.
+
+하지만 접속 검증까지 목표가 확장되면 Security Group은 사실상 필요하다.
+
+또한 VPC 안의 EC2에 Security Group을 명시할 때는 다음 속성을 우선 사용한다.
+
+```hcl
+vpc_security_group_ids = [aws_security_group.open_sg.id]
+```
+
+초안의 주석처럼 `security_groups`에 Security Group 이름을 넣는 방식은 VPC 환경에서는 혼동을 만들기 쉽다.
+
+```hcl
+# security_groups = [aws_security_group.open_sg.name]
+```
+
+이 줄은 나중에 접속 구성 단계에서 다음처럼 바꾸는 편이 낫다.
+
+```hcl
+vpc_security_group_ids = [aws_security_group.open_sg.id]
+```
+
+---
+
+### 23-8. 이 실습에서 얻은 결론
+
+이번 실습에서 확인한 것은 다음이다.
+
+```text
+VPC 안에 Subnet을 2개 만들 수 있다.
+각 Subnet에 서로 다른 CIDR을 줄 수 있다.
+EC2는 subnet_id로 특정 Subnet에 배치할 수 있다.
+Subnet이 생성된 AZ가 EC2의 AZ를 결정한다.
+AZ 미지정 시 AWS가 AZ를 선택할 수 있다.
+Public IP 자동 할당은 명시하지 않으면 켜지지 않는다.
+Subnet 이름만으로 Public/Private이 결정되지는 않는다.
+```
+
+따라서 이번 코드는 다음 단계로 분류한다.
+
+```text
+1차 실습:
+VPC/Subnet/EC2 최소 골격
+
+2차 실습:
+Public/Private 역할을 의도한 Subnet 2개와 EC2 2대 배치
+
+아직 남은 단계:
+Public Subnet 라우팅 완성
+Private Subnet 라우팅/격리 검증
+Security Group 명시
+Bastion을 통한 Private EC2 접속 검증
+```
+
+
+## 24. 초기화 후 검증 체크리스트
 
 ```cmd
 terraform version
@@ -1403,7 +1770,7 @@ terraform init
 
 ---
 
-## 24. 자주 나는 오류
+## 25. 자주 나는 오류
 
 ### 15-1. `terraform` is not recognized
 
@@ -1498,6 +1865,9 @@ provider "aws" {
 [ ] main.tf에 AWS Provider 작성
 [ ] terraform init 성공
 [ ] VPC/Subnet/EC2 최소 골격 main.tf 작성
+[ ] Public/Private 역할 Subnet 2개와 EC2 2대 배치 실습 작성
+[ ] AZ 미지정 시 AWS가 AZ를 선택할 수 있음을 확인
+[ ] Public IP 자동 할당은 별도 설정이 필요함을 확인
 [ ] terraform fmt 실행
 [ ] terraform validate 성공
 [ ] terraform plan에서 VPC/Subnet/EC2 생성 예정 확인
