@@ -7,6 +7,7 @@ source:
   - Iac.pdf
   - IaC - Source Digest v2.md
   - IaC - 공식 검증 노트.md
+  - raw 노트.md
 source_pages:
   - p.9-p.11
   - p.14-p.19
@@ -28,7 +29,9 @@ tags:
 | 강의자료 기반 핵심 내용 | PDF | `Iac.pdf`, `IaC - Source Digest v2.md` 기준 |
 | Terraform 현재 동작 검증 | 인터넷 고신뢰 정보 | `IaC - 공식 검증 노트.md`와 HashiCorp 공식 문서 기준 |
 | 설명 재구성 | 내장 지식 | PDF와 공식 검증 내용을 학습 노트 형태로 재배열 |
+| 수업 중 의문/문제의식 | 사용자 raw 메모 | `raw 노트.md` 기준 보강 |
 | 커뮤니티 의견 | 인터넷 비공식 고품질 의견 | 이 노트에서는 사용하지 않음 |
+
 ## 공식 검증 참고
 
 - Terraform `init`: https://developer.hashicorp.com/terraform/cli/commands/init
@@ -57,6 +60,42 @@ PDF p.9는 Terraform Workflow를 다음 순서로 설명한다.
 ```
 
 PDF 원문에는 삭제 명령이 `destory`로 표기되어 있으나, 공식 검증 결과 실제 명령은 `destroy`다.
+
+## state, plan, apply 관계
+
+수업 raw 노트의 질문처럼 “Terraform은 실행하면 우선 현재 상태를 파악하나?”는 Terraform Workflow를 이해하는 핵심이다.
+
+정리하면 다음과 같다.
+
+```text
+Terraform code = 원하는 목표 상태
+Terraform state = Terraform이 알고 있는 현재 인프라 상태 기록
+실제 AWS 리소스 = 클라우드에 실제 존재하는 대상
+terraform plan = code, state, 실제 리소스 정보를 비교해 변경 계획 생성
+terraform apply = 계획된 변경을 실제 인프라에 반영
+```
+
+가장 단순화하면 다음 흐름이다.
+
+```text
+.tf 코드 작성
+→ terraform init
+→ terraform plan
+   - state 확인
+   - provider를 통해 실제 리소스 상태 확인
+   - 목표 상태와 현재 상태 비교
+→ terraform apply
+   - 변경 실행
+   - state 갱신
+```
+
+따라서 `terraform plan`은 “내 코드가 실행되면 무엇이 바뀔지 미리 보는 단계”이고, `terraform state`는 “Terraform이 관리 중인 리소스 목록과 속성을 추적하는 기준 데이터”에 가깝다.
+
+주의:
+
+- state는 Terraform이 관리하는 리소스의 기준 기록이지, AWS 전체 리소스 인벤토리가 아니다.
+- 콘솔에서 수동 변경한 내용은 drift를 만들 수 있다.
+- `plan`은 변경 가능성을 보여주지만, `apply` 성공을 100% 보장하지 않는다.
 
 ## 주요 명령어
 
