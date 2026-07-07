@@ -1880,7 +1880,7 @@ provider "aws" {
 
 ## 관련 노트
 
-- [[IaC MOC]]
+- [[00_IaC MOC]]
 - [[IaC 도구 분류]]
 - [[Terraform 개요]]
 - [[Terraform Workflow]]
