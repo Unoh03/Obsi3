@@ -60,7 +60,11 @@ AWS IAM 사용자/Access Key 준비
 제외:
 
 - EC2/VPC 실제 생성
-- Terraform Resource/Data Source 실습
+- Public/Private Subnet 분리
+- Route Table과 Route Table Association
+- Security Group 기본 연결
+- PDF 27p Resource/Data Source 아키텍처 실습
+- NAT Instance 확장 시도
 - Backend/Remote State 구성
 - Module 구조
 - AWS IAM 최소권한 정책 설계
@@ -68,6 +72,10 @@ AWS IAM 사용자/Access Key 준비
 위 제외 항목은 별도 노트로 분리한다.
 
 ---
+
+# Part 1. AWS CLI와 Terraform 초기 환경 준비
+
+이 파트는 Terraform으로 AWS 리소스를 만들기 전, 로컬 PC와 AWS 계정 쪽 준비를 정리한다.
 
 ## 0. 먼저 알아야 할 용어
 
@@ -689,7 +697,9 @@ Terraform has been successfully initialized!
 
 ---
 
----
+# Part 2. 1차 실습: VPC/Subnet/EC2 최소 골격
+
+이 파트는 Terraform Resource 참조 관계로 VPC → Subnet → EC2가 생성되는 최소 구조를 확인한다.
 
 ## 14. VPC/Subnet/EC2 최소 골격 실습 코드
 
@@ -1381,6 +1391,10 @@ Internet Gateway
 
 ---
 
+# Part 3. 2차 실습: Public/Private Subnet 분리와 EC2 배치
+
+이 파트는 Subnet을 public/private 역할로 나누고, 각 Subnet에 EC2를 배치하는 흐름을 기록한다.
+
 ## 23. 2차 실습: Public/Private Subnet 분리와 EC2 배치
 
 이번 실습 요구사항은 다음이다.
@@ -1746,7 +1760,518 @@ Bastion을 통한 Private EC2 접속 검증
 ```
 
 
-## 24. 초기화 후 검증 체크리스트
+---
+
+# Part 4. 3차 실습: PDF 27p Resource & Data Source 아키텍처 구현
+
+이 파트는 PDF 27페이지의 `[실습.1] Terraform Resource & Data source` 그림을 기준으로, VPC 안에 Public Subnet과 Private Subnet을 만들고 각 영역에 Route Table, Security Group, EC2를 배치한 실습을 기록한다.
+
+### 24. PDF 27p 아키텍처 그림
+
+![PDF 27p Resource & Data Source Architecture](assets/iac-p27-resource-data-source.png)
+
+그림에서 확인되는 핵심 구조는 다음과 같다.
+
+```text
+AWS Cloud
+└─ Region
+   └─ VPC
+      └─ Availability Zone
+         ├─ Public Subnet
+         │  ├─ Route Table
+         │  ├─ Security Group
+         │  └─ EC2
+         │
+         └─ Private Subnet
+            ├─ Route Table
+            ├─ Security Group
+            └─ EC2
+
+VPC 상단에 Internet Gateway가 연결되어 있음
+Public Subnet 쪽에서 Internet Gateway로 나가는 흐름이 표시됨
+```
+
+PDF 그림에는 NAT Gateway나 NAT Instance가 명시되어 있지 않다. 따라서 PDF의 직접 요구사항은 **Public EC2 1대와 Private EC2 1대를 포함한 네트워크 기본 아키텍처 구현**으로 보는 것이 적절하다.
+
+### 25. 이번 실습의 `main.tf`
+
+> [!note]- `main.tf` - PDF 27p 아키텍처 구현 + NAT Instance 확장 시도
+> ```hcl
+> terraform {
+>   required_providers {
+>     aws = {
+>       source  = "hashicorp/aws"
+>       version = "~> 6.0"
+>     }
+>   }
+> }
+> 
+> provider "aws" {
+>   profile = "Terra-user"
+> }
+> 
+> resource "aws_vpc" "terra_vpc" {
+>   cidr_block = "10.0.0.0/16"
+> 
+>   tags = {
+>     Name = "terra_vpc"
+>   }
+> }
+> 
+> resource "aws_internet_gateway" "gw" {
+>   vpc_id = aws_vpc.terra_vpc.id
+> 
+>   tags = {
+>     Name = "main"
+>   }
+> }
+> 
+> resource "aws_subnet" "terra_open_subnet" {
+>   vpc_id                  = aws_vpc.terra_vpc.id
+>   cidr_block              = "10.0.1.0/24"
+>   map_public_ip_on_launch = true
+> 
+>   tags = {
+>     Name = "terra_open_subnet"
+>   }
+> }
+> 
+> resource "aws_subnet" "terra_close_subnet" {
+>   vpc_id                  = aws_vpc.terra_vpc.id
+>   cidr_block              = "10.0.2.0/24"
+>   map_public_ip_on_launch = false
+>   tags = {
+>     Name = "terra_close_subnet"
+>   }
+> }
+> 
+> resource "aws_security_group" "open_sg" {
+>   name   = "open_sg"
+>   vpc_id = aws_vpc.terra_vpc.id
+> 
+>   ingress {
+>     from_port   = 0
+>     to_port     = 0
+>     protocol    = "-1"
+>     cidr_blocks = ["0.0.0.0/0"]
+>   }
+> 
+>   egress {
+>     from_port   = 0
+>     to_port     = 0
+>     protocol    = "-1"
+>     cidr_blocks = ["0.0.0.0/0"]
+>   }
+> 
+>   tags = {
+>     Name = "open_sg"
+>   }
+> }
+> 
+> resource "aws_security_group" "close_sg" {
+>   name   = "close_sg"
+>   vpc_id = aws_vpc.terra_vpc.id
+> 
+>   ingress {
+>     description     = "Allow All from open_sg"
+>     from_port       = 0
+>     to_port         = 0
+>     protocol        = "-1"
+>     security_groups = [aws_security_group.open_sg.id]
+>   }
+>   egress {
+>     from_port   = 0
+>     to_port     = 0
+>     protocol    = "-1"
+>     cidr_blocks = ["0.0.0.0/0"]
+>   }
+> 
+>   tags = {
+>     Name = "close_sg"
+>   }
+> }
+> 
+> resource "aws_instance" "terra_WEB" {
+>   ami                    = "ami-0b1cb107a74bad43e"
+>   instance_type          = "t3.micro"
+>   subnet_id              = aws_subnet.terra_close_subnet.id
+>   key_name               = "asd-close"
+>   vpc_security_group_ids = [aws_security_group.close_sg.id]
+> 
+>   tags = {
+>     Name = "terra_WEB"
+>   }
+> }
+> 
+> resource "aws_route_table" "terra_close_rt" {
+>   vpc_id = aws_vpc.terra_vpc.id
+>   route {
+>     cidr_block           = "0.0.0.0/0"
+>     network_interface_id = aws_instance.terra_NAT.primary_network_interface_id
+>   }
+>   tags = {
+>     Name = "terra_close_rt"
+>   }
+> }
+> 
+> resource "aws_route_table_association" "terra_close_assoc" {
+>   subnet_id      = aws_subnet.terra_close_subnet.id
+>   route_table_id = aws_route_table.terra_close_rt.id
+> }
+> 
+> resource "aws_instance" "terra_NAT" {
+>   ami                         = "ami-0b1cb107a74bad43e"
+>   instance_type               = "t3.micro"
+>   subnet_id                   = aws_subnet.terra_open_subnet.id
+>   key_name                    = "asd-open"
+>   vpc_security_group_ids      = [aws_security_group.open_sg.id]
+>   associate_public_ip_address = true
+>   source_dest_check           = false
+> 
+>   tags = {
+>     Name = "terra_NAT"
+>   }
+> }
+> 
+> resource "aws_route_table" "terra_open_rt" {
+>   vpc_id = aws_vpc.terra_vpc.id
+> 
+>   route {
+>     cidr_block = "0.0.0.0/0"
+>     gateway_id = aws_internet_gateway.gw.id
+>   }
+> 
+>   tags = {
+>     Name = "terra_open_rt"
+>   }
+> }
+> 
+> resource "aws_route_table_association" "terra_open_assoc" {
+>   subnet_id      = aws_subnet.terra_open_subnet.id
+>   route_table_id = aws_route_table.terra_open_rt.id
+> }
+> ```
+
+### 26. PDF 그림과 코드 대조
+
+| PDF 27p 그림 요소 | Terraform 코드 | 판정 |
+|---|---|---|
+| VPC | `aws_vpc.terra_vpc` | 구현 |
+| Internet Gateway | `aws_internet_gateway.gw` | 구현 |
+| Public Subnet | `aws_subnet.terra_open_subnet` | 구현 |
+| Private Subnet | `aws_subnet.terra_close_subnet` | 구현 |
+| Public Subnet의 Route Table | `aws_route_table.terra_open_rt` | 구현 |
+| Private Subnet의 Route Table | `aws_route_table.terra_close_rt` | 구현 |
+| Public Subnet의 Security Group | `aws_security_group.open_sg` | 구현 |
+| Private Subnet의 Security Group | `aws_security_group.close_sg` | 구현 |
+| Public Subnet의 EC2 | `aws_instance.terra_NAT` | 구현했지만 이름/역할은 NAT로 확장됨 |
+| Private Subnet의 EC2 | `aws_instance.terra_WEB` | 구현 |
+| Route Table과 Subnet 연결 | `aws_route_table_association.*` | 구현 |
+| NAT Instance | `terra_NAT`, `source_dest_check = false`, private route | PDF 그림에는 없음. 추가 확장 시도 |
+
+판정:
+
+```text
+PDF 27p 그림 재현:
+대체로 만족
+
+PDF 그림보다 한발 더 나간 부분:
+Public Subnet의 EC2를 NAT Instance 역할로 확장하려고 시도함
+Private Route Table의 기본 경로를 NAT Instance ENI로 보냄
+```
+
+### 27. 2차 실습에서 발전한 점
+
+2차 실습에서는 다음 정도까지 확인했다.
+
+```text
+VPC 1개
+Public 역할 Subnet 1개
+Private 역할 Subnet 1개
+각 Subnet에 EC2 1대씩 배치
+Subnet 이름만으로 Public/Private이 되는 것은 아님
+Public IP 자동 할당은 별도 설정이 필요함
+```
+
+이번 3차 실습에서는 여기에 다음이 추가되었다.
+
+```text
+Internet Gateway 생성
+Public Route Table 생성
+Public Route Table에 0.0.0.0/0 → Internet Gateway route 추가
+Route Table Association으로 Subnet과 Route Table 연결
+Security Group을 명시적으로 생성
+Private Security Group의 source를 Public Security Group으로 지정
+Private Route Table의 기본 경로를 NAT Instance ENI로 보내는 확장 시도
+```
+
+즉, 이번 실습의 핵심 발전은 단순히 EC2를 Subnet에 넣는 수준에서 벗어나, **Subnet이 어떤 Route Table을 쓰는지와 Security Group이 누구의 트래픽을 허용하는지**를 코드로 표현하기 시작했다는 점이다.
+
+### 28. 새롭게 배운 것
+
+#### 28-1. Route Table 생성과 Association은 다르다
+
+```text
+aws_route_table
+= 라우팅 테이블 자체 생성
+
+route { ... }
+= 라우팅 테이블 안의 경로 규칙
+
+aws_route_table_association
+= 특정 Subnet이 특정 Route Table을 쓰도록 연결
+```
+
+콘솔 GUI에서는 `서브넷 연결 편집` 버튼으로 처리되지만, Terraform에서는 다음처럼 별도 리소스로 명시해야 한다.
+
+```hcl
+resource "aws_route_table_association" "terra_open_assoc" {
+  subnet_id      = aws_subnet.terra_open_subnet.id
+  route_table_id = aws_route_table.terra_open_rt.id
+}
+```
+
+암기할 문장:
+
+```text
+Route Table을 만든다
+≠
+Subnet에 적용한다
+```
+
+#### 28-2. Main Route Table과 명시적 Association
+
+AWS에서는 Subnet이 명시적으로 특정 Route Table에 연결되지 않으면 VPC의 Main Route Table을 사용한다.
+
+```text
+명시적 association 있음
+→ 해당 subnet은 지정한 route table 사용
+
+명시적 association 없음
+→ VPC main route table 사용
+```
+
+Terraform으로 실습 구조를 명확히 재현하려면, main route table에 암묵적으로 맡기는 것보다 `aws_route_table_association`을 명시하는 편이 좋다.
+
+#### 28-3. Public Route Table의 기본 route
+
+Public Subnet이 인터넷으로 나가려면 Route Table에 다음 경로가 필요하다.
+
+```hcl
+route {
+  cidr_block = "0.0.0.0/0"
+  gateway_id = aws_internet_gateway.gw.id
+}
+```
+
+의미:
+
+```text
+Public Subnet에서 인터넷 전체로 가는 트래픽
+→ Internet Gateway로 보냄
+```
+
+#### 28-4. VPC 내부 대역은 IGW로 보내는 것이 아니다
+
+이전 에러에서 다음과 같은 문제가 발생했다.
+
+```text
+The destination CIDR block 10.0.0.0/24 is equal to or more specific than one of this VPC's CIDR blocks.
+This route can target only an interface or an instance.
+```
+
+원인은 VPC 내부 대역을 Internet Gateway로 보내려고 했기 때문이다.
+
+VPC 내부 통신은 기본 local route가 처리한다.
+
+```text
+10.0.0.0/16 → local
+```
+
+따라서 Private Subnet에서 외부 인터넷으로 나가게 하려면 목적지는 내부 CIDR이 아니라 다음이어야 한다.
+
+```text
+0.0.0.0/0
+```
+
+그리고 target은 IGW가 아니라 NAT Gateway 또는 NAT Instance가 되어야 한다.
+
+#### 28-5. Security Group은 다른 Security Group을 source로 삼을 수 있다
+
+Private EC2가 Public EC2 쪽에서 오는 트래픽만 받게 하려면 Private SG의 ingress source를 Public SG로 지정할 수 있다.
+
+```hcl
+ingress {
+  description     = "Allow All from open_sg"
+  from_port       = 0
+  to_port         = 0
+  protocol        = "-1"
+  security_groups = [aws_security_group.open_sg.id]
+}
+```
+
+의미:
+
+```text
+close_sg가 붙은 인스턴스는
+open_sg가 붙은 인스턴스에서 오는 트래픽을 허용한다.
+```
+
+보안적으로는 `Allow All`보다 필요한 포트만 허용하는 것이 낫다.
+
+#### 28-6. VPC 안 EC2에는 `vpc_security_group_ids`가 명확하다
+
+VPC 안 EC2에서는 ID 기반으로 Security Group을 연결하는 방식이 명확하다.
+
+```hcl
+vpc_security_group_ids = [aws_security_group.open_sg.id]
+```
+
+#### 28-7. Public IP 자동 할당은 별도 설정이다
+
+Public Subnet에 EC2를 넣는다고 해서 항상 Public IP가 자동으로 붙는 것은 아니다.
+
+Subnet 수준에서는 다음 옵션이 필요하다.
+
+```hcl
+map_public_ip_on_launch = true
+```
+
+EC2 수준에서는 다음 옵션을 줄 수도 있다.
+
+```hcl
+associate_public_ip_address = true
+```
+
+### 29. NAT Instance 확장 시도
+
+이번 코드는 PDF 27p 그림보다 한 단계 더 나아가, Public Subnet의 EC2를 NAT Instance처럼 쓰려는 시도를 포함한다.
+
+관련 코드:
+
+```hcl
+resource "aws_instance" "terra_NAT" {
+  ...
+  associate_public_ip_address = true
+  source_dest_check           = false
+}
+```
+
+Private Route Table:
+
+```hcl
+route {
+  cidr_block           = "0.0.0.0/0"
+  network_interface_id = aws_instance.terra_NAT.primary_network_interface_id
+}
+```
+
+의미:
+
+```text
+Private Subnet에서 인터넷으로 나가는 트래픽
+→ terra_NAT 인스턴스의 Network Interface로 보냄
+```
+
+다만 이것만으로 완성된 NAT Instance는 아니다.
+
+아직 필요한 것:
+
+```text
+NAT Instance 내부 OS에서 IP forwarding 활성화
+iptables 또는 nftables MASQUERADE 설정
+재부팅 후에도 유지되는 NAT 설정
+NAT Instance Security Group의 적절한 inbound/outbound 허용
+```
+
+따라서 현재 상태는 이렇게 표현하는 것이 정확하다.
+
+```text
+AWS 라우팅 관점에서는 NAT Instance 구조를 시도함.
+하지만 EC2 내부 OS NAT 설정까지는 아직 완료하지 않음.
+```
+
+### 30. 현재 코드의 보안상 주의점
+
+#### 30-1. `open_sg`가 과도하게 열려 있음
+
+현재 `open_sg`는 다음을 허용한다.
+
+```hcl
+ingress {
+  from_port   = 0
+  to_port     = 0
+  protocol    = "-1"
+  cidr_blocks = ["0.0.0.0/0"]
+}
+```
+
+의미:
+
+```text
+전 세계에서
+모든 프로토콜
+모든 포트
+허용
+```
+
+실습 중 임시 설정으로는 가능하지만, 보안적으로는 매우 넓다.
+
+#### 30-2. `close_sg`도 All 허용보다 포트 제한이 낫다
+
+현재 `close_sg`는 `open_sg`에서 오는 모든 트래픽을 허용한다.
+
+```text
+open_sg → close_sg
+모든 프로토콜 / 모든 포트 허용
+```
+
+Private EC2에 SSH만 허용하려면 22번 TCP만 여는 방식이 더 좁다.
+
+### 31. 실습 요구사항 만족 여부
+
+```text
+PDF 27p 구조 구현:
+만족에 가까움
+
+구현한 것:
+- VPC
+- Internet Gateway
+- Public Subnet
+- Private Subnet
+- EC2 2대
+- Security Group 2개
+- Route Table 2개
+- Route Table Association 2개
+- Public Subnet의 0.0.0.0/0 → IGW route
+- Public IP 자동 할당 설정
+
+PDF보다 더 나간 것:
+- Public EC2를 NAT Instance 역할로 확장 시도
+- Private Route Table의 0.0.0.0/0을 NAT Instance ENI로 지정
+- source_dest_check = false 설정
+
+아직 완성되지 않은 것:
+- NAT Instance OS 내부 설정
+- 보안 그룹 최소 권한화
+- Data Source 활용
+- AZ 명시
+```
+
+실습 기록상 표현은 다음처럼 남기는 것이 좋다.
+
+```text
+PDF 27p의 기본 아키텍처 요구사항은 대체로 만족했다.
+다만 public EC2를 NAT Instance처럼 설계하면서 PDF 그림보다 한 단계 확장된 구조가 되었다.
+이 확장은 private subnet outbound 통신을 고려한 시도였지만,
+NAT Instance 내부 OS 설정까지는 아직 수행하지 않았다.
+```
+
+
+# Part 5. 검증, 오류, 완료 기준
+
+이 파트는 실습 후 실행 확인, 자주 발생하는 오류, 완료 기준을 정리한다.
+## 32. 초기화 후 검증 체크리스트
 
 ```cmd
 terraform version
@@ -1770,9 +2295,9 @@ terraform init
 
 ---
 
-## 25. 자주 나는 오류
+## 33. 자주 나는 오류
 
-### 15-1. `terraform` is not recognized
+### 33-1. `terraform` is not recognized
 
 원인:
 
@@ -1790,7 +2315,7 @@ D:\terraform\terraform.exe version
 where terraform
 ```
 
-### 15-2. AWS 인증 실패
+### 33-2. AWS 인증 실패
 
 증상 예:
 
@@ -1817,7 +2342,7 @@ Secret Access Key 오타
 환경변수에 다른 키가 잡혀 있는지
 ```
 
-### 15-3. AccessDenied
+### 33-3. AccessDenied
 
 의미:
 
@@ -1833,7 +2358,7 @@ IAM 사용자 권한 확인
 계정/사용자가 맞는지 sts get-caller-identity로 확인
 ```
 
-### 15-4. Region 관련 오류
+### 33-4. Region 관련 오류
 
 확인:
 
@@ -1871,6 +2396,11 @@ provider "aws" {
 [ ] terraform fmt 실행
 [ ] terraform validate 성공
 [ ] terraform plan에서 VPC/Subnet/EC2 생성 예정 확인
+[ ] PDF 27p 아키텍처 구현 실습 작성
+[ ] Route Table과 Route Table Association의 차이 설명 가능
+[ ] Public Route Table의 0.0.0.0/0 → IGW 의미 설명 가능
+[ ] Private Route Table의 0.0.0.0/0 → NAT Instance ENI 의미 설명 가능
+[ ] NAT Instance 확장 시도와 미완성 지점 구분 가능
 [ ] 실습으로 apply했다면 terraform destroy까지 완료
 [ ] Access Key CSV 삭제 또는 안전한 저장소로 이동
 [ ] 공용/남의 컴퓨터라면 .aws credential 정리
