@@ -59,15 +59,7 @@
       "key": "P"
     }
   ],
-  "outline:open": [
-    {
-      "modifiers": [
-        "Mod"
-      ],
-      "key": "-"
-    }
-  ],
-  "outline:open-for-current": [
+  "modern-outline:toggle": [
     {
       "modifiers": [
         "Mod"
