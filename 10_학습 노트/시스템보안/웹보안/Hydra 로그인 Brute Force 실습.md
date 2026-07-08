@@ -4,6 +4,10 @@ topic: web-security
 source: lab-observation
 status: draft
 created: 2026-05-20
+aliases:
+  - Hydra Brute Force
+  - 로그인 Brute Force 실습
+  - 로그인 Brute Force와 계정 보호 실습
 tags:
   - 🏷️과목/웹보안
   - 🏷️주제/BruteForce
@@ -18,6 +22,8 @@ tags:
 한 줄 요약: **Hydra로 로그인 실패/성공 응답 차이를 이용한 Brute Force 흐름을 관찰하고, 계정 보호 대책 구현과 강사님 코드를 비교한 lab note다.**
 
 이 노트는 p.77-79 로그인 Brute Force와 계정 보호 대책에 집중한다. 공통 LAMP 환경 구축은 [[10_학습 노트/시스템보안/웹보안/웹보안 LAMP 실습 환경 구축|웹보안 LAMP 실습 환경 구축]], 선행 입력 검증 위치 실습은 [[10_학습 노트/시스템보안/웹보안/Client-side Validation 우회와 Server-side Validation 실습|Client-side Validation 우회와 Server-side Validation 실습]]으로 분리했다.
+
+개념 요약과 방어 기준은 [[10_학습 노트/시스템보안/웹보안/로그인 Brute Force와 계정 보호|로그인 Brute Force와 계정 보호]]를 우선한다. 이 노트는 Hydra 명령, 실행 결과, DB 기반 방어 시행착오, 강사님 코드 비교를 보존하는 lab evidence다.
 
 | 항목 | 내용 |
 |---|---|
@@ -676,6 +682,7 @@ Hydra는 짧은 시간 안에 같은 로그인 요청을 빠르게 반복한다.
 
 ## 관련 노트
 
+- [[10_학습 노트/시스템보안/웹보안/로그인 Brute Force와 계정 보호|로그인 Brute Force와 계정 보호]]
 - [[10_학습 노트/시스템보안/웹보안/웹보안 LAMP 실습 환경 구축|웹보안 LAMP 실습 환경 구축]]
 - [[10_학습 노트/시스템보안/웹보안/Client-side Validation 우회와 Server-side Validation 실습|Client-side Validation 우회와 Server-side Validation 실습]]
 - [[10_학습 노트/시스템보안/웹보안/웹 애플리케이션 구조|웹 애플리케이션 구조]]
