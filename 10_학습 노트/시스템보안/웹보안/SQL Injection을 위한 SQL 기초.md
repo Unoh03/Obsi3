@@ -13,6 +13,7 @@ source_pages:
   - 114
 status: active
 created: 2026-05-28
+reviewed: 2026-07-08
 aliases:
   - SQL 기초
   - SQL Basics for SQL Injection
@@ -235,9 +236,22 @@ DELETE FROM member WHERE name='tester'
 
 ---
 
+## 이 vault에서 쓰는 법
+
+- 이 노트는 `5-20_웹보안.pdf` p.107-114의 stable prerequisite note로 쓴다.
+- SQL 전체 문법이나 DB 설계를 다루지 않는다. SQL Injection 이해에 필요한 `SELECT`, `WHERE`, `UNION`, `INSERT`, `UPDATE`, `DELETE`만 담당한다.
+- 로그인 우회 흐름은 [[10_학습 노트/시스템보안/웹보안/SQL Injection 개념과 인증 우회|SQL Injection 개념과 인증 우회]]에서 본다.
+- Error/UNION 기반 정보 추출은 [[10_학습 노트/시스템보안/웹보안/SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악|SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]]에서 본다.
+- 방어 기준은 [[10_학습 노트/시스템보안/웹보안/SQL Injection 방어|SQL Injection 방어]]에서 본다.
+- [[10_학습 노트/시스템보안/웹보안/SQL Injection 페이지별 분해 기록|SQL Injection 페이지별 분해 기록]]은 source-digest/draft로 보고, 복습 진입은 이 노트와 위 stable concept note들을 우선한다.
+
+---
+
 ## 관련 노트
 
 - [[10_학습 노트/시스템보안/웹보안/SQL Injection 개념과 인증 우회|SQL Injection 개념과 인증 우회]]
+- [[10_학습 노트/시스템보안/웹보안/SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악|SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]]
+- [[10_학습 노트/시스템보안/웹보안/SQL Injection 방어|SQL Injection 방어]]
 
 ## 확인 질문
 
