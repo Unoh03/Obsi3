@@ -9,6 +9,7 @@ source_pages:
   - 132
 status: active
 created: 2026-07-06
+reviewed: 2026-07-08
 aliases:
   - SQLi 방어
   - SQL Injection Prevention
@@ -196,6 +197,17 @@ SQL Injection이 완전히 막히지 않았을 때를 대비해 DB 권한도 줄
 | SQL Injection 문자를 필터링한다 | blocklist 필터링은 보조 방어다. 1차 방어는 parameterized query다. |
 | 에러 메시지를 제한한다 | error-based 정보 노출을 줄이는 보조 방어다. |
 | Web 방화벽을 사용한다 | WAF는 defense-in-depth 계층이다. 취약한 쿼리 코드를 대체하지 않는다. |
+
+---
+
+## 이 vault에서 쓰는 법
+
+- 이 노트는 `5-20_웹보안.pdf` p.132의 stable defense note로 쓴다.
+- p.115-121 인증 우회 흐름은 [[10_학습 노트/시스템보안/웹보안/SQL Injection 개념과 인증 우회|SQL Injection 개념과 인증 우회]]에서 본다.
+- p.122-131 Error/UNION 기반 정보 추출과 schema enumeration 흐름은 [[10_학습 노트/시스템보안/웹보안/SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악|SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]]에서 본다.
+- 실제 payload와 재현 증거는 관련 lab note에 두고, 이 노트는 방어 원칙과 판단 기준만 담당한다.
+- [[10_학습 노트/시스템보안/웹보안/SQL Injection 페이지별 분해 기록|SQL Injection 페이지별 분해 기록]]은 source-digest/draft로 보고, 복습 진입은 이 노트와 연결 stable/lab note들을 우선한다.
+- p.133 이후 File Upload / Directory Listing은 별도 취약점 흐름이므로 이 노트에서 확장하지 않는다.
 
 ---
 
