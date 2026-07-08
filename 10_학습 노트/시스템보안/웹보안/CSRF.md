@@ -1,7 +1,12 @@
 ---
 type: concept
 topic: web-security
-source: 5-20_웹보안.pdf
+source:
+  - 5-20_웹보안.pdf
+  - OWASP Cross-Site Request Forgery Prevention Cheat Sheet
+  - OWASP WSTG Testing for Cross Site Request Forgery
+  - MDN Set-Cookie
+  - MDN Sec-Fetch-Site
 source_pages:
   - 98
   - 99
@@ -14,7 +19,7 @@ source_pages:
   - 106
 status: active
 created: 2026-05-27
-reviewed: 2026-05-27
+reviewed: 2026-07-08
 aliases:
   - Cross Site Request Forgery
   - Cross-Site Request Forgery
@@ -23,6 +28,8 @@ aliases:
   - One-click Attack
   - Zero-click Attack
   - 사이트 간 요청 위조
+  - CSRF Token
+  - SameSite
 tags:
   - 🏷️과목/웹보안
   - 🏷️주제/CSRF
@@ -33,7 +40,13 @@ tags:
 
 # CSRF
 
-source: [[40_자료/강의 자료/5-20_웹보안.pdf|5-20 웹보안]], p.98-106
+source:
+
+- [[40_자료/강의 자료/5-20_웹보안.pdf|5-20 웹보안]], p.98-106
+- [OWASP Cross-Site Request Forgery Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
+- [OWASP WSTG - Testing for Cross Site Request Forgery](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery)
+- [MDN Set-Cookie header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie)
+- [MDN Sec-Fetch-Site header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Site)
 
 ## 한 줄 요약
 
@@ -253,6 +266,16 @@ OWASP도 상태 변경 요청에는 CSRF token 검증을 적용하고, framework
 
 ---
 
+## 이 vault에서 쓰는 법
+
+- 이 노트는 `5-20_웹보안.pdf` p.98-106의 stable concept note로 쓴다.
+- 회원정보 변경과 게시글 작성 CSRF 재현 증거는 [[10_학습 노트/시스템보안/웹보안/CSRF를 이용한 회원정보 변경 실습|CSRF를 이용한 회원정보 변경 실습]]에 둔다.
+- XSS와 비교할 때는 [[10_학습 노트/시스템보안/웹보안/XSS|XSS]]를 같이 본다. XSS가 있으면 CSRF token 탈취나 same-origin 요청 실행으로 CSRF 방어가 약해질 수 있다.
+- 세션 쿠키 자동 전송과 `SameSite`는 [[10_학습 노트/시스템보안/웹보안/세션과 쿠키|세션과 쿠키]]와 연결해서 본다.
+- PDF 순서로 이어서 볼 다음 범위는 [[10_학습 노트/시스템보안/웹보안/SQL Injection을 위한 SQL 기초|SQL Injection을 위한 SQL 기초]] p.107-114이다.
+
+---
+
 ## 관련 노트
 
 - [[10_학습 노트/시스템보안/웹보안/CSRF를 이용한 회원정보 변경 실습|CSRF를 이용한 회원정보 변경 실습]]
@@ -268,6 +291,7 @@ OWASP도 상태 변경 요청에는 CSRF token 검증을 적용하고, framework
 - [OWASP Cross-Site Request Forgery Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
 - [OWASP WSTG - Testing for Cross Site Request Forgery](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery)
 - [MDN Set-Cookie header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie)
+- [MDN Sec-Fetch-Site header](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Sec-Fetch-Site)
 
 ---
 

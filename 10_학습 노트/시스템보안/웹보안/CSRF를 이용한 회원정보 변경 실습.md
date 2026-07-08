@@ -14,7 +14,7 @@ source_pages:
   - 106
 status: active
 created: 2026-05-27
-reviewed: 2026-05-27
+reviewed: 2026-07-08
 aliases:
   - CSRF 실습
   - Cross Site Request Forgery 실습
