@@ -56,20 +56,24 @@ AWS IAM 사용자/Access Key 준비
 - Terraform Registry AWS Provider 코드 가져오기
 - 첫 `main.tf` 작성
 - `terraform init` 확인
-
-제외:
-
-- EC2/VPC 실제 생성
-- Public/Private Subnet 분리
+- VPC/Subnet/EC2 최소 골격 실습
+- Public/Private Subnet 분리와 EC2 배치 실습
 - Route Table과 Route Table Association
 - Security Group 기본 연결
 - PDF 27p Resource/Data Source 아키텍처 실습
-- NAT Instance 확장 시도
 - PDF 28p Private EC2 외부 통신 실습
-- NAT Instance user_data 자동 설정
+- NAT Instance 확장 및 `user_data` 자동 설정
+- Private WEB EC2 outbound 검증 증적
+- 강사님 정답지 `main.tf`와 내 구현 코드 비교
+
+제외:
+
 - Backend/Remote State 구성
 - Module 구조
 - AWS IAM 최소권한 정책 설계
+- 2AZ 전체 고가용성 구조 완성
+- NAT Instance와 Bastion Host 역할 분리
+- Security Group 최소 권한화 최종안
 
 위 제외 항목은 별도 노트로 분리한다.
 
@@ -2274,7 +2278,7 @@ NAT Instance 내부 OS 설정까지는 아직 수행하지 않았다.
 
 # Part 5. 4차 실습: PDF 28p Private EC2 외부 통신 - NAT Instance
 
-이 파트는 PDF 28페이지 실습의 완료 조건인 **Private EC2에서 외부 통신할 것**을 기준으로 작성한 중간 저장 기록이다.
+이 파트는 PDF 28페이지 실습의 완료 조건인 **Private EC2에서 외부 통신할 것**을 기준으로 작성한 검증 완료 및 강사님 정답지 비교 기록이다.
 
 강의 그림에는 NAT-GW가 표시되어 있으나, 비용 문제 때문에 수업 실습에서는 NAT Gateway 대신 **NAT Instance**를 사용하는 방향으로 해석했다.
 
@@ -2312,9 +2316,9 @@ WEB EC2 private IP: 192.168.10.13
 대신 Public Subnet의 NAT Instance가 Bastion 역할과 NAT 역할을 겸한다.
 ```
 
-## 33. 이번 실습의 `main.tf` 중간 저장본
+## 33. 이번 실습의 `main.tf` 저장본
 
-> [!note]- `main.tf` - PDF 28p Private outbound NAT Instance 실습 v4.5
+> [!note]- `main.tf` - PDF 28p Private outbound NAT Instance 실습 v5.1
 > ```hcl
 > terraform {
 >   required_providers {
@@ -2807,9 +2811,88 @@ ping은 ICMP 정책에 따라 실패할 수 있다.
 완료 조건 확인에는 curl 결과가 더 실용적이다.
 ```
 
-## 40. 현재 코드의 한계와 다음 개선
 
-### 40-1. `open_sg`가 과도하게 열려 있음
+## 40. 실제 검증 결과와 증적 캡처
+
+### 40-1. NAT Instance Public IP와 Private WEB outbound IP 일치
+
+![NAT Instance Public IP와 Private WEB checkip 결과](assets/v5-nat-checkip-proof.png)
+
+확인된 값:
+
+| 항목 | 값 |
+|---|---|
+| NAT Instance | `terra_NAT` |
+| NAT Instance Public IPv4 | `13.124.68.151` |
+| NAT Instance Private IPv4 | `192.168.1.13` |
+| Private WEB 접속 프롬프트 | `ec2-user@ip-192-168-10-13` |
+| Private WEB에서 `curl https://checkip.amazonaws.com` 결과 | `13.124.68.151` |
+
+판정:
+
+```text
+Private WEB EC2는 192.168.10.13 사설 IP로 접속된 상태다.
+이 상태에서 checkip 결과가 NAT Instance의 Public IPv4인 13.124.68.151로 출력되었다.
+따라서 Private WEB의 외부 통신이 NAT Instance를 경유하고 있음을 확인했다.
+```
+
+### 40-2. WEB EC2 Public IP 없음, HTTPS/DNS 외부 통신 성공
+
+![WEB EC2 Public IP 없음 및 HTTPS/DNS 검증](assets/v5-web-outbound-proof.png)
+
+확인된 값:
+
+| 항목 | 결과 |
+|---|---|
+| WEB EC2 | `terra_WEB` |
+| WEB EC2 Public IPv4 | 없음 |
+| WEB EC2 Private IPv4 | `192.168.10.13` |
+| `curl https://checkip.amazonaws.com` | `13.124.68.151` |
+| `curl -I https://www.google.com` | `HTTP/2 200` |
+| `getent hosts google.com` | Google 도메인 해석 성공 |
+| `hostname -I` | `192.168.10.13` |
+
+판정:
+
+```text
+WEB EC2에는 Public IPv4 주소가 없다.
+그럼에도 Private WEB에서 HTTPS 요청, DNS 조회, 외부 IP 확인이 모두 성공했다.
+이는 Private Subnet의 WEB EC2가 NAT Instance를 통해 outbound internet access에 성공했다는 증거다.
+```
+
+### 40-3. 완료 조건 판정
+
+강사님 완료 조건:
+
+```text
+프라이빗에서 외부통신할 것
+```
+
+판정:
+
+```text
+완료 조건 충족.
+Private WEB EC2는 Public IP 없이 NAT Instance를 경유해 외부 HTTPS 통신에 성공했다.
+```
+
+제출용 핵심 증적:
+
+```text
+1. WEB EC2 Public IPv4 주소 없음
+2. WEB EC2 Private IPv4 주소 192.168.10.13
+3. WEB EC2에서 curl https://checkip.amazonaws.com 결과 13.124.68.151
+4. NAT Instance Public IPv4 주소 13.124.68.151
+5. WEB EC2에서 curl -I https://www.google.com 결과 HTTP/2 200
+6. WEB EC2에서 getent hosts google.com DNS 조회 성공
+```
+
+> [!warning] 공개 저장소 업로드 주의
+> 이 증적 이미지에는 Public IP, Private IP, Instance ID가 포함되어 있다. 학습 노트로 보관하는 것은 가능하지만, GitHub 공개 저장소나 발표자료에 그대로 올릴 때는 노출 범위를 다시 확인한다.
+
+
+## 41. 현재 코드의 한계와 다음 개선
+
+### 41-1. `open_sg`가 과도하게 열려 있음
 
 현재 `open_sg`는 다음을 허용한다.
 
@@ -2843,7 +2926,7 @@ Private WEB:
 Bastion/NAT 역할 인스턴스의 SG에서 오는 SSH만 허용
 ```
 
-### 40-2. 2AZ 전체 구조는 아직 구현하지 않음
+### 41-2. 2AZ 전체 구조는 아직 구현하지 않음
 
 현재 코드는 단일 AZ 구성이다.
 
@@ -2856,28 +2939,633 @@ Private Subnet 2: 192.168.20.0/24, ap-northeast-2c
 NAT Instance와 Bastion Host 역할 분리
 ```
 
-### 40-3. 완료 기준
+### 41-3. 완료 기준
 
 이번 4차 실습은 아래가 되면 완료로 본다.
 
 ```text
-[ ] terraform apply 성공
-[ ] NAT Instance에 Public IP 있음
-[ ] WEB EC2에 Public IP 없음
+[x] terraform apply 성공
+[x] NAT Instance에 Public IP 있음
+[x] WEB EC2에 Public IP 없음
 [ ] NAT Instance source_dest_check = false 확인
 [ ] Private Route Table의 0.0.0.0/0 target이 NAT Instance ENI임
 [ ] NAT Instance에서 net.ipv4.ip_forward = 1 확인
 [ ] NAT Instance에서 MASQUERADE 규칙 확인
-[ ] NAT Instance에서 WEB EC2로 SSH 접속 성공
-[ ] WEB EC2에서 curl https://checkip.amazonaws.com 성공
+[x] NAT Instance에서 WEB EC2로 SSH 접속 성공
+[x] WEB EC2에서 curl https://checkip.amazonaws.com 성공
 [ ] 실습 후 terraform destroy 완료
+```
+
+
+
+## 42. 강사님 정답지와 내 코드 비교
+
+이 섹션은 강사님이 배포한 정답지 `main.tf`와 현재 v5 실습 코드의 차이를 `git diff`를 읽는 방식으로 정리한 것이다.
+
+정답지는 패키지의 다음 경로에 함께 보관한다.
+
+```text
+references/teacher-answer-main.tf
+```
+
+### 42-1. 결론 요약
+
+```text
+내 코드가 “틀렸다”기보다는,
+강사님 정답지는 PDF 그림 재현형이고,
+내 코드는 완료 조건 검증형 축약 구현이다.
+```
+
+이번 실습의 완료 조건은 다음이었다.
+
+```text
+Private EC2에서 외부통신할 것
+```
+
+내 구현은 이 완료 조건을 실제로 만족했다.
+
+```text
+WEB EC2 Public IPv4 없음
+WEB EC2 Private IPv4: 192.168.10.13
+NAT Instance Public IPv4: 13.124.68.151
+Private WEB에서 checkip 결과: 13.124.68.151
+Private WEB에서 curl -I https://www.google.com: HTTP/2 200
+Private WEB에서 getent hosts google.com: DNS 조회 성공
+```
+
+따라서 기능 검증 기준으로는 내 코드가 성공했다. 다만 강사님 정답지와 비교하면 **2AZ 구성, 4Subnet 구성, Bastion/NAT 역할 분리, SG 역할 분리**가 부족하다.
+
+---
+
+### 42-2. 전체 구조 차이
+
+#### 강사님 정답지 구조
+
+```text
+VPC 192.168.0.0/16
+├─ Public Subnet 2a
+│  └─ NAT Instance
+├─ Public Subnet 2c
+│  └─ Bastion Instance
+├─ Private Subnet 2a
+│  └─ Private Instance
+└─ Private Subnet 2c
+```
+
+강사님 정답지는 PDF 그림을 더 직접적으로 재현하는 구조다.
+
+핵심 특징:
+
+```text
+Public Subnet 2개
+Private Subnet 2개
+ap-northeast-2a / ap-northeast-2c 사용
+NAT Instance와 Bastion Host 분리
+Private Instance 별도 배치
+```
+
+#### 내 코드 구조
+
+```text
+VPC 192.168.0.0/16
+├─ Public Subnet 2a: 192.168.1.0/24
+│  └─ NAT Instance 겸 Bastion
+└─ Private Subnet 2a: 192.168.10.0/24
+   └─ WEB Instance
+```
+
+내 코드는 완료 조건 검증을 우선한 단일 AZ 축약 구성이다.
+
+핵심 특징:
+
+```text
+Public Subnet 1개
+Private Subnet 1개
+ap-northeast-2a만 사용
+NAT Instance가 Bastion 역할도 겸함
+Private WEB outbound 성공 검증 완료
+```
+
+판정:
+
+| 기준 | 강사님 정답지 | 내 코드 |
+|---|---|---|
+| 완료 조건 충족 | 가능하도록 설계 | 실제 검증 완료 |
+| PDF 그림 재현성 | 높음 | 축약형 |
+| 단순성 | 낮음 | 높음 |
+| 비용/실습 속도 | 인스턴스 수가 더 많음 | 인스턴스 수가 적음 |
+| 운영 구조 정석성 | 더 좋음 | 역할 겸용 |
+| NAT 내부 OS 설정 | 코드상 미표현 | `user_data`로 자동화 |
+
+---
+
+### 42-3. Provider profile 이름 차이
+
+```diff
+- profile = "Terra-user"
++ profile = "terra-user"
+```
+
+강사님 정답지와 내 환경의 profile 이름이 다르다.
+
+내 AWS CLI profile은 다음 이름으로 구성되어 있었다.
+
+```text
+Terra-user
+```
+
+따라서 내 환경에서는 강사님 정답지의 `terra-user`를 그대로 사용하면 인증 실패할 수 있다.
+
+정리:
+
+```text
+AWS CLI profile 이름은 대소문자까지 맞춰야 한다.
+내 환경에서는 Terra-user 유지가 맞다.
+```
+
+---
+
+### 42-4. VPC DNS 옵션 차이
+
+강사님 정답지는 VPC에 DNS 관련 옵션을 추가한다.
+
+```diff
+ resource "aws_vpc" "..." {
+   cidr_block = "192.168.0.0/16"
++  enable_dns_hostnames = true
++  enable_dns_support   = true
+ }
+```
+
+이 부분은 강사님 코드가 더 좋다.
+
+의미:
+
+| 옵션 | 의미 |
+|---|---|
+| `enable_dns_support` | VPC에서 DNS 해석 지원 |
+| `enable_dns_hostnames` | Public IP가 있는 인스턴스 등에 DNS hostname 부여 지원 |
+
+이번 `curl https://checkip.amazonaws.com` 검증에는 필수는 아니었지만, VPC 기본 구성을 명확히 하려면 넣는 편이 낫다.
+
+내 코드에 추가할 수 있는 개선안:
+
+```hcl
+resource "aws_vpc" "terra_vpc" {
+  cidr_block           = "192.168.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+
+  tags = {
+    Name = "terra_vpc"
+  }
+}
+```
+
+---
+
+### 42-5. Subnet 개수와 AZ 차이
+
+강사님 정답지는 2AZ/4Subnet 구조다.
+
+```diff
+- Public Subnet 1개
+- Private Subnet 1개
+- ap-northeast-2a만 사용
+
++ Public Subnet 2개
++ Private Subnet 2개
++ ap-northeast-2a / ap-northeast-2c 사용
+```
+
+내 코드는 1AZ 구조다.
+
+판정:
+
+```text
+Private outbound 검증만 목표:
+1AZ로 충분
+
+강사님 정답지 구조와 일치:
+2AZ/4Subnet 필요
+```
+
+운영 관점에서는 여러 AZ에 Subnet을 나누는 편이 좋다. 다만 이번 실습에서 실제 완료 조건이 “프라이빗에서 외부통신”이었다면, 1AZ 구조만으로도 기능 검증은 충분했다.
+
+---
+
+### 42-6. CIDR 배치 차이
+
+강사님 정답지는 대략 다음 형태로 CIDR을 나눈다.
+
+```text
+Public 2a  : 192.168.10.0/24
+Private 2a : 192.168.11.0/24
+Public 2c  : 192.168.30.0/24
+Private 2c : 192.168.31.0/24
+```
+
+내 코드는 다음처럼 나눴다.
+
+```text
+Public 2a  : 192.168.1.0/24
+Private 2a : 192.168.10.0/24
+```
+
+이건 주소 설계 차이다. IP 범위가 VPC CIDR인 `192.168.0.0/16` 안에 있고 서로 겹치지 않으면 기능적으로는 가능하다.
+
+다만 강사님이 CIDR 자체를 기준으로 채점한다면 내 구성은 정답지와 다르게 보인다.
+
+---
+
+### 42-7. Bastion과 NAT 역할 분리 차이
+
+강사님 정답지는 인스턴스를 역할별로 나눈다.
+
+```diff
++ Bastion Instance
++ NAT Instance
++ Private Instance
+```
+
+내 코드는 NAT Instance가 Bastion 역할도 겸한다.
+
+```text
+내 PC → terra_NAT → terra_WEB
+terra_WEB → terra_NAT → Internet
+```
+
+강사님 구조는 다음과 같다.
+
+```text
+내 PC → Bastion → Private Instance
+Private Instance → NAT Instance → Internet
+```
+
+판정:
+
+| 기준 | 강사님 구조 | 내 구조 |
+|---|---|---|
+| 역할 분리 | 좋음 | 부족 |
+| 실습 단순성 | 낮음 | 좋음 |
+| 인스턴스 수 | 3대 이상 | 2대 |
+| 운영 설계 | 더 정석 | 실습 축약형 |
+
+보고서 표현:
+
+```text
+실습 단순화를 위해 Public Subnet의 EC2가 Bastion 역할과 NAT Instance 역할을 겸했다.
+운영 환경에서는 관리 접속 경유지와 NAT 장비 역할을 분리하는 것이 바람직하다.
+```
+
+---
+
+### 42-8. NAT Instance 내부 설정 차이
+
+이 부분은 내 코드가 더 완성형이다.
+
+내 코드에는 `user_data`가 있다.
+
+```diff
++ user_data = <<-EOF
++ sysctl -w net.ipv4.ip_forward=1
++ echo 'net.ipv4.ip_forward = 1' > /etc/sysctl.d/99-nat.conf
++ yum install -y iptables-services
++ iptables -t nat -A POSTROUTING -o "$IFACE" -j MASQUERADE
++ iptables-save > /etc/sysconfig/iptables
++ systemctl enable --now iptables
++ EOF
+```
+
+강사님 정답지에는 NAT Instance 내부 Linux 설정이 코드상 표현되어 있지 않다.
+
+정리:
+
+```text
+source_dest_check = false
+```
+
+만으로는 일반 EC2가 NAT Instance로 완성되지 않는다.
+
+일반 Amazon Linux를 NAT Instance로 쓰려면 다음이 필요하다.
+
+```text
+IP forwarding 활성화
+iptables 또는 nftables MASQUERADE 설정
+재부팅 후 유지 설정
+```
+
+가능한 해석:
+
+```text
+1. 강사님 AMI가 NAT 설정 포함 AMI일 수 있음
+2. Terraform apply 후 수동으로 ip_forward/iptables를 설정하라는 의도일 수 있음
+3. 정답지는 AWS 리소스 구조만 보여주고 OS 내부 설정은 생략했을 수 있음
+```
+
+내 구현은 일반 Amazon Linux 기준으로 NAT 내부 설정까지 자동화했기 때문에, 실제 동작 검증 면에서는 더 명확하다.
+
+---
+
+### 42-9. NAT Instance Public IP 부여 방식 차이
+
+내 코드:
+
+```hcl
+associate_public_ip_address = true
+```
+
+강사님 정답지:
+
+```hcl
+map_public_ip_on_launch = true
+```
+
+강사님 방식은 Public Subnet에서 새 인스턴스에 Public IP를 자동 부여하게 하는 방식이다. 내 방식은 해당 EC2 Instance에 Public IP 연결을 명시하는 방식이다.
+
+둘 다 가능하다.
+
+| 방식 | 위치 | 의미 |
+|---|---|---|
+| `map_public_ip_on_launch = true` | Subnet | 해당 Subnet에서 생성되는 인스턴스에 Public IP 자동 부여 |
+| `associate_public_ip_address = true` | Instance | 이 EC2에 Public IP 부여 명시 |
+
+실습에서는 NAT Instance에 Public IPv4가 붙었고, checkip 결과가 해당 Public IP와 일치했으므로 문제 없다.
+
+---
+
+### 42-10. Private IP 고정 여부 차이
+
+내 코드:
+
+```diff
++ private_ip = "192.168.10.13"
++ private_ip = "192.168.1.13"
+```
+
+강사님 정답지:
+
+```diff
+- private_ip 지정 없음
+```
+
+내 방식의 장점:
+
+```text
+SSH 접속 명령과 검증 캡처가 고정됨
+192.168.10.13 / 192.168.1.13으로 문서화하기 쉬움
+```
+
+단점:
+
+```text
+예약 IP나 중복 IP를 잘못 고르면 apply 실패
+Subnet CIDR을 바꾸면 private_ip도 함께 바꿔야 함
+```
+
+실제로 처음에는 `.1` 주소를 사용해서 다음 오류가 발생했다.
+
+```text
+Address 192.168.10.1 is in subnet's reserved address range
+Address 192.168.1.1 is in subnet's reserved address range
+```
+
+이 시행착오를 통해 AWS Subnet 예약 IP를 확인했고, `.13`으로 수정해 해결했다.
+
+---
+
+### 42-11. Security Group 비교
+
+강사님 정답지는 역할별 SG를 나눈다.
+
+```text
+quiz-bastion-sg
+quiz-nat-sg
+quiz-private-sg
+```
+
+내 코드는 두 개로 단순화했다.
+
+```text
+open_sg
+close_sg
+```
+
+역할 분리 기준으로는 강사님 구조가 더 좋다.
+
+다만 최소 권한 기준에서는 양쪽 모두 개선 여지가 있다.
+
+내 코드:
+
+```text
+open_sg:
+0.0.0.0/0 모든 트래픽 허용
+
+close_sg:
+open_sg에서 오는 모든 트래픽 허용
+```
+
+강사님 정답지 쪽도 정답지 내용 기준으로 일부 규칙이 넓다.
+
+예:
+
+```text
+NAT SG에서 0.0.0.0/0 전체 허용
+Private SG에서 SSH 22를 0.0.0.0/0로 허용
+```
+
+판정:
+
+```text
+역할 분리:
+강사님 코드가 더 좋음
+
+최소 권한:
+둘 다 아직 부족함
+
+실습 성공:
+둘 다 가능
+```
+
+개선 방향:
+
+```text
+Bastion SG:
+내 공인 IP/32 → TCP 22
+
+NAT SG:
+Private Subnet CIDR → 필요한 outbound 경유 트래픽
+egress 0.0.0.0/0
+
+Private SG:
+Bastion SG → TCP 22
+필요하면 ICMP는 Bastion SG 또는 VPC CIDR에서만
+egress 0.0.0.0/0
+```
+
+---
+
+### 42-12. 강사님 정답지에서 주의할 부분
+
+#### `name_prefix = -1`
+
+강사님 정답지에 다음과 같은 값이 있었다.
+
+```hcl
+name_prefix = -1
+```
+
+이 값은 이상하다.
+
+일반적으로는 다음처럼 쓴다.
+
+```hcl
+name = "quiz-bastion-sg"
+```
+
+또는:
+
+```hcl
+name_prefix = "quiz-bastion-sg-"
+```
+
+`name_prefix = -1`은 오타 또는 자동완성/복붙 흔적으로 보인다. 정답지라 해도 좋은 코드라고 보긴 어렵다.
+
+#### NAT Instance에 `user_data` 없음
+
+강사님 코드만 보면 NAT Instance의 Linux 내부 설정이 없다.
+
+부족한 설정:
+
+```text
+ip_forward
+MASQUERADE
+iptables 저장
+```
+
+따라서 일반 AMI 기준에서는 별도의 수동 설정이나 사전 구성 AMI가 필요하다.
+
+#### `profile = "terra-user"`
+
+내 환경에서는 profile이 `Terra-user`다. 강사님 코드를 그대로 쓰면 profile 이름 불일치로 인증 실패할 수 있다.
+
+---
+
+### 42-13. 내 코드가 정답지에 비해 부족한 부분
+
+#### 1. 2AZ/4Subnet 구조
+
+정답지 구조로 맞추려면 다음이 추가되어야 한다.
+
+```text
+Public Subnet 2c
+Private Subnet 2c
+각각 Route Table Association
+```
+
+#### 2. Bastion Host 분리
+
+현재는 NAT가 Bastion도 겸한다. 정답지에 맞추려면 인스턴스를 3대 구조로 나누는 편이 좋다.
+
+```text
+terra_bastion
+terra_NAT
+terra_WEB
+```
+
+#### 3. Role별 Security Group 분리
+
+현재는 `open_sg`, `close_sg` 2개다. 정답지식으로는 다음처럼 분리하는 편이 더 명확하다.
+
+```text
+bastion_sg
+nat_sg
+private_sg
+```
+
+#### 4. VPC DNS 옵션
+
+추가 추천:
+
+```hcl
+enable_dns_hostnames = true
+enable_dns_support   = true
+```
+
+---
+
+### 42-14. 내 코드가 정답지보다 나은 부분
+
+#### 1. 실제 NAT 동작 검증 완료
+
+내 코드는 실제 검증 결과를 포함한다.
+
+```text
+Private WEB Public IP 없음
+Private WEB checkip 결과 = NAT Public IP
+curl -I google.com = HTTP/2 200
+DNS 조회 성공
+```
+
+#### 2. NAT Instance OS 설정 자동화
+
+내 코드는 `user_data`로 NAT Instance 내부 설정을 자동화했다.
+
+```text
+ip_forward 활성화
+iptables MASQUERADE 적용
+iptables 규칙 저장
+iptables service 활성화
+```
+
+#### 3. private_ip 고정으로 문서화 쉬움
+
+```text
+NAT: 192.168.1.13
+WEB: 192.168.10.13
+```
+
+캡처, 접속 명령, 검증 절차가 일관되게 남는다.
+
+---
+
+### 42-15. 최종 판정
+
+```text
+완료 조건 기준:
+내 코드가 맞다. 실제 검증까지 끝났다.
+
+강사님 정답지 구조 기준:
+내 코드는 축약형이다.
+2AZ, 4Subnet, Bastion/NAT 분리가 빠져 있다.
+
+기능 완성도 기준:
+내 코드는 NAT user_data가 있어서 오히려 실제 동작에 강하다.
+
+구조 정석성 기준:
+강사님 코드는 Bastion/NAT/Private 역할 분리와 2AZ 구성이 더 정석이다.
+
+보안 최소 권한 기준:
+둘 다 아직 넓다.
+```
+
+보고서 또는 발표용 표현:
+
+```text
+본 실습에서는 완료 조건인 Private EC2의 외부 통신 검증을 우선하여,
+PDF/정답지의 2AZ 전체 구조를 단일 AZ 축약 구조로 구현하였다.
+Public Subnet의 EC2는 Bastion 역할과 NAT Instance 역할을 겸하도록 구성하였다.
+Private WEB EC2는 Public IP 없이 NAT Instance를 통해 외부 HTTPS 통신에 성공했으며,
+checkip 결과가 NAT Instance의 Public IPv4와 일치함을 확인하였다.
+운영 환경 또는 정답지 구조 재현 기준에서는 Bastion Host와 NAT Instance를 분리하고,
+2AZ/4Subnet 구조 및 Security Group 최소 권한화를 추가 적용하는 것이 바람직하다.
 ```
 
 
 # Part 6. 검증, 오류, 완료 기준
 
 이 파트는 실습 후 실행 확인, 자주 발생하는 오류, 완료 기준을 정리한다.
-## 41. 초기화 후 검증 체크리스트
+## 43. 초기화 후 검증 체크리스트
 
 ```cmd
 terraform version
@@ -2901,9 +3589,9 @@ terraform init
 
 ---
 
-## 42. 자주 나는 오류
+## 44. 자주 나는 오류
 
-### 42-1. `terraform` is not recognized
+### 44-1. `terraform` is not recognized
 
 원인:
 
@@ -2921,7 +3609,7 @@ D:\terraform\terraform.exe version
 where terraform
 ```
 
-### 42-2. AWS 인증 실패
+### 44-2. AWS 인증 실패
 
 증상 예:
 
@@ -2948,7 +3636,7 @@ Secret Access Key 오타
 환경변수에 다른 키가 잡혀 있는지
 ```
 
-### 42-3. AccessDenied
+### 44-3. AccessDenied
 
 의미:
 
@@ -2964,7 +3652,7 @@ IAM 사용자 권한 확인
 계정/사용자가 맞는지 sts get-caller-identity로 확인
 ```
 
-### 42-4. Region 관련 오류
+### 44-4. Region 관련 오류
 
 확인:
 
@@ -3010,7 +3698,9 @@ provider "aws" {
 [ ] PDF 28p Private EC2 외부 통신 실습 작성
 [ ] NAT Instance user_data로 ip_forward와 MASQUERADE 설정 가능
 [ ] AWS 예약 IP 오류와 해결 방법 설명 가능
-[ ] Private WEB EC2에서 외부 curl 검증 완료
+[x] Private WEB EC2에서 외부 curl 검증 완료
+[x] Private WEB EC2가 Public IP 없이 NAT Instance 경유 외부 통신에 성공함
+[x] 강사님 정답지와 내 구현 코드 비교 및 해설 정리
 [ ] 실습으로 apply했다면 terraform destroy까지 완료
 [ ] Access Key CSV 삭제 또는 안전한 저장소로 이동
 [ ] 공용/남의 컴퓨터라면 .aws credential 정리

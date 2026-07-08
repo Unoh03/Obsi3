@@ -39,17 +39,24 @@ tags:
 
 ## Lab Notes
 
-- [[Terraform AWS CLI 초기 설정 실습 v3]]
+- [[Terraform AWS CLI 초기 설정 실습 v5]]
   - AWS CLI/Profile/Terraform 설치
   - VPC/Subnet/EC2 최소 골격 실습
   - Public/Private 역할 Subnet 2개와 EC2 2대 배치 실습
-  - AZ 미지정 및 Public IP 자동 할당 관찰
+  - PDF 27p Resource & Data Source 아키텍처 구현
+  - Route Table과 Route Table Association 실습
+  - Security Group 기본 연결 실습
+  - NAT Instance 기반 Private EC2 외부 통신 실습
+  - Private WEB EC2 outbound 검증 증적 포함
+  - AWS 예약 IP 오류와 해결 과정 기록
 
 ## Pending
 
 - AWS 프로젝트에 Terraform 적용하기
-- Terraform Public Subnet 구성 실습
-- Terraform Security Group 명시 실습
-- Terraform EC2 접속 검증 실습
 - Terraform Resource 참조 심화 실습
 - Terraform Data Source 실습
+- Terraform Security Group 최소 권한화 실습
+- Terraform 2AZ 전체 구조 확장 실습
+- Terraform Bastion Host와 NAT Instance 역할 분리 실습
+- Terraform Backend/Remote State 실습
+- Terraform Module 실습
