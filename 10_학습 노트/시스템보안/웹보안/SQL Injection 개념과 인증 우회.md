@@ -1,7 +1,9 @@
 ---
 type: concept
 topic: web-security
-source: 5-20_웹보안.pdf
+source:
+  - 5-20_웹보안.pdf
+  - OWASP SQL Injection Prevention Cheat Sheet
 source_pages:
   - 115
   - 116
@@ -12,6 +14,7 @@ source_pages:
   - 121
 status: active
 created: 2026-05-28
+reviewed: 2026-07-08
 aliases:
   - SQL Injection
   - SQLi
@@ -25,7 +28,10 @@ tags:
 
 # SQL Injection 개념과 인증 우회
 
-source: [[40_자료/강의 자료/5-20_웹보안.pdf|5-20 웹보안]], p.115-121
+source:
+
+- [[40_자료/강의 자료/5-20_웹보안.pdf|5-20 웹보안]], p.115-121
+- [OWASP SQL Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
 
 ## 한 줄 요약
 
@@ -223,14 +229,30 @@ PDF의 예시 상황은 다음과 같다.
 
 이 노트는 인증 우회까지만 다룬다. 다음 범위는 별도로 정리한다.
 
-- Error/UNION 기반 정보 추출과 Schema 파악
+- [[10_학습 노트/시스템보안/웹보안/SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악|SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]]
 - [[10_학습 노트/시스템보안/웹보안/SQL Injection 방어|SQL Injection 방어]]
+
+---
+
+## 이 vault에서 쓰는 법
+
+- 이 노트는 `5-20_웹보안.pdf` p.115-121의 stable concept note로 쓴다.
+- p.107-114 SQL prerequisite는 [[10_학습 노트/시스템보안/웹보안/SQL Injection을 위한 SQL 기초|SQL Injection을 위한 SQL 기초]]에서 본다.
+- 실제 `care` 애플리케이션에서의 인증 우회 증거는 [[10_학습 노트/시스템보안/웹보안/SQL Injection 인증 우회 실습|SQL Injection 인증 우회 실습]]에 둔다.
+- Error/UNION 기반 정보 추출과 schema 파악은 [[10_학습 노트/시스템보안/웹보안/SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악|SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]]에서 본다.
+- 방어 기준은 [[10_학습 노트/시스템보안/웹보안/SQL Injection 방어|SQL Injection 방어]]에서 본다.
+- [[10_학습 노트/시스템보안/웹보안/SQL Injection 페이지별 분해 기록|SQL Injection 페이지별 분해 기록]]은 source-digest/draft로 보고, 복습 진입은 이 노트와 연결 stable note들을 우선한다.
 
 ## 관련 노트
 
 - [[10_학습 노트/시스템보안/웹보안/SQL Injection을 위한 SQL 기초|SQL Injection을 위한 SQL 기초]]
-- [[SQL Injection 인증 우회 실습]]
-- [[SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]]
+- [[10_학습 노트/시스템보안/웹보안/SQL Injection 인증 우회 실습|SQL Injection 인증 우회 실습]]
+- [[10_학습 노트/시스템보안/웹보안/SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악|SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]]
+- [[10_학습 노트/시스템보안/웹보안/SQL Injection 방어|SQL Injection 방어]]
+
+## 참고 자료
+
+- [OWASP SQL Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
 
 ## 확인 질문
 
