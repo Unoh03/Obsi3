@@ -1,0 +1,49 @@
+PowerShell 7.6.3
+PS C:\Windows\System32> curl.exe -v http://43.203.230.123/
+*   Trying 43.203.230.123:80...
+* Established connection to 43.203.230.123 (43.203.230.123 port 80) from 192.168.2.54 port 62650
+* using HTTP/1.x
+> GET / HTTP/1.1
+> Host: 43.203.230.123
+> User-Agent: curl/8.19.0
+> Accept: */*
+>
+* Request completely sent off
+< HTTP/1.1 200 OK
+< Date: Wed, 08 Jul 2026 08:52:59 GMT
+< Server: Apache/2.4.68 (Amazon Linux)
+< Last-Modified: Wed, 08 Jul 2026 08:40:30 GMT
+< ETag: "7b-6561575c38b87"
+< Accept-Ranges: bytes
+< Content-Length: 123
+< Content-Type: text/html; charset=UTF-8
+<
+<h1>Terraform Web Server</h1>
+<p>Public Web Server is running.</p>
+<p>DB test: <a href="/db-test.php">/db-test.php</a></p>
+* Connection #0 to host 43.203.230.123:80 left intact
+
+PS C:\Windows\System32> curl.exe -v http://43.203.230.123/db-test.php
+*   Trying 43.203.230.123:80...
+* Established connection to 43.203.230.123 (43.203.230.123 port 80) from 192.168.2.54 port 49672
+* using HTTP/1.x
+> GET /db-test.php HTTP/1.1
+> Host: 43.203.230.123
+> User-Agent: curl/8.19.0
+> Accept: */*
+>
+* Request completely sent off
+< HTTP/1.1 200 OK
+< Date: Wed, 08 Jul 2026 08:53:27 GMT
+< Server: Apache/2.4.68 (Amazon Linux)
+< X-Powered-By: PHP/8.5.7
+< Transfer-Encoding: chunked
+< Content-Type: text/plain; charset=utf-8
+<
+WEB -> DB CONNECT OK
+DB_HOST=192.168.10.13
+
+2 | WEB -> DB OK | 2026-07-08 08:53:27
+1 | DB bootstrap OK | 2026-07-08 08:40:37
+* Connection #0 to host 43.203.230.123:80 left intact
+PS C:\Windows\System32>

@@ -1,0 +1,49 @@
+[ec2-user@ip-192-168-1-13 ~]$ systemctl status httpd --no-pager
+● httpd.service - The Apache HTTP Server
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/httpd.service.d
+             └─php-fpm.conf
+     Active: active (running) since Wed 2026-07-08 08:40:31 UTC; 31min ago
+       Docs: man:httpd.service(8)
+   Main PID: 6562 (httpd)
+     Status: "Total requests: 14; Idle/Busy workers 100/0;Requests/sec: 0.00745; Bytes served/sec:   6 B/sec"
+      Tasks: 230 (limit: 1059)
+     Memory: 17.6M
+        CPU: 1.761s
+     CGroup: /system.slice/httpd.service
+             ├─ 6562 /usr/sbin/httpd -DFOREGROUND
+             ├─ 6644 /usr/sbin/httpd -DFOREGROUND
+             ├─ 6649 /usr/sbin/httpd -DFOREGROUND
+             ├─ 6651 /usr/sbin/httpd -DFOREGROUND
+             ├─ 6653 /usr/sbin/httpd -DFOREGROUND
+             └─27443 /usr/sbin/httpd -DFOREGROUND
+
+Jul 08 08:40:31 ip-192-168-1-13.ap-northeast-2.compute.internal systemd[1]: Started httpd.service - The Apache …ver.
+Jul 08 08:40:31 ip-192-168-1-13.ap-northeast-2.compute.internal httpd[6562]: Server configured, listening on: p…t 80
+
+[ec2-user@ip-192-168-1-13 ~]$ systemctl status php-fpm --no-pager
+● php-fpm.service - The PHP FastCGI Process Manager
+     Loaded: loaded (/usr/lib/systemd/system/php-fpm.service; enabled; preset: disabled)
+     Active: active (running) since Wed 2026-07-08 08:40:29 UTC; 31min ago
+   Main PID: 3769 (php-fpm)
+     Status: "Processes active: 0, idle: 6, Requests: 10, slow: 0, Traffic: 0.00req/sec"
+
+[ec2-user@ip-192-168-1-13 ~]$ curl http://localhost/db-test.php
+WEB -> DB CONNECT OK
+DB_HOST=192.168.10.13
+
+12 | WEB -> DB OK | 2026-07-08 09:12:10
+11 | WEB -> DB OK | 2026-07-08 09:07:46
+10 | WEB -> DB OK | 2026-07-08 09:07:04
+9 | WEB -> DB OK | 2026-07-08 09:07:03
+8 | WEB -> DB OK | 2026-07-08 09:07:03
+
+[ec2-user@ip-192-168-1-13 ~]$ curl http://localhost/db-test.php
+WEB -> DB CONNECT OK
+DB_HOST=192.168.10.13
+
+13 | WEB -> DB OK | 2026-07-08 09:12:14
+12 | WEB -> DB OK | 2026-07-08 09:12:10
+11 | WEB -> DB OK | 2026-07-08 09:07:46
+10 | WEB -> DB OK | 2026-07-08 09:07:04
+9 | WEB -> DB OK | 2026-07-08 09:07:03

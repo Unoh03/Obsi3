@@ -1,5 +1,6 @@
 ---
 title: Terraform AWS CLI 초기 설정 실습
+version: v6.3
 created: 2026-07-06
 status: active
 type: lab-note
@@ -12,6 +13,10 @@ official_refs:
   - https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
   - https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
   - https://developer.hashicorp.com/terraform/install
+  - https://docs.aws.amazon.com/vpc/latest/privatelink/gateway-endpoints.html
+  - https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints-s3.html
+  - https://docs.aws.amazon.com/linux/al2023/ug/package-management.html
+  - https://docs.aws.amazon.com/linux/al2023/ug/deterministic-upgrades-usage.html
 tags:
   - 과목/AWS
   - 주제/IaC
@@ -21,7 +26,7 @@ tags:
   - 실습/Terraform
 ---
 
-# Terraform AWS CLI 초기 설정 실습
+# Terraform AWS CLI 초기 설정 실습 v6.3
 
 ## 목적
 
@@ -65,6 +70,14 @@ AWS IAM 사용자/Access Key 준비
 - NAT Instance 확장 및 `user_data` 자동 설정
 - Private WEB EC2 outbound 검증 증적
 - 강사님 정답지 `main.tf`와 내 구현 코드 비교
+- Public Web + Private DB 구성 실습
+- Terraform `http` provider를 이용한 현재 공인 IP 자동 조회
+- S3 Gateway Endpoint를 이용한 격리 DB 서버 패키지 설치
+- Private DB 서버 MariaDB 설치 및 서비스 실행 검증
+- Private DB 서버 일반 외부 HTTPS 통신 차단 검증
+- `user_data` 파일 분리와 `file()` 기반 조립
+- Apache httpd + PHP-FPM + PHP PDO 기반 Web → DB 연동 검증
+- Browser/curl 기반 Web 응답 및 DB 연동 증적
 
 제외:
 
@@ -74,8 +87,28 @@ AWS IAM 사용자/Access Key 준비
 - 2AZ 전체 고가용성 구조 완성
 - NAT Instance와 Bastion Host 역할 분리
 - Security Group 최소 권한화 최종안
+- DB 초기 보안 설정과 계정/권한 구성
+- S3 Gateway Endpoint policy 최소화
+- 실제 운영용 DB 백업/복구/암호화 설계
 
 위 제외 항목은 별도 노트로 분리한다.
+
+## 빠른 이동
+
+> [!abstract] 주요 이동
+> - [[#Part 1. AWS CLI와 Terraform 초기 환경 준비|Part 1. AWS CLI와 Terraform 초기 환경 준비]]
+> - [[#Part 2. 1차 실습 VPCSubnetEC2 최소 골격|Part 2. VPC/Subnet/EC2 최소 골격]]
+> - [[#Part 3. 2차 실습 PublicPrivate Subnet 분리와 EC2 배치|Part 3. Public/Private Subnet 분리]]
+> - [[#Part 4. 3차 실습 PDF 27p Resource  Data Source 아키텍처 구현|Part 4. PDF 27p Resource/Data Source]]
+> - [[#Part 5. 4차 실습 PDF 28p Private EC2 외부 통신 - NAT Instance|Part 5. NAT Instance Private Outbound]]
+> - [[#Part 6. 5차 실습 Public Web  Private DB  S3 Gateway Endpoint|Part 6. Public Web + Private DB + S3 Gateway Endpoint]]
+> - [[#53. v6.2 리팩토링 user_data 파일 분리|53. user_data 파일 분리]]
+> - [[#57. Browser 기반 검증|57. Browser 기반 검증]]
+> - [[#62. v6.2 완료 판정|62. 완료 판정]]
+
+> [!note] 탐색 메모
+> 긴 `main.tf`, `.sh`, 로그 블록은 전부 접힘 callout으로 유지한다.
+> Obsidian에서 빠르게 이동하려면 오른쪽 사이드바의 **Outline** core plugin을 함께 사용한다.
 
 ---
 
@@ -3562,10 +3595,1624 @@ checkip 결과가 NAT Instance의 Public IPv4와 일치함을 확인하였다.
 ```
 
 
-# Part 6. 검증, 오류, 완료 기준
+
+# Part 6. 5차 실습: Public Web + Private DB + S3 Gateway Endpoint
+
+이 파트는 PDF에 직접 나온 실습이 아니라, 추가 과제로 받은 **Public Web + Private DB** 구조를 Terraform으로 구성한 진행 중 기록이다.
+
+핵심 질문은 다음이었다.
+
+```text
+Private Subnet의 DB 서버는 일반 인터넷으로 나가지 못하게 격리해야 한다.
+그런데 격리된 DB 서버에서 MariaDB 패키지는 어떻게 설치할 수 있는가?
+```
+
+이번 실습에서는 NAT Instance를 쓰지 않고, **S3 Gateway Endpoint**를 Private DB Subnet의 Route Table에 연결해 Amazon Linux 공식 repository 접근만 가능하게 만드는 방식을 실험했다.
+
+## 43. 실습 목표
+
+### 요구 구조
+
+```text
+VPC 192.168.0.0/16
+├─ Public Subnet 192.168.1.0/24
+│  └─ Web Server EC2
+└─ Private Subnet 192.168.10.0/24
+   └─ DB Server EC2
+```
+
+### 완료 조건
+
+```text
+Web Server:
+- Public Subnet에 위치
+- Public IPv4 있음
+- 0.0.0.0/0 → Internet Gateway route 사용
+- SSH는 현재 Terraform 실행 환경의 공인 IP에서만 허용
+- HTTP 80은 인터넷에서 허용
+
+DB Server:
+- Private Subnet에 위치
+- Public IPv4 없음
+- 일반 인터넷 기본 경로 0.0.0.0/0 없음
+- Web SG에서 오는 SSH 22와 DB 3306만 허용
+- user_data로 mariadb105-server 설치
+- MariaDB 서비스 active(running)
+- checkip.amazonaws.com / google.com 일반 외부 HTTPS 요청은 timeout
+```
+
+## 44. 이번 실습의 `main.tf` 저장본
+
+> [!note]- `main.tf` - Public Web + Private DB + S3 Gateway Endpoint 실습 v6.1
+> ```hcl
+> terraform {
+>   required_providers {
+>     aws = {
+>       source  = "hashicorp/aws"
+>       version = "~> 6.0"
+>     }
+>     http = {
+>       source = "hashicorp/http"
+>     }
+>   }
+> }
+>
+> data "http" "my_public_ip" {
+>   url = "https://checkip.amazonaws.com/"
+> }
+>
+> locals {
+>   my_ip_cidr = "${chomp(data.http.my_public_ip.response_body)}/32"
+> }
+>
+> provider "aws" {
+>   region  = "ap-northeast-2"
+>   profile = "Terra-user"
+> }
+>
+> resource "aws_vpc" "terra_vpc" {
+>   cidr_block           = "192.168.0.0/16"
+>   enable_dns_support   = true
+>   enable_dns_hostnames = true
+>   tags = {
+>     Name = "terra_vpc"
+>   }
+> }
+>
+> resource "aws_internet_gateway" "gw" {
+>   vpc_id = aws_vpc.terra_vpc.id
+>
+>   tags = {
+>     Name = "main"
+>   }
+> }
+>
+> resource "aws_subnet" "terra_open_subnet" {
+>   vpc_id                  = aws_vpc.terra_vpc.id
+>   cidr_block              = "192.168.1.0/24"
+>   availability_zone       = "ap-northeast-2a"
+>   map_public_ip_on_launch = true
+>
+>   tags = {
+>     Name = "terra_open_subnet"
+>   }
+> }
+>
+> resource "aws_subnet" "terra_close_subnet" {
+>   vpc_id                  = aws_vpc.terra_vpc.id
+>   cidr_block              = "192.168.10.0/24"
+>   availability_zone       = "ap-northeast-2a"
+>   map_public_ip_on_launch = false
+>   tags = {
+>     Name = "terra_close_subnet"
+>   }
+> }
+>
+>
+> resource "aws_security_group" "open_sg" {
+>   name   = "open_sg"
+>   vpc_id = aws_vpc.terra_vpc.id
+>
+>   ingress {
+>     description = "Allow HTTP from Internet"
+>     from_port   = 80
+>     to_port     = 80
+>     protocol    = "tcp"
+>     cidr_blocks = ["0.0.0.0/0"]
+>   }
+>
+>   ingress {
+>     description = "Allow SSH from my IP"
+>     from_port   = 22
+>     to_port     = 22
+>     protocol    = "tcp"
+>     cidr_blocks = [local.my_ip_cidr]
+>   }
+>
+>   ingress {
+>     description = "Allow all ICMP from current public IP"
+>     from_port   = -1
+>     to_port     = -1
+>     protocol    = "icmp"
+>     cidr_blocks = [local.my_ip_cidr]
+>   }
+>
+>   egress {
+>     from_port   = 0
+>     to_port     = 0
+>     protocol    = "-1"
+>     cidr_blocks = ["0.0.0.0/0"]
+>   }
+> }
+>
+> resource "aws_security_group" "close_sg" {
+>   name   = "close_sg"
+>   vpc_id = aws_vpc.terra_vpc.id
+>
+>   ingress {
+>     description     = "Allow DB from open_sg"
+>     from_port       = 3306
+>     to_port         = 3306
+>     protocol        = "tcp"
+>     security_groups = [aws_security_group.open_sg.id]
+>   }
+>
+>   ingress {
+>     description     = "Allow SSH from open_sg"
+>     from_port       = 22
+>     to_port         = 22
+>     protocol        = "tcp"
+>     security_groups = [aws_security_group.open_sg.id]
+>   }
+>
+>   egress {
+>     from_port   = 0
+>     to_port     = 0
+>     protocol    = "-1"
+>     cidr_blocks = ["0.0.0.0/0"]
+>   }
+>
+>   tags = {
+>     Name = "close_sg"
+>   }
+> }
+>
+> resource "aws_vpc_endpoint" "s3" {
+>   vpc_id            = aws_vpc.terra_vpc.id
+>   service_name      = "com.amazonaws.ap-northeast-2.s3"
+>   vpc_endpoint_type = "Gateway"
+>
+>   route_table_ids = [
+>     aws_route_table.terra_close_rt.id
+>   ]
+>
+>   tags = {
+>     Name = "s3-endpoint-for-db"
+>   }
+> }
+>
+> resource "aws_instance" "terra_DB" {
+>   ami                    = "ami-0b1cb107a74bad43e"
+>   instance_type          = "t3.micro"
+>   subnet_id              = aws_subnet.terra_close_subnet.id
+>   key_name               = "asd-close"
+>   vpc_security_group_ids = [aws_security_group.close_sg.id]
+>   private_ip             = "192.168.10.13"
+>
+>   depends_on = [
+>     aws_route_table_association.terra_close_assoc,
+>     aws_vpc_endpoint.s3
+>   ]
+>
+>   user_data = <<-USERDATA
+>               #!/bin/bash
+>               set -euo pipefail
+>
+>               SWAP_FILE="/swapfile"
+>               SWAP_SIZE="2G"
+>
+>               if ! swapon --show=NAME | grep -qx "$SWAP_FILE"; then
+>                 if [[ ! -f "$SWAP_FILE" ]]; then
+>                   fallocate -l "$SWAP_SIZE" "$SWAP_FILE" || dd if=/dev/zero of="$SWAP_FILE" bs=1M count=2048
+>                 fi
+>
+>                 chmod 600 "$SWAP_FILE"
+>                 mkswap "$SWAP_FILE"
+>                 swapon "$SWAP_FILE"
+>               fi
+>
+>               grep -qxF "$SWAP_FILE none swap sw 0 0" /etc/fstab || echo "$SWAP_FILE none swap sw 0 0" >> /etc/fstab
+>
+>               cat >/etc/sysctl.d/99-low-memory-lab.conf <<'SYSCTL_CONF'
+>               vm.swappiness = 10
+>               SYSCTL_CONF
+>
+>               sysctl --system >/dev/null
+>               dnf clean all
+>               dnf makecache
+>               dnf install -y mariadb105-server
+>
+>               systemctl enable --now mariadb
+>               mysql --version > /var/log/db-install-check.log 2>&1
+>               USERDATA
+>
+>   tags = {
+>     Name = "terra_DB"
+>   }
+> }
+>
+> resource "aws_route_table" "terra_close_rt" {
+>   vpc_id = aws_vpc.terra_vpc.id
+>   tags = {
+>     Name = "terra_close_rt"
+>   }
+> }
+> resource "aws_route_table_association" "terra_close_assoc" {
+>   subnet_id      = aws_subnet.terra_close_subnet.id
+>   route_table_id = aws_route_table.terra_close_rt.id
+> }
+>
+>
+>
+>
+>
+> resource "aws_instance" "terra_WEB" {
+>   ami                         = "ami-0b1cb107a74bad43e"
+>   instance_type               = "t3.micro"
+>   subnet_id                   = aws_subnet.terra_open_subnet.id
+>   key_name                    = "asd-open"
+>   vpc_security_group_ids      = [aws_security_group.open_sg.id]
+>   associate_public_ip_address = true
+>   private_ip                  = "192.168.1.13"
+>
+>   user_data = <<-USERDATA
+>               #!/bin/bash
+>               set -euo pipefail
+>
+>               SWAP_FILE="/swapfile"
+>               SWAP_SIZE="2G"
+>
+>               if ! swapon --show=NAME | grep -qx "$SWAP_FILE"; then
+>                 if [[ ! -f "$SWAP_FILE" ]]; then
+>                   fallocate -l "$SWAP_SIZE" "$SWAP_FILE" || dd if=/dev/zero of="$SWAP_FILE" bs=1M count=2048
+>                 fi
+>
+>                 chmod 600 "$SWAP_FILE"
+>                 mkswap "$SWAP_FILE"
+>                 swapon "$SWAP_FILE"
+>               fi
+>
+>               grep -qxF "$SWAP_FILE none swap sw 0 0" /etc/fstab || echo "$SWAP_FILE none swap sw 0 0" >> /etc/fstab
+>
+>               echo 'vm.swappiness = 10' > /etc/sysctl.d/99-low-memory-lab.conf
+>               sysctl --system >/dev/null
+>               USERDATA
+>
+>   tags = {
+>     Name = "terra_WEB"
+>   }
+> }
+>
+> resource "aws_route_table" "terra_open_rt" {
+>   vpc_id = aws_vpc.terra_vpc.id
+>
+>   route {
+>     cidr_block = "0.0.0.0/0"
+>     gateway_id = aws_internet_gateway.gw.id
+>   }
+>
+>   tags = {
+>     Name = "terra_open_rt"
+>   }
+> }
+> resource "aws_route_table_association" "terra_open_assoc" {
+>   subnet_id      = aws_subnet.terra_open_subnet.id
+>   route_table_id = aws_route_table.terra_open_rt.id
+> }
+> ```
+
+## 45. v5.1 NAT 실습과 v6.1 DB 실습의 차이
+
+| 구분 | v5.1 | v6.1 |
+|---|---|---|
+| 목표 | Private WEB의 외부 통신 성공 | Private DB의 일반 외부 통신 차단 + DB 설치 |
+| Public EC2 역할 | NAT Instance 겸 Bastion | Web Server |
+| Private EC2 역할 | WEB EC2 | DB Server |
+| Private Route Table | `0.0.0.0/0 → NAT Instance ENI` | 일반 `0.0.0.0/0` 없음, S3 Gateway Endpoint route만 추가 |
+| 패키지 설치 경로 | NAT Instance를 통한 일반 outbound 가능 | S3 Gateway Endpoint를 통한 Amazon Linux repo 접근 |
+| 외부 통신 검증 | Private WEB에서 `curl google.com` 성공 | Private DB에서 `curl google.com` timeout |
+| 학습 포인트 | NAT Instance 구성 | VPC Endpoint와 제한적 패키지 설치 |
+
+정리:
+
+```text
+v5.1은 “Private에서 인터넷으로 나가는 길을 만드는 실습”이었다.
+v6.1은 “Private을 격리하되 필요한 AWS 서비스 경로만 여는 실습”이다.
+```
+
+## 46. 격리된 DB에서 MariaDB 설치가 성공한 원리
+
+처음에는 다음 의문이 생긴다.
+
+```text
+Private DB에는 0.0.0.0/0 default route가 없다.
+NAT Instance도 없다.
+그런데 dnf install mariadb105-server가 왜 성공했는가?
+```
+
+핵심은 **일반 인터넷 경로와 S3 서비스 경로가 다르다**는 점이다.
+
+### 46-1. Private DB Route Table의 상태
+
+이번 DB Subnet의 Route Table에는 일반 인터넷 경로를 만들지 않았다.
+
+```hcl
+resource "aws_route_table" "terra_close_rt" {
+  vpc_id = aws_vpc.terra_vpc.id
+  tags = {
+    Name = "terra_close_rt"
+  }
+}
+```
+
+즉 다음 route가 없다.
+
+```text
+0.0.0.0/0 → Internet Gateway
+0.0.0.0/0 → NAT Gateway
+0.0.0.0/0 → NAT Instance
+```
+
+그래서 DB 서버에서 아래 요청은 실패했다.
+
+```bash
+curl --connect-timeout 5 https://checkip.amazonaws.com
+curl --connect-timeout 5 -I https://www.google.com
+```
+
+결과:
+
+```text
+curl: (28) Connection timed out after 5002 milliseconds
+curl: (28) Connection timed out after 5001 milliseconds
+```
+
+이 결과는 DB 서버가 일반 인터넷으로 나가지 못한다는 증거다.
+
+### 46-2. 그런데 S3 Gateway Endpoint route는 존재한다
+
+이번 코드에는 다음 리소스가 있다.
+
+```hcl
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.terra_vpc.id
+  service_name      = "com.amazonaws.ap-northeast-2.s3"
+  vpc_endpoint_type = "Gateway"
+
+  route_table_ids = [
+    aws_route_table.terra_close_rt.id
+  ]
+}
+```
+
+이 리소스는 Private DB Route Table에 다음과 같은 특수 route를 추가한다.
+
+```text
+Destination: com.amazonaws.ap-northeast-2.s3 prefix list
+Target: S3 Gateway Endpoint
+```
+
+이건 `0.0.0.0/0`이 아니다.
+
+```text
+0.0.0.0/0:
+인터넷 전체 목적지
+
+S3 prefix list:
+ap-northeast-2 리전의 Amazon S3 목적지
+```
+
+따라서 DB 서버는 일반 인터넷으로는 못 나가지만, **S3 목적지에 대해서는 Endpoint route를 통해 통신할 수 있다.**
+
+### 46-3. DNF/YUM은 “S3 명령”이 아니라 repository client다
+
+`dnf install`은 S3 명령이 아니다.
+
+```bash
+dnf install -y mariadb105-server
+```
+
+이 명령은 대략 다음 순서로 동작한다.
+
+```text
+1. AL2023 repository metadata 조회
+2. 필요한 RPM 패키지와 dependency 계산
+3. RPM 파일 다운로드
+4. 로컬에 설치
+5. post-install scriptlet 실행
+```
+
+AL2023에서는 기본 패키지 관리 도구가 DNF이고, `yum` 명령도 DNF를 가리키는 형태다.
+
+즉 이번 user_data의 핵심은 이것이다.
+
+```bash
+dnf clean all
+dnf makecache
+dnf install -y mariadb105-server
+```
+
+DNF가 접근하는 Amazon Linux 공식 repository의 실제 저장 경로가 S3 기반 경로로 해결될 수 있으면, DB 서버의 패킷은 일반 인터넷 default route가 아니라 **S3 Gateway Endpoint route**와 매칭된다.
+
+그래서 외형상 명령은 평범한 `dnf install`이지만, 네트워크 경로는 다음처럼 해석할 수 있다.
+
+```text
+DB EC2
+→ DNF가 Amazon Linux repo metadata/RPM 요청
+→ 목적지 IP가 S3 prefix list 범위와 매칭
+→ Private Route Table의 S3 Gateway Endpoint route 선택
+→ S3 Gateway Endpoint 경유
+→ RPM 다운로드
+→ MariaDB 설치
+```
+
+반대로 `google.com`이나 `checkip.amazonaws.com`은 S3 prefix list 목적지가 아니다.
+
+```text
+DB EC2
+→ google.com 목적지 IP
+→ local route 아님
+→ S3 prefix list 아님
+→ 0.0.0.0/0 default route 없음
+→ timeout
+```
+
+이 차이 때문에 다음 두 결과가 동시에 성립한다.
+
+```text
+mariadb105-server 설치 성공
+google.com / checkip.amazonaws.com 접속 실패
+```
+
+### 46-4. “S3에 내가 DB 설치 파일을 올렸다”는 뜻이 아니다
+
+이번 방식은 다음이 아니다.
+
+```text
+내가 S3 Bucket을 만들고
+MariaDB rpm을 업로드하고
+DB 서버가 aws s3 cp로 받아서 설치했다
+```
+
+이번 방식은 다음에 가깝다.
+
+```text
+Amazon Linux 공식 repository 접근에 필요한 S3 경로가
+S3 Gateway Endpoint를 통해 도달 가능했기 때문에
+DNF가 정상적으로 패키지를 받은 것
+```
+
+따라서 이 방식은 모든 패키지 설치에 대한 만능 해법은 아니다.
+
+```text
+가능성이 높은 것:
+- Amazon Linux 공식 repository 패키지
+- mariadb105-server처럼 amazonlinux repo에서 제공되는 패키지
+
+실패 가능성이 높은 것:
+- repo.mysql.com
+- mariadb.org 외부 mirror
+- GitHub release
+- 일반 인터넷 CDN에서 받는 설치 스크립트
+```
+
+### 46-5. 논리적 판정
+
+이번 로그만으로 “모든 yum/dnf 패키지는 S3 Endpoint로 설치 가능하다”고 일반화하면 안 된다.
+
+정확한 판정은 다음이다.
+
+```text
+이번 AMI와 이번 리전, 이번 AL2023 repository 설정, 이번 mariadb105-server 패키지 조합에서는
+Private Route Table에 일반 default route가 없고 S3 Gateway Endpoint route만 있는 상태에서도
+MariaDB 설치가 성공했다.
+```
+
+그리고 다음 사실도 동시에 검증됐다.
+
+```text
+DB 서버는 일반 외부 HTTPS 대상인 checkip.amazonaws.com 및 google.com에는 도달하지 못했다.
+```
+
+이 두 결과를 합치면 다음 결론이 된다.
+
+```text
+DB 서버는 일반 인터넷으로 열린 것이 아니라,
+S3 Gateway Endpoint를 통해 Amazon Linux 공식 repository 접근에 필요한 제한된 경로만 확보한 상태로 볼 수 있다.
+```
+
+## 47. 이번 코드에서 중요한 Terraform 요소
+
+### 47-1. `http` provider로 현재 공인 IP 자동 조회
+
+```hcl
+data "http" "my_public_ip" {
+  url = "https://checkip.amazonaws.com/"
+}
+
+locals {
+  my_ip_cidr = "${chomp(data.http.my_public_ip.response_body)}/32"
+}
+```
+
+이 코드는 Terraform 실행 환경의 공인 IP를 가져온다.
+
+주의:
+
+```text
+AWS Console의 “내 IP” 버튼:
+브라우저가 접근 중인 클라이언트 기준
+
+Terraform http data source:
+terraform apply를 실행하는 환경 기준
+```
+
+로컬 PC에서 실행하면 대체로 의도와 맞는다.  
+GitHub Actions, CloudShell, 원격 서버에서 실행하면 그 실행 환경의 공인 IP가 들어간다.
+
+### 47-2. VPC DNS 옵션
+
+```hcl
+enable_dns_support   = true
+enable_dns_hostnames = true
+```
+
+S3 Gateway Endpoint와 repository 접근 실험에서는 DNS가 중요하다. DNF는 repository URL을 해석해야 하고, S3 endpoint 관련 DNS 해석도 정상이어야 한다.
+
+### 47-3. Private DB Route Table에 S3 Gateway Endpoint 연결
+
+```hcl
+route_table_ids = [
+  aws_route_table.terra_close_rt.id
+]
+```
+
+이 줄 때문에 S3 Gateway Endpoint route가 Public Route Table이 아니라 **Private DB Route Table**에 들어간다.
+
+즉 Web 서버용 Public Subnet이 아니라 DB 서버용 Private Subnet이 S3 접근 경로를 갖는다.
+
+### 47-4. DB 인스턴스 `depends_on`
+
+```hcl
+depends_on = [
+  aws_route_table_association.terra_close_assoc,
+  aws_vpc_endpoint.s3
+]
+```
+
+DB 서버의 `user_data`는 부팅 직후 `dnf install`을 실행한다.  
+따라서 DB 서버가 생성되기 전에 Private Route Table association과 S3 Endpoint 연결이 먼저 준비되어야 한다.
+
+이 의존성을 빼면 다음 문제가 생길 수 있다.
+
+```text
+DB EC2 생성
+→ user_data 즉시 실행
+→ S3 Endpoint route가 아직 반영 전
+→ dnf makecache/install 실패
+```
+
+## 48. 검증 결과
+
+### 48-1. MariaDB 설치 성공
+
+증적 로그:
+
+```text
+[ec2-user@ip-192-168-10-13 ~]$ sudo tail -100 /var/log/cloud-init-output.log
+...
+Installed:
+  mariadb105-server-3:10.5.29-1.amzn2023.0.1.x86_64
+  mariadb105-server-utils-3:10.5.29-1.amzn2023.0.1.x86_64
+...
+Complete!
+Created symlink /etc/systemd/system/mysql.service → /usr/lib/systemd/system/mariadb.service.
+Created symlink /etc/systemd/system/mysqld.service → /usr/lib/systemd/system/mariadb.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/mariadb.service → /usr/lib/systemd/system/mariadb.service.
+Cloud-init v. 22.2.2 finished at Wed, 08 Jul 2026 07:41:17 +0000.
+mysql  Ver 15.1 Distrib 10.5.29-MariaDB, for Linux (x86_64) using EditLine wrapper
+● mariadb.service - MariaDB 10.5 database server
+     Loaded: loaded (/usr/lib/systemd/system/mariadb.service; enabled; preset: disabled)
+     Active: active (running) since Wed 2026-07-08 07:41:17 UTC
+     Status: "Taking your SQL requests now..."
+
+[ec2-user@ip-192-168-10-13 ~]$ curl --connect-timeout 5 https://checkip.amazonaws.com
+curl --connect-timeout 5 -I https://www.google.com
+curl: (28) Connection timed out after 5002 milliseconds
+curl: (28) Connection timed out after 5001 milliseconds
+
+```
+
+확인된 값:
+
+| 항목 | 결과 |
+|---|---|
+| DB 서버 프롬프트 | `ec2-user@ip-192-168-10-13` |
+| DB 서버 Private IP | `192.168.10.13` |
+| 설치 패키지 | `mariadb105-server-3:10.5.29-1.amzn2023.0.1.x86_64` |
+| MariaDB client | `mysql Ver 15.1 Distrib 10.5.29-MariaDB` |
+| systemd 서비스 | `mariadb.service` |
+| 서비스 상태 | `active (running)` |
+| 상태 메시지 | `Taking your SQL requests now...` |
+
+판정:
+
+```text
+DB 서버에서 mariadb105-server 설치가 완료되었고,
+MariaDB 10.5 서비스가 enabled 및 active(running) 상태로 실행 중임을 확인했다.
+```
+
+### 48-2. 일반 외부 통신 차단 확인
+
+DB 서버에서 실행:
+
+```bash
+curl --connect-timeout 5 https://checkip.amazonaws.com
+curl --connect-timeout 5 -I https://www.google.com
+```
+
+결과:
+
+```text
+curl: (28) Connection timed out after 5002 milliseconds
+curl: (28) Connection timed out after 5001 milliseconds
+```
+
+판정:
+
+```text
+DB 서버는 일반 인터넷 HTTPS 목적지로 통신하지 못했다.
+따라서 Private DB Subnet에 일반 default route가 없는 격리 상태가 유지되었다.
+```
+
+## 49. 이 방식의 장점과 한계
+
+### 장점
+
+```text
+NAT Gateway 비용 없음
+NAT Instance 구성 불필요
+DB 서버에 일반 인터넷 default route 없음
+Amazon Linux 공식 repo 패키지는 설치 가능
+일반 외부 사이트 접속은 timeout으로 차단 확인 가능
+```
+
+### 한계
+
+```text
+모든 외부 repository에 적용되는 방식은 아님
+Amazon Linux 공식 repo 밖의 MySQL/MariaDB 외부 repository는 실패할 가능성이 높음
+현재 close_sg egress는 아직 0.0.0.0/0 전체 허용이므로 SG 차원 최소 권한은 아님
+Endpoint policy를 Amazon Linux repo bucket 단위로 최소화하지는 않음
+DB root 계정 보안 설정, 사용자 생성, bind-address 조정은 아직 미수행
+Web → DB 3306 실제 접속 검증은 추가로 수행해야 함
+```
+
+중요한 점:
+
+```text
+close_sg egress가 0.0.0.0/0이라고 해서 DB가 인터넷 전체로 나갈 수 있는 것은 아니다.
+Security Group은 허용 필터이고, Route Table은 실제 다음 홉 결정이다.
+현재 DB Route Table에는 일반 0.0.0.0/0 route가 없으므로 google/checkip 요청은 timeout된다.
+```
+
+다만 최종 보안 표현을 강화하려면 egress도 S3 prefix list 443과 VPC 내부 통신 위주로 줄이는 것이 좋다.
+
+## 50. 추가 검증 명령
+
+### DB 서버에서 MariaDB 리슨 포트 확인
+
+```bash
+sudo ss -lntp | grep -E '3306|mariadbd'
+```
+
+기대:
+
+```text
+LISTEN ... :3306 ... mariadbd
+```
+
+만약 `127.0.0.1:3306`으로만 listen 중이면 Web 서버에서 접근할 수 없다.  
+Web 서버에서 DB에 접근하려면 `0.0.0.0:3306` 또는 `192.168.10.13:3306`으로 listen해야 한다.
+
+### DB 서버에서 SQL 응답 확인
+
+```bash
+sudo mysql -e "SELECT VERSION();"
+```
+
+### Web 서버에서 DB 포트 접근 확인
+
+Web 서버에서:
+
+```bash
+nc -vz 192.168.10.13 3306
+```
+
+`nc`가 없으면:
+
+```bash
+timeout 5 bash -c '</dev/tcp/192.168.10.13/3306' && echo OK || echo FAIL
+```
+
+성공하면 다음까지 증명된다.
+
+```text
+Public Web Server → Private DB Server 3306 접근 가능
+```
+
+### AWS Console 캡처 후보
+
+```text
+1. DB EC2 Public IPv4 없음
+2. DB EC2 Private IPv4 192.168.10.13
+3. DB Subnet Route Table
+   - 192.168.0.0/16 → local
+   - com.amazonaws.ap-northeast-2.s3 prefix list → vpce-...
+   - 0.0.0.0/0 없음
+4. VPC Endpoint
+   - type: Gateway
+   - service: com.amazonaws.ap-northeast-2.s3
+   - associated route table: terra_close_rt
+5. 터미널 로그
+   - mariadb 설치 성공
+   - mariadb active(running)
+   - checkip/google timeout
+```
+
+## 51. 보고서용 문장
+
+```text
+본 실습에서는 Public Subnet에 Web Server, Private Subnet에 DB Server를 배치하였다.
+DB Server는 Public IPv4를 갖지 않고, Private Route Table에도 일반 인터넷 기본 경로(0.0.0.0/0)를 구성하지 않았다.
+대신 Private Route Table에 S3 Gateway Endpoint를 연결하여 Amazon Linux 공식 repository 접근에 필요한 S3 경로만 제공하였다.
+그 결과 DB Server에서 mariadb105-server 패키지 설치 및 MariaDB 서비스 실행에는 성공했으나,
+checkip.amazonaws.com과 google.com으로의 일반 외부 HTTPS 요청은 timeout되어 격리 상태가 유지됨을 확인하였다.
+```
+
+## 52. 완료 기준
+
+이번 v6.1 실습은 아래 상태로 판정한다.
+
+```text
+[x] Public Subnet에 WEB EC2 생성
+[x] Private Subnet에 DB EC2 생성
+[x] Terraform 실행 환경의 공인 IP를 `http` data source로 자동 조회
+[x] Web SG에서 SSH/ICMP source를 현재 공인 IP/32로 제한
+[x] Private DB Route Table에 S3 Gateway Endpoint 연결
+[x] DB EC2 user_data에서 `dnf install -y mariadb105-server` 실행
+[x] MariaDB 10.5 설치 성공
+[x] `mariadb.service` active(running) 확인
+[x] DB 서버에서 `curl https://checkip.amazonaws.com` timeout 확인
+[x] DB 서버에서 `curl -I https://www.google.com` timeout 확인
+[x] Web 서버에서 DB 서버 3306 접근 확인
+[ ] DB Route Table / S3 Gateway Endpoint 콘솔 캡처 확보
+[ ] close_sg egress를 S3 prefix list 중심으로 최소화 검토
+[ ] DB 초기 보안 설정 및 사용자/권한 설정
+[ ] 실습 후 terraform destroy 완료
+```
+
+
+
+## 53. v6.2 리팩토링: `user_data` 파일 분리
+
+v6.1까지는 `main.tf` 안의 `user_data` heredoc에 서버 초기화 스크립트가 직접 들어가 있었다. v6.2에서는 HCL 코드와 Bash 스크립트를 분리하기 위해 `user_data/` 폴더를 만들고, Terraform의 `file()` 함수로 스크립트 파일을 읽어 조립했다.
+
+```text
+01_basic/
+├─ main.tf
+└─ user_data/
+   ├─ 00-common.sh
+   ├─ 10-db-install.sh
+   └─ 20-web-install.sh
+```
+
+| 파일 | 역할 |
+|---|---|
+| `00-common.sh` | 공통 bootstrap. swapfile 생성, `/etc/fstab` 등록, `vm.swappiness = 10` 설정 |
+| `10-db-install.sh` | MariaDB 설치, 외부 접속 listen 설정, DB/user/table 생성 |
+| `20-web-install.sh` | Apache httpd, PHP, PHP MySQL driver 설치, `index.html`, `db-test.php` 배포 |
+
+`main.tf`에서는 다음처럼 파일을 읽어 조립한다.
+
+```hcl
+locals {
+  common_user_data = file("${path.module}/user_data/00-common.sh")
+  db_user_data     = file("${path.module}/user_data/10-db-install.sh")
+  web_user_data    = file("${path.module}/user_data/20-web-install.sh")
+}
+```
+
+DB 인스턴스:
+
+```hcl
+user_data = join("\n", [
+  local.common_user_data,
+  local.db_user_data
+])
+```
+
+WEB 인스턴스:
+
+```hcl
+user_data = join("\n", [
+  local.common_user_data,
+  local.web_user_data
+])
+```
+
+정리:
+
+```text
+.tf 파일:
+AWS 인프라 리소스 선언
+
+.sh 파일:
+EC2 내부 초기 설정과 패키지 설치
+```
+
+---
+
+## 54. v6.2 현재 `main.tf`
+
+> [!note]- `main.tf` - Public Web + Private DB + S3 Gateway Endpoint + user_data 파일 분리 v6.2
+> ```hcl
+> terraform {
+>   required_providers {
+>     aws = {
+>       source  = "hashicorp/aws"
+>       version = "~> 6.0"
+>     }
+>     http = {
+>       source = "hashicorp/http"
+>     }
+>   }
+> }
+>
+> data "http" "my_public_ip" {
+>   url = "https://checkip.amazonaws.com/"
+> }
+>
+> locals {
+>   my_ip_cidr = "${chomp(data.http.my_public_ip.response_body)}/32"
+> }
+>
+> provider "aws" {
+>   region  = "ap-northeast-2"
+>   profile = "Terra-user"
+> }
+>
+> resource "aws_vpc" "terra_vpc" {
+>   cidr_block           = "192.168.0.0/16"
+>   enable_dns_support   = true
+>   enable_dns_hostnames = true
+>   tags = {
+>     Name = "terra_vpc"
+>   }
+> }
+>
+> resource "aws_internet_gateway" "gw" {
+>   vpc_id = aws_vpc.terra_vpc.id
+>
+>   tags = {
+>     Name = "main"
+>   }
+> }
+>
+> resource "aws_subnet" "terra_open_subnet" {
+>   vpc_id                  = aws_vpc.terra_vpc.id
+>   cidr_block              = "192.168.1.0/24"
+>   availability_zone       = "ap-northeast-2a"
+>   map_public_ip_on_launch = true
+>
+>   tags = {
+>     Name = "terra_open_subnet"
+>   }
+> }
+>
+> resource "aws_subnet" "terra_close_subnet" {
+>   vpc_id                  = aws_vpc.terra_vpc.id
+>   cidr_block              = "192.168.10.0/24"
+>   availability_zone       = "ap-northeast-2a"
+>   map_public_ip_on_launch = false
+>   tags = {
+>     Name = "terra_close_subnet"
+>   }
+> }
+>
+>
+> resource "aws_security_group" "open_sg" {
+>   name   = "open_sg"
+>   vpc_id = aws_vpc.terra_vpc.id
+>
+>   ingress {
+>     description = "Allow HTTP from Internet"
+>     from_port   = 80
+>     to_port     = 80
+>     protocol    = "tcp"
+>     cidr_blocks = ["0.0.0.0/0"]
+>   }
+>
+>   ingress {
+>     description = "Allow SSH from my IP"
+>     from_port   = 22
+>     to_port     = 22
+>     protocol    = "tcp"
+>     cidr_blocks = [local.my_ip_cidr]
+>   }
+>
+>   ingress {
+>     description = "Allow all ICMP from current public IP"
+>     from_port   = -1
+>     to_port     = -1
+>     protocol    = "icmp"
+>     cidr_blocks = [local.my_ip_cidr]
+>   }
+>
+>   egress {
+>     from_port   = 0
+>     to_port     = 0
+>     protocol    = "-1"
+>     cidr_blocks = ["0.0.0.0/0"]
+>   }
+> }
+>
+> resource "aws_security_group" "close_sg" {
+>   name   = "close_sg"
+>   vpc_id = aws_vpc.terra_vpc.id
+>
+>   ingress {
+>     description     = "Allow DB from open_sg"
+>     from_port       = 3306
+>     to_port         = 3306
+>     protocol        = "tcp"
+>     security_groups = [aws_security_group.open_sg.id]
+>   }
+>
+>   ingress {
+>     description     = "Allow SSH from open_sg"
+>     from_port       = 22
+>     to_port         = 22
+>     protocol        = "tcp"
+>     security_groups = [aws_security_group.open_sg.id]
+>   }
+>
+>   egress {
+>     from_port   = 0
+>     to_port     = 0
+>     protocol    = "-1"
+>     cidr_blocks = ["0.0.0.0/0"]
+>   }
+>
+>   tags = {
+>     Name = "close_sg"
+>   }
+> }
+>
+> resource "aws_vpc_endpoint" "s3" {
+>   vpc_id            = aws_vpc.terra_vpc.id
+>   service_name      = "com.amazonaws.ap-northeast-2.s3"
+>   vpc_endpoint_type = "Gateway"
+>
+>   route_table_ids = [
+>     aws_route_table.terra_close_rt.id
+>   ]
+>
+>   tags = {
+>     Name = "s3-endpoint-for-db"
+>   }
+> }
+>
+> locals {
+>   common_user_data = file("${path.module}/user_data/00-common.sh")
+>   db_user_data     = file("${path.module}/user_data/10-db-install.sh")
+>   web_user_data    = file("${path.module}/user_data/20-web-install.sh")
+> }
+>
+> resource "aws_instance" "terra_DB" {
+>   ami                    = "ami-0b1cb107a74bad43e"
+>   instance_type          = "t3.micro"
+>   subnet_id              = aws_subnet.terra_close_subnet.id
+>   key_name               = "asd-close"
+>   vpc_security_group_ids = [aws_security_group.close_sg.id]
+>   private_ip             = "192.168.10.13"
+>
+>   depends_on = [
+>     aws_route_table_association.terra_close_assoc,
+>     aws_vpc_endpoint.s3
+>   ]
+>
+>   user_data = join("\n", [
+>     local.common_user_data,
+>     local.db_user_data
+>   ])
+>
+>   tags = {
+>     Name = "terra_DB"
+>   }
+> }
+>
+> resource "aws_route_table" "terra_close_rt" {
+>   vpc_id = aws_vpc.terra_vpc.id
+>   tags = {
+>     Name = "terra_close_rt"
+>   }
+> }
+> resource "aws_route_table_association" "terra_close_assoc" {
+>   subnet_id      = aws_subnet.terra_close_subnet.id
+>   route_table_id = aws_route_table.terra_close_rt.id
+> }
+>
+>
+>
+>
+>
+> resource "aws_instance" "terra_WEB" {
+>   ami                         = "ami-0b1cb107a74bad43e"
+>   instance_type               = "t3.micro"
+>   subnet_id                   = aws_subnet.terra_open_subnet.id
+>   key_name                    = "asd-open"
+>   vpc_security_group_ids      = [aws_security_group.open_sg.id]
+>   associate_public_ip_address = true
+>   private_ip                  = "192.168.1.13"
+>
+>   user_data = join("\n", [
+>     local.common_user_data,
+>     local.web_user_data
+>   ])
+>
+>   tags = {
+>     Name = "terra_WEB"
+>   }
+> }
+>
+> resource "aws_route_table" "terra_open_rt" {
+>   vpc_id = aws_vpc.terra_vpc.id
+>
+>   route {
+>     cidr_block = "0.0.0.0/0"
+>     gateway_id = aws_internet_gateway.gw.id
+>   }
+>
+>   tags = {
+>     Name = "terra_open_rt"
+>   }
+> }
+> resource "aws_route_table_association" "terra_open_assoc" {
+>   subnet_id      = aws_subnet.terra_open_subnet.id
+>   route_table_id = aws_route_table.terra_open_rt.id
+> }
+> ```
+
+---
+
+## 55. v6.2 `user_data` 스크립트
+
+### 55-1. `00-common.sh`
+
+> [!note]- `user_data/00-common.sh`
+> ```bash
+> #!/bin/bash
+> set -euo pipefail
+>
+> SWAP_FILE="/swapfile"
+> SWAP_SIZE="2G"
+>
+> if ! swapon --show=NAME | grep -qx "$SWAP_FILE"; then
+>     if [[ ! -f "$SWAP_FILE" ]]; then
+>     fallocate -l "$SWAP_SIZE" "$SWAP_FILE" || dd if=/dev/zero of="$SWAP_FILE" bs=1M count=2048
+>     fi
+>
+>     chmod 600 "$SWAP_FILE"
+>     mkswap "$SWAP_FILE"
+>     swapon "$SWAP_FILE"
+> fi
+>
+> grep -qxF "$SWAP_FILE none swap sw 0 0" /etc/fstab || echo "$SWAP_FILE none swap sw 0 0" >> /etc/fstab
+>
+> echo 'vm.swappiness = 10' > /etc/sysctl.d/99-low-memory-lab.conf
+> sysctl --system >/dev/null
+> ```
+
+### 55-2. `10-db-install.sh`
+
+> [!note]- `user_data/10-db-install.sh`
+> ```bash
+> dnf clean all
+> dnf makecache
+> dnf install -y mariadb105-server
+>
+> cat > /etc/my.cnf.d/99-terraform-lab.cnf <<'EOF'
+> [mysqld]
+> bind-address=0.0.0.0
+> EOF
+>
+> systemctl enable --now mariadb
+>
+> mysql <<'SQL'
+> CREATE DATABASE IF NOT EXISTS appdb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+>
+> CREATE USER IF NOT EXISTS 'webuser'@'192.168.1.%' IDENTIFIED BY 'itbank';
+>
+> GRANT SELECT, INSERT ON appdb.* TO 'webuser'@'192.168.1.%';
+>
+> CREATE TABLE IF NOT EXISTS appdb.connection_test (
+>   id INT AUTO_INCREMENT PRIMARY KEY,
+>   message VARCHAR(255) NOT NULL,
+>   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+> );
+>
+> INSERT INTO appdb.connection_test (message)
+> VALUES ('DB bootstrap OK');
+>
+> FLUSH PRIVILEGES;
+> SQL
+>
+> mysql --version > /var/log/db-install-check.log 2>&1
+> mysql -e "SELECT user, host FROM mysql.user;" >> /var/log/db-install-check.log 2>&1
+> mysql -e "SELECT * FROM appdb.connection_test;" >> /var/log/db-install-check.log 2>&1
+> ```
+
+DB 스크립트는 MariaDB를 설치하고, `bind-address=0.0.0.0`으로 네트워크 인터페이스에서 3306을 listen하게 만든다. 또한 `appdb` 데이터베이스, `webuser` 계정, `connection_test` 테이블을 생성한다.
+
+```sql
+CREATE USER IF NOT EXISTS 'webuser'@'192.168.1.%' IDENTIFIED BY 'itbank';
+GRANT SELECT, INSERT ON appdb.* TO 'webuser'@'192.168.1.%';
+```
+
+이는 Public Subnet `192.168.1.0/24` 대역의 WEB 서버에서만 해당 DB 계정으로 접속할 수 있게 하는 실습용 제한이다.
+
+### 55-3. `20-web-install.sh`
+
+> [!note]- `user_data/20-web-install.sh`
+> ```bash
+> dnf install -y httpd php php-mysqlnd php-fpm
+>
+> systemctl enable --now php-fpm
+> systemctl enable --now httpd
+>
+> cat > /var/www/html/index.html <<'HTML'
+> <h1>Terraform Web Server</h1>
+> <p>Public Web Server is running.</p>
+> <p>DB test: <a href="/db-test.php">/db-test.php</a></p>
+> HTML
+>
+> cat > /var/www/html/db-test.php <<'PHP'
+> <?php
+> header('Content-Type: text/plain; charset=utf-8');
+>
+> $host = '192.168.10.13';
+> $db   = 'appdb';
+> $user = 'webuser';
+> $pass = 'itbank';
+>
+> try {
+>     $pdo = new PDO(
+>         "mysql:host=$host;dbname=$db;charset=utf8mb4",
+>         $user,
+>         $pass,
+>         [
+>             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+>             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+>         ]
+>     );
+>
+>     $pdo->exec("INSERT INTO connection_test (message) VALUES ('WEB -> DB OK')");
+>
+>     $stmt = $pdo->query(
+>         "SELECT id, message, created_at
+>          FROM connection_test
+>          ORDER BY id DESC
+>          LIMIT 5"
+>     );
+>
+>     echo "WEB -> DB CONNECT OK\n";
+>     echo "DB_HOST={$host}\n\n";
+>
+>     foreach ($stmt as $row) {
+>         echo "{$row['id']} | {$row['message']} | {$row['created_at']}\n";
+>     }
+> } catch (Throwable $e) {
+>     http_response_code(500);
+>     echo "WEB -> DB CONNECT FAIL\n";
+>     echo $e->getMessage() . "\n";
+> }
+> PHP
+>
+> systemctl restart httpd
+> ```
+
+WEB 스크립트는 Apache httpd, PHP, PHP-FPM, `php-mysqlnd`를 설치하고 `/var/www/html/db-test.php`를 생성한다.
+
+`db-test.php`는 단순 상태 페이지가 아니라 실제 DB 작업을 수행한다.
+
+```text
+1. Private DB 192.168.10.13의 appdb에 접속
+2. connection_test 테이블에 `WEB -> DB OK` INSERT
+3. 최근 5개 행 SELECT
+4. 결과를 text/plain으로 출력
+```
+
+따라서 `/db-test.php`가 `WEB -> DB CONNECT OK`를 출력하면 다음이 동시에 검증된다.
+
+```text
+Apache httpd 응답 성공
+PHP-FPM/PHP 실행 성공
+PHP MySQL driver 동작
+WEB → DB 3306 네트워크 접근 성공
+MariaDB 인증 성공
+INSERT 성공
+SELECT 성공
+```
+
+---
+
+## 56. v6.2 Web → DB 연동 구조
+
+```text
+외부 사용자 또는 로컬 PC
+→ http://WEB_PUBLIC_IP/db-test.php
+→ Public Subnet의 WEB EC2:80
+→ Apache httpd
+→ PHP-FPM / PHP PDO
+→ Private DB 192.168.10.13:3306
+→ MariaDB appdb.connection_test
+```
+
+DB 서버는 일반 인터넷 default route를 갖지 않는다. 하지만 WEB 서버와 DB 서버는 같은 VPC 안에 있으므로, `192.168.0.0/16 → local` route로 내부 통신할 수 있다.
+
+---
+
+## 57. Browser 기반 검증
+
+### 57-1. Web Index 페이지 접속
+
+![WEB index browser proof](assets/v6.2-web-index-browser-proof.png)
+
+브라우저에서 다음 주소로 접속했다.
+
+```text
+http://ec2-43-203-230-123.ap-northeast-2.compute.amazonaws.com
+```
+
+화면에는 다음 내용이 출력되었다.
+
+```text
+Terraform Web Server
+Public Web Server is running.
+DB test: /db-test.php
+```
+
+판정:
+
+```text
+외부 브라우저에서 Public WEB EC2의 Apache httpd에 HTTP 80으로 접근하는 데 성공했다.
+```
+
+### 57-2. `/db-test.php` 접속
+
+![WEB DB test browser proof](assets/v6.2-db-test-browser-proof.png)
+
+브라우저에서 다음 주소로 접속했다.
+
+```text
+http://ec2-43-203-230-123.ap-northeast-2.compute.amazonaws.com/db-test.php
+```
+
+화면에는 다음 내용이 출력되었다.
+
+```text
+WEB -> DB CONNECT OK
+DB_HOST=192.168.10.13
+
+11 | WEB -> DB OK | 2026-07-08 09:07:46
+10 | WEB -> DB OK | 2026-07-08 09:07:04
+9  | WEB -> DB OK | 2026-07-08 09:07:03
+8  | WEB -> DB OK | 2026-07-08 09:07:03
+7  | WEB -> DB OK | 2026-07-08 09:07:03
+```
+
+판정:
+
+```text
+브라우저 요청이 WEB EC2의 PHP 파일까지 도달했고,
+PHP가 Private DB 192.168.10.13에 접속해 INSERT/SELECT를 수행했다.
+따라서 Public Web → Private DB 연동이 성공했다.
+```
+
+브라우저 주소창의 `주의 요함` 표시는 HTTPS 인증서가 없는 HTTP 접속이기 때문에 나타난다. 이번 실습은 HTTP 80 검증이 목적이므로 오류가 아니다.
+
+---
+
+## 58. PowerShell `curl.exe` 기반 외부 검증
+
+```text
+PowerShell 7.6.3
+PS C:\Windows\System32> curl.exe -v http://43.203.230.123/
+*   Trying 43.203.230.123:80...
+* Established connection to 43.203.230.123 (43.203.230.123 port 80) from 192.168.2.54 port 62650
+* using HTTP/1.x
+> GET / HTTP/1.1
+> Host: 43.203.230.123
+> User-Agent: curl/8.19.0
+> Accept: */*
+>
+* Request completely sent off
+< HTTP/1.1 200 OK
+< Date: Wed, 08 Jul 2026 08:52:59 GMT
+< Server: Apache/2.4.68 (Amazon Linux)
+< Last-Modified: Wed, 08 Jul 2026 08:40:30 GMT
+< ETag: "7b-6561575c38b87"
+< Accept-Ranges: bytes
+< Content-Length: 123
+< Content-Type: text/html; charset=UTF-8
+<
+<h1>Terraform Web Server</h1>
+<p>Public Web Server is running.</p>
+<p>DB test: <a href="/db-test.php">/db-test.php</a></p>
+* Connection #0 to host 43.203.230.123:80 left intact
+
+PS C:\Windows\System32> curl.exe -v http://43.203.230.123/db-test.php
+*   Trying 43.203.230.123:80...
+* Established connection to 43.203.230.123 (43.203.230.123 port 80) from 192.168.2.54 port 49672
+* using HTTP/1.x
+> GET /db-test.php HTTP/1.1
+> Host: 43.203.230.123
+> User-Agent: curl/8.19.0
+> Accept: */*
+>
+* Request completely sent off
+< HTTP/1.1 200 OK
+< Date: Wed, 08 Jul 2026 08:53:27 GMT
+< Server: Apache/2.4.68 (Amazon Linux)
+< X-Powered-By: PHP/8.5.7
+< Transfer-Encoding: chunked
+< Content-Type: text/plain; charset=utf-8
+<
+WEB -> DB CONNECT OK
+DB_HOST=192.168.10.13
+
+2 | WEB -> DB OK | 2026-07-08 08:53:27
+1 | DB bootstrap OK | 2026-07-08 08:40:37
+* Connection #0 to host 43.203.230.123:80 left intact
+PS C:\Windows\System32>
+
+```
+
+판정:
+
+```text
+외부 PC에서 `http://43.203.230.123/` 요청은 `HTTP/1.1 200 OK`를 반환했다.
+`http://43.203.230.123/db-test.php` 요청은 `WEB -> DB CONNECT OK`와 DB 조회 결과를 반환했다.
+또한 응답 헤더에 `X-Powered-By: PHP/8.5.7`이 포함되어 PHP가 실행되었음을 확인했다.
+```
+
+---
+
+## 59. WEB 서버 내부 검증
+
+```text
+[ec2-user@ip-192-168-1-13 ~]$ systemctl status httpd --no-pager
+● httpd.service - The Apache HTTP Server
+     Loaded: loaded (/usr/lib/systemd/system/httpd.service; enabled; preset: disabled)
+    Drop-In: /usr/lib/systemd/system/httpd.service.d
+             └─php-fpm.conf
+     Active: active (running) since Wed 2026-07-08 08:40:31 UTC; 31min ago
+       Docs: man:httpd.service(8)
+   Main PID: 6562 (httpd)
+     Status: "Total requests: 14; Idle/Busy workers 100/0;Requests/sec: 0.00745; Bytes served/sec:   6 B/sec"
+      Tasks: 230 (limit: 1059)
+     Memory: 17.6M
+        CPU: 1.761s
+     CGroup: /system.slice/httpd.service
+             ├─ 6562 /usr/sbin/httpd -DFOREGROUND
+             ├─ 6644 /usr/sbin/httpd -DFOREGROUND
+             ├─ 6649 /usr/sbin/httpd -DFOREGROUND
+             ├─ 6651 /usr/sbin/httpd -DFOREGROUND
+             ├─ 6653 /usr/sbin/httpd -DFOREGROUND
+             └─27443 /usr/sbin/httpd -DFOREGROUND
+
+Jul 08 08:40:31 ip-192-168-1-13.ap-northeast-2.compute.internal systemd[1]: Started httpd.service - The Apache …ver.
+Jul 08 08:40:31 ip-192-168-1-13.ap-northeast-2.compute.internal httpd[6562]: Server configured, listening on: p…t 80
+
+[ec2-user@ip-192-168-1-13 ~]$ systemctl status php-fpm --no-pager
+● php-fpm.service - The PHP FastCGI Process Manager
+     Loaded: loaded (/usr/lib/systemd/system/php-fpm.service; enabled; preset: disabled)
+     Active: active (running) since Wed 2026-07-08 08:40:29 UTC; 31min ago
+   Main PID: 3769 (php-fpm)
+     Status: "Processes active: 0, idle: 6, Requests: 10, slow: 0, Traffic: 0.00req/sec"
+
+[ec2-user@ip-192-168-1-13 ~]$ curl http://localhost/db-test.php
+WEB -> DB CONNECT OK
+DB_HOST=192.168.10.13
+
+12 | WEB -> DB OK | 2026-07-08 09:12:10
+11 | WEB -> DB OK | 2026-07-08 09:07:46
+10 | WEB -> DB OK | 2026-07-08 09:07:04
+9 | WEB -> DB OK | 2026-07-08 09:07:03
+8 | WEB -> DB OK | 2026-07-08 09:07:03
+
+[ec2-user@ip-192-168-1-13 ~]$ curl http://localhost/db-test.php
+WEB -> DB CONNECT OK
+DB_HOST=192.168.10.13
+
+13 | WEB -> DB OK | 2026-07-08 09:12:14
+12 | WEB -> DB OK | 2026-07-08 09:12:10
+11 | WEB -> DB OK | 2026-07-08 09:07:46
+10 | WEB -> DB OK | 2026-07-08 09:07:04
+9 | WEB -> DB OK | 2026-07-08 09:07:03
+
+```
+
+확인된 값:
+
+| 항목 | 결과 |
+|---|---|
+| WEB Private IP | `192.168.1.13` |
+| `httpd.service` | `active (running)` |
+| `php-fpm.service` | `active (running)` |
+| `curl http://localhost/db-test.php` | `WEB -> DB CONNECT OK` |
+| DB Host | `192.168.10.13` |
+| INSERT 증가 | `12`, `13` 행 생성 확인 |
+
+판정:
+
+```text
+WEB 인스턴스 내부에서 Apache와 PHP-FPM이 모두 실행 중이며,
+localhost 요청으로도 DB 연동 PHP가 정상 동작함을 확인했다.
+```
+
+---
+
+## 60. DB 서버 내부 검증
+
+```text
+[ec2-user@ip-192-168-10-13 ~]$ sudo ss -lntp | grep 3306
+LISTEN 0      80           0.0.0.0:3306      0.0.0.0:*    users:(("mariadbd",pid=7819,fd=19))
+
+[ec2-user@ip-192-168-10-13 ~]$ sudo mysql -e "SELECT * FROM appdb.connection_test;"
++----+-----------------+---------------------+
+| id | message         | created_at          |
++----+-----------------+---------------------+
+|  1 | DB bootstrap OK | 2026-07-08 08:40:37 |
+|  2 | WEB -> DB OK    | 2026-07-08 08:53:27 |
+|  3 | WEB -> DB OK    | 2026-07-08 09:06:49 |
+|  4 | WEB -> DB OK    | 2026-07-08 09:07:02 |
+|  5 | WEB -> DB OK    | 2026-07-08 09:07:03 |
+|  6 | WEB -> DB OK    | 2026-07-08 09:07:03 |
+|  7 | WEB -> DB OK    | 2026-07-08 09:07:03 |
+|  8 | WEB -> DB OK    | 2026-07-08 09:07:03 |
+|  9 | WEB -> DB OK    | 2026-07-08 09:07:03 |
+| 10 | WEB -> DB OK    | 2026-07-08 09:07:04 |
+| 11 | WEB -> DB OK    | 2026-07-08 09:07:46 |
+| 12 | WEB -> DB OK    | 2026-07-08 09:12:10 |
+| 13 | WEB -> DB OK    | 2026-07-08 09:12:14 |
++----+-----------------+---------------------+
+
+```
+
+확인된 값:
+
+| 항목 | 결과 |
+|---|---|
+| DB Private IP | `192.168.10.13` |
+| MariaDB listen | `0.0.0.0:3306` |
+| DB process | `mariadbd` |
+| DB table | `appdb.connection_test` |
+| 초기 행 | `DB bootstrap OK` |
+| WEB 삽입 행 | `WEB -> DB OK` 다수 확인 |
+
+판정:
+
+```text
+MariaDB가 3306 포트에서 네트워크 접속을 받을 수 있는 상태이며,
+WEB 서버에서 요청할 때마다 `connection_test` 테이블에 `WEB -> DB OK` 행이 누적되는 것을 확인했다.
+```
+
+---
+
+## 61. Brave 브라우저 HTTPS 자동 전환 이슈
+
+초기에는 브라우저에서 Public IP/DNS 접속 시 timeout처럼 보이는 현상이 있었다. PowerShell `curl.exe`로 `http://`를 명시해 요청하자 HTTP 80 접속과 DB 연동이 정상임이 확인되었다.
+
+원인 판정:
+
+```text
+AWS Security Group, Route Table, Apache 문제가 아니라
+브라우저가 HTTP 요청을 HTTPS로 자동 전환했기 때문으로 판단한다.
+```
+
+이번 실습은 HTTPS를 구성하지 않았다.
+
+```text
+443 포트 미개방
+TLS 인증서 없음
+Apache HTTPS VirtualHost 없음
+```
+
+따라서 `https://...`로 접속하면 실패하는 것이 정상이다.
+
+해결:
+
+```text
+주소창에 http:// 를 명시한다.
+Brave 보안 설정에서 HTTPS 자동 업그레이드 계열 설정을 확인한다.
+또는 curl.exe로 http:// 요청을 명시해 검증한다.
+```
+
+최종적으로 브라우저에서도 `http://ec2-43-203-230-123.ap-northeast-2.compute.amazonaws.com` 형태로 접속해 index와 `/db-test.php` 페이지가 정상 출력되었다.
+
+---
+
+## 62. v6.2 완료 판정
+
+```text
+[x] `user_data`를 `00-common.sh`, `10-db-install.sh`, `20-web-install.sh`로 분리
+[x] Terraform `file()`과 `join()`으로 역할별 user_data 조립
+[x] WEB 서버에 Apache httpd 설치
+[x] WEB 서버에 PHP/PHP-FPM/PHP MySQL driver 설치
+[x] DB 서버에 MariaDB 설치
+[x] DB 서버가 `0.0.0.0:3306` listen
+[x] `appdb.connection_test` 테이블 생성
+[x] WEB PHP에서 Private DB `192.168.10.13` 접속
+[x] WEB PHP에서 DB INSERT 성공
+[x] WEB PHP에서 DB SELECT 결과 출력
+[x] 외부 PowerShell curl로 `/` HTTP 200 확인
+[x] 외부 PowerShell curl로 `/db-test.php` HTTP 200 및 DB 연동 확인
+[x] 브라우저에서 WEB index 페이지 확인
+[x] 브라우저에서 `/db-test.php` DB 연동 결과 확인
+[ ] DB Route Table / S3 Gateway Endpoint 콘솔 캡처 확보
+[ ] close_sg egress S3 prefix list 최소 권한화 검토
+[ ] DB 비밀번호/초기화 SQL을 운영식 secret 관리로 분리 검토
+[ ] 실습 후 terraform destroy 완료
+```
+
+보고서용 문장:
+
+```text
+본 실습에서는 Public Subnet의 WEB 서버와 Private Subnet의 DB 서버를 구성하였다.
+WEB 서버에는 Apache httpd, PHP-FPM, PHP MySQL driver를 설치하고,
+DB 서버에는 MariaDB 10.5와 appdb.connection_test 테이블을 구성하였다.
+외부 PC에서 WEB 서버의 `/db-test.php`에 HTTP 요청을 보내자,
+PHP 코드가 Private DB `192.168.10.13:3306`에 접속해 `WEB -> DB OK` 행을 INSERT한 뒤 SELECT 결과를 반환하였다.
+이를 통해 Public Web Server와 Private DB Server 간 연동이 정상 동작함을 확인하였다.
+```
+
+
+## 62-1. v6.3 문서 정리 변경점
+
+이 버전은 새 실습 내용을 추가한 것이 아니라, Obsidian 가독성과 접힘 동작을 정리한 문서 정리 버전이다.
+
+```text
+변경 사항:
+- `main.tf` / `.sh` / 로그 코드블록의 callout 인용 누락 줄 보정
+- callout 내부 빈 줄도 `>`로 유지되도록 수정
+- 상단 빠른 이동 섹션 추가
+- 긴 코드와 로그는 접힘 callout으로 유지
+- 실습 내용 자체는 v6.2와 동일
+```
+
+판정:
+
+```text
+v6.2 = Web → Private DB 연동 검증 완료 버전
+v6.3 = v6.2의 Obsidian 표시/탐색성 보정 버전
+```
+
+# Part 7. 검증, 오류, 완료 기준
 
 이 파트는 실습 후 실행 확인, 자주 발생하는 오류, 완료 기준을 정리한다.
-## 43. 초기화 후 검증 체크리스트
+## 63. 초기화 후 검증 체크리스트
 
 ```cmd
 terraform version
@@ -3589,9 +5236,9 @@ terraform init
 
 ---
 
-## 44. 자주 나는 오류
+## 64. 자주 나는 오류
 
-### 44-1. `terraform` is not recognized
+### 64-1. `terraform` is not recognized
 
 원인:
 
@@ -3609,7 +5256,7 @@ D:\terraform\terraform.exe version
 where terraform
 ```
 
-### 44-2. AWS 인증 실패
+### 64-2. AWS 인증 실패
 
 증상 예:
 
@@ -3636,7 +5283,7 @@ Secret Access Key 오타
 환경변수에 다른 키가 잡혀 있는지
 ```
 
-### 44-3. AccessDenied
+### 64-3. AccessDenied
 
 의미:
 
@@ -3652,7 +5299,7 @@ IAM 사용자 권한 확인
 계정/사용자가 맞는지 sts get-caller-identity로 확인
 ```
 
-### 44-4. Region 관련 오류
+### 64-4. Region 관련 오류
 
 확인:
 
@@ -3701,6 +5348,20 @@ provider "aws" {
 [x] Private WEB EC2에서 외부 curl 검증 완료
 [x] Private WEB EC2가 Public IP 없이 NAT Instance 경유 외부 통신에 성공함
 [x] 강사님 정답지와 내 구현 코드 비교 및 해설 정리
+[x] Public Web + Private DB + S3 Gateway Endpoint 실습 작성
+[x] Terraform `http` provider로 현재 공인 IP 자동 조회 구성
+[x] Private DB Route Table에 S3 Gateway Endpoint 연결
+[x] Private DB 서버에서 `mariadb105-server` 설치 성공
+[x] Private DB 서버에서 `mariadb.service` active(running) 확인
+[x] Private DB 서버에서 checkip/google 일반 외부 HTTPS timeout 확인
+[x] `user_data` 파일 분리 리팩토링 완료
+[x] Apache httpd + PHP-FPM 기반 WEB 서버 구성
+[x] PHP PDO를 통한 Private DB 접속 검증
+[x] `/db-test.php`에서 DB INSERT/SELECT 성공 확인
+[x] 브라우저와 PowerShell curl로 WEB → DB 연동 검증
+[x] Web 서버에서 DB 서버 3306 접근 확인
+[ ] DB Route Table / S3 Gateway Endpoint 콘솔 캡처 확보
+[ ] close_sg egress S3 prefix list 최소 권한화 검토
 [ ] 실습으로 apply했다면 terraform destroy까지 완료
 [ ] Access Key CSV 삭제 또는 안전한 저장소로 이동
 [ ] 공용/남의 컴퓨터라면 .aws credential 정리

@@ -39,7 +39,7 @@ tags:
 
 ## Lab Notes
 
-- [[Terraform AWS CLI 초기 설정 실습 v6.2]]
+- [[Terraform AWS CLI 초기 설정 실습 v6.3]]
   - AWS CLI/Profile/Terraform 설치
   - VPC/Subnet/EC2 최소 골격 실습
   - Public/Private 역할 Subnet 2개와 EC2 2대 배치 실습
