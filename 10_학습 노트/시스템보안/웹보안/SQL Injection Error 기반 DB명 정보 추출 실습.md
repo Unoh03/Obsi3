@@ -13,6 +13,7 @@ source_pages:
   - 131
 status: active
 created: 2026-05-28
+reviewed: 2026-07-08
 tags:
   - 🏷️과목/웹보안
   - 🏷️주제/SQL
@@ -38,7 +39,7 @@ source: [[40_자료/강의 자료/5-20_웹보안.pdf|5-20 웹보안]], p.122, p.
 | 실습 대상 | `care/member/loginModel.php` |
 | 사전 조건 | PHP 에러 출력 활성화 |
 | 확인한 정보 | Database명 `care`, Table명 `center`, `login_fail`, `member`, `member` 일부 Column/Data |
-| 연결 개념 노트 | [[SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]] |
+| 연결 개념 노트 | [[10_학습 노트/시스템보안/웹보안/SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악|SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]] |
 | 현재 상태 | 실습 흐름 정리 완료. 스크린샷은 선택 보강 |
 
 ---
@@ -69,7 +70,7 @@ Database
 
 ### 인증 우회 실습과 다른 점
 
-이전 [[SQL Injection 인증 우회 실습]]은 DB가 레코드를 반환하게 만들어 로그인 세션을 얻는 흐름이었다.
+이전 [[10_학습 노트/시스템보안/웹보안/SQL Injection 인증 우회 실습|SQL Injection 인증 우회 실습]]은 DB가 레코드를 반환하게 만들어 로그인 세션을 얻는 흐름이었다.
 
 이번 실습은 목표가 다르다.
 
