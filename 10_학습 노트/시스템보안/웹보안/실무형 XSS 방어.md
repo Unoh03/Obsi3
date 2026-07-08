@@ -7,9 +7,9 @@ source:
   - MDN Set-Cookie
   - MDN Content Security Policy
 source_pages:
-status: draft
+status: active
 created: 2026-05-27
-reviewed:
+reviewed: 2026-07-08
 aliases:
   - XSS 실무 방어
   - XSS 방어 실무
