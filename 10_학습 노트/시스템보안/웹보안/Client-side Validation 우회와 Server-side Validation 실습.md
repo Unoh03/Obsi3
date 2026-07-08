@@ -20,6 +20,8 @@ tags:
 
 이 노트는 원래 `Hydra 로그인 Brute Force 실습` 안에 함께 있던 p.75-76 입력 검증 위치 실습을 분리한 것이다. 공통 실습 환경은 [[10_학습 노트/시스템보안/웹보안/웹보안 LAMP 실습 환경 구축|웹보안 LAMP 실습 환경 구축]]에 둔다.
 
+개념 지도는 [[10_학습 노트/시스템보안/웹보안/웹 진단 기초 - Spidering과 Client-side Validation 우회|웹 진단 기초 - Spidering과 Client-side Validation 우회]]를 우선한다. 이 노트는 Paros `Trap request` / `Trap response` 실습 증거로 유지한다.
+
 | 항목 | 내용 |
 |---|---|
 | 핵심 PDF 범위 | p.75-76 `Type of Validation`, `Bypassing Client Side Validation` |
@@ -232,6 +234,7 @@ block-beta
 
 ## 관련 노트
 
+- [[10_학습 노트/시스템보안/웹보안/웹 진단 기초 - Spidering과 Client-side Validation 우회|웹 진단 기초 - Spidering과 Client-side Validation 우회]]
 - [[10_학습 노트/시스템보안/웹보안/웹보안 LAMP 실습 환경 구축|웹보안 LAMP 실습 환경 구축]]
 - [[10_학습 노트/시스템보안/웹보안/Hydra 로그인 Brute Force 실습|Hydra 로그인 Brute Force 실습]]
 - [[10_학습 노트/시스템보안/웹보안/웹 애플리케이션 구조|웹 애플리케이션 구조]]
