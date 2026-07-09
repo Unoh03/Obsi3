@@ -1,0 +1,42 @@
+/* Modern Outline - right side Korean readability */
+
+/* 라벨 폭과 마커 간격 확대 */
+.modern-outline-overlay {
+    --label-width: 240px;
+    --label-gap: 10px;
+    --row-hover-width: 40px;
+}
+
+/* 긴 노트에서 생기는 scroll overlay 폭을 라벨보다 크게 확장 */
+.modern-outline-overlay.overlay-scroll {
+    width: 310px;
+}
+
+
+/* 마커 줄 간격 확대 */
+.modern-outline-overlay .outline-row {
+    padding-block: 9px;
+}
+
+/* 라벨 기본 가독성 */
+.modern-outline-overlay .outline-label {
+    font-size: 14px;
+    line-height: 1.55;
+    letter-spacing: -0.01em;
+}
+
+/* 오른쪽 배치에서도 한글은 왼쪽 정렬로 읽히게 변경 */
+.modern-outline-overlay.overlay-right .outline-label {
+    text-align: left;
+}
+
+/* Modern Outline - make tree lines obvious for testing */
+
+.modern-outline-overlay .outline-tree-line {
+    width: 2px !important;
+    background-color: var(--color-accent) !important;
+}
+
+.modern-outline-overlay:has(.outline-row:hover) .outline-tree-line {
+    opacity: 0.85 !important;
+}

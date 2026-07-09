@@ -12,6 +12,7 @@ references:
 status: active
 created: 2026-05-13
 updated: 2026-05-15
+reviewed: 2026-07-09
 tags:
   - 🏷️과목/네트워크보안
   - 🏷️주제/Dynamic-ARP-Inspection
@@ -34,6 +35,14 @@ ARP ACL = 수동 정답지
 DHCP Snooping DB = 자동 정답지
 Trust Port = 검사 예외/신뢰 경계
 ```
+
+---
+
+## 이 vault에서 쓰는 법
+
+- 이 노트는 DAI뿐 아니라 DHCP Snooping Binding DB와 IP Source Guard의 관계를 함께 복구하는 stable concept note로 쓴다.
+- DHCP Snooping 또는 IP Source Guard를 지금 별도 stable note로 분리하지 않는다. 실제 스위치 설정 실습, 장비별 명령 비교, 또는 DAI 밖의 반복 사용이 생길 때만 새 노트로 분리한다.
+- ARP Spoofing 공격 흐름은 [[ARP 스푸핑]], 패킷 관찰과 Wireshark 필터는 [[HTTP 로그인 평문 노출]], [[DNS 스푸핑 실습]], [[SSH 암호화 패킷 관찰]], [[Telnet 평문 노출]]에서 확인한다.
 
 ---
 
@@ -483,11 +492,10 @@ Gateway, 서버, 정적 IP 장비처럼 DHCP Snooping DB에 자동 등록되지 
 ## 관련 노트
 
 - [[ARP 스푸핑]]
-- DHCP Snooping 정리 예정
-- IP Source Guard 정리 예정
+- DHCP Snooping / IP Source Guard - 현재 이 노트의 Binding DB 관계 설명에서 관리
 - Switch Hardening 정리 예정
 - MITM 정리 예정
-- Wireshark 정리 예정
+- Wireshark 필터 - [[HTTP 로그인 평문 노출]], [[DNS 스푸핑 실습]], [[SSH 암호화 패킷 관찰]], [[Telnet 평문 노출]]
 
 ---
 

@@ -3,5 +3,8 @@
   "theme": "moonstone",
   "cssTheme": "Atom",
   "baseFontSize": 16,
-  "nativeMenus": false
+  "nativeMenus": false,
+  "enabledCssSnippets": [
+    "modern-outline-korean-right"
+  ]
 }
