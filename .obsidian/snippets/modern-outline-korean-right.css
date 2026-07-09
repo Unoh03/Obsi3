@@ -40,3 +40,35 @@
 .modern-outline-overlay:has(.outline-row:hover) .outline-tree-line {
     opacity: 0.85 !important;
 }
+
+/* Modern Outline - hover item colorful instead of underline */
+
+/* hover 밑줄 제거 */
+.modern-outline-overlay .outline-row:hover .outline-label {
+  text-decoration: none !important;
+}
+
+/* hover한 항목만 heading level별 색상 적용 */
+.modern-outline-overlay .outline-row:hover .outline-label.outline-label--h1 {
+  color: var(--color-red) !important;
+}
+
+.modern-outline-overlay .outline-row:hover .outline-label.outline-label--h2 {
+  color: var(--color-orange) !important;
+}
+
+.modern-outline-overlay .outline-row:hover .outline-label.outline-label--h3 {
+  color: var(--color-green) !important;
+}
+
+.modern-outline-overlay .outline-row:hover .outline-label.outline-label--h4 {
+  color: var(--color-blue) !important;
+}
+
+.modern-outline-overlay .outline-row:hover .outline-label.outline-label--h5 {
+  color: var(--color-purple) !important;
+}
+
+.modern-outline-overlay .outline-row:hover .outline-label.outline-label--h6 {
+  color: var(--color-pink) !important;
+}
