@@ -7,6 +7,7 @@ source_context:
   - Iac.pdf
   - IaC - Source Digest v2.md
   - IaC - 공식 검증 노트.md
+  - Terraform RDS 인프라 구성 실습 v7.0.md
 tags:
   - 과목/AWS
   - 주제/IaC
@@ -39,7 +40,7 @@ tags:
 
 ## Lab Notes
 
-- [[Terraform AWS CLI 초기 설정 실습 v6.2]]
+- [[Terraform AWS CLI 초기 설정 실습 v6.3]]
   - AWS CLI/Profile/Terraform 설치
   - VPC/Subnet/EC2 최소 골격 실습
   - Public/Private 역할 Subnet 2개와 EC2 2대 배치 실습
@@ -57,8 +58,22 @@ tags:
   - Brave 브라우저 HTTPS 자동 전환 이슈와 HTTP 명시 접속 트러블슈팅
   - AWS 예약 IP 오류와 해결 과정 기록
 
+- [[Terraform RDS 인프라 구성 실습 v7.0]]
+  - EC2 DB 구조에서 RDS MariaDB 구조로 전환
+  - RDS DB Subnet Group 2AZ 요구사항 검증
+  - `DBSubnetGroupDoesNotCoverEnoughAZs` 오류와 해결 과정 기록
+  - RDS master password 8자 미만 오류 기록
+  - `templatefile()`로 RDS endpoint를 WEB user_data에 주입
+  - Terraform implicit dependency와 Security Group stateful 동작 정리
+  - v7.1에서 WEB → RDS INSERT/SELECT 검증 예정
+
 ## Completed in Lab Log
 
+- RDS DB Subnet Group 2AZ 요구사항 실증
+- RDS Single-AZ DB Instance 인프라 구성
+- RDS subnet 1개 구성 실패와 `DBSubnetGroupDoesNotCoverEnoughAZs` 오류 기록
+- Terraform `templatefile()` 기반 RDS endpoint 주입 구조 정리
+- Terraform implicit dependency와 Security Group stateful 동작 정리
 - NAT Instance 기반 Private EC2 outbound 검증
 - S3 Gateway Endpoint 기반 격리 DB 서버 패키지 설치 검증
 - `user_data` 파일 분리 리팩토링
@@ -66,6 +81,7 @@ tags:
 
 ## Pending
 
+- Terraform RDS WEB-DB 연동 검증 실습 v7.1
 - AWS 프로젝트에 Terraform 적용하기
 - Terraform Resource 참조 심화 실습
 - Terraform Data Source 실습
