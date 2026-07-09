@@ -552,7 +552,7 @@ mysql \
 | `web` 계정 인증 | 정상 |
 | `care` database 접근 권한 | 정상 |
 
-#### AWS Console에 표시된 CLI TLS 접속 옵션
+### AWS Console에 표시된 CLI TLS 접속 옵션
 
 RDS Console의 `연결 및 보안` 탭에는 CA bundle을 내려받고 인증서를 검증하며 접속하는 예시도 표시됐다.
 
