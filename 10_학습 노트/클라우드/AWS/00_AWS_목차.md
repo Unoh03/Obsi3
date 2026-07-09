@@ -56,6 +56,10 @@
 - [[10_학습 노트/클라우드/AWS/실습 노트/NAT Instance 실습|NAT Instance 실습]] - NAT Instance의 IP forwarding과 MASQUERADE를 설정하고 Private EC2의 외부 ping 통신을 검증한 실습
 - [[10_학습 노트/클라우드/AWS/실습 노트/Web VPC와 RDS 연계 실습|Web VPC와 RDS 연계 실습]] - p.84 이후 Web EC2와 DB 연계 구조를 구성한 실습. RDS 대신 EC2 MariaDB로 변형해 기록
 
+## IaC / Terraform
+
+- [[10_학습 노트/클라우드/AWS/IaC/00_IaC MOC|IaC MOC]] - AWS 수업 자료와 Terraform AWS 실습 중심의 active MOC. Source Digest, 공식 검증 노트, raw 노트, Terraform 개념·실습 노트를 이 경로에서 확인한다.
+
 ## 운영 / 보조 기록
 
 - [[10_학습 노트/클라우드/AWS/서버_시퓨_100%_찍을_때|EC2 서버가 멈추거나 CPU 100% 찍을 때]]
