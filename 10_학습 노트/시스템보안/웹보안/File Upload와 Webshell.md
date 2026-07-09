@@ -8,6 +8,7 @@ source_pages:
   - 135
 status: active
 created: 2026-05-29
+reviewed: 2026-07-09
 aliases:
   - 파일 업로드 취약점
   - Web Shell
@@ -118,6 +119,16 @@ sequenceDiagram
 File Upload 취약점은 악성 파일을 올릴 수 있는 문제이고, Directory Listing은 서버가 디렉토리와 파일 목록을 보여주는 설정 문제다. 업로드 경로에 Directory Listing이 켜져 있으면 공격자는 업로드된 파일명과 경로를 더 쉽게 확인할 수 있다.
 
 즉 Directory Listing은 웹쉘을 직접 실행시키는 원인은 아니지만, **웹쉘 위치를 찾기 쉽게 만드는 보조 취약점**이 될 수 있다.
+
+---
+
+## 이 vault에서 쓰는 법
+
+- 이 노트는 `5-20_웹보안.pdf` p.133-135의 File Upload / Webshell stable concept note로 쓴다.
+- 실제 `Webshell.php` 업로드, `/data/Webshell.php` 접근, `whoami -> www-data` 실행 증거는 [[10_학습 노트/시스템보안/웹보안/웹쉘 Upload 및 실행 실습|웹쉘 Upload 및 실행 실습]]에서 본다.
+- Directory Listing 자체는 원인과 대응이 다르므로 [[10_학습 노트/시스템보안/웹보안/Directory Listing 취약점|Directory Listing 취약점]]에서 따로 본다.
+- [[10_학습 노트/시스템보안/웹보안/5-20 웹보안 PDF 구조 지도|5-20 웹보안 PDF 구조 지도]]는 source map이고, 복습 진입은 이 노트와 연결 lab note를 우선한다.
+- 방어 기준은 OWASP File Upload Cheat Sheet를 보강 근거로 보되, 이 노트는 특정 언어별 업로드 구현 코드를 전수 설명하지 않는다.
 
 ---
 

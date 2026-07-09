@@ -6,6 +6,7 @@ source_pages:
   - 136
 status: active
 created: 2026-05-29
+reviewed: 2026-07-09
 aliases:
   - Directory Indexing
   - Directory Browsing
@@ -81,6 +82,16 @@ Directory Listing 하나만으로 서버가 바로 장악되는 것은 아니다
 |---|---|---|
 | File Upload | 위험한 파일을 올리고 실행 가능하게 처리함 | 웹쉘이나 악성 파일이 서버에 들어갈 수 있다. |
 | Directory Listing | 디렉토리 목록을 보여 주는 서버 설정 | 업로드된 파일의 위치와 이름을 찾기 쉬워진다. |
+
+---
+
+## 이 vault에서 쓰는 법
+
+- 이 노트는 `5-20_웹보안.pdf` p.136의 Directory Listing stable concept note로 쓴다.
+- File Upload / Webshell 개념은 [[10_학습 노트/시스템보안/웹보안/File Upload와 Webshell|File Upload와 Webshell]]에서 본다.
+- 실제 `/data/` 요청, `Webshell.php` 확인, Apache `Options -Indexes` 설정 시도는 [[10_학습 노트/시스템보안/웹보안/웹쉘 Upload 및 실행 실습|웹쉘 Upload 및 실행 실습]]에서 본다.
+- 이 노트는 Directory Traversal이나 인증 없는 다운로드 취약점으로 확장하지 않는다. 둘은 관련은 있지만 같은 취약점이 아니다.
+- Apache/Nginx/IIS 설정명은 서버별 감각을 잡기 위한 보강 근거이며, 실제 운영 반영은 서버별 설정 범위를 별도로 확인해야 한다.
 
 ---
 

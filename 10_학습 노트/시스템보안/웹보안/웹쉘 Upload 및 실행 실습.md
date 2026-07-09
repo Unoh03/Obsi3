@@ -9,6 +9,7 @@ source_pages:
   - 136
 status: active
 created: 2026-05-29
+reviewed: 2026-07-09
 aliases:
   - Webshell Upload 실습
   - 웹쉘 업로드 실습
@@ -50,6 +51,14 @@ PHP 파일 업로드
 | 웹쉘 명령 실행 결과 | 확인됨: `whoami` -> `www-data` |
 | 서버 측 PHP 소스 출력 | 확인됨. 단, 이미지 안의 연결 정보는 원문 재기록하지 않음 |
 | 업로드 디렉토리 차단 설정 | 설정 파일에 추가함. Apache 재시작/검증 필요 |
+
+## 이 vault에서 쓰는 법
+
+- 이 노트는 `5-20_웹보안.pdf` p.133-136의 lab evidence로 쓴다.
+- File Upload / Webshell 개념은 [[10_학습 노트/시스템보안/웹보안/File Upload와 Webshell|File Upload와 Webshell]]에서 본다.
+- Directory Listing 개념은 [[10_학습 노트/시스템보안/웹보안/Directory Listing 취약점|Directory Listing 취약점]]에서 본다.
+- `Webshell.php` 업로드와 `whoami -> www-data` 실행은 확인된 공격 실습 증거다.
+- Apache 차단 설정은 파일에 추가한 기록만 있고, 문법 검사·reload·차단 결과는 아직 런타임 검증되지 않았다. 이 미검증 항목은 MOC 완료와 별개로 lab note의 남은 확인으로 유지한다.
 
 ## 실습 흐름
 
