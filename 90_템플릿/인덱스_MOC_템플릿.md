@@ -1,6 +1,8 @@
 ---
-type: index
+type: moc
 topic:
+scope:
+parent_moc:
 status: active
 created: "{{date:YYYY-MM-DD}}"
 tags:
@@ -12,6 +14,8 @@ tags:
 ## 개요
 
 이 문서는 관련 노트들을 탐색하기 위한 인덱스/MOC이다.
+전체 파일 목록이나 source catalog가 아니라, 다시 시작할 경로를 좁히는 탐색 지도로 쓴다.
+기존 MOC에 frontmatter가 없더라도 전수 소급하지 않고, 새 MOC나 대규모 개편 시 이 표본을 따른다.
 
 ---
 
