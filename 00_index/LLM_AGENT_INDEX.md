@@ -49,29 +49,32 @@ RAW, source, PDF, 캡처, 로그는 근거 확인이 필요할 때만 읽는다.
 | KISA 웹 서비스 진단 프로젝트 | [[20_팀 프로젝트/26. 6. 8 팀플/00_팀플_목차]] | 웹 서비스 보안 모음, 웹 앱 보안 모음, 결과/스크립트/원문 구분 | 진단 원문 로그를 최종 결과로 취급하지 말 것 |
 | 인프라 운영·복구 프로젝트 | [[20_팀 프로젝트/26. 4. 22 팀플/00_팀플_목차]] | 웹/DB/NFS/이중화/복구 문서 | 오래된 작업 상태를 최신 운영 상태로 단정하지 말 것 |
 
-## Type classification
+## Type vocabulary
+
+새 노트는 아래 canonical value만 사용한다. 기존 별칭은 관련 파일을 직접 수정할 때만 점진적으로 정렬한다.
 
 | Type | Meaning | Agent behavior |
 |---|---|---|
 | `moc` | 목차, 지도, 진입점 | 탐색 경로와 현재 분류를 확인한다. 완전한 파일 목록으로 취급하지 않는다. |
-| `concept` | 안정화된 개념 노트 | 설명·요약·학습 답변의 우선 근거로 사용한다. |
+| `concept` | 개념 설명 노트 | status가 `stable`일 때 설명·요약·학습 답변의 우선 근거로 사용한다. |
 | `lab` | 실습 기록 | 명령, 오류, 검증 결과를 확인한다. 개념 일반화는 주의한다. |
-| `raw` | 수업 중 빠른 메모, 원문 출력, 휘갈긴 기록 | 원자료로만 사용한다. 정리본 여부를 먼저 확인한다. |
-| `source` | PDF, 캡처, 강의자료, 외부 원문 | 범위와 출처 확인에 사용한다. 최신성은 별도로 확인한다. |
-| `project` | 팀 프로젝트 문서, 결과, 운영 기록 | 프로젝트 MOC를 통해 범위와 최신 상태를 확인한다. |
-| `template` | Obsidian 템플릿 | 새 노트를 만들 때만 참조한다. |
-| `stale` | 구버전 가능성이 있는 문서나 상태 | 현재 파일·MOC·사용자 지시로 재검증한다. |
+| `command-note`, `troubleshooting` | 재사용 명령 또는 문제 복구 | 환경과 실제 검증 여부를 확인한다. |
+| `source-digest`, `raw` | 원자료 변환본 또는 원문 기록 | stable knowledge로 승격하지 않고 source 경계를 유지한다. |
+| `project-raw-log`, `project-daily-log`, `project-doc` | 프로젝트 원문, digest, 안정 문서 | `project_moc`와 evidence를 확인한다. |
+| `meeting`, `wrong-answer`, `security-policy` | 회의, 오답, 정책 설계 | 해당 전용 템플릿의 필드와 검증 기준을 따른다. |
 
 ## Status vocabulary
 
 | Status | Meaning | Agent behavior |
 |---|---|---|
-| `stable` | 현재 정리본으로 사용 가능 | 일반 답변 근거로 사용 가능하되, 바뀌는 기술은 최신성 확인 |
-| `active` | 진행 중 | 완료로 단정하지 말고 RAW와 최근 diff를 확인 |
-| `raw` | 아직 흡수되지 않은 원자료 | 요약 또는 정리 전용 근거 |
 | `draft` | 초안 | 누락·오류 가능성을 열어두고 확인 |
-| `archived` | 완료되었거나 과거 상태 보존 | 현재 상태로 단정하지 않음 |
+| `active` | 현재 작성·운영 중 | 완료로 단정하지 말고 최근 diff와 evidence를 확인 |
+| `stable` | 현재 정리본으로 사용 가능 | 바뀌는 기술은 최신성을 별도로 확인 |
+| `legacy` | 후속 문서가 대체한 구버전 | 현재 경로로 사용하지 않고 대체 문서를 찾는다. |
 | `stale` | 오래되었거나 구버전 가능 | 현재 기준 재검증 필요 |
+| `archived` | 종료된 기록 보존 | 현재 상태로 단정하지 않음 |
+
+`raw`, `reviewed`, `complete`는 새 status로 쓰지 않는다. RAW는 type/관계 필드로, 검토는 `reviewed_on`으로, 완료는 문맥에 따라 `stable` 또는 `archived`로 기록한다.
 
 ## Source and RAW policy
 
@@ -114,6 +117,6 @@ After editing:
 | Issue | Evidence | Next action |
 |---|---|---|
 | 전체 AI inventory 미운영 | 현재 이 파일은 운영 인덱스이며 전체 파일 목록이 아님 | 별도 inventory를 기본 생성하지 않는다. 필요할 때 `rg --files`와 인접 MOC로 조사 |
-| frontmatter 통일 안 됨 | 기존 vault 전반에 `type`, `status`, `parent_moc`, `source`가 일관되지 않을 가능성 높음 | 핵심 MOC와 stable concept/lab 노트부터 표본 적용 |
+| legacy frontmatter 혼재 | 기존 노트에 예전 `type/status`와 누락 필드가 남아 있음 | 새 노트는 템플릿과 validator를 적용하고, 기존 노트는 현재 경로에 올라올 때만 점진 정렬 |
 | AWS 공식 강사 / ARC 안정 MOC 미작성 | ARC RAW는 클라우드 MOC에 연결됐지만, 별도 안정 MOC나 source catalog는 아직 없음 | 수업 종료 또는 재사용 시점에 ARC 과정 재시작 지점과 source catalog를 만들지 결정 |
 | source/RAW catalog 미분리 | PDF, 캡처, RAW, 진단 원문이 영역별로 섞여 있을 수 있음 | `40_자료`와 프로젝트 evidence 계층을 분리 검토 |

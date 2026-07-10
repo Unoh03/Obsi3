@@ -23,7 +23,7 @@
 4. 현재진행 RAW는 완벽히 정리하지 않는다. 완료되거나 다시 찾을 가치가 생긴 단위부터 안정화한다.
 5. RAW, source, stable note, restart point는 분리한다.
 6. AI가 헤맨 지점은 실제 MOC 또는 source catalog에 먼저 반영하고, 필요하면 agent index에 오판 방지 규칙을 추가한다.
-7. 전체 inventory와 frontmatter 통일은 즉시 전수 적용하지 않는다. 검증된 구조가 생긴 뒤 단계적으로 적용한다.
+7. 전체 inventory 파일은 기본 생성하지 않고 `rg --files`로 필요할 때 조사한다. 기존 frontmatter는 전수 소급하지 않고 현재 경로부터 단계적으로 정렬한다.
 
 ## 구조 계층
 
@@ -35,7 +35,7 @@
 | Stable note | 장기 기억 단위 | 개념 노트, 실습 노트, troubleshooting | 나중에 읽어도 독립적으로 이해되어야 한다. |
 | RAW and source | 원자료와 증거 | RAW 메모, PDF, 캡처, 진단 원문 | 정리본과 같은 위상으로 취급하지 않는다. |
 | Agent operating layer | AI 오판 방지 | [[00_index/LLM_AGENT_INDEX]] | 실제 경로를 대신 만들지 않는다. |
-| Future inventory | 전체 파일 추적 | 미정 | 필요할 때 생성한다. 사람이 매일 읽는 MOC가 아니다. |
+| On-demand inventory | 전체 파일 확인 | `rg --files` | 지속 문서를 만들지 않고 작업 시점에 조사한다. |
 
 ## Note type 기준
 
@@ -44,21 +44,23 @@
 | `moc` | 탐색 지도 | 링크는 핵심 경로만. 파일 목록화 금지. |
 | `concept` | 개념 복구용 노트 | 정의, 오해 포인트, 확인 질문을 포함한다. |
 | `lab` | 실습 복구용 노트 | 명령, 관찰, 오류, 검증 결과를 분리한다. |
-| `troubleshooting` | 문제 해결 기록 | 증상, 원인, 해결, 재발 방지 기준을 둔다. |
-| `raw` | 수업 중 빠른 메모 | 보존한다. 정리본으로 단정하지 않는다. |
-| `source` | PDF, 캡처, 원문 로그 | 범위와 출처 확인용이다. |
-| `project` | 팀 프로젝트 운영/결과 | 결과물, 증거, 스크립트, 원문 로그를 구분한다. |
+| `command-note`, `troubleshooting` | 명령 재사용과 문제 복구 | 환경과 실제 검증 여부를 남긴다. |
+| `source-digest`, `raw` | 원자료 변환본과 원문 기록 | stable note로 단정하지 않고 source 경계를 유지한다. |
+| `project-raw-log`, `project-daily-log`, `project-doc` | 프로젝트 원문, digest, 안정 문서 | 프로젝트 MOC와 evidence를 연결한다. |
+| `meeting`, `wrong-answer`, `security-policy` | 회의, 오답, 정책 설계 | 역할별 템플릿과 검증 기준을 따른다. |
 
 ## 상태 기준
 
 | Status | 의미 | 다음 행동 |
 |---|---|---|
-| `current` | 현재진행 중 | 최소 진입점만 유지하고 잦은 재정리는 피한다. |
-| `stable` | 다시 읽을 수 있는 정리본 | MOC에 연결하고 필요하면 review 질문을 붙인다. |
-| `raw` | 아직 흡수되지 않음 | source로 보존한다. 필요할 때만 요약한다. |
+| `draft` | 초안 | 누락·오류 가능성을 열어두고 확인한다. |
+| `active` | 현재 작성·운영 중 | 최소 진입점만 유지하고 잦은 재정리는 피한다. |
+| `stable` | 다시 읽을 수 있는 정리본 | MOC에 연결하고 바뀌는 기술은 최신성을 확인한다. |
 | `legacy` | 예전 방식으로 만든 노트 | 자주 찾거나 혼선을 일으킬 때만 재구성한다. |
 | `stale` | 현재 기준과 충돌 가능 | 최신성 또는 현재 수업 흐름을 확인한다. |
 | `archived` | 완료된 과거 기록 | 현재 상태로 단정하지 않는다. |
+
+`raw`, `reviewed`, `complete`는 status로 쓰지 않는다. RAW는 type/관계 필드로, 검토는 `reviewed_on`으로, 완료는 `stable` 또는 `archived`로 기록한다.
 
 ## 작업 우선순위
 
@@ -131,5 +133,5 @@ AI는 다음 기준으로 움직여야 한다.
 | 공식 Arc 과정 | 현재진행 중이므로 최소 진입점만 유지 | 보류 |
 | 웹보안 완료 단위 정리 | concept/lab/source 분리가 이미 어느 정도 있어 효과가 큼 | 후보 |
 | KISA 프로젝트 evidence 분리 | 결과, 스크립트, 원문 로그 혼선 방지 | 후보 |
-| 전수 inventory | 전체 파일 추적용 | 아직 보류 |
+| 전수 inventory | 전체 파일 추적용 | 기본 생성하지 않고 `rg --files` 사용 |
 | frontmatter 전수 통일 | type/status 자동화 기반 | 아직 보류 |

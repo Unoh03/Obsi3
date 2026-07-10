@@ -47,6 +47,26 @@ keep study notes, MOCs, and templates in Korean unless asked otherwise.
 - Search filenames and links before opening large notes, source directories,
   PDFs, screenshots, or RAW logs.
 
+## Note Creation
+
+- Every new vault note must start from one matching file in `90_템플릿/`.
+  Once the role is known, read that template directly; do not read the whole
+  template catalog.
+- Study mapping: concept → `개념정리_템플릿.md`, lab →
+  `실습기록_템플릿.md`, command → `명령어정리_템플릿.md`, troubleshooting
+  → `트러블슈팅_템플릿.md`, source digest → `Source_Digest_템플릿.md`, MOC →
+  `인덱스_MOC_템플릿.md`.
+- Project mapping: RAW → `프로젝트_RAW_로그_템플릿.md`, daily digest →
+  `프로젝트_일일_로그_템플릿.md`, stable document →
+  `프로젝트문서_템플릿.md`, meeting → `회의록_템플릿.md`.
+- Fill `type`, `status`, `created`, and the applicable routing field. Remove
+  unused optional fields and sections instead of leaving empty boilerplate.
+- Use only the canonical `type` and `status` values defined in
+  `90_템플릿/00_템플릿_목차.md`. Do not duplicate `status` as a status tag.
+- Do not retrofit legacy notes merely because they lack the new frontmatter.
+  Normalize them only when explicitly requested or when their routing status
+  materially affects the current task.
+
 ## Obsidian Conventions
 
 - When routing is unknown, start from `00_index/Home.md` and follow folder/topic
@@ -121,6 +141,8 @@ Do not introduce Conventional Commit prefixes unless asked.
 
 - Markdown: run `git diff --check`, inspect the targeted diff, and verify new
   wiki-link targets.
+- New notes, template changes, or frontmatter changes: also run
+  `python scripts/validate_frontmatter.py --changed`.
 - `.gitignore` or tracking policy: also run relevant `git status --short`,
   `git ls-files`, `git check-ignore -v`, conflict-marker checks, and
   `git ls-files "*.war"`.
