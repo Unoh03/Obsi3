@@ -31,10 +31,26 @@ keep study notes, MOCs, and templates in Korean unless asked otherwise.
 - For destructive, secret-related, or history-rewriting actions, approval must
   name the action and target. Ambiguous replies such as `ㅇㅋ` are insufficient.
 
+## Read Budget
+
+- If the user names an exact file or path, inspect that target first. Read its
+  nearest MOC only when placement, role, or neighboring context is unclear.
+- If the topic is known but the exact file is not, start from the nearest
+  subject or project MOC. Move upward only when routing remains ambiguous.
+- If the scope is broad or unknown, route from `00_index/Home.md` through the
+  relevant area MOC and subject or project MOC before opening leaf notes.
+- Read `00_index/LLM_AGENT_INDEX.md` only for vault navigation, MOC/index
+  architecture, source/RAW separation, stale-index cleanup, or inventory work.
+- Read `00_index/Vault_Retrieval_Architecture_v1.md` and
+  `00_index/Vault_Curation_Checklist.md` only for repository-wide audits or
+  architecture work that needs their design or completion claims.
+- Search filenames and links before opening large notes, source directories,
+  PDFs, screenshots, or RAW logs.
+
 ## Obsidian Conventions
 
-- Route from `00_index/Home.md` through folder/topic MOCs, usually
-  `00_*_목차.md`.
+- When routing is unknown, start from `00_index/Home.md` and follow folder/topic
+  MOCs, usually `00_*_목차.md`.
 - Create notes in the most relevant existing topic folder. Ask before creating
   one if routing is unclear or spans folders.
 - Use wiki links only for verified existing targets. Write plain text for

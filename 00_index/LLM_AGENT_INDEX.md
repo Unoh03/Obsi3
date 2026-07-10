@@ -2,25 +2,26 @@
 
 이 파일은 사람용 목차가 아니라 Codex, Claude, Gemini 같은 LLM/agent가 vault 탐색 규칙이 필요할 때 읽는 운영 인덱스다.
 
-이 파일은 `00_index/Home.md`를 대체하지 않는다. 실제 탐색 구조의 기준은 여전히 `Home → 영역 목차 → 주제/프로젝트 목차 → 실제 노트`다.
+이 파일은 `00_index/Home.md`를 대체하지 않는다. 대상을 모를 때 실제 탐색 구조의 기준은 `Home → 영역 목차 → 주제/프로젝트 목차 → 실제 노트`다.
 
-## Agent read order
+## Agent read budget
 
-일반 탐색은 `Home.md`에서 시작한다. 이 파일은 vault navigation, MOC/index architecture, source/RAW 분리, stale-index cleanup, inventory 작업처럼 agent 운영 규칙이 필요한 경우에만 읽는다.
+이 파일은 vault navigation, MOC/index architecture, source/RAW 분리, stale-index cleanup, inventory 작업처럼 agent 운영 규칙이 필요한 경우에만 읽는다. 일반 작업은 아래에서 가장 짧은 경로를 선택한다.
 
-1. `AGENTS.md`
-2. `00_index/Home.md`
-3. 관련 영역 MOC
-4. 관련 주제/프로젝트 MOC
-5. 대상 노트
-6. RAW, source, PDF, 캡처, 로그는 근거 확인이 필요할 때만 읽는다.
+| 작업 상태 | 기본 읽기 경로 |
+|---|---|
+| 정확한 파일이나 경로가 지정됨 | `AGENTS.md → 대상 파일`; 역할·배치가 불명확할 때만 가장 가까운 MOC 확인 |
+| 주제는 알지만 대상 파일을 모름 | `AGENTS.md → 가장 가까운 주제/프로젝트 MOC → 대상 파일` |
+| 범위가 넓거나 탐색 위치를 모름 | `AGENTS.md → Home → 영역 MOC → 주제/프로젝트 MOC → 대상 파일` |
+
+RAW, source, PDF, 캡처, 로그는 근거 확인이 필요할 때만 읽는다. 이미 명시된 대상을 확인하기 위해 상위 MOC와 제어 문서를 역순으로 모두 읽지 않는다.
 
 ## Operating rules
 
 | Rule | Agent behavior |
 |---|---|
 | Local evidence first | vault 작업은 실제 파일, git 상태, 명령 출력, MOC를 먼저 확인한다. |
-| MOC is navigation, not inventory | MOC에 없는 파일도 누락이라고 단정하지 않는다. 전체 파일 추적은 별도 inventory나 `rg --files`로 확인한다. |
+| MOC is navigation, not inventory | MOC에 없는 파일도 누락이라고 단정하지 않는다. 전체 파일 확인이 필요하면 `rg --files`로 조사한다. |
 | RAW is not stable knowledge | RAW 메모, 원문 로그, PDF, 캡처는 근거이거나 재료다. 정리본·개념 노트와 같은 위상으로 취급하지 않는다. |
 | Preserve user work | dirty target file은 사용자 작업으로 보고, 충돌 가능성을 먼저 보고한다. |
 | No placeholder links | 존재 확인 없이 wiki link를 만들지 않는다. |
@@ -89,7 +90,7 @@
 | AWS class split | `Home.md`, 클라우드 MOC, AWS MOC, 공식 Arc RAW | `AWS기초.pdf` 흐름은 완료/legacy로 보고, 공식 Arc 현재진행 RAW와 섞지 않는다. |
 | Old AWS material | AWS MOC의 `AWS기초.pdf` 기준 시점 경고 | Console UI, 비용, Free Tier, 보안 기본값은 현재 기준으로 재확인한다. |
 | RAW promoted into core path | MOC 섹션명과 링크 대상 파일 성격 | RAW를 제거하기보다 RAW/source 섹션으로 분리한다. |
-| MOC overgrowth | 긴 MOC가 파일 목록처럼 변한 경우 | 핵심 경로, 재시작 지점, source catalog, inventory를 분리한다. |
+| MOC overgrowth | 긴 MOC가 파일 목록처럼 변한 경우 | 핵심 경로, 재시작 지점, source/RAW 경계만 남기고 전체 파일은 `rg --files`로 확인한다. |
 | Unlinked file | `rg --files`, nearby MOC, file content | 누락이라고 단정하지 말고 의도적 비노출 가능성을 판단한다. |
 
 ## Agent verification checklist
@@ -112,7 +113,7 @@ After editing:
 
 | Issue | Evidence | Next action |
 |---|---|---|
-| 전체 AI inventory 미작성 | 현재 이 파일은 운영 인덱스 MVP이며 전체 파일 목록이 아님 | 다음 루프에서 `rg --files` 기반 inventory 초안을 만들지 결정 |
+| 전체 AI inventory 미운영 | 현재 이 파일은 운영 인덱스이며 전체 파일 목록이 아님 | 별도 inventory를 기본 생성하지 않는다. 필요할 때 `rg --files`와 인접 MOC로 조사 |
 | frontmatter 통일 안 됨 | 기존 vault 전반에 `type`, `status`, `parent_moc`, `source`가 일관되지 않을 가능성 높음 | 핵심 MOC와 stable concept/lab 노트부터 표본 적용 |
 | AWS 공식 강사 / ARC 안정 MOC 미작성 | ARC RAW는 클라우드 MOC에 연결됐지만, 별도 안정 MOC나 source catalog는 아직 없음 | 수업 종료 또는 재사용 시점에 ARC 과정 재시작 지점과 source catalog를 만들지 결정 |
 | source/RAW catalog 미분리 | PDF, 캡처, RAW, 진단 원문이 영역별로 섞여 있을 수 있음 | `40_자료`와 프로젝트 evidence 계층을 분리 검토 |
