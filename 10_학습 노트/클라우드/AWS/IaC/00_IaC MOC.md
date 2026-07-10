@@ -3,11 +3,8 @@ title: IaC MOC
 created: 2026-07-06
 status: active
 type: moc
-source_context:
-  - Iac.pdf
-  - IaC - Source Digest v2.md
-  - IaC - 공식 검증 노트.md
-  - Terraform RDS 인프라 구성 실습 v7.0.md
+scope: AWS 수업 자료와 Terraform AWS 실습
+parent_moc: "[[10_학습 노트/클라우드/AWS/00_AWS_목차]]"
 tags:
   - 과목/AWS
   - 주제/IaC
@@ -17,83 +14,56 @@ tags:
 
 # IaC MOC
 
-> 현재 이 폴더의 IaC 노트는 일반 IaC 전체가 아니라, AWS 수업 자료와 Terraform AWS 실습을 중심으로 정리한 묶음이다.
+> AWS 수업 자료와 Terraform 기반 AWS 실습을 연결하는 탐색 지도다. 일반 IaC 전체의 완전한 목록이나 실습 진행 로그로 사용하지 않는다.
 
-## Source
+## 상위 경로
+
+- [[10_학습 노트/클라우드/AWS/00_AWS_목차|AWS 목차]]
+
+## 현재 재시작 지점
+
+- 기본 Terraform 실습 흐름: [[Terraform AWS CLI 초기 설정 실습 v6.3]]
+- RDS 전환 실습: [[Terraform RDS 인프라 구성 실습 v7.0]]
+  - 후속 RDS 검증은 별도 RDS 실습 흐름에서 진행한다.
+- 다음 독립 학습 후보:
+  - [[Terraform Backend와 Remote State]]
+  - [[Terraform Module]]
+
+## 핵심 개념
+
+### IaC 기초
+
+- [[IaC 개념]]
+- [[IaC 도구 분류]]
+
+### Terraform 기초
+
+- [[Terraform 개요]]
+- [[Terraform Workflow]]
+- [[Terraform Resource와 Data Source]]
+- [[Terraform Variable과 Output]]
+- [[Terraform 반복문과 조건문]]
+
+### 구조화와 상태 관리
+
+- [[Terraform Module]]
+- [[Terraform Backend와 Remote State]]
+
+## 대표 실습
+
+- [[Terraform AWS CLI 초기 설정 실습 v6.3]] - AWS CLI와 Terraform 설치부터 VPC, EC2, NAT Instance, S3 Gateway Endpoint, Web-DB 연동까지 누적한 통합 실습
+- [[Terraform RDS 인프라 구성 실습 v7.0]] - EC2 DB 구조를 RDS MariaDB 구조로 전환하고 DB Subnet Group, endpoint 주입, 의존 관계를 검증한 실습
+
+## 원자료 / RAW / 검증
 
 - [[IaC PDF Obsidian 노트화 계획 v2]]
 - [[IaC - Source Digest v2]]
 - [[IaC - 공식 검증 노트]]
 - [[raw 노트]]
 
-## Concept Notes
+## 정리 대기
 
-- [[IaC 개념]]
-- [[IaC 도구 분류]]
-- [[Terraform 개요]]
-- [[Terraform Workflow]]
-- [[Terraform Resource와 Data Source]]
-- [[Terraform Variable과 Output]]
-- [[Terraform 반복문과 조건문]]
-- [[Terraform Module]]
-- [[Terraform Backend와 Remote State]]
-
-## Lab Notes
-
-- [[Terraform AWS CLI 초기 설정 실습 v6.3]]
-  - AWS CLI/Profile/Terraform 설치
-  - VPC/Subnet/EC2 최소 골격 실습
-  - Public/Private 역할 Subnet 2개와 EC2 2대 배치 실습
-  - PDF 27p Resource & Data Source 아키텍처 구현
-  - Route Table과 Route Table Association 실습
-  - Security Group 기본 연결 실습
-  - NAT Instance 기반 Private EC2 외부 통신 실습
-  - Private WEB EC2 outbound 검증 증적 포함
-  - 강사님 정답지 `main.tf`와 내 구현 코드 비교
-  - Public Web + Private DB + S3 Gateway Endpoint 실습
-  - 격리된 Private DB 서버에서 S3 Gateway Endpoint를 통한 MariaDB 설치 원리
-  - `user_data`를 `00-common.sh`, `10-db-install.sh`, `20-web-install.sh`로 분리한 리팩토링 기록
-  - Apache httpd + PHP-FPM + PHP PDO 기반 Web → Private DB 연동 검증
-  - 브라우저/PowerShell curl/WEB 내부/DB 내부 검증 증적 포함
-  - Brave 브라우저 HTTPS 자동 전환 이슈와 HTTP 명시 접속 트러블슈팅
-  - AWS 예약 IP 오류와 해결 과정 기록
-
-- [[Terraform RDS 인프라 구성 실습 v7.0]]
-  - EC2 DB 구조에서 RDS MariaDB 구조로 전환
-  - RDS DB Subnet Group 2AZ 요구사항 검증
-  - `DBSubnetGroupDoesNotCoverEnoughAZs` 오류와 해결 과정 기록
-  - RDS master password 8자 미만 오류 기록
-  - `templatefile()`로 RDS endpoint를 WEB user_data에 주입
-  - Terraform implicit dependency와 Security Group stateful 동작 정리
-  - v7.1에서 WEB → RDS INSERT/SELECT 검증 예정
-
-## Completed in Lab Log
-
-- RDS DB Subnet Group 2AZ 요구사항 실증
-- RDS Single-AZ DB Instance 인프라 구성
-- RDS subnet 1개 구성 실패와 `DBSubnetGroupDoesNotCoverEnoughAZs` 오류 기록
-- Terraform `templatefile()` 기반 RDS endpoint 주입 구조 정리
-- Terraform implicit dependency와 Security Group stateful 동작 정리
-- NAT Instance 기반 Private EC2 outbound 검증
-- S3 Gateway Endpoint 기반 격리 DB 서버 패키지 설치 검증
-- `user_data` 파일 분리 리팩토링
-- Public Web → Private DB 연동 검증
-
-## Pending
-
-- Terraform RDS WEB-DB 연동 검증 실습 v7.1
-- AWS 프로젝트에 Terraform 적용하기
-- Terraform Resource 참조 심화 실습
-- Terraform Data Source 실습
-- Terraform Security Group 최소 권한화 실습
-- Terraform 2AZ 전체 구조 확장 실습
-- Terraform Bastion Host와 NAT Instance 역할 분리 실습
-- Terraform Backend/Remote State 실습
-- Terraform Module 실습
-- Terraform 실습 통합 로그 분리
-  - NAT Instance 노트
-  - S3 Gateway Endpoint 노트
-  - `user_data` Bootstrap 노트
-  - Web DB 연동 노트
-  - 실습 오류 모음 노트
-- Terraform Module 실습
+- [ ] Terraform Backend/Remote State 실습
+- [ ] Terraform Module 실습
+- [ ] Terraform 실습 통합 로그 분리 여부 결정
+- [ ] AWS 프로젝트에 Terraform 적용하기
