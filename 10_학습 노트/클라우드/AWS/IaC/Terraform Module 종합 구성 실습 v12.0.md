@@ -195,6 +195,29 @@ Module을 만드는 방법
 
 ## 3. Root Module과 Composition Root
 
+Terraform에서 Module의 경계는 기본적으로 디렉터리다.
+
+```text
+Root Module
+= terraform 명령을 직접 실행하는 디렉터리의 구성
+
+Child Module
+= Root Module이 module 블록의 source로 호출한 디렉터리의 구성
+```
+
+현재 실습에 대응하면 다음과 같다.
+
+| 구분 | 현재 디렉터리 | 판정 근거 |
+|---|---|---|
+| Dev Root Module | `dev/` | `dev/`에서 `terraform apply` 실행 |
+| Prod Root Module | `prod/` | `prod/`에서 `terraform apply` 실행 |
+| Networks Child Module | `modules/networks/` | Root의 `module "networks"`가 호출 |
+| Servers Child Module | `modules/servers/` | Root의 `module "servers"`가 호출 |
+
+> [!important] `modules/`라는 폴더명 자체가 Child Module을 만드는 것은 아니다
+> 별도 디렉터리의 Terraform 구성을 `module` 블록의 `source`로 호출했기 때문에 Child Module이 된다.
+> 따라서 현재 질문처럼 **Root Module은 `dev/`와 `prod/`, Child Module은 호출된 `modules/networks/`와 `modules/servers/`**라고 이해하면 맞다.
+
 이번 `dev/main.tf`, `prod/main.tf`는 단순 실행 폴더를 넘어 **조립 계층**의 역할을 한다.
 
 Root Module이 결정하는 것:
@@ -384,24 +407,187 @@ terraform apply
 
 ```mermaid
 flowchart TD
-    A["dev/ 또는 prod/에서 terraform apply"] --> B["Root Module이 env와 VPC CIDR 선택"]
-    B --> C["module.networks 호출"]
-    C --> D["VPC·Subnet·IGW·Route Table·NAT 구성"]
-    D --> E["VPC ID와 Subnet ID를 Output으로 공개"]
-    E --> F["Root Module이 Output을 module.servers Input에 연결"]
-    F --> G["Security Group·Bastion·Web·RDS·S3·IAM 구성"]
-    C --> H["선택한 환경의 Terraform State"]
-    G --> H
+    subgraph LOAD["1. 구성 해석 단계"]
+        A["dev/ 또는 prod/에서 terraform apply"] --> B["Root Module의 모든 .tf 읽기"]
+        B --> C["module.networks 호출 발견"]
+        B --> D["module.servers 호출 발견"]
+        C --> E["modules/networks의 모든 .tf 읽기"]
+        D --> F["modules/servers의 모든 .tf 읽기"]
+        E --> G["전체 Resource 참조와 Dependency Graph 계산"]
+        F --> G
+    end
+
+    subgraph APPLY["2. 실제 생성·값 전달 단계"]
+        G --> H["Networks에 env와 VPC CIDR Input 전달"]
+        H --> I["VPC·Subnet 등 Network Resource 생성"]
+        I --> J["VPC ID·Subnet ID Output 값 확정"]
+        J --> K["Root Module이 Networks Output을 Servers Input에 연결"]
+        K --> L["해당 ID가 필요한 Server Resource 생성"]
+        L --> M["선택한 환경의 Terraform State에 기록"]
+    end
+
+    F -. "Servers 구성은 이미 읽었지만<br/>필요한 Network ID를 기다림" .-> K
 ```
 
-단계별 의미:
+이 그림에서 **`module.servers` 호출 발견**과 **Servers Resource 생성 시작**은 서로 다른 시점이다.
 
-1. Root Module이 환경 이름과 VPC CIDR을 결정한다.
-2. `module.networks`가 그 값을 Input으로 받아 네트워크 Resource를 선언한다.
-3. Networks Module은 외부 Module이 필요로 하는 VPC·Subnet ID만 Output으로 공개한다.
-4. Root Module이 `module.networks.*` 값을 `module.servers`의 Input에 전달한다.
-5. Servers Module은 전달받은 ID를 이용해 같은 VPC와 Subnet 안에 서버 계층을 구성한다.
-6. 두 Child Module의 Resource 주소는 선택한 환경의 State 하나에 함께 기록된다.
+```text
+구성 해석 단계:
+Terraform이 networks와 servers Module 호출을 모두 발견하고
+양쪽 디렉터리의 구성을 미리 읽는다.
+
+실제 생성 단계:
+Servers Resource가 VPC·Subnet ID를 필요로 하면
+Networks Output 값이 확정될 때까지 기다린 뒤 생성한다.
+```
+
+따라서 `module.servers 호출 발견` 자체를 Networks Output 뒤로 옮기는 것은 정확하지 않다. 사용자의 의견처럼 **실제 서버 구축 단계는 Networks Output 뒤에 연결**하는 것이 맞으며, 위 그림은 두 사실을 함께 표현한다.
+
+단계별 의미는 다음과 같다.
+
+1. `prod/`에서 실행하면 `prod/`가 Root Module이 된다.
+2. Terraform은 Root Module의 모든 `.tf`를 읽고 `networks`, `servers` 호출을 발견한다.
+3. 각 `source`가 가리키는 Child Module 디렉터리의 모든 `.tf`를 읽는다.
+4. 파일 이름이나 위아래 순서가 아니라 Resource 참조식을 기준으로 Dependency Graph를 계산한다.
+5. Root Module이 환경 이름과 VPC CIDR을 Networks Input으로 전달한다.
+6. Networks Module이 VPC와 Subnet 등을 만들면 AWS가 실제 ID를 반환한다.
+7. Networks Output이 그 ID를 Module 외부에 공개한다.
+8. Root Module이 `module.networks.*` 값을 Servers Input에 연결한다.
+9. Servers Module은 전달받은 ID를 사용해 같은 VPC와 Subnet 안에 서버 계층을 구성한다.
+10. 두 Child Module의 Resource 주소는 선택한 환경의 State 하나에 함께 기록된다.
+
+#### `.tf` 파일은 순서대로 실행되지 않는다
+
+다음과 같이 동작한다고 이해하면 안 된다.
+
+```text
+variables.tf 실행
+→ main.tf 실행
+→ output.tf 실행
+```
+
+같은 디렉터리의 모든 `.tf` 파일은 하나의 Module 구성으로 합쳐진다.
+
+```text
+modules/networks/
+├─ main.tf
+├─ variables.tf
+└─ output.tf
+
+          ↓
+
+하나의 Networks Child Module
+```
+
+파일명은 사람이 역할을 구분하기 위한 관례다. Terraform은 전체 구성을 읽은 뒤 참조 관계를 기준으로 작업 순서를 정한다.
+
+#### Input → Resource → Output
+
+각 파일의 역할을 간단히 구분하면 다음과 같다.
+
+```text
+variables.tf
+= Module이 외부에서 무엇을 받을 것인가
+
+main.tf
+= 받은 값으로 어떤 Resource 상태를 선언할 것인가
+
+output.tf
+= 생성 결과 중 무엇을 Module 외부에 공개할 것인가
+```
+
+`prod/main.tf`는 Networks Module에 환경별 값을 전달한다.
+
+```hcl
+module "networks" {
+  source   = "../modules/networks"
+  env      = var.env
+  vpc-cidr = "10.0.0.0/16"
+}
+```
+
+이 값은 `modules/networks/variables.tf`에 선언된 Input으로 들어간다.
+
+```text
+prod의 "prod"
+→ networks의 var.env
+
+prod의 "10.0.0.0/16"
+→ networks의 var.vpc-cidr
+```
+
+Networks Module이 AWS Resource를 만들면 다음과 같은 실제 ID가 생긴다.
+
+```text
+vpc-0123456789abcdef0
+subnet-0123456789abcdef0
+subnet-0abcdef1234567890
+```
+
+`modules/networks/output.tf`는 이 값들을 Child Module 외부에 공개한다.
+
+```hcl
+output "vpc-id" {
+  value = aws_vpc.module-vpc.id
+}
+```
+
+Networks Module 내부 주소와 Root Module에서 사용하는 공개 주소는 다음처럼 구분된다.
+
+```text
+Networks 내부 Resource 주소:
+aws_vpc.module-vpc.id
+
+Networks가 공개한 Output 주소:
+module.networks.vpc-id
+```
+
+Root Module은 공개된 값을 Servers Module의 Input으로 전달한다.
+
+```hcl
+module "servers" {
+  source = "../modules/servers"
+
+  vpc-id               = module.networks.vpc-id
+  public-subnet-2c-id  = module.networks.public-subnet-2c-id
+  private-subnet-2a-id = module.networks.private-subnet-2a-id
+  private-subnet-2c-id = module.networks.private-subnet-2c-id
+}
+```
+
+#### Output은 단순한 화면 출력이 아니다
+
+Child Module의 Output은 함수의 반환값과 비슷한 **공개 Interface** 역할을 한다.
+
+```text
+Networks Resource
+aws_vpc.module-vpc.id
+        ↓
+Networks Output
+output "vpc-id"
+        ↓
+Root Module
+module.networks.vpc-id
+        ↓
+Servers Input
+var.vpc-id
+        ↓
+Servers Resource
+Security Group의 vpc_id
+```
+
+현재 `networks/output.tf`의 주목적은 값을 화면에 보여주는 것이 아니라 Networks의 생성 결과를 Root가 받아 Servers에 전달할 수 있도록 공개하는 것이다.
+
+반면 최종 사용자가 `terraform apply` 결과나 `terraform output`에서 값을 확인하려면 Root Module에 Output을 다시 선언해야 한다.
+
+```hcl
+# prod/output.tf 예시
+output "vpc_id" {
+  value = module.networks.vpc-id
+}
+```
+
+현재 `prod/`에는 Root Output이 없으므로 Networks의 Child Output은 주로 Servers에 값을 전달하는 내부 연결에 사용되며, 최종 `Outputs:` 목록에는 표시되지 않는다.
 
 대표적인 값 하나를 끝까지 추적하면 다음과 같다.
 
