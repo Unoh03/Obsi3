@@ -105,6 +105,7 @@ v12:
 > - [[#Part 2. Networks Child Module|Part 2. Networks Module]]
 > - [[#Part 3. Servers Child Module|Part 3. Servers Module]]
 > - [[#Part 4. Root Module 조립|Part 4. Dev/Prod 조립]]
+> - [[#5-1. 처음부터 끝까지 보는 전체 작동 흐름|전체 작동 흐름]]
 > - [[#19. Networks Output → Servers Input|Module 계약 연결]]
 > - [[#23. 전체 Module Dependency Graph|전체 의존성]]
 > - [[#26. 현재 코드의 확인 필요 항목|확인 필요 항목]]
@@ -341,6 +342,186 @@ prod/main.tf
 ```
 
 로 분리한다.
+
+---
+
+## 5-1. 처음부터 끝까지 보는 전체 작동 흐름
+
+> [!warning] 코드 기준 예상 흐름
+> 아래 내용은 `D:\terraform\workspace\12_module_quiz`의 실제 참조식을 따라 정리한 **설계상 작동 흐름**이다.
+> 아직 `terraform plan`·`apply`와 AWS 통신 결과로 검증한 흐름은 아니다.
+
+### 5-1-1. 어느 폴더에서 실행하는지가 환경을 결정한다
+
+이 구성은 `12_module_quiz` 최상위가 아니라 `dev` 또는 `prod`에서 Terraform을 실행한다.
+
+```powershell
+cd D:\terraform\workspace\12_module_quiz\dev
+terraform init
+terraform plan
+terraform apply
+```
+
+Prod를 만들 때는 실행 디렉터리를 바꾼다.
+
+```powershell
+cd D:\terraform\workspace\12_module_quiz\prod
+terraform init
+terraform plan
+terraform apply
+```
+
+실행 디렉터리에 따라 선택되는 값은 다음과 같다.
+
+| Root Module | `env` | VPC CIDR | 기본 Local State 위치 |
+|---|---|---|---|
+| `dev/` | `dev` | `192.168.0.0/16` | `dev/terraform.tfstate` |
+| `prod/` | `prod` | `10.0.0.0/16` | `prod/terraform.tfstate` |
+
+따라서 `dev`에서 `apply`한다고 `prod`도 함께 만들어지는 것이 아니다. 두 폴더는 같은 Child Module 소스를 사용하지만 서로 다른 Root Module과 State다.
+
+### 5-1-2. Terraform 구성과 값 전달 흐름
+
+```mermaid
+flowchart TD
+    A["dev/ 또는 prod/에서 terraform apply"] --> B["Root Module이 env와 VPC CIDR 선택"]
+    B --> C["module.networks 호출"]
+    C --> D["VPC·Subnet·IGW·Route Table·NAT 구성"]
+    D --> E["VPC ID와 Subnet ID를 Output으로 공개"]
+    E --> F["Root Module이 Output을 module.servers Input에 연결"]
+    F --> G["Security Group·Bastion·Web·RDS·S3·IAM 구성"]
+    C --> H["선택한 환경의 Terraform State"]
+    G --> H
+```
+
+단계별 의미:
+
+1. Root Module이 환경 이름과 VPC CIDR을 결정한다.
+2. `module.networks`가 그 값을 Input으로 받아 네트워크 Resource를 선언한다.
+3. Networks Module은 외부 Module이 필요로 하는 VPC·Subnet ID만 Output으로 공개한다.
+4. Root Module이 `module.networks.*` 값을 `module.servers`의 Input에 전달한다.
+5. Servers Module은 전달받은 ID를 이용해 같은 VPC와 Subnet 안에 서버 계층을 구성한다.
+6. 두 Child Module의 Resource 주소는 선택한 환경의 State 하나에 함께 기록된다.
+
+대표적인 값 하나를 끝까지 추적하면 다음과 같다.
+
+```text
+aws_subnet.module-private-subnet-2a.id
+→ networks/output.tf의 private-subnet-2a-id
+→ module.networks.private-subnet-2a-id
+→ servers의 var.private-subnet-2a-id
+→ Web EC2의 subnet_id
+→ RDS DB Subnet Group의 subnet_ids
+```
+
+Child Module끼리 직접 대화하는 것이 아니다. **Root Module이 Networks Output과 Servers Input을 연결하는 중간 조립자**다.
+
+### 5-1-3. Terraform이 실제로 계산하는 생성 의존성
+
+개념적으로는 `Networks → Servers`처럼 보이지만, Terraform이 Networks Module 전체를 완성한 뒤 Servers Module 전체를 시작하는 것은 아니다.
+
+```text
+VPC
+├─ Public/Private Subnet
+├─ IGW
+├─ NAT Security Group
+├─ Bastion/Web/RDS Security Group
+└─ S3·IAM처럼 VPC와 직접 무관한 Resource
+
+Public Subnet 2a + NAT SG
+└─ NAT Instance
+   └─ NAT ENI
+      └─ Private Route Table의 0.0.0.0/0 Route
+
+Private Subnet 2a·2c
+└─ RDS DB Subnet Group
+   + RDS SG
+      └─ RDS Instance
+         └─ RDS Endpoint
+            └─ Web EC2 user_data 렌더링
+
+S3 Bucket
+├─ boot.war Object
+└─ Web EC2 user_data의 Bucket 이름
+
+IAM Role
+└─ Instance Profile
+   └─ Web EC2
+```
+
+Terraform은 참조식이 없는 독립 분기를 병렬로 처리할 수 있다. 따라서 `.tf` 파일의 위아래 순서나 `module "networks"`가 먼저 적혔다는 사실만으로 생성 순서가 정해지지 않는다.
+
+### 5-1-4. 생성 후 AWS 통신 흐름
+
+```mermaid
+flowchart LR
+    Admin["관리자"] --> Bastion["Public Subnet 2c<br/>Bastion EC2"]
+    Bastion -.->|관리 접속 경로| Web["Private Subnet 2a<br/>Web EC2·Tomcat"]
+
+    Web -->|"3306·RDS SG"| RDS["Private Subnet Group<br/>RDS MariaDB"]
+    Web -.->|Instance Profile로 GetObject 권한| S3["S3 Bucket<br/>boot.war"]
+
+    Web --> PrivateRT["Private Route Table"]
+    PrivateRT --> NAT["Public Subnet 2a<br/>NAT Instance"]
+    NAT --> PublicRT["Public Route Table"]
+    PublicRT --> IGW["Internet Gateway"]
+    IGW --> Internet["Internet"]
+    Internet --> Repo["Package·Tomcat Repository"]
+    Internet --> S3
+```
+
+통신별 역할:
+
+| 흐름 | 목적 |
+|---|---|
+| 관리자 → Bastion | Public 관리 진입점 |
+| Bastion → Web | Private Web 관리 접속을 의도한 경로 |
+| Web → NAT → IGW | `apt`, `wget` 등 외부 Package·Tomcat 다운로드 |
+| Web → RDS:3306 | RDS 준비 확인, Schema 생성, Application DB 접속 |
+| Web → S3 | IAM Instance Profile로 `boot.war` 다운로드 |
+
+현재 구성에는 S3 VPC Endpoint가 없으므로 S3 요청의 실제 Network 경로도 `Web → NAT → IGW → S3 Public Endpoint`다. IAM Instance Profile은 이 요청의 Network 경로가 아니라 `GetObject` 권한을 제공한다.
+
+현재 코드에는 ALB나 Web EC2의 공인 IP가 없다. 따라서 Internet 사용자가 Web의 8080 포트로 들어오는 서비스 요청 경로는 아직 구성되지 않았다. Bastion은 관리 진입점이고 NAT Instance는 Private Outbound 전용이다.
+
+### 5-1-5. Web EC2 부팅 Script의 시간 흐름
+
+Web EC2가 생성되면 `web_install.tpl`이 다음 순서로 실행된다.
+
+```text
+Web EC2 부팅
+→ Swap 생성
+→ NAT를 통해 apt update·Java·Tomcat 다운로드
+→ Tomcat Service 시작
+→ RDS Endpoint가 응답할 때까지 반복 대기
+→ care Database와 Table 생성
+→ IAM Instance Profile 자격으로 S3의 boot.war 다운로드
+→ WAR 압축 해제 대기
+→ application.properties 수정
+→ Tomcat 재시작
+```
+
+여기서 Terraform이 보장하는 것과 Script가 기다리는 것을 구분해야 한다.
+
+```text
+Terraform 참조로 보장:
+- RDS Endpoint 값을 계산한 뒤 Web EC2 user_data 렌더링
+- S3 Bucket ID를 계산한 뒤 Web EC2 user_data 렌더링
+- IAM Instance Profile 생성 후 Web EC2 연결
+
+부팅 Script가 직접 대기:
+- RDS가 실제 접속 가능한 상태가 될 때까지 mysqladmin 반복
+- WAR가 압축 해제될 때까지 파일 존재 반복 확인
+```
+
+> [!warning] 현재 코드에서 보장되지 않는 순서
+> `aws_s3_object.module-boot-object`와 Web EC2는 모두 S3 Bucket을 참조하지만 서로를 직접 참조하지 않는다. 따라서 `boot.war` 업로드 완료 전에 Web의 `aws s3 cp`가 실행될 가능성이 있다.
+> 또한 Web EC2는 NAT Route Table Association을 직접 참조하지 않으므로, Private Outbound 경로가 완전히 준비되기 전에 `apt update`가 시작될 가능성이 있다.
+> 마지막 `application.properties` 수정은 전달받은 `${RDS_ENDPOINT}`가 아니라 기존 RDS 주소를 하드코딩하므로 [[#26. 현재 코드의 확인 필요 항목|확인 필요 항목]]과 함께 봐야 한다.
+
+### 5-1-6. 한 문장으로 압축
+
+> `dev` 또는 `prod` Root Module이 환경값을 선택하고 Networks Module의 VPC·Subnet Output을 Servers Module의 Input으로 연결하면, Terraform이 Resource 참조를 따라 필요한 순서를 계산해 환경별 State에 전체 인프라를 구성하고, 생성된 Web EC2는 NAT로 외부 Package를 받고 S3에서 Application을 내려받아 RDS에 연결한다.
 
 ---
 
