@@ -1,0 +1,365 @@
+{
+  "schema_version": 1,
+  "created": "2026-07-16",
+  "source_commit": "8aaea9e80d4866e90c34ac6875b04bb668f5aa0e",
+  "measurement_scope": "IaC, 웹보안, 팀 프로젝트의 실제 라우팅과 section-level retrieval",
+  "acceptance": {
+    "minimum_final_hit": 18,
+    "maximum_boundary_errors": 0,
+    "known_topic_max_nav_reads": 1,
+    "broad_task_max_nav_reads": 4,
+    "large_section_full_body_reads": 0
+  },
+  "cases": [
+    {
+      "id": "E1",
+      "kind": "exact_file",
+      "query": "`Terraform Resource와 Data Source.md`에서 Data Source가 무엇인지 찾아줘.",
+      "gold": {
+        "route": [],
+        "target": "10_학습 노트/클라우드/AWS/IaC/Terraform Resource와 Data Source.md",
+        "headings": ["Data Source"],
+        "role": "active-concept",
+        "locator": "direct"
+      },
+      "forbidden_targets": [],
+      "budget": {"max_nav_reads": 0, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "E2",
+      "kind": "exact_file",
+      "query": "`HTTP Method와 Header.md`에서 CONNECT와 VPN의 차이를 찾아줘.",
+      "gold": {
+        "route": [],
+        "target": "10_학습 노트/시스템보안/웹보안/HTTP Method와 Header.md",
+        "headings": ["CONNECT와 VPN은 다르다"],
+        "role": "active-concept",
+        "locator": "direct"
+      },
+      "forbidden_targets": [],
+      "budget": {"max_nav_reads": 0, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "E3",
+      "kind": "exact_file",
+      "query": "`무한 비번 에러.md`에서 빠른 복구용 전체 명령어를 찾아줘.",
+      "gold": {
+        "route": [],
+        "target": "20_팀 프로젝트/26. 6. 8 팀플/무한 비번 에러.md",
+        "headings": ["10. 빠른 복구용 전체 명령어"],
+        "role": "current-troubleshooting",
+        "locator": "direct"
+      },
+      "forbidden_targets": [],
+      "budget": {"max_nav_reads": 0, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "E4",
+      "kind": "exact_file",
+      "query": "`웹 애플리케이션 취약점 점검 보고서.md`의 전체 결과 요약표를 찾아줘.",
+      "gold": {
+        "route": [],
+        "target": "20_팀 프로젝트/26. 6. 8 팀플/웹 애플리케이션 취약점 점검 보고서.md",
+        "headings": ["4. 전체 결과 요약표"],
+        "role": "project-report-draft",
+        "locator": "direct"
+      },
+      "forbidden_targets": [],
+      "budget": {"max_nav_reads": 0, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "K1",
+      "kind": "known_topic",
+      "query": "Terraform state를 S3에 공유하고 동시에 수정되지 않게 잠그는 현재 방식을 복습하고 싶다.",
+      "gold": {
+        "route": ["10_학습 노트/클라우드/AWS/IaC/00_IaC MOC.md"],
+        "target": "10_학습 노트/클라우드/AWS/IaC/Terraform Backend와 Remote State.md",
+        "headings": ["공식 검증 반영: S3 Locking"],
+        "role": "active-concept",
+        "locator": "wiki"
+      },
+      "forbidden_targets": [
+        "10_학습 노트/클라우드/AWS/IaC/raw 노트.md",
+        "10_학습 노트/클라우드/AWS/IaC/IaC - Source Digest v2.md",
+        "10_학습 노트/클라우드/AWS/IaC/Terraform RDS 인프라 구성 실습 v9.0.md"
+      ],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "K2",
+      "kind": "known_topic",
+      "query": "SQL Injection으로 로그인 인증이 우회되는 핵심 조건을 설명해줘.",
+      "gold": {
+        "route": ["10_학습 노트/시스템보안/웹보안/00_웹보안_목차.md"],
+        "target": "10_학습 노트/시스템보안/웹보안/SQL Injection 개념과 인증 우회.md",
+        "headings": ["인증 우회의 핵심은 WHERE 조건이다"],
+        "role": "active-concept",
+        "locator": "wiki"
+      },
+      "forbidden_targets": [
+        "10_학습 노트/시스템보안/웹보안/SQL Injection 인증 우회 실습.md",
+        "10_학습 노트/시스템보안/웹보안/SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악.md",
+        "10_학습 노트/시스템보안/웹보안/SQL Injection 방어.md"
+      ],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "K3",
+      "kind": "known_topic",
+      "query": "공격자가 Session Token을 얻은 뒤 다른 사용자 세션을 재사용하는 흐름을 복습하고 싶다.",
+      "gold": {
+        "route": ["10_학습 노트/시스템보안/웹보안/00_웹보안_목차.md"],
+        "target": "10_학습 노트/시스템보안/웹보안/Web Session Hijacking.md",
+        "headings": ["공격 흐름"],
+        "role": "active-concept",
+        "locator": "wiki"
+      },
+      "forbidden_targets": [
+        "10_학습 노트/시스템보안/웹보안/XSS를 이용한 Session Token 탈취 실습.md",
+        "10_학습 노트/시스템보안/웹보안/세션과 쿠키.md"
+      ],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "K4",
+      "kind": "known_topic",
+      "query": "이번 팀 프로젝트 기준으로 XSS, CSRF, SSRF를 어떤 질문으로 구분해야 하나?",
+      "gold": {
+        "route": [
+          "20_팀 프로젝트/26. 6. 8 팀플/00_팀플_목차.md",
+          "20_팀 프로젝트/26. 6. 8 팀플/웹 앱 보안 모음/00_웹앱보안_목차.md"
+        ],
+        "target": "20_팀 프로젝트/26. 6. 8 팀플/웹 앱 보안 모음/XSS CSRF SSRF 관계 정리.md",
+        "headings": ["헷갈리면 이 질문으로 분류한다"],
+        "role": "project-synthesis-draft",
+        "locator": "wiki"
+      },
+      "forbidden_targets": [
+        "10_학습 노트/시스템보안/웹보안/XSS.md",
+        "10_학습 노트/시스템보안/웹보안/CSRF.md"
+      ],
+      "budget": {"max_nav_reads": 2, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "C1",
+      "kind": "current_legacy",
+      "query": "최신 Terraform Module 누적 실습에서 Stage apply·health·destroy까지 어디까지 검증됐는지 보여줘.",
+      "gold": {
+        "route": ["10_학습 노트/클라우드/AWS/IaC/00_IaC MOC.md"],
+        "target": "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v15.0.md",
+        "headings": ["70-6. v15.0 최종 판정"],
+        "role": "current-active-lab",
+        "locator": "wiki"
+      },
+      "forbidden_targets": [
+        "10_학습 노트/클라우드/AWS/IaC/Terraform Module 구성 실습 v11.0.md",
+        "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v14.0.md"
+      ],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "C2",
+      "kind": "current_legacy",
+      "query": "현재 IaC 수업 재시작 지점과 최신 정리 노트를 알려줘.",
+      "gold": {
+        "route": [],
+        "target": "10_학습 노트/클라우드/AWS/IaC/00_IaC MOC.md",
+        "headings": ["현재 재시작 지점"],
+        "role": "current-moc",
+        "locator": "direct"
+      },
+      "forbidden_targets": ["10_학습 노트/클라우드/AWS/IaC/references/00_IaC MOC v5.md"],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "C3",
+      "kind": "current_legacy",
+      "query": "26.4.22 팀플에서 지금 WEB 통합 실행 기준으로 보는 스크립트는 무엇인가?",
+      "gold": {
+        "route": ["20_팀 프로젝트/26. 4. 22 팀플/00_팀플_목차.md"],
+        "target": "20_팀 프로젝트/26. 4. 22 팀플/쉘 스크립트/webCompZzinFinal.sh",
+        "acceptable_evidence_targets": ["20_팀 프로젝트/26. 4. 22 팀플/00_팀플_목차.md"],
+        "headings": [],
+        "role": "project-current-script",
+        "locator": "literal",
+        "target_hint": "쉘 스크립트/webCompZzinFinal.sh"
+      },
+      "forbidden_targets": [
+        "20_팀 프로젝트/26. 4. 22 팀플/쉘 스크립트/web-comp_final.sh",
+        "20_팀 프로젝트/26. 4. 22 팀플/쉘 스크립트/구닥다리/web-comp_5_9_.sh"
+      ],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": false}
+    },
+    {
+      "id": "C4",
+      "kind": "current_legacy",
+      "query": "26.4.22 팀플의 A 라우터 현재 final 후보 설정을 찾아줘.",
+      "gold": {
+        "route": ["20_팀 프로젝트/26. 4. 22 팀플/00_팀플_목차.md"],
+        "target": "20_팀 프로젝트/26. 4. 22 팀플/쉘 스크립트/A-R_Final.ios",
+        "headings": [],
+        "role": "project-current-candidate",
+        "locator": "literal",
+        "target_hint": "쉘 스크립트/A-R_Final.ios"
+      },
+      "forbidden_targets": ["20_팀 프로젝트/26. 4. 22 팀플/쉘 스크립트/구닥다리/A-R.ios"],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": false}
+    },
+    {
+      "id": "S1",
+      "kind": "stable_raw",
+      "query": "SQL Injection 방어 원리를 복습용으로 정리해줘.",
+      "gold": {
+        "route": ["10_학습 노트/시스템보안/웹보안/00_웹보안_목차.md"],
+        "target": "10_학습 노트/시스템보안/웹보안/SQL Injection 방어.md",
+        "headings": ["방어 계층 정리"],
+        "role": "active-concept",
+        "locator": "wiki"
+      },
+      "forbidden_targets": [
+        "10_학습 노트/시스템보안/웹보안/5-20 웹보안 PDF 구조 지도.md",
+        "10_학습 노트/시스템보안/웹보안/SQL Injection 페이지별 분해 기록.md",
+        "40_자료/강의 자료/5-20_웹보안.pdf"
+      ],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "S2",
+      "kind": "stable_raw",
+      "query": "`5-20_웹보안.pdf`에서 SQL Injection 단원이 정확히 어느 페이지 범위인지 확인해줘.",
+      "gold": {
+        "route": ["10_학습 노트/시스템보안/웹보안/00_웹보안_목차.md"],
+        "target": "10_학습 노트/시스템보안/웹보안/5-20 웹보안 PDF 구조 지도.md",
+        "acceptable_evidence_targets": ["40_자료/강의 자료/5-20_웹보안.pdf"],
+        "headings": ["PDF 단원 경계 근거"],
+        "role": "source-map-draft",
+        "locator": "wiki"
+      },
+      "forbidden_targets": [
+        "10_학습 노트/시스템보안/웹보안/SQL Injection 개념과 인증 우회.md",
+        "10_학습 노트/시스템보안/웹보안/SQL Injection 방어.md"
+      ],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "S3",
+      "kind": "stable_raw",
+      "query": "2026-06-10 팀플에서 확정한 결정과 다음 할 일을 요약해줘.",
+      "gold": {
+        "route": [
+          "20_팀 프로젝트/26. 6. 8 팀플/00_팀플_목차.md",
+          "20_팀 프로젝트/26. 6. 8 팀플/일일 로그/00_일일로그_목차.md"
+        ],
+        "target": "20_팀 프로젝트/26. 6. 8 팀플/일일 로그/2026-06-10_일일_로그.md",
+        "headings": ["결정한 것", "내일 할 일"],
+        "role": "daily-digest-draft",
+        "locator": "wiki"
+      },
+      "forbidden_targets": ["20_팀 프로젝트/26. 6. 8 팀플/일일 로그/RAW/2026-06-10_RAW.md"],
+      "budget": {"max_nav_reads": 2, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "S4",
+      "kind": "stable_raw",
+      "query": "2026-06-10 11:25에 배포 스크립트에서 실제로 난 오류·원인·조치를 원문 기록으로 확인해줘.",
+      "gold": {
+        "route": [
+          "20_팀 프로젝트/26. 6. 8 팀플/00_팀플_목차.md",
+          "20_팀 프로젝트/26. 6. 8 팀플/일일 로그/00_일일로그_목차.md"
+        ],
+        "target": "20_팀 프로젝트/26. 6. 8 팀플/일일 로그/RAW/2026-06-10_RAW.md",
+        "headings": ["11:25"],
+        "role": "raw-evidence",
+        "locator": "wiki"
+      },
+      "forbidden_targets": ["20_팀 프로젝트/26. 6. 8 팀플/일일 로그/2026-06-10_일일_로그.md"],
+      "budget": {"max_nav_reads": 2, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "L1",
+      "kind": "large_section",
+      "query": "v15에서 왜 ELB가 고정 Web Instance ID를 받던 구조를 버리고 ASG가 Target Group ARN을 받게 했지?",
+      "gold": {
+        "route": ["10_학습 노트/클라우드/AWS/IaC/00_IaC MOC.md"],
+        "target": "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v15.0.md",
+        "headings": ["59. 왜 v14의 연결 방향을 반대로 바꾸는가"],
+        "role": "current-v15-section",
+        "locator": "wiki"
+      },
+      "forbidden_targets": ["10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v14.0.md"],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "L2",
+      "kind": "large_section",
+      "query": "v15 Launch Template 첫 작성본의 잘못된 Input 참조와 당시 채점 결과를 보여줘.",
+      "gold": {
+        "route": ["10_학습 노트/클라우드/AWS/IaC/00_IaC MOC.md"],
+        "target": "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v15.0.md",
+        "headings": ["65. Checkpoint 5 — Launch Template 첫 작성과 채점"],
+        "role": "current-v15-section",
+        "locator": "wiki"
+      },
+      "forbidden_targets": ["10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v14.0.md"],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "L3",
+      "kind": "large_section",
+      "query": "v15 Stage apply 뒤 Target Group이 healthy가 된 과정과 실제 HTTP 응답은 무엇이었나?",
+      "gold": {
+        "route": ["10_학습 노트/클라우드/AWS/IaC/00_IaC MOC.md"],
+        "target": "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v15.0.md",
+        "headings": ["70-5. Target Group Health와 웹 응답"],
+        "role": "current-v15-verified-evidence",
+        "locator": "wiki"
+      },
+      "forbidden_targets": ["10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v14.0.md"],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    },
+    {
+      "id": "L4",
+      "kind": "large_section",
+      "query": "v15 destroy 뒤 Terraform state와 AWS에 비용 발생 리소스가 남았는지 확인해줘.",
+      "gold": {
+        "route": ["10_학습 노트/클라우드/AWS/IaC/00_IaC MOC.md"],
+        "target": "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v15.0.md",
+        "headings": ["70-7. Stage Destroy와 잔존 리소스 확인"],
+        "role": "current-v15-verified-cleanup",
+        "locator": "wiki"
+      },
+      "forbidden_targets": ["10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v14.0.md"],
+      "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
+    }
+  ],
+  "prototype": {
+    "id": "terraform-v15-part8",
+    "source": "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v15.0.md",
+    "source_sha256": "6AAC083CBA044F6C13712D5A82744B4C90B5BC77E75193E455AC8B364D05DE64",
+    "hub_file": "v15-part8-prototype-hub.md",
+    "latest_verified_segment": "v15-part8c-apply-health-destroy.md",
+    "parts": [
+      {
+        "file": "v15-part8a-design-contract.md",
+        "title": "8A 설계와 Module 계약",
+        "role": "design-and-contract-history",
+        "start_heading": "Part 8. v15.0 Auto Scaling Module 작성 과정",
+        "end_before_heading": "65. Checkpoint 5 — Launch Template 첫 작성과 채점"
+      },
+      {
+        "file": "v15-part8b-launch-template-asg.md",
+        "title": "8B Launch Template와 ASG 구현",
+        "role": "implementation-and-intermediate-state",
+        "start_heading": "65. Checkpoint 5 — Launch Template 첫 작성과 채점",
+        "end_before_heading": "70. Checkpoint 8 — Stage Apply와 실제 동작 검증"
+      },
+      {
+        "file": "v15-part8c-apply-health-destroy.md",
+        "title": "8C Apply, Health, Destroy 검증",
+        "role": "latest-runtime-verification",
+        "start_heading": "70. Checkpoint 8 — Stage Apply와 실제 동작 검증",
+        "end_before_heading": "Appendices"
+      }
+    ]
+  }
+}
