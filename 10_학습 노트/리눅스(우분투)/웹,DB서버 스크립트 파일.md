@@ -1,3 +1,17 @@
+---
+type: command-note
+status: legacy
+created: "2026-04-10"
+topic: linux-ubuntu
+parent_moc: "[[10_학습 노트/리눅스(우분투)/00_리눅스_목차]]"
+tool: bash
+environment: "2026년 4월 Ubuntu 학원 실습 환경"
+---
+
+> [!warning] Legacy 스크립트 스냅샷
+> 고정 Tomcat 버전, 파일 경로, 계정과 실습용 보안 설정을 포함한다. 현재 설치 절차로 복사·실행하지 않는다.
+> 역사적 실습 흐름만 확인하고, 현재 기준은 [[10_학습 노트/리눅스(우분투)/00_리눅스_목차|리눅스 목차]]에서 찾는다.
+
 # WEB 서버 스크립트 파일
 ```bash
 #!/bin/bash
