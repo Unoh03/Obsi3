@@ -46,6 +46,10 @@ keep study notes, MOCs, and templates in Korean unless asked otherwise.
   architecture work that needs their design or completion claims.
 - Search filenames and links before opening large notes, source directories,
   PDFs, screenshots, or RAW logs.
+- For large Markdown notes, inspect the H1 outline first, restrict heading-only
+  search to the relevant H1 or Part, and then read only the exact section range
+  plus necessary adjacent context. Do not list every heading, search the whole
+  body, or read a whole Part unless the narrower evidence is insufficient.
 
 ## Note Creation
 
