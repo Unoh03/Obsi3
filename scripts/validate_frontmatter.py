@@ -3,7 +3,8 @@
 
 Existing legacy notes are reported as warnings. New notes and templates are
 strict so the validator prevents new vocabulary drift without forcing a
-repository-wide migration.
+repository-wide migration. A Git revision range can be used after automatic
+Obsidian Git commits have cleared the worktree diff.
 """
 
 from __future__ import annotations
@@ -30,6 +31,7 @@ CANONICAL_TYPES = {
     "meeting",
     "wrong-answer",
     "security-policy",
+    "control",
 }
 
 CANONICAL_STATUSES = {
@@ -55,6 +57,7 @@ REQUIRED_KEYS = {
     "meeting": {"project", "project_moc"},
     "wrong-answer": {"topic", "parent_moc"},
     "security-policy": {"topic", "parent_moc"},
+    "control": {"scope"},
 }
 
 CONTENT_ROOTS = {
@@ -105,6 +108,16 @@ def changed_paths() -> tuple[set[str], set[str]]:
     return changed | untracked, added | untracked
 
 
+def range_paths(revision_range: str) -> tuple[set[str], set[str]]:
+    changed = git_paths(
+        "diff", "--name-only", "-z", "--diff-filter=ACMR", revision_range, "--", "*.md"
+    )
+    added = git_paths(
+        "diff", "--name-only", "-z", "--diff-filter=A", revision_range, "--", "*.md"
+    )
+    return changed, added
+
+
 def all_paths() -> set[str]:
     tracked = git_paths("ls-files", "-z", "--", "*.md")
     untracked = git_paths(
@@ -142,7 +155,7 @@ def parse_frontmatter(path: Path) -> tuple[dict[str, str], list[str], str | None
     return fields, duplicates, None
 
 
-def validate(path_string: str, *, is_new: bool) -> list[Finding]:
+def validate(path_string: str, *, is_new: bool, audit_missing: bool = False) -> list[Finding]:
     path = Path(path_string)
     findings: list[Finding] = []
     if not path.is_file() or path.suffix.lower() != ".md":
@@ -154,8 +167,8 @@ def validate(path_string: str, *, is_new: bool) -> list[Finding]:
     fields, duplicates, parse_error = parse_frontmatter(path)
 
     if parse_error:
-        if strict and parts and parts[0] in CONTENT_ROOTS:
-            findings.append(Finding("ERROR", path_string, parse_error))
+        if parts and parts[0] in CONTENT_ROOTS and (strict or audit_missing):
+            findings.append(Finding("ERROR" if strict else "WARN", path_string, parse_error))
         return findings
 
     for key in duplicates:
@@ -214,12 +227,20 @@ def main() -> int:
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--changed", action="store_true", help="HEAD 대비 변경 Markdown 검사")
     group.add_argument("--all", action="store_true", help="모든 추적·미추적 Markdown 감사")
+    group.add_argument(
+        "--range",
+        dest="revision_range",
+        metavar="START..END",
+        help="자동 커밋을 포함한 Git revision range의 Markdown 검사",
+    )
     parser.add_argument("paths", nargs="*", help="직접 검사할 Markdown 경로")
     args = parser.parse_args()
 
     if args.paths:
         paths = set(args.paths)
         _, added = changed_paths()
+    elif args.revision_range:
+        paths, added = range_paths(args.revision_range)
     elif args.all:
         paths = all_paths()
         _, added = changed_paths()
@@ -229,7 +250,7 @@ def main() -> int:
     markdown_paths = sorted(path for path in paths if path.lower().endswith(".md"))
     findings: list[Finding] = []
     for path in markdown_paths:
-        findings.extend(validate(path, is_new=path in added))
+        findings.extend(validate(path, is_new=path in added, audit_missing=args.all))
 
     for finding in findings:
         print(f"{finding.level}: {finding.path}: {finding.message}")

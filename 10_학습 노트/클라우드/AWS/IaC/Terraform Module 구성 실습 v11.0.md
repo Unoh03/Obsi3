@@ -3,8 +3,10 @@ title: Terraform Module 구성 실습
 version: v11.0
 created: 2026-07-14
 updated: 2026-07-14
-status: active
-type: lab-note
+status: legacy
+type: lab
+topic: Terraform Module
+parent_moc: "[[00_IaC MOC]]"
 source:
   - Terraform RDS 인프라 구성 실습 v10.1.md
   - 11_modules(2)/vpc/main.tf
@@ -28,7 +30,6 @@ tags:
   - 주제/Local-Module
   - 주제/Module-Input
   - 주제/Module-Output
-  - 상태/active
   - 실습/Terraform
 ---
 

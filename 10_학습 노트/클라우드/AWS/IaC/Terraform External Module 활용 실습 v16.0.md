@@ -3,7 +3,7 @@ title: Terraform External Module 활용 실습
 version: v16.0
 created: 2026-07-16
 updated: 2026-07-16
-status: active
+status: legacy
 type: lab
 lab_date: 2026-07-16
 topic: Terraform External Module

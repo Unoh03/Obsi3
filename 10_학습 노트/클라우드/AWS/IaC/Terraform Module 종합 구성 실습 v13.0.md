@@ -3,7 +3,7 @@ title: Terraform Module 종합 구성 실습
 version: v13.0
 created: 2026-07-15
 updated: 2026-07-15
-status: active
+status: legacy
 type: lab
 lab_date: 2026-07-15
 topic: Terraform Module

@@ -4,7 +4,9 @@ version: v9.0
 created: 2026-07-09
 updated: 2026-07-13
 status: active
-type: lab-note
+type: lab
+topic: Terraform RDS
+parent_moc: "[[00_IaC MOC]]"
 source:
   - Terraform AWS CLI 초기 설정 실습 v6.3.md
   - Terraform RDS 실습 노트 재료 v0.1.md
@@ -50,7 +52,6 @@ tags:
   - 주제/Route53
   - 주제/ALB
   - 주제/Terraform-File-Structure
-  - 상태/active
   - 실습/Terraform
 ---
 

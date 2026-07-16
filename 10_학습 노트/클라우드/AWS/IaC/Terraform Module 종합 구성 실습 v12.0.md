@@ -3,8 +3,10 @@ title: Terraform Module 종합 구성 실습
 version: v12.0
 created: 2026-07-14
 updated: 2026-07-14
-status: active
-type: lab-note
+status: legacy
+type: lab
+topic: Terraform Module
+parent_moc: "[[00_IaC MOC]]"
 source:
   - Terraform Module 구성 실습 v11.0.md
   - 12_module_quiz/dev/main.tf
@@ -32,7 +34,6 @@ tags:
   - 주제/Dependency-Graph
   - 주제/AWS-Network
   - 주제/AWS-Server
-  - 상태/active
   - 실습/Terraform
 ---
 
