@@ -131,7 +131,7 @@ tags:
 > `13_module(loop)`는 14번 진행 전 스냅샷이며, v14의 구현 사실은 별도로 제공된 `14_module(s3,elb)_답지`를 기준으로 판정한다.
 > v14는 학습자가 작성한 Stage Networks·Servers 연결의 `terraform validate`까지만 확인했고, 강사 답지 전체의 Apply와 AWS 동작은 확인하지 않았다.
 > v15는 Stage에서 `fmt`, `init`, `validate`, `plan`, `apply`를 진행했다. 최종적으로 ASG Member 2대의 Private Subnet 분산, Target Group `healthy`, ALB `/boot/index` 응답, RDS·S3 상태를 AWS CLI와 HTTP 요청으로 검증했다.
-> Prod Apply, 장애 Member 자동 교체, Scaling Policy 기반 자동 증감, 최종 Destroy는 검증 범위에 포함되지 않았다.
+> Stage Destroy와 잔존 리소스 확인까지 완료했다. Prod Apply, 장애 Member 자동 교체, Scaling Policy 기반 자동 증감은 검증 범위에 포함되지 않았다.
 
 ---
 
@@ -4149,13 +4149,45 @@ Internet Client
 [ ] 장애 Member의 자동 교체를 의도적으로 발생시켜 검증
 [ ] Scaling Policy에 의한 부하 기반 자동 증감
 [ ] Prod init·validate·apply
-[ ] 실습 종료 후 Stage terraform destroy
+[x] 실습 종료 후 Stage terraform destroy
 ```
 
 현재 ASG는 Min·Desired·Max와 ELB Health 연동을 갖췄지만 별도의 Target Tracking 또는 Step Scaling Policy는 없다. 따라서 `Max 4`는 확장 가능한 상한일 뿐, 부하에 따라 2대에서 4대로 자동 증가한다는 뜻은 아니다. v15의 핵심 범위인 **Launch Template 기반 Web 생성, Private Subnet 분산, Target Group 자동 등록, ALB Health 및 실제 HTTP 응답**은 완료됐다.
 
 > [!success] v15.0 핵심 실습 완료
-> 고정 Web EC2와 고정 Target Attachment를 제거하고, ASG가 Web EC2의 생성·수량·Target Group 등록을 소유하는 구조를 실제 AWS에서 검증했다. 비용 발생 리소스가 남아 있으므로 증적 보존 후 Stage Root에서 `terraform destroy`를 수행해야 실습 운영까지 종료된다.
+> 고정 Web EC2와 고정 Target Attachment를 제거하고, ASG가 Web EC2의 생성·수량·Target Group 등록을 소유하는 구조를 실제 AWS에서 검증했다. Stage Destroy와 잔존 리소스 확인은 다음 절에 기록한다.
+
+### 70-7. Stage Destroy와 잔존 리소스 확인
+
+> [!success]- Destroy 완료 로그
+> ```text
+> module.servers.aws_db_instance.module-rds-instance: Destruction complete after 3m52s
+> module.networks.aws_vpc.module-vpc: Destruction complete after 1s
+>
+> Destroy complete! Resources: 35 destroyed.
+> ```
+
+Destroy 완료 후 Terraform State와 AWS를 읽기 전용으로 다시 확인했다.
+
+| 확인 항목 | 결과 |
+|---|---|
+| `terraform state list` | 비어 있음 |
+| Stage ASG | 조회 결과 없음 |
+| `stage-lb` | 조회 결과 없음 |
+| `stage-1` RDS | 조회 결과 없음 |
+| `stage-vpc` | 조회 결과 없음 |
+| `stage-boot-bucket-2026` | `404 Not Found` |
+| State Lock | 없음 |
+
+```text
+Apply와 기능 검증
+→ Terraform Destroy 35개 완료
+→ State 비어 있음
+→ 주요 AWS 리소스 조회 결과 없음
+→ 비용 발생 인프라 정리 확인
+```
+
+이로써 v15는 코드 작성뿐 아니라 Stage의 생성, 실제 통신, Target Health, 삭제와 잔존 리소스 확인까지 완료했다.
 
 ---
 
