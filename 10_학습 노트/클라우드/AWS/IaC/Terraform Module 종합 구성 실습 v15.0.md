@@ -2,7 +2,7 @@
 title: Terraform Module 종합 구성 실습
 version: v15.0
 created: 2026-07-15
-updated: 2026-07-15
+updated: 2026-07-16
 status: active
 type: lab
 lab_date: 2026-07-15
@@ -58,6 +58,8 @@ source:
   - 15_module(asg)/modules/asg/main.tf
   - 15_module(asg)/modules/asg/variables.tf
   - 15_module(asg)/modules/asg/web_install.tpl
+  - 15_module(asg)/stage/.terraform.lock.hcl
+  - 2026-07-16 stage terraform init·validate 실습 로그
   - Terraform Input Variables 공식 문서
   - Terraform Output Values 공식 문서
   - AWS Provider aws_autoscaling_group 공식 문서
@@ -3728,51 +3730,238 @@ ELB의 web-instance-id Input
 
 ---
 
-## 67. v15.0 작성 중 판정
+## 67. Checkpoint 6 — Launch Template 수정과 Auto Scaling Group 작성
 
-### 67-1. 코드 작성 Checkpoint
+### 67-1. Launch Template Input 참조 수정
+
+첫 작성에서 문자열 또는 다른 Module Resource 주소로 적었던 다섯 값을 ASG Input으로 수정했다.
+
+```hcl
+vpc_security_group_ids = [
+  var.web-sg-id
+]
+
+iam_instance_profile {
+  name = var.instance-profile-name
+}
+
+RDS_ENDPOINT = var.rds-endpoint
+S3_BUCKET    = var.s3-bucket-id
+
+tags = {
+  Name = "${var.env}-web-instance"
+}
+```
+
+이제 Launch Template는 Servers·S3 Module 내부 Resource를 직접 참조하지 않고 Root에서 전달받은 Input만 소비한다.
+
+### 67-2. Auto Scaling Group 구현
+
+```hcl
+resource "aws_autoscaling_group" "module-web-asg" {
+  name_prefix = "${var.env}-web-asg-"
+
+  min_size         = 2
+  desired_capacity = 2
+  max_size         = 4
+
+  vpc_zone_identifier = var.private-subnet-ids
+
+  target_group_arns = [
+    var.target-group-arn
+  ]
+
+  health_check_type         = "ELB"
+  health_check_grace_period = 600
+
+  launch_template {
+    id      = aws_launch_template.module-web-template.id
+    version = aws_launch_template.module-web-template.latest_version
+  }
+}
+```
+
+각 속성의 책임은 다음과 같다.
+
+```text
+min/desired/max:
+2대를 기본으로 유지하고 최대 4대까지 허용
+
+vpc_zone_identifier:
+Web EC2를 만들 Private Subnet ID 목록
+
+target_group_arns:
+ASG Member를 자동 등록·해제할 ALB Target Group
+
+health_check_type = ELB:
+EC2 실행 상태뿐 아니라 Target Group Health도 교체 판단에 사용
+
+health_check_grace_period = 600:
+Tomcat·RDS·S3 초기화 시간을 기다린 뒤 Health를 판정
+
+launch_template.latest_version:
+최신 Launch Template Version으로 Member EC2 생성
+```
+
+> [!important]
+> 현재 ASG는 `desired_capacity = 2`를 유지하고 비정상 Member를 교체한다.
+> CPU 같은 Metric에 따라 2대에서 4대로 자동 증감하려면 별도의 Scaling Policy가 필요하다.
+
+### 67-3. Provider와 정적 검증
+
+Stage의 `.terraform.lock.hcl`에서 실제 선택된 Provider를 확인했다.
+
+```text
+hashicorp/aws v6.54.0
+constraint: ~> 6.0
+```
+
+Launch Template와 ASG 작성 후 `terraform fmt -check`가 통과했고, Stage Configuration도 `terraform validate`를 통과했다.
+
+---
+
+## 68. Checkpoint 7 — 고정 Web 경로 제거와 Prod 조립
+
+### 68-1. 고정 Web 연결 제거
+
+ASG 경로가 유효한 상태에서 다음 v14 고정 연결을 제거했다.
+
+```text
+Servers:
+aws_instance.module-web-instance
+output.web-instance-id
+
+ELB:
+variable.web-instance-id
+aws_lb_target_group_attachment.module-lb-web-attachment
+
+Stage/Prod Root:
+web-instance-id = module.servers.web-instance-id
+```
+
+전체 소스에서 다음 문자열을 다시 검색한 결과 남은 참조가 없었다.
+
+```text
+module-web-instance
+web-instance-id
+module-lb-web-attachment
+aws_lb_target_group_attachment
+
+결과:
+NO MATCHES
+```
+
+### 68-2. Servers의 죽은 Input 계약 제거
+
+고정 Web EC2가 사라지면서 Servers가 더 이상 사용하지 않는 다음 Input도 제거했다.
+
+```text
+instance-profile-name
+s3-bucket-id
+```
+
+Stage와 Prod의 `module "servers"` Argument에서도 두 값을 제거했다. 이로써 S3 Output은 Servers가 아니라 ASG Launch Template에만 전달된다.
+
+```text
+이전:
+S3 → Servers 고정 Web EC2
+
+현재:
+S3 → Root → ASG Launch Template
+```
+
+### 68-3. Prod Root Module 배선
+
+Prod에도 Stage와 같은 `module "asg"` 호출을 추가했다.
+
+```text
+Networks private Resource Map
+→ Root에서 Subnet ID List 변환
+→ ASG
+
+ELB target-group-arn
+Servers web-sg-id / rds-endpoint
+S3 instance-profile-name / s3-bucket-id
+→ Root
+→ ASG
+```
+
+Stage와 Prod는 동일한 ASG Child Module을 사용하며 `env`, VPC CIDR, 각 환경에서 생성된 Resource ID만 달라진다.
+
+### 68-4. 검증 결과
+
+```text
+terraform fmt -check -recursive:
+통과
+
+stage terraform init:
+성공
+
+stage terraform validate:
+Success! The configuration is valid.
+
+prod terraform validate:
+Module not installed
+```
+
+Prod의 실패는 HCL 오류 판정이 아니다. Prod Root에서 아직 `terraform init`을 실행하지 않아 Local Module과 Provider가 초기화되지 않은 상태다.
+
+---
+
+## 69. v15.0 중간 저장 판정
+
+### 69-1. 코드 작성 상태
 
 ```text
 [x] ELB Target Group ARN 공개
-[x] ASG env Input 선언
-[x] ASG Target Group ARN Input 선언
-[x] Servers Web SG ID 공개
-[x] Servers RDS Address 공개
-[x] address와 endpoint의 차이 확인
-[x] ASG 전체 Input 계약 완성
+[x] ASG Input 계약 완성
 [x] Stage Root Module 배선
+[x] Prod Root Module 배선
 [x] Private Subnet Resource Map → ID List 변환
-[ ] Prod Root Module 배선
 [x] Web Install Template 복사
-[x] Launch Template 첫 작성
-[ ] Launch Template Input 참조 수정
-[ ] Auto Scaling Group 작성
-[ ] 기존 고정 Web·Target Attachment 제거
+[x] Launch Template Input 참조 수정
+[x] Auto Scaling Group 작성
+[x] 고정 Web EC2 제거
+[x] 고정 Target Group Attachment 제거
+[x] Servers의 죽은 Input 계약 제거
 ```
 
-### 67-2. 검증 상태
+### 69-2. 검증 상태
 
 ```text
-[x] 현재 세 파일의 정적 참조 확인
-[x] Provider Constraint: hashicorp/aws ~> 6.0 확인
-[x] Stage Root의 ASG 호출 확인
-[x] 두 web_install.tpl의 SHA-256 일치 확인
-[x] Launch Template 첫 작성본 정적 채점
-[ ] .terraform.lock.hcl에서 실제 선택 Provider 버전 확인
-[ ] terraform fmt
-[ ] terraform init
-[ ] terraform validate
+[x] hashicorp/aws v6.54.0 확인
+[x] terraform fmt -check -recursive
+[x] Stage terraform init
+[x] Stage terraform validate
+[ ] Prod terraform init
+[ ] Prod terraform validate
 [ ] terraform plan
 [ ] terraform apply
 [ ] Target Group Health 확인
-[ ] Scale Out/Scale In 시 자동 등록·해제 확인
+[ ] ASG Member 자동 등록·해제 확인
+[ ] 장애 Member 자동 교체 확인
+[ ] Scaling Policy에 의한 2~4대 자동 증감
 ```
 
-현재 `15_module(asg)` 아래에서는 `.terraform.lock.hcl`을 확인하지 못했다. 따라서 AWS Provider 6.x 범위는 Root Configuration에서 확인했지만, 실제 선택된 세부 버전은 아직 확정하지 않는다.
+### 69-3. 의도적으로 보류한 정리
 
-### 67-3. 오늘 종료 시점과 다음 재시작 지점
+`modules/servers/web_install.tpl`과 `modules/servers/boot.war`는 고정 Web 제거 후 현재 Resource에서 사용되지 않는 것으로 보이지만, 파일 삭제는 최종 Source 참조 확인 후 별도로 결정한다.
 
-v15는 v14의 고정 Web EC2 한 대를 단순히 여러 대로 복제하는 작업이 아니다. EC2 생성 주체를 `Servers` Module에서 새 `ASG` Module로 옮기고, 고정 Instance ID를 ELB에 전달하던 흐름을 ELB의 Target Group ARN을 ASG에 전달하는 흐름으로 뒤집는 구조 전환이다. 오늘은 Stage Root의 ASG 호출, Private Subnet Resource Map의 ID List 변환, ASG Input 계약, Web Template 복사, Launch Template 첫 작성까지 진행했다. 다음 재시작 지점은 `modules/asg/main.tf`에서 문자열로 적힌 값과 잘못된 교차 Module 참조를 `var.web-sg-id`, `var.instance-profile-name`, `var.rds-endpoint`, `var.s3-bucket-id`, `${var.env}-web-instance`로 수정하는 것이다. 수정 후 Launch Template를 다시 채점하고 `aws_autoscaling_group` Resource 작성으로 넘어간다.
+`modules/asg/output.tf`는 현재 비어 있다. Root나 다른 Module에서 ASG 이름·ARN을 소비할 요구가 아직 없으므로 빈 Output 자체는 오류가 아니다.
+
+### 69-4. 다음 재시작 지점
+
+```powershell
+Set-Location 'D:\terraform\workspace\15_module(asg)\prod'
+terraform init
+terraform validate
+```
+
+Prod 검증이 통과하면 Stage에서 `terraform plan`을 실행해 실제 생성·삭제·교체 대상을 검토한다. `plan` 결과를 확인하기 전에는 `apply`하지 않는다.
+
+### 69-5. 중간 한 문단 요약
+
+v15는 고정 Web EC2의 ID를 ELB에 직접 연결하던 v14 구조를 ASG가 Web EC2의 생성·수량·교체·Target Group 등록을 소유하는 구조로 전환했다. Networks·Servers·S3·ELB는 ASG에 필요한 Subnet ID, Web SG ID, RDS Address, Instance Profile, Bucket ID, Target Group ARN을 Output으로 공개하고, Stage/Prod Root가 이를 ASG Input으로 조립한다. 코드 작성과 Stage 정적 검증은 완료됐지만, Prod 초기화·검증과 실제 Plan·Apply·Health·Scaling 동작은 아직 확인하지 않았다.
 
 ---
 
