@@ -3965,6 +3965,187 @@ v15는 고정 Web EC2의 ID를 ELB에 직접 연결하던 v14 구조를 ASG가 W
 
 ---
 
+## 70. Checkpoint 8 — Stage Apply와 실제 동작 검증
+
+### 70-1. 첫 Plan에서 드러난 강사 환경 의존성
+
+Stage의 `terraform plan`은 35개 생성 후보를 계산했지만 ELB Module의 두 Data Source에서 중단됐다.
+
+> [!failure]- 첫 Plan 오류
+> ```text
+> Plan: 35 to add, 0 to change, 0 to destroy.
+>
+> Error: reading ACM Certificates: empty result
+> Error: no matching Route 53 Hosted Zone found
+> ```
+
+당시 `modules/elb/main.tf`는 `kyes.click`의 발급 완료 ACM 인증서와 Route 53 Hosted Zone이 현재 AWS 계정에 이미 존재한다고 가정했다. 그러나 `data` 블록은 리소스를 새로 만드는 선언이 아니라 기존 리소스를 조회하는 선언이다. `Terra-user` Profile의 서울 Region과 Route 53을 읽기 전용으로 확인했을 때 두 리소스 모두 없었다.
+
+이번 v15의 핵심은 ASG와 Target Group 연동이므로 ELB를 HTTP 전용으로 단순화했다.
+
+```hcl
+resource "aws_lb_listener" "module-alb-http-listener" {
+  load_balancer_arn = aws_lb.module-alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.module-alb-tg.arn
+  }
+}
+```
+
+제외한 범위:
+
+```text
+- kyes.click ACM Certificate 조회
+- HTTPS Listener
+- HTTP → HTTPS Redirect
+- kyes.click Route 53 Hosted Zone 조회
+- Route 53 Alias Record
+```
+
+### 70-2. 첫 Apply 중단과 실제 원인
+
+첫 Apply에서는 S3 Bucket이 20분 이상 `Still creating...` 상태로 남아 있어 `Ctrl+C`로 정상 중단했다. 중단 후 한꺼번에 출력된 오류에서 실제로 확인된 선행 문제는 NAT Instance와 Bastion이 현재 계정에 없는 Key Pair를 사용한 것이었다.
+
+> [!failure]- 첫 Apply 중단 로그
+> ```text
+> InvalidKeyPair.NotFound: The key pair 'my-public-ec2-key' does not exist
+>
+> with module.networks.aws_instance.module-nat-instance
+> with module.servers.aws_instance.module-bastion-instance
+>
+> Error: creating S3 Bucket (stage-boot-bucket-2026):
+> request canceled, context canceled
+> ```
+
+S3의 `context canceled`은 `Ctrl+C` 이후 요청이 취소되며 기록된 결과이므로 Key Pair 오류와 같은 독립 원인으로 단정하지 않았다. 현재 계정에 실제 존재하는 Key Pair를 조회한 뒤 다음처럼 정리했다.
+
+```text
+NAT Instance: asd-open
+Bastion:       asd-open
+ASG Web:       asd-close
+```
+
+```hcl
+key_name = "asd-open"
+```
+
+부분 Apply에서 성공한 리소스는 State에 남아 있으므로 전체를 먼저 Destroy하지 않고 수정 후 다시 Apply했다.
+
+### 70-3. 최종 Apply 결과
+
+> [!success]- 최종 Apply 성공 로그
+> ```text
+> module.asg.aws_autoscaling_group.module-web-asg: Destruction complete after 6m37s
+> module.asg.aws_autoscaling_group.module-web-asg: Creating...
+> module.asg.aws_autoscaling_group.module-web-asg: Creation complete after 14s
+>
+> Apply complete! Resources: 8 added, 1 changed, 1 destroyed.
+> ```
+
+`8 added, 1 changed, 1 destroyed`는 첫 Apply에서 이미 State에 반영된 리소스를 유지한 채 남은 변경을 이어서 적용한 최종 결과다. 이번 로그에서는 ASG가 한 번 제거된 뒤 다시 생성된 사실까지 직접 확인했다. 제거·재생성의 세부 원인은 별도 State/Diff 증적 없이 추정하지 않는다.
+
+### 70-4. Terraform State와 AWS 실제 상태
+
+최종 Apply 후 Terraform State에는 35개 주소가 기록됐다. AWS CLI로 State와 실제 리소스를 대조한 결과는 다음과 같다.
+
+| 검증 항목 | 실제 결과 | 판정 |
+|---|---|---|
+| ASG | `stage-web-asg-*` | 생성 확인 |
+| ASG 수량 | Min 2 / Desired 2 / Max 4 | 설정 일치 |
+| ASG Health Type | `ELB` | 설정 일치 |
+| Web Member | 2대, `InService` | 정상 |
+| Web AZ | `ap-northeast-2a`, `ap-northeast-2c` 각 1대 | 정상 |
+| Web Public IP | 두 대 모두 없음 | Private 배치 확인 |
+| ALB | `stage-lb`, `active`, Internet-facing | 정상 |
+| RDS | `stage-1`, `available` | 정상 |
+| RDS Public Access | `false` | Private 구성 확인 |
+| S3 Object | `stage-boot-bucket-2026/boot.war` | 44,398,352 bytes 확인 |
+
+Web Instance 배치:
+
+```text
+ap-northeast-2a
+└─ 10.0.11.45, Public IP 없음
+
+ap-northeast-2c
+└─ 10.0.32.47, Public IP 없음
+```
+
+즉 사용자의 설계 의도대로 Web Server는 Public Subnet이 아니라 두 Private Subnet에 분산됐고, 외부 요청은 Public ALB를 통해서만 들어간다.
+
+### 70-5. Target Group Health와 웹 응답
+
+애플리케이션 초기화 직후에는 두 Target이 `404` 또는 Timeout으로 `unhealthy`였다.
+
+```text
+Target Group Port: 8080
+Health Check Path: /boot/index
+Interval: 30초
+Healthy Threshold: 3회
+```
+
+ALB DNS를 통한 실제 HTTP 확인에서는 다음 응답을 받았다.
+
+```text
+/           → 200
+/boot       → 302
+/boot/      → 200
+/boot/index → 200
+```
+
+이후 Target Health를 다시 조회하자 순차적으로 다음 상태가 확인됐다.
+
+```text
+첫 재확인: healthy / unhealthy
+20초 후:   healthy / healthy
+```
+
+따라서 다음 전체 흐름이 실제로 검증됐다.
+
+```text
+Internet Client
+→ Internet-facing ALB:80
+→ HTTP Listener
+→ stage-alb-tg:8080
+→ ASG가 생성한 Private Web EC2 2대
+→ /boot/index 200
+```
+
+### 70-6. v15.0 최종 판정
+
+```text
+[x] terraform fmt -check -recursive
+[x] Stage terraform init
+[x] Stage terraform validate
+[x] Stage terraform plan의 외부 선행 리소스 오류 확인
+[x] ACM·Route 53 의존성을 제외하고 HTTP Listener로 전환
+[x] 존재하지 않는 Key Pair 수정
+[x] Stage terraform apply 성공
+[x] ASG Min 2 / Desired 2 / Max 4 확인
+[x] ASG가 Web EC2 2대 생성
+[x] 두 AZ의 Private Subnet 분산 배치
+[x] Target Group 자동 등록
+[x] Target 2대 모두 healthy
+[x] ALB를 통한 /boot/index 200 확인
+[x] RDS available·Public Access false 확인
+[x] S3 boot.war 존재 확인
+[ ] 장애 Member의 자동 교체를 의도적으로 발생시켜 검증
+[ ] Scaling Policy에 의한 부하 기반 자동 증감
+[ ] Prod init·validate·apply
+[ ] 실습 종료 후 Stage terraform destroy
+```
+
+현재 ASG는 Min·Desired·Max와 ELB Health 연동을 갖췄지만 별도의 Target Tracking 또는 Step Scaling Policy는 없다. 따라서 `Max 4`는 확장 가능한 상한일 뿐, 부하에 따라 2대에서 4대로 자동 증가한다는 뜻은 아니다. v15의 핵심 범위인 **Launch Template 기반 Web 생성, Private Subnet 분산, Target Group 자동 등록, ALB Health 및 실제 HTTP 응답**은 완료됐다.
+
+> [!success] v15.0 핵심 실습 완료
+> 고정 Web EC2와 고정 Target Attachment를 제거하고, ASG가 Web EC2의 생성·수량·Target Group 등록을 소유하는 구조를 실제 AWS에서 검증했다. 비용 발생 리소스가 남아 있으므로 증적 보존 후 Stage Root에서 `terraform destroy`를 수행해야 실습 운영까지 종료된다.
+
+---
+
 # Appendices
 
 ## 부록 A. 전체 폴더 구조
