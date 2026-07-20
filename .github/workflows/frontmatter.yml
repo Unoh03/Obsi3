@@ -1,0 +1,91 @@
+name: Frontmatter
+
+on:
+  pull_request:
+    paths:
+      - "*.md"
+      - "**/*.md"
+      - "scripts/validate_frontmatter.py"
+      - ".github/workflows/frontmatter.yml"
+  push:
+    paths:
+      - "*.md"
+      - "**/*.md"
+      - "scripts/validate_frontmatter.py"
+      - ".github/workflows/frontmatter.yml"
+  workflow_dispatch:
+    inputs:
+      revision_range:
+        description: "Optional Git range (BASE..HEAD); defaults to the latest commit"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate changed Markdown frontmatter
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - name: Resolve validation range
+        id: revisions
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          PUSH_HEAD_SHA: ${{ github.sha }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REF_NAME: ${{ github.ref_name }}
+          DISPATCH_RANGE: ${{ inputs.revision_range }}
+        run: |
+          set -euo pipefail
+
+          zero_sha="0000000000000000000000000000000000000000"
+          empty_tree="$(git hash-object -t tree /dev/null)"
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            range="${PR_BASE_SHA}..${PR_HEAD_SHA}"
+          elif [[ "$EVENT_NAME" == "push" && -n "$PUSH_BEFORE_SHA" && "$PUSH_BEFORE_SHA" != "$zero_sha" ]]; then
+            range="${PUSH_BEFORE_SHA}..${PUSH_HEAD_SHA}"
+          elif [[ "$EVENT_NAME" == "push" && -n "$DEFAULT_BRANCH" && "$REF_NAME" != "$DEFAULT_BRANCH" ]] \
+            && git show-ref --verify --quiet "refs/remotes/origin/${DEFAULT_BRANCH}"; then
+            base="$(git merge-base "origin/${DEFAULT_BRANCH}" "$PUSH_HEAD_SHA")"
+            range="${base}..${PUSH_HEAD_SHA}"
+          elif [[ "$EVENT_NAME" == "workflow_dispatch" && -n "$DISPATCH_RANGE" ]]; then
+            range="$DISPATCH_RANGE"
+          elif git rev-parse --verify --quiet "${PUSH_HEAD_SHA:-HEAD}^" >/dev/null; then
+            head="${PUSH_HEAD_SHA:-HEAD}"
+            range="${head}^..${head}"
+          else
+            head="${PUSH_HEAD_SHA:-HEAD}"
+            range="${empty_tree}..${head}"
+          fi
+
+          base_revision="${range%%..*}"
+          head_revision="${range#*..}"
+          if [[ "$range" != *..* || -z "$base_revision" || -z "$head_revision" ]]; then
+            echo "Invalid revision range: $range" >&2
+            exit 2
+          fi
+          git rev-parse --verify "${base_revision}^{tree}" >/dev/null
+          git rev-parse --verify "${head_revision}^{commit}" >/dev/null
+
+          echo "Validating range: $range"
+          echo "range=$range" >> "$GITHUB_OUTPUT"
+
+      - name: Check validator syntax
+        run: python -m py_compile scripts/validate_frontmatter.py
+
+      - name: Validate changed Markdown
+        run: python scripts/validate_frontmatter.py --range "${{ steps.revisions.outputs.range }}"

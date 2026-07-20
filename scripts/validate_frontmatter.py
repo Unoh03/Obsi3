@@ -3,8 +3,10 @@
 
 Existing legacy notes are reported as warnings. New notes and templates are
 strict so the validator prevents new vocabulary drift without forcing a
-repository-wide migration. A Git revision range can be used after automatic
-Obsidian Git commits have cleared the worktree diff.
+repository-wide migration. Conventional repository documentation named
+``README.md`` or ``AGENTS.md`` is exempt from note frontmatter. A Git revision
+range can be used after automatic Obsidian Git commits have cleared the
+worktree diff.
 """
 
 from __future__ import annotations
@@ -67,6 +69,11 @@ CONTENT_ROOTS = {
     "30_자격증",
     "40_자료",
     "90_템플릿",
+}
+
+FRONTMATTER_EXEMPT_FILENAMES = {
+    "AGENTS.md",
+    "README.md",
 }
 
 TOP_LEVEL_KEY = re.compile(r"^([A-Za-z0-9_-]+):(?:\s*(.*))?$")
@@ -163,11 +170,13 @@ def validate(path_string: str, *, is_new: bool, audit_missing: bool = False) -> 
 
     parts = path.parts
     in_template_folder = bool(parts and parts[0] == "90_템플릿")
-    strict = is_new or in_template_folder
+    exempt_repository_doc = path.name in FRONTMATTER_EXEMPT_FILENAMES
+    strict = (is_new and not exempt_repository_doc) or in_template_folder
     fields, duplicates, parse_error = parse_frontmatter(path)
 
     if parse_error:
-        if parts and parts[0] in CONTENT_ROOTS and (strict or audit_missing):
+        in_content_root = bool(parts and parts[0] in CONTENT_ROOTS)
+        if strict or (in_content_root and audit_missing):
             findings.append(Finding("ERROR" if strict else "WARN", path_string, parse_error))
         return findings
 

@@ -1,3 +1,11 @@
+---
+type: moc
+status: active
+created: 2026-06-17
+scope: vault 최상위 진입과 영역 라우팅
+parent_moc: none
+---
+
 # Home
 
 ## 영역별 진입점

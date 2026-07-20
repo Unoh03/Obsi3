@@ -1,3 +1,11 @@
+---
+type: moc
+status: active
+created: 2026-06-23
+scope: Obsidian vault 운영과 작성 방법
+parent_moc: "[[10_학습 노트/00_학습노트_목차]]"
+---
+
 # Obsidian 목차
 
 ## 상위 경로
