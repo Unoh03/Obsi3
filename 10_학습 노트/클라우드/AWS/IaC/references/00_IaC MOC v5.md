@@ -1,8 +1,10 @@
 ---
 title: IaC MOC
 created: 2026-07-06
-status: active
+status: legacy
 type: moc
+scope: 2026-07-06 이전 IaC MOC 스냅샷
+parent_moc: "[[10_학습 노트/클라우드/AWS/IaC/00_IaC MOC]]"
 source_context:
   - Iac.pdf
   - IaC - Source Digest v2.md
@@ -11,10 +13,12 @@ tags:
   - 과목/AWS
   - 주제/IaC
   - 주제/Terraform
-  - 상태/active
 ---
 
 # IaC MOC
+
+> [!warning] Legacy
+> 현재 탐색은 [[10_학습 노트/클라우드/AWS/IaC/00_IaC MOC|IaC MOC]]에서 시작한다. 이 파일은 이전 구조 비교를 위해 `references/`에 보존한 스냅샷이다.
 
 > 현재 이 폴더의 IaC 노트는 일반 IaC 전체가 아니라, AWS 수업 자료와 Terraform AWS 실습을 중심으로 정리한 묶음이다.
 

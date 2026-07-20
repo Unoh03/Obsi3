@@ -1,3 +1,11 @@
+---
+type: raw
+status: archived
+created: 2026-06-17
+topic: AWS기초 수업
+parent_moc: "[[10_학습 노트/클라우드/AWS/00_AWS_목차]]"
+---
+
 - 수업 끝남 꼭 끄고가라
 - 특히 DB쪽은 더블체크 해라.
 - 제프 베이조스? 가 서버 낭비되느거 싫어서 남는 서버 판 게 AWS의 시초.

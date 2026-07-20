@@ -8,7 +8,7 @@ scope: formal repo-wide navigation and retrieval baseline audit
 
 # Vault Curation Checklist
 
-이 문서는 평상시 작업 큐가 아니다. **성공한 작업 1회당 AI 토큰·한도 비용을 줄이는 구조가 실제로 유지되는지** 정식 감사할 때만 사용한다.
+이 문서는 평상시 작업 큐가 아니다. **정확한 현재 지식에 도달하고, 그 정확성을 유지하면서 성공한 작업 1회당 AI 토큰·한도 비용을 줄이는지** 정식 감사할 때만 사용한다.
 
 일반 노트 작업과 세션 뒷정리는 이 문서를 읽지 않고 `AGENTS.md`의 read budget과 Git range 절차를 따른다.
 
@@ -18,7 +18,7 @@ scope: formal repo-wide navigation and retrieval baseline audit
 총비용 = 탐색 읽기 + 대상·근거 읽기 + 추론 + 오판 재작업 + 구조 유지비용
 ```
 
-라우팅 문서나 metadata를 추가했더라도 총비용이 줄지 않으면 개선으로 보지 않는다. 반대로 문서 수가 적어도 잘못된 노트에 도달해 재작업이 반복되면 충분히 얇은 구조가 아니다.
+정확성을 희생한 비용 절감은 실패다. 라우팅 문서나 metadata를 추가했더라도 정확성이 같고 총비용이 줄지 않으면 개선으로 보지 않는다. 반대로 문서 수가 적어도 잘못된 노트에 도달해 재작업이 반복되면 충분히 얇은 구조가 아니다.
 
 ## 정식 감사 절차
 
@@ -72,6 +72,7 @@ scope: formal repo-wide navigation and retrieval baseline audit
 - 2026-07-02~09: 주요 MOC/control 26개 범위에서 Home-to-leaf, RAW/source, current/legacy 경계를 감사했다. 전체 note body, PDF와 이미지는 제외했다.
 - 2026-07-16: 작업별 read budget, 선택형 template 정책, Git range cleanup과 frontmatter range validator를 기준선에 반영했다.
 - 2026-07-20: 최상위 목적을 토큰·한도 절약으로 명시하고, IaC v17 완료 상태와 retrieval benchmark의 비권위성을 현재 파일에 반영했다.
+- 2026-07-20: 운영 MOC/control metadata, AWS Arc 원본 PDF catalog, 3차 프로젝트 draft route, frontmatter·navigation validator와 CI 기준선을 정렬했다. 전체 note body·PDF·이미지는 제외했다.
 - 세부 변경 이력과 당시 수치는 Git history에서 확인한다.
 
 ## 보고 형식

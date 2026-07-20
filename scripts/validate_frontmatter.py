@@ -62,15 +62,6 @@ REQUIRED_KEYS = {
     "control": {"scope"},
 }
 
-CONTENT_ROOTS = {
-    "00_index",
-    "10_학습 노트",
-    "20_팀 프로젝트",
-    "30_자격증",
-    "40_자료",
-    "90_템플릿",
-}
-
 FRONTMATTER_EXEMPT_FILENAMES = {
     "AGENTS.md",
     "README.md",
@@ -149,12 +140,24 @@ def parse_frontmatter(path: Path) -> tuple[dict[str, str], list[str], str | None
 
     fields: dict[str, str] = {}
     duplicates: list[str] = []
-    for line in lines[1:closing]:
+    frontmatter_lines = lines[1:closing]
+    for index, line in enumerate(frontmatter_lines):
         match = TOP_LEVEL_KEY.match(line)
         if not match:
             continue
         key = match.group(1)
         value = (match.group(2) or "").strip().strip('"').strip("'")
+        if not value:
+            # A required key may validly use a nested YAML list/map, for
+            # example ``source_pages:\n  - 1-26``.  Distinguish that from a
+            # genuinely empty key without needing a full YAML dependency.
+            for nested_line in frontmatter_lines[index + 1 :]:
+                if TOP_LEVEL_KEY.match(nested_line):
+                    break
+                stripped = nested_line.strip()
+                if stripped and not stripped.startswith("#"):
+                    value = "<nested>"
+                    break
         if key in fields:
             duplicates.append(key)
         fields[key] = value
@@ -175,8 +178,9 @@ def validate(path_string: str, *, is_new: bool, audit_missing: bool = False) -> 
     fields, duplicates, parse_error = parse_frontmatter(path)
 
     if parse_error:
-        in_content_root = bool(parts and parts[0] in CONTENT_ROOTS)
-        if strict or (in_content_root and audit_missing):
+        if exempt_repository_doc:
+            return findings
+        if strict or audit_missing:
             findings.append(Finding("ERROR" if strict else "WARN", path_string, parse_error))
         return findings
 
@@ -259,7 +263,13 @@ def main() -> int:
     markdown_paths = sorted(path for path in paths if path.lower().endswith(".md"))
     findings: list[Finding] = []
     for path in markdown_paths:
-        findings.extend(validate(path, is_new=path in added, audit_missing=args.all))
+        findings.extend(
+            validate(
+                path,
+                is_new=path in added,
+                audit_missing=args.all or bool(args.paths),
+            )
+        )
 
     for finding in findings:
         print(f"{finding.level}: {finding.path}: {finding.message}")

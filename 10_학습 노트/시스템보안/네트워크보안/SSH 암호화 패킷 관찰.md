@@ -1,15 +1,15 @@
 ---
 type: lab
 topic: network-security
+parent_moc: "[[10_학습 노트/시스템보안/네트워크보안/00_네트워크보안_목차]]"
 source: lab-observation
-status: complete
+status: stable
 created: 2026-05-13
 tags:
   - 🏷️과목/네트워크보안
   - 🏷️주제/SSH
   - 🏷️주제/MITM
   - 🏷️주제/Encryption
-  - 🏷️상태/complete
 ---
 
 # SSH 암호화 패킷 관찰

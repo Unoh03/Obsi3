@@ -2,9 +2,9 @@
 
 ## Repository Context
 
-This is a Korean Obsidian study vault, not a software project. Keep repository
-docs such as `README.md` and `AGENTS.md` in English and vault content in Korean
-unless asked otherwise. `00_index/Home.md` is the entry point; study, project,
+This is a Korean Obsidian study vault, not a software project. Keep
+`AGENTS.md` in English and keep `README.md` and vault content in Korean unless
+asked otherwise. `00_index/Home.md` is the entry point; study, project,
 certification, source, optional-template, and temporary material live under
 `10_학습 노트/`, `20_팀 프로젝트/`, `30_자격증/`, `40_자료/`, `90_템플릿/`,
 and `99_잡동사니/` respectively.
@@ -36,9 +36,14 @@ and `99_잡동사니/` respectively.
 
 - Templates are optional examples. Choose the note role and body structure
   directly; avoid empty boilerplate.
-- New notes require `type`, `status`, `created`, and routing: `topic` plus
-  `parent_moc`, or `project` plus `project_moc`. Add source/evidence fields only
-  when useful.
+- New notes require `type`, `status`, and `created`. Apply role-specific fields:
+  `concept`, `lab`, `command-note`, `troubleshooting`, `raw`, `wrong-answer`,
+  and `security-policy` notes use `topic` plus `parent_moc`;
+  source digests use `parent_moc`, `source`, and `source_pages`; project notes
+  use `project` plus `project_moc`, and `project-daily-log` also uses
+  `source_raw`; MOCs use `scope` plus `parent_moc`; controls use `scope`. Only
+  root `Home` may use `parent_moc: none`. Add other
+  source/evidence fields only when useful.
 - Use canonical values from `90_템플릿/00_템플릿_목차.md`; do not duplicate
   `status` as a tag.
 - Do not retrofit legacy notes unless requested or current routing depends on
@@ -97,6 +102,9 @@ style. Do not introduce Conventional Commit prefixes unless asked.
 
 - Markdown: run `git diff --check`, inspect the targeted diff, and verify new
   wiki-link targets.
+- For MOC/control architecture changes, run
+  `python scripts/validate_navigation.py`; after changing its parser, also run
+  `python scripts/validate_navigation.py --self-test`.
 - For frontmatter, run `validate_frontmatter.py --changed`; after auto-commit,
   use `--range START_REF..END_REF`.
 - For ignore/tracking changes, also inspect status, tracked files, ignore rules,

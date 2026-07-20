@@ -8,7 +8,9 @@ source_pages:
   file_pages: [1-42]
   textbook_pages: [486-527]
   textbook_pages_note: "OCR로 확인한 첫 페이지 번호와 파일 페이지 수를 기준으로 산정"
-status: reviewed
+status: draft
+created: 2026-07-06
+parent_moc: "[[40_자료/강의 자료/AWS Arc/README]]"
 ocr_based: true
 ---
 

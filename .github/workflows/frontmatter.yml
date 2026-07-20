@@ -6,12 +6,14 @@ on:
       - "*.md"
       - "**/*.md"
       - "scripts/validate_frontmatter.py"
+      - "scripts/validate_navigation.py"
       - ".github/workflows/frontmatter.yml"
   push:
     paths:
       - "*.md"
       - "**/*.md"
       - "scripts/validate_frontmatter.py"
+      - "scripts/validate_navigation.py"
       - ".github/workflows/frontmatter.yml"
   workflow_dispatch:
     inputs:
@@ -25,7 +27,7 @@ permissions:
 
 jobs:
   validate:
-    name: Validate changed Markdown frontmatter
+    name: Validate Vault metadata and navigation
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -85,7 +87,10 @@ jobs:
           echo "range=$range" >> "$GITHUB_OUTPUT"
 
       - name: Check validator syntax
-        run: python -m py_compile scripts/validate_frontmatter.py
+        run: python -m py_compile scripts/validate_frontmatter.py scripts/validate_navigation.py
 
       - name: Validate changed Markdown
         run: python scripts/validate_frontmatter.py --range "${{ steps.revisions.outputs.range }}"
+
+      - name: Validate Vault navigation
+        run: python scripts/validate_navigation.py

@@ -1,3 +1,11 @@
+---
+type: raw
+status: active
+created: 2026-06-30
+topic: Architecting on AWS
+parent_moc: "[[10_학습 노트/클라우드/AWS/00_AWS_목차]]"
+---
+
 컨테이너=도커?=쿠버네티스?
 
 - 모듈 형식

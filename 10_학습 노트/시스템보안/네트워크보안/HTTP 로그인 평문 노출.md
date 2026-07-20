@@ -1,8 +1,9 @@
 ---
 type: lab
 topic: network-security
+parent_moc: "[[10_학습 노트/시스템보안/네트워크보안/00_네트워크보안_목차]]"
 source: lab-observation
-status: complete
+status: stable
 created: 2026-05-14
 tags:
   - 🏷️과목/네트워크보안
@@ -10,7 +11,6 @@ tags:
   - 🏷️주제/Plaintext
   - 🏷️주제/MITM
   - 🏷️주제/Session
-  - 🏷️상태/complete
 ---
 
 # HTTP 로그인 평문 노출

@@ -3,12 +3,14 @@ type: source-digest
 course: "Architecting on AWS"
 version: "7.10.4"
 module: "모듈 3: 네트워킹 1"
-source: "Architecting on AWS 7.10.4 (모듈3 네트워킹1)pdf.pdf"
+source: "Architecting on AWS 7.10.4 (모듈3 네트워킹1).pdf"
 source_pages:
   file_pages: [1-56]
   textbook_pages: [123-178]
   textbook_pages_note: "OCR로 확인한 첫 페이지 번호와 파일 페이지 수를 기준으로 산정"
-status: reviewed
+status: draft
+created: 2026-07-06
+parent_moc: "[[40_자료/강의 자료/AWS Arc/README]]"
 ocr_based: true
 ---
 

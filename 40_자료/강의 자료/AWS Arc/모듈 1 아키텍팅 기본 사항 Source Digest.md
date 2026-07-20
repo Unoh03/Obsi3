@@ -7,7 +7,9 @@ source: "Architecting on AWS 7.10.4 (모듈1 아키텍팅 기본 사항).pdf"
 source_pages:
   file_pages: [1-41]
   textbook_pages: [27-67]
-status: reviewed
+status: draft
+created: 2026-07-01
+parent_moc: "[[40_자료/강의 자료/AWS Arc/README]]"
 ---
 # Architecting on AWS - 모듈 1 아키텍팅 기본 사항 Source Digest
 

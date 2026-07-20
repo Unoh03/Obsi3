@@ -2,8 +2,10 @@
 title: Terraform RDS 인프라 구성 실습
 version: v7.0
 created: 2026-07-09
-status: active
-type: lab-note
+status: legacy
+type: lab
+topic: Terraform RDS
+parent_moc: "[[10_학습 노트/클라우드/AWS/IaC/00_IaC MOC]]"
 source:
   - Terraform AWS CLI 초기 설정 실습 v6.3.md
   - Terraform RDS 실습 노트 재료 v0.1.md
@@ -22,11 +24,13 @@ tags:
   - 주제/Terraform
   - 주제/RDS
   - 주제/SecurityGroup
-  - 상태/active
   - 실습/Terraform
 ---
 
 # Terraform RDS 인프라 구성 실습 v7.0
+
+> [!warning] Legacy
+> 이 내용은 후속 누적본 [[10_학습 노트/클라우드/AWS/IaC/Terraform RDS 인프라 구성 실습 v9.0|Terraform RDS 인프라 구성 실습 v9.0]]에 계승되었다. 현재 재시작은 v9.0에서 한다.
 
 ## 목적
 
