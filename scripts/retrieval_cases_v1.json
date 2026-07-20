@@ -2,6 +2,10 @@
   "schema_version": 1,
   "created": "2026-07-16",
   "source_commit": "8aaea9e80d4866e90c34ac6875b04bb668f5aa0e",
+  "status": "experimental",
+  "authoritative": false,
+  "baseline_gate": false,
+  "note": "고정 gold set의 구조 유효성만 검사한다. 실제 LLM 토큰 수, 검색 품질 또는 vault 완료를 입증하지 않는다.",
   "measurement_scope": "IaC, 웹보안, 팀 프로젝트의 실제 라우팅과 section-level retrieval",
   "acceptance": {
     "minimum_final_hit": 18,
@@ -143,17 +147,18 @@
     {
       "id": "C1",
       "kind": "current_legacy",
-      "query": "최신 Terraform Module 누적 실습에서 Stage apply·health·destroy까지 어디까지 검증됐는지 보여줘.",
+      "query": "최신 Terraform External Module 누적 실습에서 apply·runtime·destroy까지 어디까지 검증됐는지 보여줘.",
       "gold": {
         "route": ["10_학습 노트/클라우드/AWS/IaC/00_IaC MOC.md"],
-        "target": "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v15.0.md",
-        "headings": ["70-6. v15.0 최종 판정"],
-        "role": "current-active-lab",
+        "target": "10_학습 노트/클라우드/AWS/IaC/Terraform External Module 활용 실습 v17.0.md",
+        "headings": ["40. v17 현재 완료 판정"],
+        "role": "latest-verified-lab",
         "locator": "wiki"
       },
       "forbidden_targets": [
         "10_학습 노트/클라우드/AWS/IaC/Terraform Module 구성 실습 v11.0.md",
-        "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v14.0.md"
+        "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v14.0.md",
+        "10_학습 노트/클라우드/AWS/IaC/Terraform Module 종합 구성 실습 v15.0.md"
       ],
       "budget": {"max_nav_reads": 1, "max_leaf_reads_before_target": 0, "section_required": true}
     },

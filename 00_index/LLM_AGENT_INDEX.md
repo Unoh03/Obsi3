@@ -13,6 +13,7 @@
 | 정확한 파일이나 경로가 지정됨 | `AGENTS.md → 대상 파일`; 역할·배치가 불명확할 때만 가장 가까운 MOC 확인 |
 | 주제는 알지만 대상 파일을 모름 | `AGENTS.md → 가장 가까운 주제/프로젝트 MOC → 대상 파일` |
 | 범위가 넓거나 탐색 위치를 모름 | `AGENTS.md → Home → 영역 MOC → 주제/프로젝트 MOC → 대상 파일` |
+| 다른 세션의 작업을 정리함 | `AGENTS.md → START_REF..END_REF 변경 파일 → 필요한 대상/MOC`; 시작 ref가 없으면 보고된 경로와 최근 commit을 사용하고 불확실성을 남김 |
 
 RAW, source, PDF, 캡처, 로그는 근거 확인이 필요할 때만 읽는다. 이미 명시된 대상을 확인하기 위해 상위 MOC와 제어 문서를 역순으로 모두 읽지 않는다.
 
@@ -36,7 +37,7 @@ RAW, source, PDF, 캡처, 로그는 근거 확인이 필요할 때만 읽는다.
 | Projects | [[20_팀 프로젝트/00_프로젝트_목차]] | 프로젝트 영역 MOC | 프로젝트별 최상위 MOC로 라우팅한다. |
 | Certifications | [[30_자격증/00_자격증_목차]] | 자격증 영역 MOC | 시험/오답/복습 노트 확인 시 시작한다. |
 | Materials | [[40_자료/00_자료_목차]] | source/materials MOC | PDF, 캡처, 강의자료, 실습 자산 위치 확인에 사용한다. |
-| Templates | [[90_템플릿/00_템플릿_목차]] | 템플릿 MOC | 새 노트 형식이 필요할 때만 확인한다. |
+| Writing schema | [[90_템플릿/00_템플릿_목차]] | 작성 스키마와 선택 예시 | 새 노트의 canonical field가 불명확할 때만 확인한다. 본문 템플릿은 선택 사항이다. |
 
 ## High-value routing
 
@@ -61,7 +62,7 @@ RAW, source, PDF, 캡처, 로그는 근거 확인이 필요할 때만 읽는다.
 | `command-note`, `troubleshooting` | 재사용 명령 또는 문제 복구 | 환경과 실제 검증 여부를 확인한다. |
 | `source-digest`, `raw` | 원자료 변환본 또는 원문 기록 | stable knowledge로 승격하지 않고 source 경계를 유지한다. |
 | `project-raw-log`, `project-daily-log`, `project-doc` | 프로젝트 원문, digest, 안정 문서 | `project_moc`와 evidence를 확인한다. |
-| `meeting`, `wrong-answer`, `security-policy` | 회의, 오답, 정책 설계 | 해당 전용 템플릿의 필드와 검증 기준을 따른다. |
+| `meeting`, `wrong-answer`, `security-policy` | 회의, 오답, 정책 설계 | canonical field와 해당 역할의 검증 기준을 따른다. 본문 템플릿은 필요할 때만 참고한다. |
 
 ## Status vocabulary
 
@@ -117,6 +118,6 @@ After editing:
 | Issue | Evidence | Next action |
 |---|---|---|
 | 전체 AI inventory 미운영 | 현재 이 파일은 운영 인덱스이며 전체 파일 목록이 아님 | 별도 inventory를 기본 생성하지 않는다. 필요할 때 `rg --files`와 인접 MOC로 조사 |
-| legacy frontmatter 혼재 | 기존 노트에 예전 `type/status`와 누락 필드가 남아 있음 | 새 노트는 템플릿과 validator를 적용하고, 기존 노트는 현재 경로에 올라올 때만 점진 정렬 |
+| legacy frontmatter 혼재 | 기존 노트에 예전 `type/status`와 누락 필드가 남아 있음 | 새 노트는 최소 스키마와 validator를 적용하고, 기존 노트는 현재 경로에 올라올 때만 점진 정렬 |
 | AWS 공식 강사 / ARC 안정 MOC 미작성 | ARC RAW는 클라우드 MOC에 연결됐지만, 별도 안정 MOC나 source catalog는 아직 없음 | 수업 종료 또는 재사용 시점에 ARC 과정 재시작 지점과 source catalog를 만들지 결정 |
 | source/RAW catalog 미분리 | PDF, 캡처, RAW, 진단 원문이 영역별로 섞여 있을 수 있음 | `40_자료`와 프로젝트 evidence 계층을 분리 검토 |

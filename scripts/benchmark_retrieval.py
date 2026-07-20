@@ -523,6 +523,10 @@ def main() -> int:
         print(
             json.dumps(
                 {
+                    "status": data.get("status", "unspecified"),
+                    "authoritative": bool(data.get("authoritative", False)),
+                    "baseline_gate": bool(data.get("baseline_gate", False)),
+                    "warning": data.get("note"),
                     "checked_cases": len(checked),
                     "categories": {
                         kind: sum(1 for item in checked if item["kind"] == kind)

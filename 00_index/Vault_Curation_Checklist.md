@@ -1,216 +1,86 @@
 ---
-type: curation-checklist
+type: control
 status: active
 created: 2026-07-02
-scope: repo-wide navigation and retrieval audit
+updated: 2026-07-20
+scope: formal repo-wide navigation and retrieval baseline audit
 ---
 
 # Vault Curation Checklist
 
-이 문서는 vault 전체를 다시 쓰기 위한 파일 목록이 아니다.
-목표는 보안 교육 이후에도 이 vault를 장기 보조기억으로 쓰기 위해, `current / stable / raw / source / legacy / archived` 경계를 점검하는 작업 큐다.
+이 문서는 평상시 작업 큐가 아니다. **성공한 작업 1회당 AI 토큰·한도 비용을 줄이는 구조가 실제로 유지되는지** 정식 감사할 때만 사용한다.
 
-## 사용 방법
+일반 노트 작업과 세션 뒷정리는 이 문서를 읽지 않고 `AGENTS.md`의 read budget과 Git range 절차를 따른다.
 
-1. 새 루프는 먼저 `Current priority override`를 확인하고, 아래 작업 큐에서 해당 영역의 P0/P1을 하나만 고른다.
-2. 먼저 `Home → 영역 MOC → 주제/프로젝트 MOC`를 따라가며 실제 상태를 확인한다.
-3. 현재진행 영역은 대공사하지 않는다. `draft`, `raw`, `source` 표시와 최소 진입점만 유지한다.
-4. 완료·구버전 영역은 현재 재시작점처럼 보이면 MOC에서 격하하거나 경고한다.
-5. 수정 후에는 `git diff --check`, targeted diff, wiki-link target check, table pipe check를 수행한다.
-
-## Current priority override
-
-사용자 확인 기준 현재 우선순위는 `10_학습 노트/`와 `90_템플릿/`이다.
-Goal 재개 시 프로젝트 P0를 자동으로 이어가기보다, 먼저 학습 노트와 템플릿의 장기 회상 구조를 점검한다.
-
-현재 우선순위:
-
-1. `10_학습 노트/`: concept / lab / RAW / source / restart 경계
-2. `90_템플릿/`: 이후 새 노트가 같은 구조를 유지하게 하는 작성 틀
-3. `20_팀 프로젝트/`: 이미 처리 중인 P0나 오판 위험이 큰 경우에만
-4. `40_자료/`: source 확인용, 필요할 때만
-
-## Non-goals
-
-- 모든 파일을 MOC에 넣지 않는다.
-- 전체 파일 본문을 매번 읽지 않는다.
-- 물리 삭제, 이동, 이름 변경은 별도 승인 없이는 하지 않는다.
-- `LLM_AGENT_INDEX.md`를 실제 MOC 경로의 대체물로 쓰지 않는다.
-- 현재진행 공식 Arc 과정은 수업 종료 전까지 안정 MOC로 과하게 정리하지 않는다.
-
-## Current scan snapshot
-
-- 기준 시점: 2026-07-02
-- `rg --files`: 912개
-- 파일 확장자 상위: `.png` 431개, `.md` 197개, `.sh` 50개, `.webp` 38개, `.pdf` 33개
-- 핵심 MOC/control 파일: `Home.md`, `LLM_AGENT_INDEX.md`, `Vault_Retrieval_Architecture_v1.md`, 각 영역·주제·프로젝트 `00_*_목차.md`
-- 가장 큰 영역: `40_자료/` 444개, `10_학습 노트/` 202개, `20_팀 프로젝트/` 196개
-- 생성 시점 worktree note: 이 checklist 파일은 신규 파일이고, `Home.md`에는 이 파일로 가는 링크가 추가되었다.
-- Arc 모듈 1 source digest의 현재 tracked 경로는 `40_자료/강의 자료/AWS Arc/모듈 1 아키텍팅 기본 사항 Source Digest.md`이다. 예전 `- 정리본` 경로는 현재 `git ls-files` 출력에 없다.
-
-## Global completion gates
-
-- [x] `Home → 영역 MOC → 주제/프로젝트 MOC → 실제 노트` 경로가 주요 영역에서 유지된다.
-- [x] `RAW/source`가 `stable` 정리본처럼 보이는 주요 경로가 없다.
-- [x] 완료·구버전 자료가 현재 재시작점처럼 보이는 주요 경로가 없다.
-- [x] 현재진행 영역은 최소 진입점과 `draft/raw/source` 표시만 있고, 과한 정규화가 없다.
-- [x] 주요 프로젝트는 결과·증거·스크립트·원문 로그를 구분한다.
-- [x] 새 wiki link는 존재가 확인되어 있다.
-- [x] 마지막 검증에서 `git diff --check`, targeted diff, wiki-link target check, table pipe check가 통과한다.
-
-2026-07-09 audit scope: 주요 MOC/control 파일 26개 기준으로 1차 완료 판정한다. 전체 note body, 캡처 파일 내용, PDF 본문 전체, 삭제·이동·untrack 여부는 이 gate의 완료 조건에 포함하지 않는다.
-
-## P0 - 현재 우선순위: 학습 노트와 템플릿
-
-- [x] 학습 노트 전체 라우팅 점검
-  - Start: [[10_학습 노트/00_학습노트_목차]]
-  - Scope: 시스템보안, 웹보안, 클라우드/AWS, 네트워크, 리눅스 등 주요 학습 영역의 concept / lab / RAW / source / restart 경계.
-  - Risk: 오래된 MOC가 현재 재시작 지점처럼 보이거나, source/RAW가 안정 정리본처럼 보이면 장기 회상과 AI 검색이 동시에 흔들린다.
-  - 2026-07-02 loop result: 상위 학습노트 MOC에 stable note, RAW/source, restart point, legacy/stale 경계를 추가했다. 하위 MOC 전수 점검은 남아 있다.
-  - 2026-07-02 loop result: 네트워크, 리눅스, Spring/Java 웹 도구 MOC에 restart point와 RAW/source/legacy 주의를 추가했다. 시스템보안 세부와 웹보안 재시작점 평가는 남아 있다.
-  - 2026-07-09 loop result: 시스템보안 하위 재시작 경계는 웹보안 source coverage와 네트워크보안 DHCP Snooping / IP Source Guard / Wireshark 필터 위치 판정까지 닫았다.
-  - 2026-07-09 loop result: 네트워크보안 MITM 흐름은 ARP Spoofing, DNS Spoofing, 평문 관찰/변조, SSH 비교/응용, L2 방어 순서로 복구하도록 MOC에 연결했다.
-  - 2026-07-09 loop result: 주요 학습 MOC를 다시 읽었다. 네트워크, 리눅스, Spring/Java 웹 도구, 클라우드/AWS, 시스템보안은 MOC-level restart/source/legacy 경계가 확인됐다. 기초 개념 MOC에는 stable prerequisite 경계와 현재 재시작 지점을 추가했다.
-  - 2026-07-09 loop result: `정규 표현식.md`의 table-pipe 실패 후보는 escaped pipe, wiki-link alias, inline code를 구분하지 못한 naive 검사 오탐으로 재판정했다. precise targeted table check는 통과했다.
-  - 2026-07-09 loop result: Global gate 감사 중 AWS 하위 [[10_학습 노트/클라우드/AWS/IaC/00_IaC MOC|IaC MOC]]가 상위 [[10_학습 노트/클라우드/AWS/00_AWS_목차|AWS 목차]]에 연결되지 않은 것을 발견했다. AWS 목차에 얇은 IaC / Terraform 진입점을 추가했다.
-  - Completed scope: 학습 노트 MOC-level 1차 라우팅 점검은 닫는다. 본문 세부 표/링크 repair는 별도 legacy validation 후보로 둔다.
-
-- [x] 템플릿 구조 점검
-  - Start: [[90_템플릿/00_템플릿_목차]]
-  - Scope: 개념정리, 실습기록, 트러블슈팅, 명령어정리, 인덱스/MOC 템플릿.
-  - Risk: 템플릿이 현재 vault의 `concept / lab / RAW / source / restart` 경계를 반영하지 못하면 새 노트가 계속 같은 혼선을 만든다.
-  - 2026-07-02 loop result: 핵심 학습 템플릿에 상위 MOC, 원자료/RAW, 재시작 용도, 검증 환경 경계를 추가했다. 프로젝트·자격증 템플릿 적용 여부는 남아 있다.
-  - 2026-07-06 loop result: 오답노트와 ACL 정책 템플릿에 상위 MOC, source/evidence 경계를 추가했다. 템플릿의 빈 bullet/blockquote/표 셀은 작성 자리표시자로 분류하고, 변경분은 `git diff --check`로 검증하는 운영 기준을 남겼다.
-  - 2026-07-06 loop result: 프로젝트 RAW 로그, 일일 로그, 프로젝트 문서, 회의록 템플릿에 RAW/source/digest/stable 문서 역할 경계를 추가했다.
-  - 2026-07-09 loop result: 템플릿 frontmatter key를 다시 확인하고, `source`, `raw_log`, `source_raw`, `evidence`, `parent_moc`, `project_moc`를 섞어 쓰지 않도록 `90_템플릿/00_템플릿_목차.md`에 Properties 필드 표준을 추가했다.
-  - 2026-07-09 loop result: 템플릿별 역할 줄을 다시 확인하고, 새 노트를 만들 때 어떤 템플릿을 선택해야 하는지 `90_템플릿/00_템플릿_목차.md`에 사용 예시 표로 추가했다.
-  - Completed scope: 현재 우선순위 기준 템플릿 구조 점검은 닫는다. 이후 실제 사용 중 혼선이 생기는 템플릿만 개별 보강한다.
-
-## P1 - 학습 노트 세부 후보
-
-- [x] 웹보안 stable / RAW / PDF source 경계 점검
-  - Start: [[10_학습 노트/시스템보안/웹보안/00_웹보안_목차]]
-  - Current state: PDF source, 구조 지도, 종합 복습 프로젝트, RAW 작업 메모가 분리되어 있음.
-  - 2026-07-02 loop result: 웹보안 현재 재시작 지점을 `SQL Injection 방어`와 `세션과 쿠키` 중심으로 좁혔고, PDF 구조 지도·SQL Injection source-digest·프로젝트 RAW 작업 메모를 stable note로 오인하지 않도록 MOC에 경계를 추가했다.
-  - 2026-07-06 loop result: 웹보안 MOC의 `PDF 정리 예정`을 `PDF/source coverage backlog`로 격하하고, `SQL Injection 방어`는 미작성 stable note 후보로 source와 주의점을 명시했다.
-  - 2026-07-06 loop result: `SQL Injection 방어` stable concept note를 작성하고 웹보안 MOC에 연결했다. PDF p.132의 대응책은 보존하되 OWASP 공식 cheat sheet 근거로 Prepared Statement / Parameterized Query를 1차 방어로 보강했다.
-  - 2026-07-06 loop result: `세션과 쿠키` stable concept note를 작성하고 웹보안·시스템보안 MOC에 연결했다. PDF p.49-61과 OWASP/MDN 공식 자료를 근거로 session token, cookie 저장 방식, Secure/HttpOnly/SameSite 경계를 정리했다.
-  - 2026-07-07 loop result: `기초 웹 인증 방식 - Basic, Anonymous, Form` stable concept note를 작성하고 웹보안·시스템보안 MOC에 연결했다. PDF p.44-48과 MDN/RFC 7617 근거로 Basic의 Base64/HTTPS 경계, Anonymous 접근 권한, Form 인증과 세션 연결을 정리했다.
-  - 2026-07-07 loop result: `웹 문서와 실행 위치` stable concept note를 작성하고 웹보안·시스템보안 MOC에 연결했다. PDF p.24-34, 렌더링 확인 p.26-27, MDN/Microsoft/PHP/Jakarta 공식 문서 근거로 HTML/DOM/JavaScript와 ASP/PHP/JSP 같은 서버 측 기술의 실행 위치를 구분했다.
-  - 2026-07-07 loop result: [[10_학습 노트/시스템보안/웹보안/HTML 인코딩|HTML 인코딩]]을 p.35-43 전체 `웹 인코딩` active concept note로 확장했다. 기존 파일명은 유지하고 URL Encoding, Unicode/UTF-8, Base64를 본문에 흡수했다.
-  - 2026-07-08 loop result: [[10_학습 노트/시스템보안/웹보안/OWASP Top 10 2025|OWASP Top 10 2025]] stable concept note를 작성하고 웹보안·시스템보안 MOC에 연결했다. PDF p.62-72는 강의식 진단 질문으로 보존하고, 공식명과 2025 변경점은 OWASP 공식 자료 기준으로 맞췄다.
-  - 2026-07-08 loop result: [[10_학습 노트/시스템보안/웹보안/웹 진단 기초 - Spidering과 Client-side Validation 우회|웹 진단 기초 - Spidering과 Client-side Validation 우회]] stable concept note를 작성하고 웹보안·시스템보안 MOC에 연결했다. PDF p.73-76과 MDN 근거로 spidering 한계와 client/server validation 신뢰 경계를 정리했다. 기존 [[10_학습 노트/시스템보안/웹보안/Client-side Validation 우회와 Server-side Validation 실습|Client-side Validation 우회와 Server-side Validation 실습]]은 Paros 우회 실습 증거로 유지한다.
-  - 2026-07-08 loop result: [[10_학습 노트/시스템보안/웹보안/로그인 Brute Force와 계정 보호|로그인 Brute Force와 계정 보호]] stable concept note를 작성하고 웹보안·시스템보안 MOC에 연결했다. PDF p.77-79, 기존 [[10_학습 노트/시스템보안/웹보안/Hydra 로그인 Brute Force 실습|Hydra 로그인 Brute Force 실습]], OWASP/NIST 근거로 반복 로그인 시도, 실패 메시지 제한, lockout/throttling/MFA 기준을 정리했다.
-  - 2026-07-08 loop result: 기존 [[10_학습 노트/시스템보안/웹보안/Web Session Hijacking|Web Session Hijacking]]을 PDF p.80-82의 stable concept note로 검토 완료했다. 세션 구조는 [[10_학습 노트/시스템보안/웹보안/세션과 쿠키|세션과 쿠키]], XSS 기반 탈취 실습 증거는 [[10_학습 노트/시스템보안/웹보안/XSS를 이용한 Session Token 탈취 실습|XSS를 이용한 Session Token 탈취 실습]], Sniffing/평문 HTTP 노출은 [[10_학습 노트/시스템보안/네트워크보안/HTTP 로그인 평문 노출|HTTP 로그인 평문 노출]]에 두도록 라우팅했다.
-  - 2026-07-08 loop result: 기존 [[10_학습 노트/시스템보안/웹보안/XSS|XSS]]를 PDF p.83-97의 stable concept note로 검토 완료했다. Cookie Stealing과 세션 재사용 증거는 [[10_학습 노트/시스템보안/웹보안/XSS를 이용한 Session Token 탈취 실습|XSS를 이용한 Session Token 탈취 실습]], 실무 방어 기준은 [[10_학습 노트/시스템보안/웹보안/실무형 XSS 방어|실무형 XSS 방어]], 인코딩 세부는 [[10_학습 노트/시스템보안/웹보안/HTML 인코딩|HTML 인코딩]]에 두도록 라우팅했다.
-  - 2026-07-08 loop result: 기존 [[10_학습 노트/시스템보안/웹보안/CSRF|CSRF]]를 PDF p.98-106의 stable concept note로 검토 완료했다. 회원정보 변경과 게시글 작성 CSRF 재현 증거는 [[10_학습 노트/시스템보안/웹보안/CSRF를 이용한 회원정보 변경 실습|CSRF를 이용한 회원정보 변경 실습]]에 두고, OWASP/MDN 기준으로 CSRF token, SameSite, Origin/Referer, Fetch Metadata 보강 경로를 명시했다.
-  - 2026-07-08 loop result: 기존 [[10_학습 노트/시스템보안/웹보안/SQL Injection을 위한 SQL 기초|SQL Injection을 위한 SQL 기초]]를 PDF p.107-114의 stable prerequisite note로 검토 완료했다. SQL 전체 문법이 아니라 SQL Injection 이해에 필요한 `SELECT`, `WHERE`, `UNION`, `INSERT`, `UPDATE`, `DELETE`만 담당하도록 라우팅했다.
-  - 2026-07-08 loop result: 기존 [[10_학습 노트/시스템보안/웹보안/SQL Injection 개념과 인증 우회|SQL Injection 개념과 인증 우회]]를 PDF p.115-121의 stable concept note로 검토 완료했다. 실제 `care` 로그인 코드와 Paros 요청 조작 증거는 [[10_학습 노트/시스템보안/웹보안/SQL Injection 인증 우회 실습|SQL Injection 인증 우회 실습]]에 두고, 정보 추출과 방어는 별도 stable note로 분리했다.
-  - 2026-07-08 loop result: 기존 [[10_학습 노트/시스템보안/웹보안/SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악|SQL Injection Error와 UNION 기반 정보 추출과 Schema 파악]]을 PDF p.122-131의 stable concept note로 검토 완료했다. 실제 Error-based payload, `group_concat()`, `LIMIT`, `sqlmap` 재검증 증거는 [[10_학습 노트/시스템보안/웹보안/SQL Injection Error 기반 DB명 정보 추출 실습|SQL Injection Error 기반 정보 추출 실습]]에 두고, source-digest와 민감 dump 값을 stable concept note로 옮기지 않도록 라우팅했다.
-  - 2026-07-08 loop result: 기존 [[10_학습 노트/시스템보안/웹보안/SQL Injection 방어|SQL Injection 방어]]를 PDF p.132의 stable defense note로 검토 완료했다. PDF의 서버 검증·필터링·에러 제한·WAF는 보존하되, OWASP 공식 cheat sheet 기준으로 Prepared Statement / Parameterized Query를 1차 방어로 둔다.
-  - 2026-07-09 loop result: 기존 [[10_학습 노트/시스템보안/웹보안/File Upload와 Webshell|File Upload와 Webshell]], [[10_학습 노트/시스템보안/웹보안/Directory Listing 취약점|Directory Listing 취약점]], [[10_학습 노트/시스템보안/웹보안/웹쉘 Upload 및 실행 실습|웹쉘 Upload 및 실행 실습]]을 PDF p.133-136의 stable/lab 경계로 검토 완료했다. File Upload와 Directory Listing은 concept note로 분리하고, `Webshell.php` 업로드·실행 증거는 lab note에 둔다. Apache 차단 설정 런타임 검증은 lab note의 남은 확인으로 유지한다.
-  - Completed scope: `5-20_웹보안.pdf` p.1-136 기준 source coverage 후보는 현재 한 바퀴 닫힘.
-
-- [x] 시스템보안 전체 재시작 지점 점검
-  - Start: [[10_학습 노트/시스템보안/00_시스템보안_목차]]
-  - Risk: 웹보안과 네트워크보안의 다음 재시작 지점이 너무 넓거나 오래되면 AI가 RAW/PDF로 바로 뛰어들 수 있다.
-  - 2026-07-02 loop result: 시스템보안 상위 MOC의 웹보안 재시작점을 source 근거가 있는 최소 후보로 풀어썼고, 네트워크보안 후보의 출발점을 Dynamic ARP Inspection으로 표시했다.
-  - 2026-07-06 loop result: 네트워크보안 MOC에 DHCP Snooping / IP Source Guard, Wireshark 필터, MITM 실습 흐름의 실제 출발 노트를 추가했다. 독립 stable note가 아직 없는 항목은 source/lab 경계로 명시했다.
-  - 2026-07-09 loop result: DHCP Snooping / IP Source Guard는 [[10_학습 노트/시스템보안/네트워크보안/Dynamic ARP Inspection|Dynamic ARP Inspection]] 안에서 관리하고, Wireshark 필터는 프로토콜별 lab/concept note에서 관리하는 것으로 판정했다. 새 stable note는 실제 장비 설정 실습, 장비별 명령 비교, 또는 반복 필터 누적이 생길 때만 만든다.
-  - 2026-07-09 loop result: MITM 실습 흐름은 새 노트 없이 [[10_학습 노트/시스템보안/네트워크보안/00_네트워크보안_목차|네트워크보안 목차]]의 현재 재시작 지점에서 단계별 복구 경로로 연결했다.
-  - 2026-07-09 loop result: frontmatter가 없던 시스템보안 content note 중 [[10_학습 노트/시스템보안/서론(이라쓰고 빠르게 휘갈겨 쓴거)|서론 raw 메모]]는 `type: raw`, [[10_학습 노트/시스템보안/네트워크보안/칼리리눅스|칼리리눅스]]는 `type: lab-support`로 분류했다.
-  - Completed scope: 시스템보안 상위 MOC 기준 웹보안/네트워크보안의 현재 재시작 지점 오판 위험은 1차로 닫힘. 남은 metadata 후보는 content note가 아니라 MOC frontmatter 표본 통일이다.
-
-- [x] 클라우드/AWS 후속 정리 후보는 재사용 시점까지 보류
-  - Start: [[10_학습 노트/클라우드/00_클라우드_목차]]
-  - Current state: AWS기초는 완료/legacy, 공식 Arc는 현재진행 RAW/source.
-  - Next check: 수업 종료 또는 재사용 시점에만 공식 Arc 안정 MOC 또는 source catalog 확장 여부를 결정한다.
-  - 2026-07-09 loop result: `Home → 클라우드 목차 → AWS 목차`와 공식 Arc RAW 메모를 확인했다. AWS기초는 완료/legacy 흐름이고, 공식 Arc는 `10_학습 노트/클라우드/공식 Arc 과정/raw 메모.md`와 AWS Arc source digest로만 유지되는 현재진행 흐름이다.
-  - 2026-07-09 loop result: 현재진행 Arc를 안정 MOC로 재정리하지 않는 것이 목표와 사용자 지시에 맞다. 수업 종료 또는 재사용 시점 전까지는 후속 정리 후보로만 보류한다.
-  - Completed scope: 이 항목은 새 MOC 작성이 아니라 보류 경계 확정으로 닫는다.
-
-## P2 - 프로젝트 오판 방지
-
-- [x] AWS기초 완료 흐름과 공식 Arc 현재진행 흐름 분리
-  - Evidence: [[10_학습 노트/클라우드/00_클라우드_목차]], [[10_학습 노트/클라우드/AWS/00_AWS_목차]], [[40_자료/강의 자료/AWS Arc/개요,목차]]
-  - Current state: AWS기초는 완료/legacy 흐름, 공식 Arc는 현재진행 RAW/source 흐름으로 분리됨.
-  - Remaining rule: 공식 Arc는 현재진행이므로 수업 종료 전 대공사하지 않는다.
-
-- [x] 26. 4. 22 팀플 최종·구버전 스크립트 경계 추가 점검
-  - Start: [[20_팀 프로젝트/26. 4. 22 팀플/00_팀플_목차]]
-  - Current state: `webCompZzinFinal.sh`는 사용자 확인 기준 마지막 WEB 통합 스크립트이고, `web-comp_final.sh`와 5.9 계열은 이전 후보 또는 보존본이다.
-  - Result: 복구 문서와 시크릿 문서의 존재하지 않는 `web.sh` / top-level `db.sh` 기준을 제거하고, DB/log/email 관련 구버전·테스트 스크립트는 현재 운영 기준으로 단정하지 않도록 표시했다.
-
-- [x] 26. 6. 8 팀플 결과·증거·RAW 경계 점검
-  - Start: [[20_팀 프로젝트/26. 6. 8 팀플/00_팀플_목차]]
-  - Evidence MOCs: [[20_팀 프로젝트/26. 6. 8 팀플/웹 서비스 보안 모음/00_웹서비스보안_목차]], [[20_팀 프로젝트/26. 6. 8 팀플/웹 앱 보안 모음/00_웹앱보안_목차]], [[20_팀 프로젝트/26. 6. 8 팀플/쉘 스크립트/00_쉘스크립트_목차]], [[20_팀 프로젝트/26. 6. 8 팀플/일일 로그/00_일일로그_목차]]
-  - Risk: 후보표, 분류표, 보고서, dashboard, proof 파일, RAW 로그가 같은 위상처럼 보이면 최종 판단을 오판한다.
-  - Next check: 최종 보고서와 evidence collector, proof 파일, RAW 로그가 MOC에서 충분히 분리되어 있는지 확인한다.
-  - 2026-07-09 loop result: 상위 팀플 MOC, 웹 서비스 보안 MOC, 웹 앱 보안 MOC, 쉘 스크립트 MOC, 일일 로그 MOC와 보고서·후보표·분류표를 확인했다. 웹 앱 보안 MOC에 결과·증거·RAW 경계와 A/B/C/D 운영 메모를 추가했다.
-  - 2026-07-09 loop result: 보고서의 12번 항목 링크가 존재하지 않는 `웹 보안 모음` 경로를 가리켜, 실제 `웹 앱 보안 모음/웹 취약점 - 12·13 비밀번호 복구 절차와 프로세스 검증 누락` 문서로 수정했다.
-  - Completed scope: 26. 6. 8 팀플의 최종 보고서, evidence collector, proof 파일, RAW 로그의 MOC-level 위상 경계는 1차로 닫는다.
-
-## P3 - 구조 품질과 토큰 절약
-
-- [x] `40_자료/` source catalog 과밀도 점검
-  - Start: [[40_자료/00_자료_목차]]
-  - Evidence: `40_자료/`가 444개로 가장 큰 영역이고, 이미지와 PDF가 많다.
-  - Next check: PDF/source digest와 캡처 창고가 MOC에서 충분히 구분되는지 확인한다.
-  - 2026-07-09 loop result: `Home → 자료 목차` 경로와 `40_자료` 파일 구성을 확인했다. 현재 `40_자료`는 `.png 372`, `.webp 38`, `.pdf 30`, `.md 16`, `.sh 2`, `.pkt 1`로 캡처와 PDF/source가 대부분이다.
-  - 2026-07-09 loop result: `40_자료/00_자료_목차.md`에 강의 원본 PDF, source digest, 프로젝트·가이드 원자료, 실습 파일, 캡처 창고의 역할 경계를 추가했다. 캡처 창고는 전체 스캔 대상이 아니라 노트의 이미지 링크나 파일명 단서가 있을 때만 여는 보관소로 명시했다.
-  - 2026-07-09 loop result: MOC-wide link audit 중 `40_자료/강의 자료/AWS Arc/개요,목차.md`의 존재하지 않는 캡스톤 아키텍처 이미지 placeholder를 발견했다. 실제 파일 링크가 아니라 PDF p.19 재대조 필요 placeholder로 낮췄다.
-  - Completed scope: 자료 MOC는 전체 파일 목록이 아니라 source catalog 진입점으로 유지한다. 남은 캡처 정리·삭제·이동은 별도 승인 전까지 하지 않는다.
-
-- [x] `tmp/`와 루트 단독 파일 처리 기준 점검
-  - Evidence: `tmp/` 50개, 루트 단독 `모듈 1 Coverage Map v0.1.md` 존재.
-  - Next check: 실제 작업 중 필요한 임시 산출물인지, source digest에 흡수된 뒤 archive/ignore 후보인지 판단한다.
-  - Boundary: 삭제·이동은 별도 승인 전까지 하지 않는다.
-  - 2026-07-09 loop result: 루트 단독 `모듈 1 Coverage Map v0.1.md`는 AWS Arc 모듈 1 Source Digest 작성 전 coverage map이고, 현재 `40_자료/강의 자료/AWS Arc/모듈 1 아키텍팅 기본 사항 Source Digest.md`가 `status: reviewed`임을 확인했다.
-  - 2026-07-09 loop result: `tmp/`는 `aws-basic.pdf` 일부 추출물과 AWS Arc 모듈 1 PDF 렌더/OCR용 page·sheet 이미지로 구성되어 있으며, `git ls-files` 기준 tracked 상태다. 삭제·이동·untrack은 하지 않았다.
-  - Completed scope: `40_자료/00_자료_목차.md`에 루트 coverage map과 `tmp/`를 임시·추출 산출물로 표시했다. 실제 학습 탐색은 AWS 목차와 AWS Arc Source Digest에서 시작하도록 경계를 둔다.
-
-- [x] frontmatter 표본 통일
-  - Start: 핵심 MOC와 stable concept/lab 노트 표본
-  - Risk: 전수 통일을 바로 하면 비용이 크다.
-  - 2026-07-09 loop result: 시스템보안 content note 중 frontmatter가 없던 `서론 raw 메모`, `칼리리눅스`만 최소 metadata를 추가했다. MOC frontmatter는 아직 별도 표본 통일 후보로 남긴다.
-  - 2026-07-09 loop result: 기존 `00_*_목차.md` 대부분은 frontmatter가 없고, MOC frontmatter 표본은 `90_템플릿/인덱스_MOC_템플릿.md`에서만 관리하는 것으로 판정했다. 새 MOC 템플릿은 `type: moc`, `scope`, `parent_moc`, `status`를 기본 필드로 쓰고, 기존 MOC에는 frontmatter를 전수 소급하지 않는다.
-  - Remaining: 전체 Properties 필드 표준화는 `90_템플릿/00_템플릿_목차.md`의 별도 후속 후보로 둔다.
-
-## P4 - 사람 눈에 보이는 정돈
-
-- [x] 템플릿 사용 예시 보강
-  - Start: [[90_템플릿/00_템플릿_목차]]
-  - Current state: P0 템플릿 구조 점검 이후, 사람 눈에 보이는 사용 예시를 보강할지 결정한다.
-  - 2026-07-09 loop result: `90_템플릿/00_템플릿_목차.md`에 상황별 템플릿 선택 예시 표를 추가했다. 개별 템플릿 본문은 이미 역할 줄이 있어 전수 수정하지 않았다.
-
-- [x] 자격증 복습 경로 보강
-  - Start: [[30_자격증/00_자격증_목차]]
-  - Current state: 네트워크관리사와 오답노트 템플릿만 연결됨.
-  - Next check: 보안 교육 vault 정비보다 우선순위는 낮다.
-  - 2026-07-09 loop result: 자격증 영역은 `00_자격증_목차.md`와 `네트워크관리사.md` 2개 파일뿐임을 확인했다. `네트워크관리사.md`는 실제 과목별 MOC가 아니라 오답노트 초안/템플릿형 샘플에 가깝다.
-  - 2026-07-09 loop result: 자격증 MOC에 복습 경로를 추가하고, 네트워크 개념 복구는 기존 네트워크·네트워크보안 MOC에서 시작하도록 연결했다. `네트워크관리사.md`에는 draft/wrong-answer 경계와 상위 MOC를 추가했다.
-  - Completed scope: 자격증 영역은 stable concept 저장소가 아니라 오답·회차 복습 trigger 영역으로 1차 경계를 둔다.
-
-## Per-loop report template
-
-각 루프가 끝나면 아래 형식으로 보고한다.
+## 판단 기준
 
 ```text
-이번 루프 범위:
-확인한 파일과 근거:
-바꾼 것:
-안 바꾼 것:
-오판 가능성 감소:
-남은 위험 / 다음 후보:
-검증 수준:
+총비용 = 탐색 읽기 + 대상·근거 읽기 + 추론 + 오판 재작업 + 구조 유지비용
 ```
 
-## Goal completion check
+라우팅 문서나 metadata를 추가했더라도 총비용이 줄지 않으면 개선으로 보지 않는다. 반대로 문서 수가 적어도 잘못된 노트에 도달해 재작업이 반복되면 충분히 얇은 구조가 아니다.
 
-이 checklist 자체가 완료가 아니다.
-최소 1차 완료로 보려면 다음이 현재 파일과 검증 출력으로 입증되어야 한다.
+## 정식 감사 절차
 
-- P0 항목이 모두 처리되었거나, 현 상태에서 더 건드리면 현재진행 영역을 과하게 정리한다는 이유로 명시 보류되어 있다.
-- 주요 P1 항목의 시작 MOC가 `RAW/source/stable/restart` 경계를 충분히 표시한다.
-- 남은 P2/P3는 오판 위험이 낮은 개선 후보로 분류되어 있다.
-- 마지막 전체 링크/표/diff 검증이 통과한다.
+1. `START_REF`, `END_REF`, 현재 worktree와 감사 범위를 기록한다.
+2. 범위 안의 Home, 영역 MOC, 주제/프로젝트 MOC, status record, source catalog, RAW log, leaf note를 구분한다.
+3. 다음 retrieval 유형을 실제 파일로 표본 검사한다.
+   - 정확한 파일·경로
+   - 알려진 주제
+   - 넓고 불명확한 요청
+   - current와 legacy 충돌
+   - stable note와 RAW/source 충돌
+   - 대형 노트의 section-level 접근
+4. MOC 설명보다 대상 note와 runtime·diff·log 같은 1차 근거를 우선한다.
+5. 오판이나 반복 읽기를 만드는 최소 지점만 수정한다.
+6. 변경 범위에 맞춰 diff, frontmatter, wiki link와 필요한 runtime 검증을 수행한다.
+7. 확인하지 않은 note body, PDF, 이미지, Git history 등은 완료 범위에서 제외한다.
+
+## 완료 기준
+
+- 정확한 대상은 직접, 알려진 주제는 가장 가까운 MOC, 넓은 요청만 Home에서 시작한다.
+- current/restart point가 실제 최신 note와 일치하고 legacy/stale note를 현재로 오인하지 않는다.
+- stable/active note와 RAW/source/evidence의 역할이 실제 파일에서 구분된다.
+- 대형 노트는 필요한 H1/Part와 인접 문맥만 읽어 답할 수 있다.
+- 변경된 frontmatter가 canonical schema와 validator를 통과한다.
+- 새 wiki link의 target과 basename ambiguity가 확인된다.
+- 불필요한 제어 문서·상위 MOC 역주행이 기본 경로에 없다.
+- 검증 범위와 제외 범위를 함께 보고한다.
+
+전체 note body를 읽지 않았다면 콘텐츠 품질이나 repo-wide 완료를 주장하지 않는다.
+
+## 현재 운영 경계
+
+- MOC는 route, restart point, RAW/source, legacy 경계만 관리하며 inventory나 완료 로그를 넣지 않는다.
+- 전체 inventory는 문서로 유지하지 않고 필요할 때 `rg --files`로 만든다.
+- 본문 템플릿은 선택 예시다. 새 note는 최소 frontmatter와 routing만 요구한다.
+- legacy frontmatter는 현재 작업이나 routing이 의존할 때만 점진적으로 고친다.
+- 대형 누적 note는 크기만으로 분리하지 않는다. section-level 접근이 반복해서 실패하거나 각 Part의 독립 수명주기가 생길 때만 분리를 검토한다.
+- 기존 Obsidian plugin 추적 파일은 의도적 백업이므로 일반 감사에서 제외한다.
+- 현재진행 RAW와 source는 완성형 구조로 과도하게 정리하지 않는다.
+- 고정 retrieval benchmark는 gold set의 구조 유효성 보조 자료일 뿐 실제 LLM 토큰·정확도나 완료 gate가 아니다.
+
+## 남은 불확실성
+
+- legacy note 전체의 frontmatter와 본문 품질은 전수 검증하지 않았다.
+- PDF, 이미지, 캡처와 Git history의 내용·보안·저작권은 이 checklist의 기본 범위가 아니다.
+- 실제 모델의 총 토큰 소비는 고정 JSON 검사로 측정되지 않는다. 반복 작업의 read set과 재작업 발생 여부를 관찰해야 한다.
+- MOC의 current/restart 설명은 후속 실습이 끝날 때 Git range 기반 뒷정리가 누락되면 다시 drift할 수 있다.
+
+## 이력 요약
+
+- 2026-07-02~09: 주요 MOC/control 26개 범위에서 Home-to-leaf, RAW/source, current/legacy 경계를 감사했다. 전체 note body, PDF와 이미지는 제외했다.
+- 2026-07-16: 작업별 read budget, 선택형 template 정책, Git range cleanup과 frontmatter range validator를 기준선에 반영했다.
+- 2026-07-20: 최상위 목적을 토큰·한도 절약으로 명시하고, IaC v17 완료 상태와 retrieval benchmark의 비권위성을 현재 파일에 반영했다.
+- 세부 변경 이력과 당시 수치는 Git history에서 확인한다.
+
+## 보고 형식
+
+```text
+범위와 Git 기준점:
+확인한 실제 경로:
+수정한 것 / 유지한 것:
+줄어든 오판·불필요한 읽기:
+검증 출력:
+제외 범위와 남은 불확실성:
+```
