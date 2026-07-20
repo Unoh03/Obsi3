@@ -2,8 +2,8 @@
 title: Terraform External Module 활용 실습
 version: v17.0
 created: 2026-07-16
-updated: 2026-07-16
-status: stable
+updated: 2026-07-20
+status: legacy
 type: lab
 lab_date: 2026-07-16
 topic: Terraform External Module
@@ -67,6 +67,9 @@ tags:
 ---
 
 # Terraform External Module 활용 실습 v17.0
+
+> [!warning] Legacy
+> 이 노트는 [[Terraform External Module 활용 실습 v17.1]]로 누적 계승됐다. 최신 진입점은 v17.1이며, 이 파일은 v17 실행 이정표의 이전판으로만 사용한다.
 
 > [!summary]
 > Part 1~5는 v16에서 Registry VPC Module과 Local NAT·Servers Module을 조립하고 실제 SSH·NAT 통신까지 검증한 기록이다. Part 6부터는 v17로 확장하여 VPC·EC2·Security Group·ALB·ASG·RDS·S3·IAM을 공식 Registry Module 중심으로 조립한다. NAT Gateway는 비용 때문에 사용하지 않고, EC2 NAT Instance와 직접 `aws_route`를 결합한다. 현재 v17은 `init`, `validate`, 실제 AWS 조회가 포함된 `plan`까지 성공했으며 `apply`는 비용 승인 전이라 실행하지 않았다.

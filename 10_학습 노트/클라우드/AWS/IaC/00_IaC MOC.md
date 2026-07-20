@@ -25,10 +25,9 @@ tags:
 - 기본 Terraform 실습 흐름: [[Terraform AWS CLI 초기 설정 실습 v6.3]]
 - 누적 Terraform 인프라 실습: [[Terraform RDS 인프라 구성 실습 v9.0]]
   - v7.1 WEB-RDS 기능·TLS 검증은 보류 중이다.
-- 현재 누적 실습: [[Terraform External Module 활용 실습 v17.0]]
-  - External Module 9종으로 2-AZ ALB·ASG·비공개 Multi-AZ RDS 구조를 실제 생성했다.
-  - ALB Target 2대 `healthy`, HTTP 200과 Terraform `No changes`까지 확인했다.
-  - `Destroy complete! Resources: 65 destroyed.`와 Terraform State `EMPTY`, 주요 AWS 조회 결과 `[]`까지 확인해 전체 수명주기 검증을 종료했다.
+- 현재 누적 실습: [[Terraform External Module 활용 실습 v17.1]]
+  - v17.0의 Apply·Runtime·Destroy 근거에 강사 답지 정적 비교를 추가한 최신 안정본이다.
+  - 우리 구현은 전체 수명주기를 검증했지만, 강사 답지의 `init`·`validate`·`plan`·`apply`는 미수행이다.
   - 다음 수업은 새 진도 폴더와 강사 요구사항을 확인한 뒤 별도 Version으로 시작한다.
 - 이전 검증 이정표: [[Terraform Module 종합 구성 실습 v15.0]]
   - Launch Template·ASG 전환과 Stage apply·health·destroy를 검증한 legacy 누적본이다.
@@ -61,7 +60,7 @@ tags:
 - [[Terraform RDS 인프라 구성 실습 v9.0]] - RDS 전환, Root Module과 State 분리, 종합 웹 서비스 아키텍처와 파일 분할까지 누적한 실습
 - [[Terraform Module 구성 실습 v11.0]] - VPC와 Subnet을 Local Child Module로 분리하고 Stage/Prod Root Module에서 입력·출력 Interface로 재사용하는 실습
 - [[Terraform Module 종합 구성 실습 v15.0]] - Networks·S3·Servers·ELB 조립을 Launch Template·ASG 구조로 확장하고 Stage Apply·Health·Destroy까지 검증한 이전 누적 실습
-- [[Terraform External Module 활용 실습 v17.0]] - Registry/GitHub External Module을 조립해 Apply·Runtime·Destroy·잔존 Resource 확인까지 마친 최신 검증 이정표
+- [[Terraform External Module 활용 실습 v17.1]] - v17 전체 수명주기 검증과 강사 답지의 흐름·보안·운영 차이를 분리한 최신 누적 안정본
 
 ## 원자료 / RAW / 검증
 
