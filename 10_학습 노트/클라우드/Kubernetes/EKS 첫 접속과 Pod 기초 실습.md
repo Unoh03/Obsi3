@@ -453,6 +453,39 @@ kubectl exec pod -- env | grep -E 'ENV1|NodeName|NameSpace|NodeIP|PodIP'
 | VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
 | Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
 
+## 11. Terraform Destroy와 잔존 확인
+
+수업 종료 후 `D:\terraform\workspace\00_eks` Root Module을 대상으로 Destroy했다. 실행 전 Local State에는 Data Source를 포함해 104개 주소가 있었고, 새로 생성한 Destroy Plan은 다음과 같았다.
+
+```text
+Plan: 0 to add, 0 to change, 84 to destroy.
+```
+
+AWS Provider 인증은 `terra-user` Profile이 담당했다. `access_key`와 `access_secret_key` 변수는 Bastion `user_data` Template을 평가하기 위해서만 필요했으므로 Destroy Process 안에서 실제 Key 대신 `not-used` Placeholder를 사용했다. 이 값으로 AWS에 인증한 것은 아니다.
+
+```powershell
+$env:TF_VAR_access_key='not-used'
+$env:TF_VAR_access_secret_key='not-used'
+terraform destroy -auto-approve -input=false -no-color
+```
+
+실행 결과:
+
+```text
+Destroy complete! Resources: 84 destroyed.
+```
+
+- Managed Node Group 삭제: 약 8분 10초
+- EKS Cluster 삭제: 약 2분 15초
+- 종료 후 `terraform state list`: 0개
+- Terraform Process와 State Lock: 없음
+- EKS `my-eks`, VPC `vpc-0fa5cc261da197e7e`, 해당 VPC의 실행 중 EC2·ENI, Node Group ASG, Load Balancer, CloudWatch Log Group: 조회 결과 없음
+- Cluster·Node IAM Role과 OIDC Provider: 조회 결과 없음
+- Launch Template `lt-0861a0baf99fa9fee`: `InvalidLaunchTemplateId.NotFound`
+- KMS Key `7314f765-1f86-4acd-9ba0-c9ae1265ff1d`: 즉시 물리 삭제되지 않고 `PendingDeletion`, 삭제 예정 `2026-08-20 18:26:07 KST`
+
+이 검증은 `00_eks`가 만든 것으로 식별된 대상과 해당 State를 중심으로 했다. AWS 계정 전체의 모든 Region·모든 서비스에 대한 전수 비용 감사와는 구분한다.
+
 ## 검증 완료와 미완료
 
 ### 완료
@@ -464,23 +497,27 @@ kubectl exec pod -- env | grep -E 'ENV1|NodeName|NameSpace|NodeIP|PodIP'
 - `my-pod` API Object 생성
 - `boot` Project의 Jib Plugin·Application Port 확인
 - `ubuntu:26.04` Official Image Tag 존재 확인
+- PDF p.19의 환경변수·`fieldRef` 예제 시각 대조
+- `00_eks` Destroy: 84개 Resource 삭제, State 0
+- `00_eks` 주요 EKS·VPC·EC2·ASG·ENI·IAM·OIDC 잔존 없음
 
 ### 미완료·추가 증거 필요
 
-- Bastion 내부 AWS CLI Profile의 실제 STS Identity
+- Bastion 내부 AWS CLI Profile의 실제 STS Identity는 삭제 전 확인하지 못함
 - Jib Image 재Push 성공과 Docker Hub Tag 존재
 - `my-pod`의 최종 `Running`·Log·HTTP 응답
 - `ubuntu-pod` Apply와 실행 상태
 - Ubuntu Container의 `kubectl exec` 결과
-- 실습 종료 후 Terraform Destroy와 유료 Resource 잔존 확인
+- p.19 환경변수 Manifest의 Server-side dry run·Apply·`exec env` 결과
+- AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. 강사의 `ubuntu-pod` Manifest를 그대로 적용한다.
-2. `kubectl get pod ubuntu-pod -w`로 실제 수명주기를 본다.
-3. `Running`이면 `kubectl exec`, 종료·재시작이면 `describe`와 `logs`로 원인을 확인한다.
-4. 확인된 출력만 이 노트에 추가한다.
-5. 수업 종료 후 Terraform Destroy와 AWS 잔존 Resource를 별도로 검증한다.
+1. 다음 실습 전에 `00_eks`를 다시 Apply하고 EKS·Worker Node·Bastion 상태를 확인한다.
+2. p.19 환경변수 Manifest는 먼저 Server-side dry run으로 들여쓰기와 Schema를 검사한다.
+3. Apply 후 `get -o wide`와 `exec env`로 Node·Namespace·Node IP·Pod IP 주입 결과를 확인한다.
+4. Spring Boot 실행이 목적이면 `command`를 제거하고, 환경변수 실습이 목적이면 현재 `sleep` 명령을 사용한다.
+5. 확인된 출력만 이 노트에 추가하고 수업 종료 후 다시 Destroy한다.
 
 ## 관련 노트
 
