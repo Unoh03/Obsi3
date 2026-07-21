@@ -365,6 +365,80 @@ Pod가 `Running`을 유지한다면 Container 내부 진입은 다음과 같다.
 kubectl exec -it ubuntu-pod -c ubuntu-container -- sh
 ```
 
+## 10. p.19 Container 환경변수와 Downward API
+
+PDF p.19의 `pod-env.yml`은 Container에 직접 값을 넣는 일반 환경변수와, Kubernetes가 생성한 Pod 정보를 환경변수로 주입하는 `fieldRef`를 함께 연습한다.
+
+원자료와 현재 작성본의 차이는 다음과 같다.
+
+| 항목 | PDF p.19 | 현재 작성본 |
+|---|---|---|
+| Pod·Label | `env-pod`, `app: env-pod` | `pod`, `app: boot` |
+| Image | `ubuntu:bionic` | `unoh03/boot:latest` |
+| 직접 입력 환경변수 | `MyName=kube`, `HelloMessage=Hello $(MyName)` | `ENV1=ENV1` |
+| Resource | 지정 없음 | VS Code 경고를 보고 학습용 예시값 추가 |
+| Pod 정보 환경변수 | Node·Namespace·Node IP·Pod IP | 동일 구조 사용 |
+
+현재 작성한 Manifest를 주석과 올바른 들여쓰기로 정리하면 다음과 같다. 아직 실제 Apply 결과는 확인하지 않았다.
+
+```yaml
+apiVersion: v1 # Core API의 v1 규칙 사용
+kind: Pod # 생성할 Kubernetes Object 종류
+metadata: # Object의 이름·Label 같은 식별 정보
+  labels:
+    app: boot # Pod Label. 나중에 Selector로 같은 역할의 Pod를 찾을 수 있음
+  name: pod # Pod 이름
+spec: # Pod의 원하는 실행 상태
+  containers: # 이 Pod에서 함께 실행할 Container 목록
+    - image: unoh03/boot:latest # Docker Hub의 unoh03/boot Repository에서 latest Tag 사용
+      name: unoh-pod # Container 이름. Pod 이름이나 환경변수 이름과는 별개
+      ports:
+        - containerPort: 80 # Container가 사용하는 Port를 문서화하며 외부 공개 기능은 아님
+      resources: # PDF에는 없고 VS Code의 Resource 경고를 해소하려고 추가한 학습용 예시
+        requests: # Scheduler가 배치 판단에 사용하는 요구량
+          cpu: "100m" # CPU Core의 0.1개에 해당
+          memory: "128Mi"
+        limits: # Container가 사용할 수 있는 상한
+          cpu: "500m"
+          memory: "512Mi" # 초과하면 OOMKilled가 발생할 수 있음
+      env: # Container Process에 전달할 환경변수 목록
+        - name: ENV1 # 환경변수 이름이며 Container 이름이 아님
+          value: "ENV1" # 사용자가 직접 지정한 고정값
+        - name: NodeName
+          valueFrom: # 고정 문자열 대신 다른 정보에서 값을 가져옴
+            fieldRef: # Downward API로 현재 Pod의 Field 참조
+              fieldPath: spec.nodeName # Pod가 배치된 Node 이름
+        - name: NameSpace
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace # Pod가 속한 Namespace
+        - name: NodeIP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP # Pod를 실행하는 Node의 IP
+        - name: PodIP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP # Kubernetes가 Pod에 할당한 IP
+      command: ['sh', '-c', 'echo The app is running! && sleep 3600'] # Image 기본 시작 명령을 덮어쓰고 PID 1을 한 시간 유지
+  dnsPolicy: ClusterFirst # Cluster DNS를 우선 사용
+  restartPolicy: Always # Main Process 종료 시 kubelet이 Container 재시작
+status: {} # Kubernetes가 실제 상태를 기록하는 영역으로 작성용 Manifest에서는 제거 가능
+```
+
+`fieldRef`로 Pod 정보를 Container에 전달하는 방법은 Kubernetes Downward API의 한 형태다. 애플리케이션이 Kubernetes API를 직접 호출하지 않아도 자신이 실행 중인 Node·Namespace·IP를 환경변수로 읽을 수 있다.
+
+현재 `command`는 `unoh03/boot:latest`의 원래 시작 명령을 덮어쓰므로 Spring Boot 애플리케이션은 실행되지 않고 `echo`와 `sleep`만 실행된다. 이번 목적이 환경변수 확인이라면 사용할 수 있지만, Spring Boot 실행이 목적이라면 `command`를 제거해야 한다.
+
+Apply 후 확인할 명령은 다음과 같다.
+
+```bash
+kubectl apply --dry-run=server -f pod-basic.yml
+kubectl apply -f pod-basic.yml
+kubectl get pod pod -o wide
+kubectl exec pod -- env | grep -E 'ENV1|NodeName|NameSpace|NodeIP|PodIP'
+```
+
 ## 오류와 해석 요약
 
 | 증상 | 확인한 원인 또는 현재 판단 | 조치·다음 확인 |
