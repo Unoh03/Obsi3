@@ -15,14 +15,14 @@ parent_moc: "[[10_학습 노트/클라우드/00_클라우드_목차]]"
 
 ## 현재 재시작 지점
 
-- 원자료 지도: [[Kubernetes - Source Digest v1]]
+- 원자료 지도: [[Source Digest/Kubernetes - Source Digest v1]]
 - 현재 상세 범위: `Kubernetes.pdf` p.1-p.12
 - 진행 중: Container Orchestration → Kubernetes Architecture → EKS 기초
 
 ## Source / RAW
 
 - 원자료: [[40_자료/강의 자료/Kubernetes.pdf|Kubernetes.pdf]]
-- Source Digest: [[Kubernetes - Source Digest v1]]
+- Source Digest: [[Source Digest/Kubernetes - Source Digest v1]]
 - 연계 실습 자료: `boot.zip` Spring Boot Source - 아직 Vault에 편입하지 않음
 
 ## 하위 경로

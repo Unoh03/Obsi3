@@ -6,7 +6,7 @@ parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
 source_pages: "235-245"
 digest_role: chapter
-digest_index: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Digest v1]]"
+digest_index: "[[10_학습 노트/클라우드/Kubernetes/Source Digest/Kubernetes - Source Digest v1]]"
 chapter: "13 StatefulSet"
 source_hash: F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"

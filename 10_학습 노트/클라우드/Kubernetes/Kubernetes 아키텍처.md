@@ -4,7 +4,7 @@ status: draft
 created: 2026-07-21
 topic: kubernetes
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
-source: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Digest 02 Kubernetes Architecture]]"
+source: "[[10_학습 노트/클라우드/Kubernetes/Source Digest/Kubernetes - Source Digest 02 Kubernetes Architecture]]"
 verified_on: 2026-07-21
 aliases:
   - Kubernetes Architecture
@@ -167,7 +167,7 @@ Kubelet
 
 ## 정보 출처
 
-- **강의 원자료**: [[Kubernetes - Source Digest 02 Kubernetes Architecture]] — `Kubernetes.pdf` p.4-p.7
+- **강의 원자료**: [[Source Digest/Kubernetes - Source Digest 02 Kubernetes Architecture]] — `Kubernetes.pdf` p.4-p.7
 - **Local primary evidence**: 아직 실제 Cluster 실행 결과 없음
 - **Authoritative external evidence**: 아래 Kubernetes 공식 문서
 - **Informal external evidence**: 사용하지 않음
