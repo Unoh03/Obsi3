@@ -1,0 +1,389 @@
+---
+type: lab
+status: active
+created: 2026-07-21
+lab_date: 2026-07-21
+topic: kubernetes
+parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
+source: "[[10_학습 노트/클라우드/Kubernetes/Source Digest/Kubernetes - Source Digest 04 Pod and ReplicaSet]]"
+environment: "Amazon EKS ap-northeast-2; Kubernetes v1.35.6-eks-8f14419; Bastion Amazon Linux t3.micro"
+evidence: "사용자 제공 Terminal 출력과 Local AWS read-only 진단"
+verified_on: 2026-07-21
+---
+
+# EKS 첫 접속과 Pod 기초 실습
+
+> [!summary]
+> Terraform으로 EKS와 Bastion을 구성하고, Cluster 연결을 확인한 뒤 첫 Pod를 생성했다. 이 과정에서 IAM Credential 재생성, AWS CLI Profile 혼동, 빈 YAML, Resource 이름 오타, Pod 불변 필드, Jib 실행 위치, VS Code Remote-SSH 고착을 겪었다.
+
+> [!warning] Secret 기록 경계
+> 실제 AWS Access Key·Secret Access Key, Docker Hub 비밀번호·Access Token, Public IP는 기록하지 않는다. 이 노트의 명령에는 Placeholder만 사용한다.
+
+## 목표
+
+- EKS Cluster와 Worker Node가 정상인지 확인한다.
+- YAML Manifest로 Pod를 생성하고 Server-side dry run과 실제 Apply의 차이를 확인한다.
+- Pod의 Image·Container·Port 관계를 확인한다.
+- 실패와 오타도 다음 실습에서 재사용할 수 있도록 원인과 조치를 남긴다.
+
+## 환경과 확인된 상태
+
+| 항목 | 값 | 근거 |
+|---|---|---|
+| AWS Region | `ap-northeast-2` | Terraform·EKS Context |
+| EKS Cluster | `my-eks` | Bastion cloud-init의 kubeconfig 생성 출력 |
+| Kubernetes | `v1.35.6-eks-8f14419` | `kubectl get nodes` |
+| Worker Node | 2대, 모두 `Ready` | `kubectl get nodes` |
+| Bastion | Amazon Linux, `t3.micro` | EC2 read-only 조회 |
+| IAM 사용자 | `terra-user` | Local `aws sts get-caller-identity --profile terra-user` |
+| Spring Project | `D:\sts-5.1.1.RELEASE\workspace\boot` | Local Workspace 확인 |
+| Spring Boot | 3.4.5, Java 17 | `boot/pom.xml` |
+| Jib | Maven Plugin 3.5.2 | `boot/pom.xml` |
+| Application Port | 80 | `application.properties`의 `server.port=80` |
+
+## 1. EKS 환경을 다시 만든 이유
+
+이전 `00_eks` Destroy 도중 IAM 사용자를 먼저 삭제해 Credential 흐름이 꼬였다. 기존 환경은 별도 점검에서 Terraform State 0과 관련 유료 Resource 잔존 0을 확인했다.
+
+복습을 겸해 IAM 사용자를 다시 만들고 Terraform Apply를 처음부터 수행했다.
+
+- 실제 IAM 사용자명은 소문자 `terra-user`다.
+- Terraform 변수에는 새 사용자의 Access Key ID와 그 Key에 대응하는 Secret Access Key를 넣었다.
+- Secret 값은 이 노트에 기록하지 않는다.
+- Region은 가용영역 문자열이 아니라 `ap-northeast-2`를 사용했다.
+
+Terraform Apply는 최종 성공했고 Bastion에 SSH로 접속했다.
+
+## 2. Cluster 연결 확인
+
+### 확인된 성공
+
+```console
+$ kubectl get nodes
+NAME                                               STATUS   ROLES    AGE   VERSION
+ip-172-28-11-136.ap-northeast-2.compute.internal   Ready    <none>   10m   v1.35.6-eks-8f14419
+ip-172-28-31-185.ap-northeast-2.compute.internal   Ready    <none>   10m   v1.35.6-eks-8f14419
+```
+
+두 Worker Node가 `Ready`이므로 다음 경로는 작동했다.
+
+```text
+Bastion의 kubeconfig
+→ EKS API Server 인증
+→ Kubernetes API 조회
+→ Worker Node 두 대 확인
+```
+
+### AWS CLI Profile 혼동
+
+```console
+$ aws sts get-caller-identity
+Unable to locate credentials.
+```
+
+Browser Login을 시도하는 `aws login`은 Bastion SSH 환경에 맞지 않아 중단했다.
+
+```console
+$ aws configure list --profile terra-user
+The config profile (terra-user) could not be found
+```
+
+IAM 사용자명과 Bastion의 AWS CLI Profile 이름은 반드시 같지 않다. 이전 User data에서는 별도 Profile 이름을 사용할 수 있으므로 다음 순서로 확인해야 한다.
+
+```bash
+aws configure list-profiles
+aws sts get-caller-identity --profile <실제-profile-name>
+```
+
+이 단계에서 Bastion의 실제 Profile 이름과 STS 결과는 별도로 확인하지 못했다. 단, `kubectl get nodes`는 성공했으므로 kubeconfig가 사용하는 EKS 인증 경로는 동작했다.
+
+## 3. 첫 `pod-basic.yml` 시행착오
+
+### 파일이 없었음
+
+```console
+$ kubectl apply -f pod-basic.yml
+error: the path "pod-basic.yml" does not exist
+```
+
+### 빈 파일을 Apply함
+
+파일을 만들었지만 Object 내용을 넣지 않아 다음 오류가 났다.
+
+```console
+$ kubectl apply -f pod-basic.yml
+error: no objects passed to apply
+```
+
+`kubectl`로 최소 Manifest를 자동 생성할 수 있다.
+
+```bash
+kubectl run my-pod \
+  --image=nginx:latest \
+  --port=80 \
+  --dry-run=client \
+  -o yaml > pod-basic.yml
+```
+
+### Resource 이름 오타
+
+```console
+$ kubectl get podes
+error: the server doesn't have a resource type "podes"
+```
+
+올바른 Resource 이름은 `pods` 또는 단수형 `pod`다.
+
+```bash
+kubectl get pods
+kubectl get pod
+```
+
+## 4. Spring Boot Image 준비와 Jib
+
+Spring Tool Suite의 `boot` Project에서 Jib Maven Plugin으로 Docker Hub Image를 만들고 Push하는 흐름을 사용했다.
+
+```text
+compile jib:build
+-Dimage=docker.io/<Docker-ID>/boot:latest
+-Djib.to.auth.username=<Docker-ID>
+-Djib.to.auth.password=<Docker-Hub-Access-Token>
+```
+
+의미는 다음과 같다.
+
+```text
+Spring Boot Source
+→ Maven Compile
+→ Jib가 Container Image 구성
+→ Docker Hub에 boot:latest Push
+→ EKS Worker가 Image Pull
+```
+
+Docker Hub Image가 AWS 과금 Resource라고 오인해 한 번 삭제했다. Public Repository의 학습용 Image 자체는 AWS Resource가 아니며, 이후 Pod에서 사용하려면 다시 Push해야 한다.
+
+### Maven Build 실패
+
+```text
+BUILD FAILURE
+No plugin found for prefix 'jib' in the current project
+```
+
+실제 `boot/pom.xml`에는 다음 Plugin이 존재했다.
+
+```text
+com.google.cloud.tools:jib-maven-plugin:3.5.2
+```
+
+따라서 Source나 Plugin 누락보다 STS Maven Run Configuration이 다른 Project의 `pom.xml`을 본 것이 가장 유력했다.
+
+```text
+Base directory: ${workspace_loc:/boot}
+Goals: compile jib:build ...
+```
+
+Jib Push가 이후 최종 성공했는지는 아직 출력으로 재확인하지 않았다.
+
+## 5. Pod Image와 Manifest 보정
+
+처음 작성한 Image 경로는 다음과 같았다.
+
+```yaml
+image: unoh03/latest
+```
+
+Docker Hub Image의 기본 형식은 `사용자/Repository:Tag`이므로 `boot` Repository를 사용한다면 다음 형식이어야 한다.
+
+```yaml
+image: unoh03/boot:latest
+```
+
+Spring Application은 `server.port=80`이므로 다음 Port 선언은 Project 설정과 일치한다.
+
+```yaml
+ports:
+  - containerPort: 80
+```
+
+`containerPort`는 Container가 사용하는 Port를 문서화하는 필드이며, 이것만으로 외부 접속 경로가 생기지는 않는다.
+
+## 6. 기존 Pod의 불변 필드와 재생성
+
+기존 `my-pod`에는 `my-pod`라는 Container와 `nginx:latest` Image가 있었다. 새 Manifest는 Container 이름을 `unoh-pod`로 바꾸었다.
+
+```console
+$ kubectl apply --dry-run=server -f pod-basic.yml
+The Pod "my-pod" is invalid: spec: Forbidden: pod updates may not change fields ...
+-   "Name": "my-pod",
++   "Name": "unoh-pod",
+```
+
+Pod의 Container 이름은 생성 후 변경할 수 없는 필드다. 실습 Pod를 삭제한 뒤 새 Manifest를 적용했다.
+
+```bash
+kubectl delete pod my-pod
+kubectl wait --for=delete pod/my-pod --timeout=60s
+kubectl apply --dry-run=server -f pod-basic.yml
+kubectl apply -f pod-basic.yml
+```
+
+### Server-side dry run과 실제 Apply
+
+```console
+$ kubectl apply --dry-run=server -f pod-basic.yml
+pod/my-pod created (server dry run)
+
+$ kubectl apply -f pod-basic.yml
+pod/my-pod created
+```
+
+- `--dry-run=server`: API Server의 검증·기본값·권한·Admission 처리는 거치지만 Object를 저장하지 않는다.
+- 실제 `apply`: Object를 저장하고 Scheduler와 kubelet이 실제 Pod 생성을 진행한다.
+
+`created` 출력은 API Object 접수 성공이다. Image Pull과 Application 실행 성공은 다음 명령으로 별도 확인해야 한다.
+
+```bash
+kubectl get pod my-pod -o wide
+kubectl describe pod my-pod
+kubectl logs my-pod
+```
+
+현재 대화에는 `my-pod`의 최종 `Running`과 Spring HTTP 응답 결과가 남아 있지 않다.
+
+## 7. 로컬 브라우저 접속 후보
+
+Pod가 `Running`일 때 Bastion의 `kubectl port-forward`와 Local SSH Tunnel을 함께 사용하면 Internet에 Port를 공개하지 않고 접속할 수 있다.
+
+```powershell
+ssh -L 8080:127.0.0.1:8080 bas "kubectl port-forward pod/my-pod 8080:80"
+```
+
+```text
+http://localhost:8080
+```
+
+이 경로는 안내만 했으며 실제 HTTP 응답은 아직 검증하지 않았다.
+
+## 8. VS Code Remote-SSH 고착
+
+Bastion에 Kubernetes Extension을 설치한 직후 VS Code에서 다음 증상이 발생했다.
+
+```text
+Failed to set up dynamic port forwarding connection over SSH
+VS Code 서버를 초기화하는 중
+```
+
+Local PowerShell의 일반 SSH도 응답하지 않았다. Read-only 진단 결과는 다음과 같았다.
+
+- Public IP의 TCP 22 연결 성공
+- EC2 Instance 상태 `running`
+- EC2 System Status와 Instance Status 모두 `ok`
+- SSH는 TCP 연결 후 `Connection timed out during banner exchange`
+- Bastion Instance Type은 `t3.micro`
+
+Network나 Security Group 차단보다는 작은 Bastion에서 VS Code Server와 Extension이 실행되며 Resource가 부족해졌을 가능성이 높다고 추정했다. Memory 사용량은 CloudWatch Agent가 없어 직접 확인하지 못했다.
+
+관련 복구 절차는 [[10_학습 노트/클라우드/AWS/서버_시퓨_100%_찍을_때|EC2 서버가 멈추거나 CPU 100% 찍을 때]]에 있다.
+
+후속 재접속은 성공했으나 실제로 Reboot·Swap 추가·VS Code Server 삭제 중 어떤 조치가 적용됐는지는 기록하지 못했다.
+
+## 9. 현재 진도: Ubuntu Pod
+
+강사가 제시한 현재 Manifest는 다음과 같다.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app.kubernetes.io/name: ubuntu
+  name: ubuntu-pod
+spec:
+  containers:
+    - image: ubuntu:26.04
+      name: ubuntu-container
+      ports:
+        - containerPort: 80
+      resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
+```
+
+- `ubuntu:26.04`는 Docker Hub의 Canonical 관리 Official Image Tag로 현재 존재한다.
+- `status`는 Kubernetes가 관리하는 영역이므로 작성용 Manifest에서는 제거할 수 있다.
+- `resources: {}`는 빈 설정이므로 제거할 수 있다.
+- Ubuntu Base Image에 장시간 실행되는 Main Process가 없으면 Container가 종료되고 `restartPolicy: Always`에 따라 재시작할 수 있다.
+- 이 Manifest의 실제 Apply·Pod 상태·`kubectl exec` 결과는 아직 확인하지 않았다. 강의 결과를 보기 전에 임의로 `command`를 추가하지 않는다.
+
+실행 뒤 확인할 명령은 다음과 같다.
+
+```bash
+kubectl apply --dry-run=server -f ubuntu-pod.yml
+kubectl apply -f ubuntu-pod.yml
+kubectl get pod ubuntu-pod -w
+kubectl describe pod ubuntu-pod
+kubectl logs ubuntu-pod
+```
+
+Pod가 `Running`을 유지한다면 Container 내부 진입은 다음과 같다.
+
+```bash
+kubectl exec -it ubuntu-pod -c ubuntu-container -- sh
+```
+
+## 오류와 해석 요약
+
+| 증상 | 확인한 원인 또는 현재 판단 | 조치·다음 확인 |
+|---|---|---|
+| `path ... does not exist` | YAML 파일 없음 | 파일 생성 또는 `kubectl --dry-run=client -o yaml` 사용 |
+| `no objects passed to apply` | 파일이 비었거나 유효 Object 없음 | `cat -n`으로 내용 확인 |
+| `resource type "podes"` | `pods` 오타 | `kubectl get pods` |
+| `Unable to locate credentials` | Bastion 기본 AWS CLI Profile 없음 | `aws configure list-profiles` 후 명시적 Profile 사용 |
+| `aws login`이 Browser 대기 | Remote SSH 환경에 부적합 | 취소하고 기존 Credential Profile 확인 |
+| `No plugin found for prefix 'jib'` | 잘못된 Maven Base directory 가능성이 높음 | `${workspace_loc:/boot}` 확인 |
+| Pod Update `Forbidden` | Container 이름은 Pod 불변 필드 | 실습 Pod 삭제 후 재생성 |
+| VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
+| Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
+
+## 검증 완료와 미완료
+
+### 완료
+
+- Terraform Apply 성공과 Bastion SSH 접속
+- EKS API 조회
+- Worker Node 2대 `Ready`
+- `pod-basic.yml` Server-side dry run 통과
+- `my-pod` API Object 생성
+- `boot` Project의 Jib Plugin·Application Port 확인
+- `ubuntu:26.04` Official Image Tag 존재 확인
+
+### 미완료·추가 증거 필요
+
+- Bastion 내부 AWS CLI Profile의 실제 STS Identity
+- Jib Image 재Push 성공과 Docker Hub Tag 존재
+- `my-pod`의 최종 `Running`·Log·HTTP 응답
+- `ubuntu-pod` Apply와 실행 상태
+- Ubuntu Container의 `kubectl exec` 결과
+- 실습 종료 후 Terraform Destroy와 유료 Resource 잔존 확인
+
+## 다음 재시작 지점
+
+1. 강사의 `ubuntu-pod` Manifest를 그대로 적용한다.
+2. `kubectl get pod ubuntu-pod -w`로 실제 수명주기를 본다.
+3. `Running`이면 `kubectl exec`, 종료·재시작이면 `describe`와 `logs`로 원인을 확인한다.
+4. 확인된 출력만 이 노트에 추가한다.
+5. 수업 종료 후 Terraform Destroy와 AWS 잔존 Resource를 별도로 검증한다.
+
+## 관련 노트
+
+- [[Kubernetes Pod와 ReplicaSet]]
+- [[Source Digest/Kubernetes - Source Digest 04 Pod and ReplicaSet]]
+- [[10_학습 노트/클라우드/AWS/서버_시퓨_100%_찍을_때|EC2 서버가 멈추거나 CPU 100% 찍을 때]]
+
+## 공식 참고
+
+- [Ubuntu Official Image](https://hub.docker.com/_/ubuntu)
+- [Kubernetes Pods](https://kubernetes.io/docs/concepts/workloads/pods/)
+- [kubectl apply](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/)
+- [kubectl exec](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_exec/)

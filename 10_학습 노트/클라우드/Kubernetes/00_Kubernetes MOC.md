@@ -16,6 +16,7 @@ parent_moc: "[[10_학습 노트/클라우드/00_클라우드_목차]]"
 ## 현재 재시작 지점
 
 - 원자료 지도: [[Source Digest/Kubernetes - Source Digest v1]]
+- 현재 실습: [[EKS 첫 접속과 Pod 기초 실습]]
 - 현재 상세 범위: `Kubernetes.pdf` p.1-p.12
 - 진행 중: Container Orchestration → Kubernetes Architecture → EKS 기초
 
