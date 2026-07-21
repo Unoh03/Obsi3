@@ -17,15 +17,18 @@ parent_moc: "[[10_학습 노트/클라우드/00_클라우드_목차]]"
 
 - 원자료 지도: [[Source Digest/Kubernetes - Source Digest v1]]
 - 현재 실습: [[EKS 첫 접속과 Pod 기초 실습]]
-- 현재 상세 범위: `Kubernetes.pdf` p.1-p.12
-- 진행 중: Container Orchestration → Kubernetes Architecture → EKS 기초
+- 현재 수업 범위: `Kubernetes.pdf` p.19까지 기록
+- 진행 중: Pod 기초 → Image·Manifest 보정 → 환경변수와 Downward API
+- 다음 재시작: EKS 환경을 다시 만든 뒤 p.19 환경변수 Manifest를 Server-side dry run하고 `exec env` 결과를 확인한다.
+
+## 핵심 개념
+
+- [[컨테이너 오케스트레이션]]
+- [[Kubernetes 아키텍처]]
+- [[Kubernetes Pod와 ReplicaSet]]
 
 ## Source / RAW
 
 - 원자료: [[40_자료/강의 자료/Kubernetes.pdf|Kubernetes.pdf]]
 - Source Digest: [[Source Digest/Kubernetes - Source Digest v1]]
 - 연계 실습 자료: `boot.zip` Spring Boot Source - 아직 Vault에 편입하지 않음
-
-## 하위 경로
-
-- 후속 concept·lab 노트가 실제로 생성될 때만 추가한다.

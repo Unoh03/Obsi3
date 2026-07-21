@@ -1,7 +1,7 @@
 ---
 title: IaC MOC
 created: 2026-07-06
-updated: 2026-07-20
+updated: 2026-07-21
 status: active
 type: moc
 scope: AWS 수업 자료와 Terraform AWS 실습
@@ -71,7 +71,7 @@ tags:
 
 ## 정리 대기
 
-- [ ] v7.1 WEB-RDS 기능·TLS 검증
+- [ ] [[Terraform RDS 초기화 방식 비교와 S3 schema.sql 설계 메모|v7.1 RDS 초기화·S3 schema.sql 설계 초안]]의 WEB-RDS 기능·TLS 검증
 - [ ] `07_networks` / `07_servers` 실제 apply·destroy 검증
 - [ ] v10.1 반복문·조건문 인프라의 `validate`·`plan`·`apply` 검증
 - [ ] v11.0 Stage/Prod Local Module의 `validate`·`plan`·`apply` 검증

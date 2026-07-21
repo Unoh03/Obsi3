@@ -1,17 +1,17 @@
 ---
 title: IaC - Source Digest v2
 created: 2026-07-06
-updated: 2026-07-06
+updated: 2026-07-21
 status: active
 type: source-digest
-source_pdf: Iac.pdf
-pages: 1-52
-source_classification: PDF
+parent_moc: "[[10_학습 노트/클라우드/AWS/IaC/00_IaC MOC]]"
+source: "[[40_자료/강의 자료/Iac.pdf]]"
+source_pages: "1-52"
+digest_role: single
 tags:
   - 과목/AWS
   - 주제/IaC
   - 주제/Terraform
-  - 상태/source-digest
 ---
 
 # IaC - Source Digest

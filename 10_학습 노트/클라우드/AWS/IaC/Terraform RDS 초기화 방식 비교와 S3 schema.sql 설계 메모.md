@@ -3,7 +3,9 @@ title: Terraform RDS 초기화 방식 비교와 S3 schema.sql 검증 실습
 version: v7.1-draft
 created: 2026-07-09
 status: draft
-type: lab-note-draft
+type: lab
+topic: terraform-rds
+parent_moc: "[[10_학습 노트/클라우드/AWS/IaC/00_IaC MOC]]"
 source:
   - Terraform RDS 인프라 구성 실습 v7.0.md
   - Terraform AWS CLI 초기 설정 실습 v6.3.md
@@ -23,7 +25,6 @@ tags:
   - 주제/RDS
   - 주제/S3
   - 주제/user_data
-  - 상태/draft
   - 실습/Terraform
 ---
 
