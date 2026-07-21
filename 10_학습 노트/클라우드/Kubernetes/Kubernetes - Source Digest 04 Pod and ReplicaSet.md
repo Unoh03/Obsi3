@@ -1,6 +1,6 @@
 ---
 type: source-digest
-status: draft
+status: stable
 created: 2026-07-21
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
@@ -10,8 +10,9 @@ digest_index: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Di
 chapter: "04 Pod and ReplicaSet"
 source_hash: F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"
-coverage_status: partial
+coverage_status: complete
 extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual review"
+reviewed_on: 2026-07-21
 ---
 
 # Kubernetes - Source Digest 04 Pod and ReplicaSet
@@ -527,17 +528,23 @@ overrides='{ "spec":{ "nodeSelector":{ "project":"node" }}}'
 
 - 원자료: [[40_자료/강의 자료/Kubernetes.pdf#page=34|Kubernetes.pdf p.34]]
 
-```text
-django-app-1  192.168.10.149  node-1
-django-app-2  192.168.10.156  node-1
-django-app-3  192.168.10.58   node-1
-node-app-1    192.168.20.181  node-2
-node-app-2    192.168.20.169  node-2
-node-app-3    192.168.20.179  node-2
-```
-
 ```console
+$ kubectl get pod -o wide
+NAME          READY  STATUS   RESTARTS  AGE  IP              NODE    NOMINATED NODE  READINESS GATES
+django-app-1  1/1    Running  0         92s  192.168.10.149  node-1  <none>          <none>
+django-app-2  1/1    Running  0         92s  192.168.10.156  node-1  <none>          <none>
+django-app-3  1/1    Running  0         92s  192.168.10.58   node-1  <none>          <none>
+node-app-1    1/1    Running  0         55s  192.168.20.181  node-2  <none>          <none>
+node-app-2    1/1    Running  0         55s  192.168.20.169  node-2  <none>          <none>
+node-app-3    1/1    Running  0         54s  192.168.20.179  node-2  <none>          <none>
+
 $ kubectl delete pod --all
+pod "django-app-1" deleted
+pod "django-app-2" deleted
+pod "django-app-3" deleted
+pod "node-app-1" deleted
+pod "node-app-2" deleted
+pod "node-app-3" deleted
 ```
 
 - `django-app`은 Node 1, `node-app`은 Node 2에 배치됐음을 확인하고 모두 삭제한다.
@@ -650,7 +657,7 @@ $ kubectl delete pod node-app
 
 - 원자료: [[40_자료/강의 자료/Kubernetes.pdf#page=39|Kubernetes.pdf p.39]]
 
-- p.38의 Required Manifest 값을 `ap-northeast-2a`에서 존재하지 않는 `ap-northeast-2b`로 바꾼다.
+- p.38의 Required Manifest와 Operator 목록은 같고 `values`만 `ap-northeast-2a`에서 존재하지 않는 `ap-northeast-2b`로 바꾼다.
 
 ```console
 $ kubectl apply -f pod/nodeaffinity/nodeaffinity-test1.yml && kubectl get pod -o wide
@@ -684,7 +691,7 @@ node-app  1/1  Running  ...  192.168.20.185  ip-192-168-20-156
 
 - 원자료: [[40_자료/강의 자료/Kubernetes.pdf#page=41|Kubernetes.pdf p.41]]
 
-- Preferred 값을 존재하지 않는 `ap-northeast-2b`로 바꾼다.
+- p.40의 Preferred Manifest·Operator 목록·실행 명령은 같고 `values`만 존재하지 않는 `ap-northeast-2b`로 바꾼다.
 
 ```console
 node-app  1/1  Running  ...  192.168.10.169  ip-192-168-10-147
@@ -719,13 +726,23 @@ node-app  1/1  Running  ...  192.168.10.169  ip-192-168-10-147
 - 원자료: [[40_자료/강의 자료/Kubernetes.pdf#page=43|Kubernetes.pdf p.43]]
 
 ```console
+$ kubectl get nodes
+NAME                                                    STATUS  ROLES   AGE  VERSION
+ip-192-168-10-147.ap-northeast-2.compute.internal      Ready   <none>  8d   v1.24.16-eks-8ccc7ba
+ip-192-168-20-156.ap-northeast-2.compute.internal      Ready   <none>  8d   v1.24.16-eks-8ccc7ba
+
 $ kubectl taint nodes ip-192-168-20-156.ap-northeast-2.compute.internal nodename=node2:NoSchedule
 node/ip-192-168-20-156.ap-northeast-2.compute.internal tainted
 
 $ kubectl describe nodes ip-192-168-20-156.ap-northeast-2.compute.internal | grep Taints
-Taints: nodename=node2:NoSchedule
-Unschedulable: false
-InternalIP: 192.168.20.156
+Name:              ip-192-168-20-156.ap-northeast-2.compute.internal
+CreationTimestamp: Wed, 13 Sep 2023 01:07:38 +0000
+Taints:            nodename=node2:NoSchedule
+Unschedulable:     false
+Addresses:
+  InternalIP:  192.168.20.156
+  Hostname:    ip-192-168-20-156.ap-northeast-2.compute.internal
+  InternalDNS: ip-192-168-20-156.ap-northeast-2.compute.internal
 ```
 
 ## p.44 - Toleration 없는 Pod Manifest
@@ -983,10 +1000,10 @@ Selector: app=nginx-app
 Replicas: 5 current / 5 desired
 Pods Status: 5 Running
 Events: SuccessfulCreate 4건
-  rs-basic-ffw5m
-  rs-basic-mk8x4
-  rs-basic-pbxnz
-  rs-basic-tg5rr
+  99s  rs-basic-ffw5m
+  99s  rs-basic-mk8x4
+  99s  rs-basic-pbxnz
+  99s  rs-basic-tg5rr
 ```
 
 - 같은 Selector Label의 기존 Pod는 자동으로 ReplicaSet 관리 대상에 포함된다고 설명한다.
@@ -1002,8 +1019,11 @@ $ kubectl describe rs rs-basic
 Replicas:    5 current / 5 desired
 Pods Status: 5 Running / 0 Waiting / 0 Succeeded / 0 Failed
 Events:
-  ... 기존 SuccessfulCreate 4건 ...
-  Normal SuccessfulCreate ... Created pod: rs-basic-dcrkn
+  Normal SuccessfulCreate 99s ... Created pod: rs-basic-ffw5m
+  Normal SuccessfulCreate 99s ... Created pod: rs-basic-mk8x4
+  Normal SuccessfulCreate 99s ... Created pod: rs-basic-pbxnz
+  Normal SuccessfulCreate 99s ... Created pod: rs-basic-tg5rr
+  Normal SuccessfulCreate 49m ... Created pod: rs-basic-dcrkn
 ```
 
 - 관리 대상 Pod 삭제 뒤 새 Pod를 생성해 요구치 5개를 유지한다.
@@ -1206,7 +1226,7 @@ rs-rollback-sxb46  app=node-app,env=prod,version=v1
 
 - 원자료: [[40_자료/강의 자료/Kubernetes.pdf#page=67|Kubernetes.pdf p.67]]
 
-- p.65 Manifest의 Image를 다음처럼 바꾼다.
+- p.63의 기본 Manifest와 p.65에서 추가한 `version: v1`, `env: prod` Label은 그대로 두고 Image만 다음처럼 바꾼다.
 
 ```yaml
 image: node:18-alpine3.15

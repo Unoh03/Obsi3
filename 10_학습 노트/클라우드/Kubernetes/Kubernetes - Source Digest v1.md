@@ -1,6 +1,6 @@
 ---
 type: source-digest
-status: draft
+status: stable
 created: 2026-07-20
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
@@ -8,8 +8,9 @@ source_pages: "1-266"
 digest_role: index
 source_hash: "F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24"
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"
-coverage_status: partial
+coverage_status: complete
 extraction_method: "pdfplumber text extraction + pypdfium2 rendering and visual review"
+reviewed_on: 2026-07-21
 tags:
   - 과목/클라우드
   - 주제/Kubernetes
@@ -39,29 +40,29 @@ tags:
 
 | Chapter | PDF Page | 처리 상태 | Chapter Digest |
 |---:|---:|---|---|
-| 01 Container Orchestration | p.1-p.3 | 원본 대조 중 | [[Kubernetes - Source Digest 01 Container Orchestration]] |
-| 02 Kubernetes Architecture | p.4-p.7 | 원본 대조 중 | [[Kubernetes - Source Digest 02 Kubernetes Architecture]] |
-| 03 AWS EKS | p.8-p.12 | 원본 대조 중 | [[Kubernetes - Source Digest 03 AWS EKS]] |
-| 04 Pod and ReplicaSet | p.13-p.73 | 원본 대조 중 | [[Kubernetes - Source Digest 04 Pod and ReplicaSet]] |
-| 05 Deployment | p.74-p.109 | 원본 대조 중 | [[Kubernetes - Source Digest 05 Deployment]] |
-| 06 Service Object | p.110-p.134 | 원본 대조 중 | [[Kubernetes - Source Digest 06 Service Object]] |
-| 07 ConfigMap and Secret | p.135-p.160 | 원본 대조 중 | [[Kubernetes - Source Digest 07 ConfigMap 및 시크릿]] |
-| 08 Pod Health Check | p.161-p.171 | 원본 대조 중 | [[Kubernetes - Source Digest 08 Pod Health Check]] |
-| 09 Resource Management | p.172-p.186 | 원본 대조 중 | [[Kubernetes - Source Digest 09 Resource Management]] |
-| 10 ServiceAccount and RBAC | p.187-p.197 | 원본 대조 중 | [[Kubernetes - Source Digest 10 SA and RBAC]] |
-| 11 Ingress Network | p.198-p.212 | 원본 대조 중 | [[Kubernetes - Source Digest 11 Ingress Network]] |
-| 12 Volume Management | p.213-p.234 | 원본 대조 중 | [[Kubernetes - Source Digest 12 Volume Management]] |
-| 13 StatefulSet | p.235-p.245 | 원본 대조 중 | [[Kubernetes - Source Digest 13 StatefulSet]] |
-| 14 DaemonSet | p.246-p.250 | 원본 대조 중 | [[Kubernetes - Source Digest 14 DaemonSet]] |
-| 15 AutoScaling | p.251-p.261 | 원본 대조 중 | [[Kubernetes - Source Digest 15 AutoScaling]] |
-| 16 Related Tools | p.262-p.266 | 원본 대조 중 | [[Kubernetes - Source Digest 16 Related Tools]] |
+| 01 Container Orchestration | p.1-p.3 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 01 Container Orchestration]] |
+| 02 Kubernetes Architecture | p.4-p.7 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 02 Kubernetes Architecture]] |
+| 03 AWS EKS | p.8-p.12 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 03 AWS EKS]] |
+| 04 Pod and ReplicaSet | p.13-p.73 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 04 Pod and ReplicaSet]] |
+| 05 Deployment | p.74-p.109 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 05 Deployment]] |
+| 06 Service Object | p.110-p.134 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 06 Service Object]] |
+| 07 ConfigMap and Secret | p.135-p.160 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 07 ConfigMap 및 시크릿]] |
+| 08 Pod Health Check | p.161-p.171 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 08 Pod Health Check]] |
+| 09 Resource Management | p.172-p.186 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 09 Resource Management]] |
+| 10 ServiceAccount and RBAC | p.187-p.197 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 10 SA and RBAC]] |
+| 11 Ingress Network | p.198-p.212 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 11 Ingress Network]] |
+| 12 Volume Management | p.213-p.234 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 12 Volume Management]] |
+| 13 StatefulSet | p.235-p.245 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 13 StatefulSet]] |
+| 14 DaemonSet | p.246-p.250 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 14 DaemonSet]] |
+| 15 AutoScaling | p.251-p.261 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 15 AutoScaling]] |
+| 16 Related Tools | p.262-p.266 | 변환·원본 대조 완료 | [[Kubernetes - Source Digest 16 Related Tools]] |
 
 Chapter 범위의 합은 p.1-p.266을 Gap·Overlap 없이 한 번씩 덮는다.
 
 ## Page 번호 경계
 
 - Coverage와 역추적의 기준은 PDF Viewer의 실제 Page 번호다.
-- PDF p.1-p.243은 내부 Slide 번호와 일치한다.
+- PDF p.172-p.243에서는 내부 Slide 번호가 PDF Page 번호와 일치한다. p.1-p.171도 역추적 기준은 내부 번호가 아니라 PDF Page 번호다.
 - PDF p.244-p.245는 내부 Slide p.245-p.246으로 표시된다.
 - PDF p.246-p.266은 내부 Slide p.256-p.276으로 표시된다.
 - 내부 Slide 244와 247-255는 원본 PDF에 없으므로 누락으로 추정해 복원하지 않는다.
@@ -88,7 +89,7 @@ Kubernetes MOC
 - [x] Chapter 경계 확정
 - [x] p.1-p.266 Chapter 파일 생성
 - [x] Chapter 사이 Gap·Overlap 없음
-- [ ] 모든 Chapter의 Page별 Text·Visual 원본 대조 완료
-- [ ] 모든 Chapter Frontmatter와 Link 검증 완료
-- [ ] 판독 불가·원자료 내부 충돌 최종 검토
-- [ ] 전체 범위 `coverage_status: complete` 판정
+- [x] 모든 Chapter의 Page별 Text·Visual 원본 대조 완료
+- [x] 모든 Chapter Frontmatter와 Link 검증 완료
+- [x] 판독 불가·원자료 내부 충돌 최종 검토
+- [x] 전체 범위 `coverage_status: complete` 판정

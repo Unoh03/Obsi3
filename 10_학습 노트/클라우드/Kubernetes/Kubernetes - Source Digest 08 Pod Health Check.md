@@ -1,6 +1,6 @@
 ---
 type: source-digest
-status: draft
+status: stable
 created: 2026-07-21
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
@@ -10,8 +10,9 @@ digest_index: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Di
 chapter: Pod Health Check
 source_hash: F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"
-coverage_status: partial
+coverage_status: complete
 extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual review"
+reviewed_on: 2026-07-21
 ---
 
 # Kubernetes Source Digest 08 — Pod Health Check
@@ -26,11 +27,15 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 
 ## PDF p.161
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=161|Kubernetes.pdf p.161]]
+
 ### 원자료 내용
 
 - 장 표지: `Kubernetes Pod Health-Check`.
 
 ## PDF p.162
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=162|Kubernetes.pdf p.162]]
 
 ### 원자료 내용
 
@@ -56,6 +61,8 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 
 ## PDF p.163
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=163|Kubernetes.pdf p.163]]
+
 ### 원자료 내용
 
 - Probe 공통 속성:
@@ -74,6 +81,8 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 - 각 Probe마다 별도의 `timeout` 구간이 표시되어 있다.
 
 ## PDF p.164
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=164|Kubernetes.pdf p.164]]
 
 ### 원자료 내용
 
@@ -105,6 +114,8 @@ spec:
 
 ## PDF p.165
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=165|Kubernetes.pdf p.165]]
+
 ### 원자료 내용
 
 ```bash
@@ -135,6 +146,8 @@ Not Found: /liveness
 
 ## PDF p.166
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=166|Kubernetes.pdf p.166]]
+
 ### 원자료 내용
 
 ```bash
@@ -162,6 +175,8 @@ Warning Unhealthy  ...  Liveness probe failed: HTTP probe failed statuscode: 404
 - `Restart Count`, Liveness 조건, Event list를 확인한다.
 
 ## PDF p.167
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=167|Kubernetes.pdf p.167]]
 
 ### 원자료 내용
 
@@ -194,6 +209,8 @@ spec:
 - 나머지 설정은 p.164와 같다.
 
 ## PDF p.168
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=168|Kubernetes.pdf p.168]]
 
 ### 원자료 내용
 
@@ -231,6 +248,8 @@ kubectl delete pod liveness-probe -n delivery
 
 ## PDF p.169
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=169|Kubernetes.pdf p.169]]
+
 ### 원자료 내용
 
 - `readiness-probe.yml`의 일부이며 Pod 전체 내용은 TXT 교안을 참조하라고 적혀 있다.
@@ -261,6 +280,8 @@ spec:
 
 ## PDF p.170
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=170|Kubernetes.pdf p.170]]
+
 ### 원자료 내용
 
 ```bash
@@ -286,6 +307,8 @@ Events:
 - Readiness Probe 조건, Conditions, Event list를 확인한다.
 
 ## PDF p.171
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=171|Kubernetes.pdf p.171]]
 
 ### 원자료 내용
 
@@ -329,4 +352,3 @@ No resources found in delivery namespace.
 
 - 원자료가 참조한 TXT manifest 전체는 제공 범위에 없어 PDF에 보이는 부분만 옮겼다.
 - p.169의 Readiness 주석 불일치는 원자료 안에서 확인됐으며, 이 문서에서는 외부 공식 문서 대조를 수행하지 않았다.
-

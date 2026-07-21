@@ -1,6 +1,6 @@
 ---
 type: source-digest
-status: draft
+status: stable
 created: 2026-07-21
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
@@ -10,8 +10,9 @@ digest_index: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Di
 chapter: "11 Ingress Network"
 source_hash: F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"
-coverage_status: partial
+coverage_status: complete
 extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual review"
+reviewed_on: 2026-07-21
 ---
 
 # Kubernetes - Source Digest 11 Ingress Network
@@ -182,7 +183,15 @@ Kubernetes         Ingress      Network       Management
 
 ### Visual 의미
 
-- ALB Controller가 API Server 변화를 감시하고 Listener·Rule·TargetGroup을 구성해 NodePort/Pod로 전달하는 1–5단계 구조이다. 이 페이지는 의미 대부분이 도식에 있다.
+- 이 페이지는 의미 대부분이 도식에 있으며, 번호는 다음 관계를 나타낸다.
+  1. Kubernetes Cluster의 `alb-ingress-controller`가 API Server의 변경을 감시(`Watch changes`)하고 상태를 갱신한다(`Update status`).
+  2. Controller가 AWS 영역에 Application Load Balancer를 구성한다.
+  3. ALB의 TargetGroup은 Service별로 만들어지며 Target mode에 따라 연결이 달라진다.
+     - `ServiceA (mode instance)`와 `ServiceB (mode instance)` TargetGroup은 각 Node의 `NP:A`, `NP:B` NodePort로 연결된다.
+     - `ServiceC (mode IP)` TargetGroup은 NodePort를 거치지 않고 각 Node의 `PodC` IP로 직접 연결된다.
+  4. ALB에는 `Listener: HTTP`와 `Listener: HTTPS`가 배치된다.
+  5. Listener Rule은 `/* → ServiceA`, `/products → ServiceB`, `/accounts → ServiceC` TargetGroup으로 분기한다.
+- 세 Worker Node에는 각각 `PodA`, `PodB`, `PodC`가 있고, instance mode의 NodePort 선과 IP mode의 Pod 직접 연결선이 서로 다른 색으로 표현된다.
 
 ### 판독 불확실성
 

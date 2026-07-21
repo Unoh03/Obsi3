@@ -1,6 +1,6 @@
 ---
 type: source-digest
-status: draft
+status: stable
 created: 2026-07-21
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
@@ -10,8 +10,9 @@ digest_index: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Di
 chapter: Service Object
 source_hash: F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"
-coverage_status: partial
+coverage_status: complete
 extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual review"
+reviewed_on: 2026-07-21
 ---
 
 # Kubernetes Source Digest 06 — Service Object
@@ -26,11 +27,15 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 
 ## PDF p.110
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=110|Kubernetes.pdf p.110]]
+
 ### 원자료 내용
 
 - 장 표지: `Kubernetes Service Object`.
 
 ## PDF p.111
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=111|Kubernetes.pdf p.111]]
 
 ### 원자료 내용
 
@@ -51,6 +56,8 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 
 ## PDF p.112
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=112|Kubernetes.pdf p.112]]
+
 ### 원자료 내용
 
 #### ClusterIP
@@ -65,6 +72,8 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 
 ## PDF p.113
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=113|Kubernetes.pdf p.113]]
+
 ### 원자료 내용
 
 #### LoadBalancer
@@ -77,6 +86,8 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 - 도식의 외부 Resource 예시는 `RDS`, `S3`, `ElastiCache`이다.
 
 ## PDF p.114
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=114|Kubernetes.pdf p.114]]
 
 ### 원자료 내용
 
@@ -110,6 +121,8 @@ spec:
 
 ## PDF p.115
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=115|Kubernetes.pdf p.115]]
+
 ### 원자료 내용
 
 - `svc-clusterip-order.yml`의 Service와 Deployment 예시이다.
@@ -142,11 +155,13 @@ spec:
 
 ## PDF p.116
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=116|Kubernetes.pdf p.116]]
+
 ### 원자료 내용
 
 ```bash
 kubectl create namespace delivery
-kubectl get ns delivery
+kubectl get ns
 kubectl apply -f service/
 ```
 
@@ -162,6 +177,8 @@ deployment.apps/order-deploy created
 ```
 
 ## PDF p.117
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=117|Kubernetes.pdf p.117]]
 
 ### 원자료 내용
 
@@ -182,6 +199,8 @@ kubectl get svc,pod -n delivery
 
 ## PDF p.118
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=118|Kubernetes.pdf p.118]]
+
 ### 원자료 내용
 
 - Pod IP:
@@ -192,6 +211,8 @@ kubectl get svc,pod -n delivery
   - `order-svc`: `10.100.32.93`
 
 ```bash
+kubectl get pod -o wide -n delivery
+kubectl get svc -n delivery
 kubectl get endpoints -n delivery
 ```
 
@@ -202,6 +223,8 @@ kubectl get endpoints -n delivery
 - ClusterIP는 Cluster 내부에서만 접근할 수 있다.
 
 ## PDF p.119
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=119|Kubernetes.pdf p.119]]
 
 ### 원자료 내용
 
@@ -228,10 +251,18 @@ ORDER_SVC_SERVICE_PORT=80
 ```
 
 - 환경변수의 Service IP와 Port로 `curl`을 수행한다.
+
+```bash
+curl $LIST_SVC_SERVICE_HOST:$LIST_SVC_SERVICE_PORT
+curl $ORDER_SVC_SERVICE_HOST:$ORDER_SVC_SERVICE_PORT
+```
+
 - 동일 Namespace의 Service 정보가 환경변수로 자동 등록된다고 설명한다.
 - Service가 L4 Load Balancing을 수행하여 여러 Pod로 요청을 분산한다고 설명한다.
 
 ## PDF p.120
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=120|Kubernetes.pdf p.120]]
 
 ### 원자료 내용
 
@@ -265,6 +296,8 @@ curl order-svc:80
 
 ## PDF p.121
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=121|Kubernetes.pdf p.121]]
+
 ### 원자료 내용
 
 - `default` Namespace에서 Debug Pod를 실행한다.
@@ -272,8 +305,14 @@ curl order-svc:80
 - 다른 Namespace의 Service에는 Namespace를 포함한 DNS 이름으로 접근한다.
 
 ```bash
+kubectl run -it --rm debug \
+  --image=chlzzz/kube-image:debug \
+  --restart=Never -- sh
+env | grep LIST
+env | grep ORDER
 curl list-svc.delivery:80
 curl order-svc.delivery:80
+exit
 ```
 
 - 테스트 후 `project=delivery` label을 가진 리소스를 삭제하고 남은 리소스가 없음을 확인한다.
@@ -284,6 +323,8 @@ kubectl get all -n delivery
 ```
 
 ## PDF p.122
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=122|Kubernetes.pdf p.122]]
 
 ### 원자료 내용
 
@@ -314,19 +355,42 @@ spec:
 
 ## PDF p.123
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=123|Kubernetes.pdf p.123]]
+
 ### 원자료 내용
 
 - `svc-nodeport-order.yml` 예시이다.
-- `order-svc`, selector `app: order-app`, `type: NodePort`, `port: 80`, `targetPort: 8000`을 사용한다.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-svc
+  labels:
+    app: order-app
+    project: delivery
+  namespace: delivery
+spec:
+  type: NodePort
+  selector:
+    app: order-app
+  ports:
+    - port: 80
+      targetPort: 8000
+```
+
 - 이 예시에는 `nodePort`를 명시하지 않아 자동 할당된다.
 - Deployment는 `replicas: 2`, image `chlzzz/kube-image:order`, `containerPort: 8000`을 사용하며 전체 코드는 생략되어 있다.
 
 ## PDF p.124
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=124|Kubernetes.pdf p.124]]
+
 ### 원자료 내용
 
 ```bash
-kubectl apply -f service/
+kubectl apply -f service/svc-nodeport-list.yml
+kubectl apply -f service/svc-nodeport-order.yml
 kubectl get all -n delivery
 ```
 
@@ -336,6 +400,8 @@ kubectl get all -n delivery
 - `list`와 `order` Pod는 각각 2개이며 Deployment와 ReplicaSet도 모두 목표 개수를 유지한다.
 
 ## PDF p.125
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=125|Kubernetes.pdf p.125]]
 
 ### 원자료 내용
 
@@ -348,9 +414,18 @@ kubectl get all -n delivery
 - NodePort:
   - `list-svc`: `30140`
   - `order-svc`: `32455`
+
+```bash
+kubectl get pod -n delivery -o wide
+kubectl get endpoints -n delivery
+kubectl get svc -n delivery
+```
+
 - Service의 NodePort가 모든 Worker Node에 열리고, Endpoint의 Pod port `8000`으로 전달되는 관계를 보여 준다.
 
 ## PDF p.126
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=126|Kubernetes.pdf p.126]]
 
 ### 원자료 내용
 
@@ -379,12 +454,20 @@ kubectl get all -n delivery
 
 ## PDF p.127
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=127|Kubernetes.pdf p.127]]
+
 ### 원자료 내용
 
 - ExternalName 사용 시나리오를 설명한다.
   - 외부 Resource 예시: RDS, Route53
   - `delivery` Namespace의 Service를 다른 Namespace에서 외부 서비스처럼 참조하는 실습
 - `delivery` Namespace에 ClusterIP Service와 Deployment를 다시 적용한다.
+
+```bash
+kubectl apply -f service/svc-clusterip-list.yml
+kubectl apply -f service/svc-clusterip-order.yml
+```
+
 - 출력 예시:
   - `list-svc`: ClusterIP `10.100.241.80`
   - `order-svc`: ClusterIP `10.100.195.147`
@@ -392,6 +475,8 @@ kubectl get all -n delivery
   - `order-svc` Endpoint: `192.168.10.58:8000,192.168.20.179:8000`
 
 ## PDF p.128
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=128|Kubernetes.pdf p.128]]
 
 ### 원자료 내용
 
@@ -417,11 +502,13 @@ spec:
 
 ## PDF p.129
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=129|Kubernetes.pdf p.129]]
+
 ### 원자료 내용
 
 ```bash
-kubectl apply -f svc-externalname.yml
-kubectl get svc
+kubectl apply -f service/svc-externalname.yml
+kubectl get svc -n default
 ```
 
 - 두 Service의 type은 `ExternalName`이고 ClusterIP는 없다.
@@ -442,6 +529,8 @@ curl externalname-order-svc
 
 ## PDF p.130
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=130|Kubernetes.pdf p.130]]
+
 ### 원자료 내용
 
 - `delivery` Namespace의 `project=delivery` 리소스를 삭제한다.
@@ -450,16 +539,19 @@ curl externalname-order-svc
 
 ```bash
 kubectl delete all -l project=delivery -n delivery
-kubectl delete svc externalname-list-svc externalname-order-svc
 kubectl get all -n delivery
+kubectl delete svc externalname-list-svc
+kubectl delete svc externalname-order-svc
 kubectl get all
 ```
 
 ## PDF p.131
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=131|Kubernetes.pdf p.131]]
+
 ### 원자료 내용
 
-- `svc-loadbalancer-list.yml` 예시이다.
+- `svc-loadbalancer.yml` 예시이다.
 
 ```yaml
 apiVersion: v1
@@ -488,11 +580,14 @@ spec:
 
 ## PDF p.132
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=132|Kubernetes.pdf p.132]]
+
 ### 원자료 내용
 
 ```bash
-kubectl apply -f svc-loadbalancer-list.yml
-kubectl get pod,service -n delivery -o wide
+kubectl apply -f service/svc-loadbalancer.yml
+kubectl get pod -n delivery -o wide
+kubectl get svc -n delivery
 ```
 
 - Pod 3개의 IP 예시는 `192.168.10.187`, `192.168.10.58`, `192.168.20.205`이다.
@@ -508,6 +603,8 @@ kubectl get pod,service -n delivery -o wide
 > 원자료의 LoadBalancer DNS는 화면에서 위와 같이 축약해 표시되어 있다. 전체 실제 DNS 이름을 추정해 보충하지 않는다.
 
 ## PDF p.133
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=133|Kubernetes.pdf p.133]]
 
 ### 원자료 내용
 
@@ -536,6 +633,8 @@ sessionAffinityConfig:
 
 ## PDF p.134
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=134|Kubernetes.pdf p.134]]
+
 ### 원자료 내용
 
 - Browser 화면의 `POD CONTAINER INFORMATION` 예시:
@@ -547,7 +646,7 @@ sessionAffinityConfig:
 - 실습 리소스를 삭제하고 남은 리소스가 없음을 확인한다.
 
 ```bash
-kubectl delete -f svc-loadbalancer-list.yml
+kubectl delete -f service/svc-loadbalancer.yml
 kubectl get all -n delivery
 ```
 
@@ -559,4 +658,3 @@ kubectl get all -n delivery
 
 - 원자료가 참조한 TXT manifest 파일은 이 변환 범위에 제공되지 않아, PDF에 표시된 부분만 옮겼다.
 - p.120의 DNS IP와 p.126·p.133의 출력명 불일치는 원자료만으로 해소할 수 없다.
-

@@ -1,6 +1,6 @@
 ---
 type: source-digest
-status: draft
+status: stable
 created: 2026-07-21
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
@@ -10,8 +10,9 @@ digest_index: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Di
 chapter: "10 SA and RBAC"
 source_hash: F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"
-coverage_status: partial
+coverage_status: complete
 extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual review"
+reviewed_on: 2026-07-21
 ---
 
 # Kubernetes - Source Digest 10 SA and RBAC
@@ -100,7 +101,10 @@ External
 
 ### Visual 의미
 
-- Kubernetes Cluster 안의 Test/Prod Namespace, ServiceAccount·Role·RoleBinding과 외부 Client의 요청 관계를 한 도식으로 배치한다.
+- Kubernetes Cluster 안의 `Test Namespace`와 `Prod Namespace`에 각각 `RoleBinding(rb) → Role` 관계가 있고, `sa`·`user`·`group` Subject가 RoleBinding 아래에서 Pod 접근 권한을 받는 구조로 배치된다.
+- Namespace 밖 Cluster 범위에는 `ClusterRole(c.role)`과 `ClusterRoleBinding(crb)`이 있으며, ClusterRoleBinding은 Namespace 안의 Subject와도 연결된다.
+- 외부 Client의 `kubelet` 요청은 점선 화살표로 Test Namespace의 RoleBinding 방향을 가리킨다.
+- Role/RoleBinding은 Namespace별 Pod 접근을, ClusterRole/ClusterRoleBinding은 Cluster 범위 연결을 나타내도록 두 층으로 구분되어 있다.
 
 ## EX.1 Role
 

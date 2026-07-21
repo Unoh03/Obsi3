@@ -1,6 +1,6 @@
 ---
 type: source-digest
-status: draft
+status: stable
 created: 2026-07-21
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
@@ -10,8 +10,9 @@ digest_index: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Di
 chapter: "09 Resource Management"
 source_hash: F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"
-coverage_status: partial
+coverage_status: complete
 extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual review"
+reviewed_on: 2026-07-21
 ---
 
 # Kubernetes - Source Digest 09 Resource Management
@@ -132,7 +133,11 @@ Kubernetes                          Resource                     Management
 
 ### Visual 의미
 
-- BestEffort·Burstable·Guaranteed 세 QoS Class를 Request/Limit 메모리 막대로 비교하고, 아래 화살표로 reclamation 후보 방향을 표시한다.
+- BestEffort·Burstable·Guaranteed 세 QoS Class를 CPU와 Memory 각각의 `Request`·`Limit` 막대로 비교한다.
+  - BestEffort: CPU와 Memory의 Request·Limit 네 칸이 모두 `Not Set`이다.
+  - Burstable: CPU와 Memory 모두 Request 막대보다 Limit 막대가 높다.
+  - Guaranteed: CPU와 Memory 모두 Request와 Limit 막대 높이가 같다.
+- 도식 아래의 `Reclamation Candidates` 화살표는 BestEffort 쪽에서 Guaranteed 쪽을 향해 오른쪽으로 그려져 있다.
 
 ## EX.1 Limit & Request
 

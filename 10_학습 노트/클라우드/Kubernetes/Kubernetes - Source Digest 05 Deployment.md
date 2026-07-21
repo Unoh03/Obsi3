@@ -1,6 +1,6 @@
 ---
 type: source-digest
-status: draft
+status: stable
 created: 2026-07-21
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
@@ -10,8 +10,9 @@ digest_index: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Di
 chapter: "Kubernetes Deployment"
 source_hash: F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"
-coverage_status: partial
+coverage_status: complete
 extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual review"
+reviewed_on: 2026-07-21
 ---
 
 # Kubernetes - Source Digest 05 Deployment
@@ -416,6 +417,11 @@ template:
 
 - 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=93|Kubernetes.pdf p.93]]
 
+```bash
+kubectl apply -f deployment/deploy-rollingupdate.yml
+kubectl describe deploy my-deployment
+```
+
 ```text
 OLD ReplicaSet: my-deployment-5c8448bb6b
 NEW ReplicaSet: my-deployment-6f5579bcb
@@ -424,6 +430,7 @@ NEW[0→1] → OLD[5→3] → NEW[1→3] → OLD[3→2]
 → NEW[3→4] → OLD[2→1] → NEW[4→5] → OLD[1→0]
 ```
 
+- Event에는 기존 ReplicaSet을 먼저 `5`로 Scale Up한 초기 상태도 기록되어 있다.
 - Event는 새 ReplicaSet을 1개 올리고 이전 ReplicaSet을 2개 내린 뒤, 최소 Pod 수와 최대 Pod 수를 지키며 교대하는 순서를 보여준다.
 
 ## PDF p.94 - Rolling-Update 단계 도식 1
@@ -497,6 +504,7 @@ template:
 ```
 
 - p.96 Manifest의 Pod Template에 `project: kube`를 추가한다.
+- 그 밖의 `replicas: 3`, `maxSurge: 3`, `maxUnavailable` 삭제, `image: nginx:lates` 설정은 p.96과 동일하다.
 
 ## PDF p.99 - maxSurge를 replicas와 같게 둔 Event
 
@@ -511,6 +519,9 @@ NEW[0→3] → OLD[3→2] → OLD[2→0]
 
 - 새 ReplicaSet을 한 번에 3개로 올린 뒤 기존 ReplicaSet을 0으로 내린다.
 - `maxSurge`를 replicas만큼 지정하면 빠른 Update가 가능하지만 일시적으로 많은 Compute Resource를 소비한다고 설명한다.
+
+> [!warning] 원자료 내부 불일치
+> Event 출력의 ReplicaSet은 `my-deployment-6c6b7bc57d`와 `my-deployment-6b6b584974`인데, 페이지 하단 요약은 OLD/NEW를 `my-deployment-b4469cb67`와 `my-deployment-7b4bd8d6b7`로 적는다. 어느 Hash가 실제 대상이었는지는 이 PDF만으로 확정하지 않는다.
 
 ## PDF p.100 - maxSurge 3 단계 도식 1
 

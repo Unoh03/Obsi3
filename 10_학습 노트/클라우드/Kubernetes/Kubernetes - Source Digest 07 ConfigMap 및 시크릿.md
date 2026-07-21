@@ -1,6 +1,6 @@
 ---
 type: source-digest
-status: draft
+status: stable
 created: 2026-07-21
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[40_자료/강의 자료/Kubernetes.pdf]]"
@@ -10,8 +10,9 @@ digest_index: "[[10_학습 노트/클라우드/Kubernetes/Kubernetes - Source Di
 chapter: ConfigMap and Secret
 source_hash: F97666865E22749C47640689B5C41DEE38476A40312A53915F60B4F6A4330D24
 source_version: "PowerPoint PDF; 266 pages; metadata created 2024-07-18"
-coverage_status: partial
+coverage_status: complete
 extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual review"
+reviewed_on: 2026-07-21
 ---
 
 # Kubernetes Source Digest 07 — ConfigMap and Secret
@@ -26,11 +27,15 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 
 ## PDF p.135
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=135|Kubernetes.pdf p.135]]
+
 ### 원자료 내용
 
 - 장 표지: `Kubernetes ConfigMap & Secret`.
 
 ## PDF p.136
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=136|Kubernetes.pdf p.136]]
 
 ### 원자료 내용
 
@@ -47,6 +52,8 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 - 각 Namespace의 Application이 해당 Namespace의 ConfigMap과 Secret을 사용하는 관계를 보여 준다.
 
 ## PDF p.137
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=137|Kubernetes.pdf p.137]]
 
 ### 원자료 내용
 
@@ -75,6 +82,8 @@ extraction_method: "pdfplumber 0.11.9 text extraction + pypdfium2 render visual 
 - Pod가 특정 Secret 사용을 명시했다면 해당 Secret이 존재해야 Pod를 생성할 수 있다고 설명한다.
 
 ## PDF p.138
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=138|Kubernetes.pdf p.138]]
 
 ### 원자료 내용
 
@@ -105,6 +114,8 @@ items:
 > `NAME=“Kube"`는 여는 따옴표가 곡선형이고 닫는 따옴표가 직선형이다. 실행 가능한 문법으로 임의 교정하지 않고 원자료 표기를 보존했다.
 
 ## PDF p.139
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=139|Kubernetes.pdf p.139]]
 
 ### 원자료 내용
 
@@ -143,6 +154,8 @@ spec:
 
 ## PDF p.140
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=140|Kubernetes.pdf p.140]]
+
 ### 원자료 내용
 
 ```bash
@@ -166,6 +179,8 @@ kubectl delete pod pod-valuefrom -n delivery
 ```
 
 ## PDF p.141
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=141|Kubernetes.pdf p.141]]
 
 ### 원자료 내용
 
@@ -196,6 +211,8 @@ spec:
 
 ## PDF p.142
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=142|Kubernetes.pdf p.142]]
+
 ### 원자료 내용
 
 ```bash
@@ -221,6 +238,8 @@ kubectl delete cm my-cm -n delivery
 ```
 
 ## PDF p.143
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=143|Kubernetes.pdf p.143]]
 
 ### 원자료 내용
 
@@ -250,6 +269,8 @@ kubectl get cm -n delivery
 - 출력에는 `my-cm`의 `DATA`가 `2`로 표시된다.
 
 ## PDF p.144
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=144|Kubernetes.pdf p.144]]
 
 ### 원자료 내용
 
@@ -287,6 +308,8 @@ kubectl delete cm my-cm -n delivery
 
 ## PDF p.145
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=145|Kubernetes.pdf p.145]]
+
 ### 원자료 내용
 
 - MySQL 5.7 Pod를 관리자 비밀번호 없이 실행한다.
@@ -317,6 +340,8 @@ kubectl delete pod mysql-pod -n delivery
 
 ## PDF p.146
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=146|Kubernetes.pdf p.146]]
+
 ### 원자료 내용
 
 - 명령에 관리자 비밀번호 환경변수를 직접 적어 Pod를 실행한다.
@@ -339,7 +364,13 @@ Environment:
 - 관리자의 비밀번호가 그대로 노출되며 외부에 노출되어서는 안 된다고 설명한다.
 - 테스트 후 Pod를 삭제한다.
 
+```bash
+kubectl delete pod mysql-pod -n delivery
+```
+
 ## PDF p.147
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=147|Kubernetes.pdf p.147]]
 
 ### 원자료 내용
 
@@ -371,6 +402,8 @@ kind: Secret
 
 ## PDF p.148
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=148|Kubernetes.pdf p.148]]
+
 ### 원자료 내용
 
 - `secret-pod-env-envfrom.yml` 예시이다.
@@ -399,6 +432,8 @@ spec:
 
 ## PDF p.149
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=149|Kubernetes.pdf p.149]]
+
 ### 원자료 내용
 
 ```bash
@@ -422,6 +457,8 @@ Environment: <none>
 > 적용 직후 출력은 `pod/pod-envfrom created`이지만 이어지는 조회·설명 대상은 `mysql-pod`이다.
 
 ## PDF p.150
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=150|Kubernetes.pdf p.150]]
 
 ### 원자료 내용
 
@@ -450,6 +487,8 @@ kubectl delete secret mysql-pass -n delivery
 ```
 
 ## PDF p.151
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=151|Kubernetes.pdf p.151]]
 
 ### 원자료 내용
 
@@ -488,6 +527,8 @@ openssl-libs-1.0.2k-24.amzn2.0.7.x86_64
 
 ## PDF p.152
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=152|Kubernetes.pdf p.152]]
+
 ### 원자료 내용
 
 ```bash
@@ -520,6 +561,8 @@ cert.crt  cert.key
 
 ## PDF p.153
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=153|Kubernetes.pdf p.153]]
+
 ### 원자료 내용
 
 - `tls.conf` 전체를 ConfigMap 데이터로 생성한다.
@@ -533,6 +576,8 @@ kubectl describe cm tls-config -n delivery
 - `describe` 출력의 `tls.conf`에는 p.151의 `ssl_protocols`, `server`, 인증서 경로, `location` 설정이 들어 있다.
 
 ## PDF p.154
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=154|Kubernetes.pdf p.154]]
 
 ### 원자료 내용
 
@@ -561,6 +606,8 @@ kubectl get cm,secret -n delivery
 - Pod를 만들기 전에 ConfigMap과 Secret이 생성됐는지 확인하라고 안내한다.
 
 ## PDF p.155
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=155|Kubernetes.pdf p.155]]
 
 ### 원자료 내용
 
@@ -609,6 +656,8 @@ spec:
 
 ## PDF p.156
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=156|Kubernetes.pdf p.156]]
+
 ### 원자료 내용
 
 ```bash
@@ -635,6 +684,8 @@ deployment.apps/my-deployment created
 
 ## PDF p.157
 
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=157|Kubernetes.pdf p.157]]
+
 ### 원자료 내용
 
 ```bash
@@ -643,9 +694,12 @@ kubectl exec my-deployment-588d6fb885-lbtxc -n delivery \
 ```
 
 - 출력에는 p.151의 Nginx SSL/TLS 설정이 표시된다.
+- 다만 `index` 줄은 p.151의 `index index.html;`과 달리 `index index.html index.htm;`로 출력된다.
 - ConfigMap 변경 테스트를 위해 해당 설정 파일을 담은 ConfigMap을 수정하려 한다.
 
 ## PDF p.158
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=158|Kubernetes.pdf p.158]]
 
 ### 원자료 내용
 
@@ -664,6 +718,8 @@ ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
 - 잘못 삭제했다면 ConfigMap을 다시 생성한 뒤 테스트하라고 안내한다.
 
 ## PDF p.159
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=159|Kubernetes.pdf p.159]]
 
 ### 원자료 내용
 
@@ -686,6 +742,8 @@ kubectl exec my-deployment-588d6fb885-lbtxc -n delivery \
 - 취소선은 p.158에서 삭제한 줄이 더 이상 유효한 설정 내용이 아님을 나타낸다.
 
 ## PDF p.160
+
+- 원문: [[40_자료/강의 자료/Kubernetes.pdf#page=160|Kubernetes.pdf p.160]]
 
 ### 원자료 내용
 
