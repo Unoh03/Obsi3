@@ -53,6 +53,8 @@ Pod C → Application Container 1개
 
 ## Control Plane의 주요 Component
 
+![[40_자료/캡쳐 창고/Kubernetes.webp]]
+[[Kubernetes.pdf#page=7&rect=149,51,858,447|Kubernetes, p.7]]
 ### API Server: 모든 요청이 들어오는 정문
 
 사용자가 `kubectl`로 보낸 요청과 다른 Component의 상태 변경은 Kubernetes API를 통해 처리된다. API Server는 요청을 받고 형식과 권한을 확인하며, Cluster 상태를 조회하거나 변경하는 통로가 된다.
