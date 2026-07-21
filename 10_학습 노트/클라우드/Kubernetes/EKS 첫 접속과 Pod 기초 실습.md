@@ -207,6 +207,39 @@ ports:
 
 `containerPort`는 Container가 사용하는 Port를 문서화하는 필드이며, 이것만으로 외부 접속 경로가 생기지는 않는다.
 
+### 이 실습에서 내가 판단해야 할 것
+
+명령어와 YAML 형식은 필요할 때 도구의 도움을 받아도 된다. 대신 프로젝트에서는 다음 흐름과 판단 기준을 알고 있어야 한다.
+
+```text
+이미 만들어진 범용 프로그램
+→ Docker Hub에서 신뢰할 수 있는 Image를 찾음
+→ 정확한 Repository와 Version을 고름
+→ Pod·Deployment에서 사용
+
+우리 애플리케이션
+→ Source를 Container Image로 Build
+→ Docker Hub·ECR 같은 Registry에 Push
+→ Pod·Deployment에서 해당 Image를 사용
+```
+
+Image를 선택할 때 확인할 것은 다음과 같다.
+
+- `Docker Official Image`나 `Verified Publisher`처럼 출처를 신뢰할 수 있는가?
+- 대상 Node의 CPU Architecture와 호환되는가?
+- 학습 편의를 제외하면 `latest` 대신 명시적인 Version Tag 또는 Digest를 고정했는가?
+- Public Image인가, 인증이 필요한 Private Image인가?
+- 비밀번호·Access Token 같은 Secret을 Image나 Manifest에 넣지 않았는가?
+- 실행 후 `get`, `describe`, `logs`로 실제 상태를 검증했는가?
+- 외부 접속이 필요하다면 Pod의 `containerPort` 외에 Service·Ingress 등의 경로를 설계했는가?
+
+#### 정보 출처 분류
+
+1. **Local primary evidence**: 이번 실습에서 `ubuntu:26.04`를 Manifest에 지정했고, 자체 Spring Boot 애플리케이션은 Jib로 `boot` Image를 만들어 Docker Hub에 Push하는 흐름을 사용했다.
+2. **Authoritative external evidence**: Docker 공식 문서는 기존 Image를 찾아 실행하고 이를 기반으로 자체 Image를 만들어 공유하는 흐름을 안내한다. Kubernetes 공식 문서는 애플리케이션 Image를 Registry에 Push한 뒤 Pod에서 참조하는 방식을 기본 사용 모델로 설명한다.
+3. **Informal external evidence**: 이번 판단에는 Community 게시물이나 Blog를 근거로 사용하지 않았다.
+4. **Parametric knowledge·추론**: 강사의 요점이 “프로젝트에서 기존 Image를 재사용하고 자체 Image를 배포하는 법을 익힌다”는 것이라는 해석은 수업 흐름과 공식 사용 모델에 근거한 추론이며, 강사의 직접 발언으로 확인한 사실은 아니다.
+
 ## 6. 기존 Pod의 불변 필드와 재생성
 
 기존 `my-pod`에는 `my-pod`라는 Container와 `nginx:latest` Image가 있었다. 새 Manifest는 Container 이름을 `unoh-pod`로 바꾸었다.
@@ -384,6 +417,9 @@ kubectl exec -it ubuntu-pod -c ubuntu-container -- sh
 ## 공식 참고
 
 - [Ubuntu Official Image](https://hub.docker.com/_/ubuntu)
+- [Docker Hub Quickstart](https://docs.docker.com/docker-hub/quickstart/)
+- [Docker Hub Search와 Trusted Content](https://docs.docker.com/docker-hub/image-library/search/)
+- [Kubernetes Images](https://kubernetes.io/docs/concepts/containers/images/)
 - [Kubernetes Pods](https://kubernetes.io/docs/concepts/workloads/pods/)
 - [kubectl apply](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/)
 - [kubectl exec](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_exec/)
