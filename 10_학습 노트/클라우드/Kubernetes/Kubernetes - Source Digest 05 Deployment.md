@@ -107,7 +107,10 @@ my-deployment-5c8448bb6b-qhwqb    1/1     Running   0          9m10s   app=my-ap
 my-deployment-5c8448bb6b-xl85r    1/1     Running   0          9m10s   app=my-app,pod-template-hash=5c8448bb6b
 ```
 
-- Deployment가 ReplicaSet 하나를 3개 Pod로 Scale Up하고 ReplicaSet·Pod에 동일한 `pod-template-hash`가 붙는 결과를 보여준다.
+> [!warning] 원자료 내부 불일치
+> Event에는 ReplicaSet hash가 `79b4f9588f`로 기록되어 있지만, 같은 페이지의 ReplicaSet·Pod 조회 결과는 `5c8448bb6b`를 사용한다. 서로 다른 실행 시점의 출력이 혼합된 것으로 추정되며, 이 페이지 자체만으로 두 hash의 관계는 확정할 수 없다.
+
+- ReplicaSet과 그 Pod에는 동일한 `pod-template-hash`인 `5c8448bb6b`가 붙어 있다. 위 Event의 `79b4f9588f`까지 하나의 일관된 Scale Up 결과로 해석해서는 안 된다.
 
 ## PDF p.78 - Scale을 이용한 replicas 변경
 
@@ -331,8 +334,8 @@ No resources found in default namespace.
 
 ### 도식 의미
 
-- Recreate는 `기존 Pod 전체 → Service Down Time → 새 Pod 전체` 순서다.
-- Rolling-Update는 중간 단계에서 파란 기존 Pod와 빨간 새 Pod가 동시에 존재하고 마지막에 모두 새 Pod가 된다.
+- Recreate는 파란 기존 Pod 4개에서 시작해 모든 Pod가 사라진 `0개`의 Service Down Time을 거친 뒤 빨간 새 Pod 4개가 되는 `4 → 0 → 4` 순서다.
+- Rolling-Update는 파란 기존 Pod 4개에서 시작해 중간 단계에서 파란 기존 Pod 2개와 빨간 새 Pod 2개가 공존하고, 마지막에 빨간 새 Pod 4개가 되는 `4 → 2+2 → 4` 순서다.
 
 ## PDF p.89 - maxUnavailable과 maxSurge
 
