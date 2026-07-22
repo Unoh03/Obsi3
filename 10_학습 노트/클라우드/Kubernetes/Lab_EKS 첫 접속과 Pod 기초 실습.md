@@ -899,6 +899,110 @@ $ cd ../node_selectors
 
 Linux 경로 구분자는 `/`다.
 
+## 14. EX.6 NodeAffinity 실습
+
+### `required` Hard 조건과 존재하지 않는 Label Key
+
+`nodeSelector`보다 다양한 조건식을 사용할 수 있는 NodeAffinity를 실습했다. 먼저 `requiredDuringSchedulingIgnoredDuringExecution`과 `Exists` Operator를 사용했다.
+
+```yaml
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: melong
+                operator: Exists
+```
+
+`Exists`는 Label의 값을 비교하지 않고, 지정한 Key 자체가 Node에 존재하는지만 확인한다. 당시 두 Worker Node에는 `project=boot`만 있었고 `melong` Key는 없었다.
+
+```console
+$ kubectl get nodes -L project -L melong
+NAME                                               PROJECT   MELONG
+ip-172-28-11-97.ap-northeast-2.compute.internal    boot
+ip-172-28-31-206.ap-northeast-2.compute.internal
+```
+
+Boot Pod 두 개는 `melong` Key를 필수로 요구해 `Pending`에 머물렀다. 반면 `project` Key의 존재를 요구한 Nginx Pod 두 개는 `project=boot`가 붙은 Node에 배치됐다. `Exists`는 값이 `boot`인지 `nginx`인지 구분하지 않는다는 점도 함께 확인됐다.
+
+```console
+$ kubectl get pods -o wide
+NAME          READY   STATUS    NODE
+boot-pod-1    0/1     Pending   <none>
+boot-pod-2    0/1     Pending   <none>
+nginx-pod-1   1/1     Running   ip-172-28-11-97.ap-northeast-2.compute.internal
+nginx-pod-2   1/1     Running   ip-172-28-11-97.ap-northeast-2.compute.internal
+```
+
+Scheduler Event도 필수 Affinity 조건이 맞지 않았음을 기록했다.
+
+```text
+FailedScheduling: 0/2 nodes are available:
+2 node(s) didn't match Pod's node affinity/selector.
+```
+
+실패 비교를 마친 뒤 Required Manifest의 Key는 다시 `project`로 돌렸다.
+
+### `preferred` Soft 조건과 Zone 선호
+
+다음에는 `preferredDuringSchedulingIgnoredDuringExecution`으로 `ap-northeast-2c` Zone을 선호하도록 했다.
+
+```yaml
+spec:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution: # 반드시 지켜야 하는 조건이 아니라 가능한 경우 우선하는 Soft 조건
+        - weight: 50 # 이 조건을 만족하는 Node에 50점 추가. 50% 확률이라는 뜻이 아님
+          preference: # 점수를 받을 Node의 조건
+            matchExpressions:
+              - key: topology.kubernetes.io/zone # Node의 가용영역 Label 확인
+                operator: In # 아래 values 중 하나와 Label 값이 일치하는지 확인
+                values:
+                  - ap-northeast-2c # 2c Zone의 Node를 가장 우선함
+        # - weight: 40 # 주석을 해제하면 2a Zone Node에 40점 추가
+        #   preference:
+        #     matchExpressions:
+        #       - key: topology.kubernetes.io/zone
+        #         operator: In
+        #         values:
+        #           - ap-northeast-2a
+        # - weight: 20 # 주석을 해제하면 project=spring Node에 20점 추가
+        #   preference:
+        #     matchExpressions:
+        #       - key: project
+        #         operator: In
+        #         values:
+        #           - spring
+```
+
+기존 Pod를 모두 삭제하고 `node_affinity_preferred/`의 Boot·Nginx Manifest를 적용했다.
+
+```console
+$ kubectl apply -f .
+pod/boot-pod-1 created
+pod/nginx-pod-1 created
+
+$ kubectl get pods -o wide
+NAME          READY   STATUS    NODE
+boot-pod-1    1/1     Running   ip-172-28-31-206.ap-northeast-2.compute.internal
+nginx-pod-1   1/1     Running   ip-172-28-31-206.ap-northeast-2.compute.internal
+```
+
+두 Pod는 선호 조건을 만족하는 `ap-northeast-2c` Node에 배치됐다. `weight: 50`은 50% 확률이라는 뜻이 아니라, Scheduler가 후보 Node의 우선순위를 계산할 때 더하는 점수다.
+
+여러 `preference`를 활성화하면 Node가 만족한 조건의 `weight`가 합산된다. 예를 들어 2c이면서 `project=spring`인 Node는 50점과 20점을 합쳐 70점을 받고, 2a이면서 `project=spring`인 Node는 60점을 받는다. 어느 조건도 만족하지 못한 Node도 배치 후보에서 제외되지는 않으며, 다른 Scheduling 조건을 통과했다면 낮은 점수로 선택될 수 있다.
+
+| 표현 | 성격 | 일치하는 Node가 없을 때 |
+|---|---|---|
+| `requiredDuringSchedulingIgnoredDuringExecution` | Hard 조건 | Pod가 `Pending`에 머묾 |
+| `preferredDuringSchedulingIgnoredDuringExecution` | Soft 선호 | 다른 Node에도 배치 가능 |
+
+두 표현에 공통으로 들어가는 `IgnoredDuringExecution`은 Pod가 배치된 뒤 Node Label이 달라져도 이미 실행 중인 Pod를 자동으로 축출하지 않는다는 의미다.
+
+같은 이름으로 Pod를 삭제·재생성했기 때문에 `kubectl get events`에는 앞서 삭제된 Boot Pod의 `FailedScheduling` Event가 잠시 남아 있었다. 현재 상태는 `kubectl get pods`와 Pod의 생성 시각을 함께 기준으로 판단해야 한다.
+
 ## 오류와 해석 요약
 
 | 증상 | 확인한 원인 또는 현재 판단 | 조치·다음 확인 |
@@ -915,12 +1019,13 @@ Linux 경로 구분자는 `/`다.
 | `path "label" does not exist` | 현재 위치가 이미 `labels/`라 하위 `label` Directory가 없음 | 현재 Directory 전체는 `kubectl apply -f .` |
 | `ubectl: command not found` | `kubectl`의 첫 글자 누락 | 명령어를 다시 입력 |
 | Boot·Nginx Pod 6개 `Pending` | Node의 `project=melong`이 Pod의 `project=boot/nginx` Selector와 불일치 | Node Label을 `project=boot --overwrite`로 보정 |
+| Required NodeAffinity Boot Pod `Pending` | `key: melong`, `operator: Exists`지만 어떤 Node에도 `melong` Key가 없음 | 필수 조건과 Node Label을 일치시키거나 Soft 조건 사용 |
 | Zone Selector 변경 Apply가 Boot Pod만 실패 | 기존 Boot Pod의 `nodeSelector`는 생성 후 변경 불가 | 기존 Pod 삭제 후 새 Manifest로 재생성 |
 | `cd ..\node_selectors` 실패 | Linux에서 Windows식 경로 구분자 사용 | `cd ../node_selectors` |
 | VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
 | Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
 
-## 14. 이전 환경의 Terraform Destroy와 잔존 확인
+## 15. 이전 환경의 Terraform Destroy와 잔존 확인
 
 수업 종료 후 `D:\terraform\workspace\00_eks` Root Module을 대상으로 Destroy했다. 실행 전 Local State에는 Data Source를 포함해 104개 주소가 있었고, 새로 생성한 Destroy Plan은 다음과 같았다.
 
@@ -977,15 +1082,16 @@ Destroy complete! Resources: 84 destroyed.
 - Ubuntu Container의 `kubectl exec` 결과
 - p.19 환경변수 Manifest의 Server-side dry run·Apply·`exec env` 결과
 - BusyBox에서 다른 Pod IP로 요청하고 `pod-net`의 Nginx Log에서 Source 확인
-- 현재 Zone별로 실행 중인 Boot·Nginx Pod 여섯 개 삭제
+- 현재 Preferred NodeAffinity로 실행 중인 Boot·Nginx Pod 두 개의 후속 실습과 정리
 - AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. 현재 Zone별로 실행 중인 Boot·Nginx Pod 여섯 개의 다음 실습 지시를 확인한다.
-2. NodeSelector 실습이 끝나면 Pod 여섯 개와 더 이상 사용하지 않는 사용자 지정 `project` Node Label을 정리한다.
-3. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
-4. 수업 종료 후 `00_eks`를 Destroy한다.
+1. 현재 Preferred NodeAffinity로 `ap-northeast-2c`에 배치된 Boot·Nginx Pod의 다음 실습 지시를 확인한다.
+2. EX.6이 끝나면 현재 Pod와 더 이상 사용하지 않는 사용자 지정 `project` Node Label을 정리한다.
+3. 다음 범위인 EX.7 Taint·Toleration 실습으로 이어간다.
+4. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
+5. 수업 종료 후 `00_eks`를 Destroy한다.
 
 ## 관련 노트
 
