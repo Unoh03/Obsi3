@@ -521,7 +521,7 @@ Destroy complete! Resources: 84 destroyed.
 
 ## 관련 노트
 
-- [[Kubernetes Pod와 ReplicaSet]]
+- [[04_Kubernetes Pod와 ReplicaSet]]
 - [[Source Digest/Kubernetes - Source Digest 04 Pod and ReplicaSet]]
 - [[10_학습 노트/클라우드/AWS/서버_시퓨_100%_찍을_때|EC2 서버가 멈추거나 CPU 100% 찍을 때]]
 
