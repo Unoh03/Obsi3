@@ -791,7 +791,7 @@ Scheduled → Pulling unoh03/boot:latest → Pulled → Created → Started
 
 따라서 정확한 Node 종류를 고르는 데는 `nodeSelector`를 사용할 수 있지만, 고가용성이나 분산 배치는 Pod Affinity·Anti-Affinity, Topology Spread Constraints 같은 별도 Scheduling 규칙이 필요하다. 특정 Workload 외의 Pod가 해당 Node에 들어오는 것까지 막으려면 Taint와 Toleration도 별도로 고려한다.
 
-### Nginx Pod 정리와 현재 상태
+### Nginx Pod 1차 정리 상태
 
 이번 지시는 Boot Pod 세 개의 배치를 확인하는 것이므로, 함께 생성된 Nginx Pod 세 개는 이름을 명시해 삭제했다.
 
@@ -801,7 +801,90 @@ $ kubectl delete pod nginx-pod-2
 $ kubectl delete pod nginx-pod-3
 ```
 
-현재 `boot-pod-1`부터 `boot-pod-3`까지만 동일 Node에서 `Running`이며 아직 삭제하지 않았다.
+이 시점에는 `boot-pod-1`부터 `boot-pod-3`까지만 동일 Node에서 `Running`이었다.
+
+### 기본 Zone Label을 사용한 배치
+
+다음 단계에서는 사용자 지정 `project` Selector를 주석 처리하고, EKS Node에 기본으로 존재하는 Zone Label을 사용하도록 여섯 Manifest를 변경했다.
+
+```yaml
+# Boot Pod 3개
+spec:
+  nodeSelector:
+    topology.kubernetes.io/zone: ap-northeast-2a
+    # project: boot
+
+# Nginx Pod 3개
+spec:
+  nodeSelector:
+    topology.kubernetes.io/zone: ap-northeast-2c
+    # project: nginx
+```
+
+현재 Worker Node의 기본 Zone Label은 다음과 같았다.
+
+```console
+$ kubectl get nodes -L topology.kubernetes.io/zone
+NAME                                               ZONE
+ip-172-28-11-97.ap-northeast-2.compute.internal    ap-northeast-2a
+ip-172-28-31-206.ap-northeast-2.compute.internal   ap-northeast-2c
+```
+
+### 기존 Pod에 Selector 변경 Apply 실패
+
+Nginx Pod는 앞 단계에서 삭제돼 있었지만 Boot Pod는 `project=boot` Selector를 가진 채 실행 중이었다. 이 상태에서 `kubectl apply -f .`를 실행하자 Nginx Pod 세 개는 새 Zone Selector로 생성됐고, Boot Pod 세 개의 Patch만 거부됐다.
+
+```text
+Pod "boot-pod-1" is invalid: spec: Forbidden:
+pod updates may not change fields ...
+
+NodeSelector:
+- project: boot
++ topology.kubernetes.io/zone: ap-northeast-2a
+```
+
+Pod의 `nodeSelector`는 생성 후 변경할 수 없는 필드다. 따라서 Manifest 변경만으로 기존 Pod의 배치 조건을 바꿀 수 없고, Pod를 삭제한 뒤 새 Manifest로 다시 생성해야 한다.
+
+또한 `kubectl apply -f .`는 Directory의 모든 Object를 하나의 Transaction으로 처리하지 않는다. 이 실행에서는 Nginx Pod 생성은 성공하고 Boot Pod Patch만 실패해 일부 변경만 반영됐다.
+
+### 전체 Pod 재생성과 Zone별 배치 결과
+
+삭제 누락을 확인한 뒤 여섯 Pod를 모두 삭제하고 현재 Manifest를 다시 적용했다.
+
+```console
+$ kubectl delete pod --all
+pod "boot-pod-1" deleted from default namespace
+pod "boot-pod-2" deleted from default namespace
+pod "boot-pod-3" deleted from default namespace
+pod "nginx-pod-1" deleted from default namespace
+pod "nginx-pod-2" deleted from default namespace
+pod "nginx-pod-3" deleted from default namespace
+
+$ kubectl apply -f .
+pod/boot-pod-1 created
+pod/boot-pod-2 created
+pod/boot-pod-3 created
+pod/nginx-pod-1 created
+pod/nginx-pod-2 created
+pod/nginx-pod-3 created
+```
+
+재생성 후 여섯 Pod는 각 Manifest가 지정한 Zone의 Node에 정확히 배치됐다.
+
+```console
+$ kubectl get pods -o wide
+NAME          READY   STATUS    IP              NODE
+boot-pod-1    1/1     Running   172.28.11.121   ip-172-28-11-97.ap-northeast-2.compute.internal
+boot-pod-2    1/1     Running   172.28.11.234   ip-172-28-11-97.ap-northeast-2.compute.internal
+boot-pod-3    1/1     Running   172.28.11.84    ip-172-28-11-97.ap-northeast-2.compute.internal
+nginx-pod-1   1/1     Running   172.28.31.54    ip-172-28-31-206.ap-northeast-2.compute.internal
+nginx-pod-2   1/1     Running   172.28.31.146   ip-172-28-31-206.ap-northeast-2.compute.internal
+nginx-pod-3   1/1     Running   172.28.31.70    ip-172-28-31-206.ap-northeast-2.compute.internal
+```
+
+현재 Live Spec도 Boot Pod는 `ap-northeast-2a`, Nginx Pod는 `ap-northeast-2c`를 Selector로 사용한다. Node 1의 사용자 지정 `project=boot` Label은 여전히 남아 있지만, 현재 Manifest에서 주석 처리됐으므로 이번 Zone 배치에는 관여하지 않는다.
+
+Zone Label을 사용하면 특정 가용영역에 Workload를 배치할 수 있다. 반대로 해당 Zone에 사용 가능한 Node가 없으면 Pod가 `Pending`이 되며, 모든 복제본을 한 Zone에 고정하면 가용영역 장애에 함께 영향을 받을 수 있다.
 
 ### Shell 경로 오타
 
@@ -832,6 +915,7 @@ Linux 경로 구분자는 `/`다.
 | `path "label" does not exist` | 현재 위치가 이미 `labels/`라 하위 `label` Directory가 없음 | 현재 Directory 전체는 `kubectl apply -f .` |
 | `ubectl: command not found` | `kubectl`의 첫 글자 누락 | 명령어를 다시 입력 |
 | Boot·Nginx Pod 6개 `Pending` | Node의 `project=melong`이 Pod의 `project=boot/nginx` Selector와 불일치 | Node Label을 `project=boot --overwrite`로 보정 |
+| Zone Selector 변경 Apply가 Boot Pod만 실패 | 기존 Boot Pod의 `nodeSelector`는 생성 후 변경 불가 | 기존 Pod 삭제 후 새 Manifest로 재생성 |
 | `cd ..\node_selectors` 실패 | Linux에서 Windows식 경로 구분자 사용 | `cd ../node_selectors` |
 | VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
 | Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
@@ -893,13 +977,13 @@ Destroy complete! Resources: 84 destroyed.
 - Ubuntu Container의 `kubectl exec` 결과
 - p.19 환경변수 Manifest의 Server-side dry run·Apply·`exec env` 결과
 - BusyBox에서 다른 Pod IP로 요청하고 `pod-net`의 Nginx Log에서 Source 확인
-- 현재 `boot-pod-1`부터 `boot-pod-3`까지 삭제
+- 현재 Zone별로 실행 중인 Boot·Nginx Pod 여섯 개 삭제
 - AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. 현재 동일 Node에서 실행 중인 Boot Pod 세 개의 다음 실습 지시를 확인한다.
-2. NodeSelector 실습이 끝나면 Boot Pod 세 개와 사용자 지정 Node Label을 정리한다.
+1. 현재 Zone별로 실행 중인 Boot·Nginx Pod 여섯 개의 다음 실습 지시를 확인한다.
+2. NodeSelector 실습이 끝나면 Pod 여섯 개와 더 이상 사용하지 않는 사용자 지정 `project` Node Label을 정리한다.
 3. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
 4. 수업 종료 후 `00_eks`를 Destroy한다.
 
