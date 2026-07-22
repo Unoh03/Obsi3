@@ -1139,6 +1139,253 @@ Toleration은 출입 허가일 뿐 해당 Node로 끌어당기지는 않는다. 
 
 다만 Taint는 침해를 탐지하거나 Network를 차단하는 보안 기능이 아니다. 실제 침해 대응에서는 Audit Log·Runtime 탐지로 상황을 판단하고, Security Group·NetworkPolicy·Credential 폐기 등으로 격리한 뒤 Taint·cordon·drain·Node 재생성을 함께 사용해야 한다. 또한 Key 없는 광범위한 Toleration은 원치 않는 위험 Node에서도 Pod를 살려둘 수 있으므로, 실무에서는 필요한 Key·Value·Effect만 좁게 허용하는 편이 안전하다.
 
+## 16. EX.8 cordon과 drain 실습
+
+### 실습 목적과 전체 흐름
+
+이번 실습은 다음 차이를 직접 확인하는 데 목적이 있다.
+
+```text
+cordon
+→ 해당 Node에 새 Pod를 배치하지 못하게 함
+→ 이미 실행 중인 Pod는 그대로 유지
+
+drain
+→ Node를 cordon 상태로 만듦
+→ 해당 Node의 일반 Pod를 안전하게 축출
+→ 유지보수·교체 전에 Node를 비우는 작업
+```
+
+이번에는 두 Node를 순서대로 모두 `cordon`한 뒤 새 Pod가 `Pending`되는 것을 확인하고, 이어 두 Node를 모두 `drain`해 기존 일반 Pod까지 제거하는 확장 실험을 수행했다.
+
+실제 흐름은 다음과 같다.
+
+```text
+1. 2c Node에 boot-pod-1·myapp 실행
+2. 2c Node cordon
+3. 새 Pod를 Apply → 열려 있는 2a Node에 배치
+4. 2a Node도 cordon
+5. pod-env·pod-net을 다시 생성 → 배치 가능한 Node가 없어 Pending
+6. 2a Node drain 시도 → 독립 Pod·DaemonSet 안전장치에 막힘
+7. 필요한 옵션을 붙여 재시도 → CoreDNS PDB에서 다시 막힘
+8. 의도적인 전체 중단 실험을 위해 PDB를 우회해 양쪽 Node drain
+9. Manifest를 다시 Apply → 모든 일반 Pod가 Pending
+10. default Namespace의 실습 Pod 전체 삭제
+```
+
+### 1단계: cordon은 기존 Pod를 건드리지 않는다
+
+먼저 2c Node에 `boot-pod-1`과 `myapp`이 실행 중인 상태에서 2c Node를 `cordon`했다.
+
+```console
+$ kubectl cordon ip-172-28-31-206.ap-northeast-2.compute.internal
+node/ip-172-28-31-206.ap-northeast-2.compute.internal cordoned
+```
+
+그 뒤 다른 Pod를 생성하자 기존 두 Pod는 2c Node에서 계속 실행됐고, 새 Pod는 아직 열려 있던 2a Node에 배치됐다. 즉 `cordon`은 기존 Pod를 축출하지 않는다.
+
+```text
+2c Node: boot-pod-1·myapp 계속 Running
+2a Node: pod-env·pod-net·pod-sidecar·ubuntu-pod 신규 배치
+```
+
+이후 2a Node도 `cordon`하고 `pod-env`와 `pod-net`을 삭제·재생성했다.
+
+```console
+$ kubectl cordon ip-172-28-11-97.ap-northeast-2.compute.internal
+node/ip-172-28-11-97.ap-northeast-2.compute.internal cordoned
+
+$ kubectl apply -f .
+pod/pod-env created
+pod/pod-net created
+```
+
+두 Node가 모두 `SchedulingDisabled`이므로 새로 생성한 두 Pod에는 IP와 Node가 할당되지 않았다.
+
+```text
+pod-env   0/1   Pending   IP=<none>   NODE=<none>
+pod-net   0/1   Pending   IP=<none>   NODE=<none>
+```
+
+반면 먼저 실행 중이던 Pod는 그대로 남았다. 이 결과로 `cordon`은 **신규 Scheduling만 막고 기존 실행을 유지한다**는 것을 확인했다.
+
+### 2단계: 옵션 없는 drain이 중단된 이유
+
+2a Node에 기본 `drain`을 실행했다.
+
+```console
+$ kubectl drain ip-172-28-11-97.ap-northeast-2.compute.internal
+node/ip-172-28-11-97.ap-northeast-2.compute.internal already cordoned
+```
+
+명령은 다음 두 안전장치 때문에 중단됐다.
+
+```text
+cannot delete Pods that declare no controller:
+  default/pod-sidecar, default/ubuntu-pod
+
+cannot delete DaemonSet-managed Pods:
+  kube-system/aws-node-ps6gt
+  kube-system/eks-pod-identity-agent-9677l
+  kube-system/kube-proxy-llh4x
+```
+
+- `pod-sidecar`, `ubuntu-pod`는 ReplicaSet·Deployment 같은 Controller가 없는 독립 Pod다. 삭제되면 자동 복구되지 않으므로 `drain`이 기본적으로 보호한다.
+- `aws-node`, `eks-pod-identity-agent`, `kube-proxy`는 각 Node마다 실행되는 DaemonSet Pod다. Node가 존재하는 한 Controller가 다시 만들 수 있어 일반 Pod처럼 Drain할 수 없다.
+
+### drain 옵션의 의미와 사용 이유
+
+이번에 사용한 전체 명령은 다음과 같다.
+
+```bash
+kubectl drain <Node 이름> \
+  --ignore-daemonsets \
+  --delete-emptydir-data \
+  --force \
+  --disable-eviction
+```
+
+| 옵션 | 정확한 의미 | 이번에 필요했던 이유 | 주의점 |
+|---|---|---|---|
+| `--ignore-daemonsets` | DaemonSet 관리 Pod를 Drain 대상에서 제외하고 작업을 계속한다. | EKS Node마다 `aws-node`, `kube-proxy`, `eks-pod-identity-agent`가 있어 옵션 없이는 중단됐다. | DaemonSet Pod를 삭제한다는 뜻이 아니다. Drain 후에도 해당 Node에 남는다. |
+| `--delete-emptydir-data` | `emptyDir`을 사용하는 Pod가 있어도 Local 임시 Data가 사라지는 것을 감수하고 계속한다. | 강의의 표준 Drain 명령에 포함되며, 다양한 Workload가 있는 Node에서도 Local 임시 Data 때문에 중단되지 않게 한다. | `emptyDir` Data는 Node 밖으로 이동하지 않으므로 실제 운영에서는 손실 가능성을 먼저 확인해야 한다. |
+| `--force` | Controller가 없는 독립 Pod도 삭제할 수 있게 한다. | 현재 실습 Pod가 모두 직접 생성한 독립 Pod라서 필요했다. | 자동 재생성을 보장하지 않는다. 또한 PDB를 무시하는 옵션도 아니다. |
+| `--disable-eviction` | Eviction API 대신 Delete를 사용해 PodDisruptionBudget 검사를 우회한다. | 두 Node를 모두 닫은 의도적 중단 실험에서 마지막 CoreDNS가 PDB로 보호돼 Drain이 끝나지 않았기 때문에 사용했다. | 서비스 가용성을 깨뜨릴 수 있는 위험 옵션이다. 정상 유지보수에서는 기본적으로 사용하지 않는다. |
+
+옵션은 단순히 “강하게 삭제”하는 같은 기능이 아니다.
+
+```text
+--force
+→ 이 Pod는 Controller가 없어도 삭제해도 된다고 승인
+
+--ignore-daemonsets
+→ DaemonSet은 남겨 두고 나머지만 비우겠다고 승인
+
+--delete-emptydir-data
+→ Node Local 임시 Data 손실을 승인
+
+--disable-eviction
+→ PDB가 보장하는 가용성까지 포기하고 Delete 사용
+```
+
+### 3단계: PDB가 첫 Drain을 멈춘 과정
+
+먼저 PDB 우회 없이 다음 명령을 실행했다.
+
+```bash
+kubectl drain ip-172-28-11-97.ap-northeast-2.compute.internal \
+  --ignore-daemonsets \
+  --delete-emptydir-data \
+  --force
+```
+
+이 명령으로 독립 Pod인 `pod-sidecar`, `ubuntu-pod`와 CoreDNS 한 개는 축출됐다. 그러나 두 Node가 모두 `cordon` 상태라 대체 CoreDNS는 새 Node를 찾지 못하고 `Pending`이 됐다.
+
+CoreDNS의 PDB는 동시에 사용할 수 없는 Replica 수를 제한하고 있었으며 당시 `ALLOWED DISRUPTIONS`는 `0`이었다. 따라서 마지막 실행 중인 CoreDNS까지 축출하면 DNS 가용성이 완전히 사라지므로 Eviction API가 요청을 거부했다.
+
+```text
+Cannot evict pod as it would violate the pod's disruption budget.
+will retry after 5s
+```
+
+실제로 5초 간격으로 세 번 관찰해도 다음 상태가 유지됐다.
+
+```text
+기존 CoreDNS 1개: Running
+대체 CoreDNS 1개: Pending
+CoreDNS PDB ALLOWED DISRUPTIONS: 0
+drain: 마지막 CoreDNS Eviction을 반복 재시도
+```
+
+이는 오작동이 아니라, 운영자가 동시에 너무 많은 Pod를 중단하지 못하도록 PDB가 가용성을 지킨 결과다.
+
+### 4단계: 의도적 전체 중단을 위한 PDB 우회
+
+이번 실험의 목표는 양쪽 Node를 모두 비우고 신규 Scheduling도 불가능한 상태를 확인하는 것이었다. 반복 중인 명령을 `Ctrl+C`로 중단하고, 실습 환경에서만 `--disable-eviction`을 추가했다.
+
+```console
+$ kubectl drain ip-172-28-11-97.ap-northeast-2.compute.internal \
+    --ignore-daemonsets \
+    --delete-emptydir-data \
+    --force \
+    --disable-eviction
+pod/coredns-7c6bdc968c-l6ds4 deleted
+node/ip-172-28-11-97.ap-northeast-2.compute.internal drained
+```
+
+이어서 2c Node에도 같은 명령을 적용했다.
+
+```console
+$ kubectl drain ip-172-28-31-206.ap-northeast-2.compute.internal \
+    --ignore-daemonsets \
+    --delete-emptydir-data \
+    --force \
+    --disable-eviction
+pod/boot-pod-1 deleted
+pod/myapp deleted
+node/ip-172-28-31-206.ap-northeast-2.compute.internal drained
+```
+
+### 5단계: 두 Node가 닫힌 상태에서 재배포
+
+Drain 이후 같은 Manifest를 다시 적용했다.
+
+```console
+$ kubectl apply -f .
+pod/myapp created
+pod/pod-env configured
+pod/pod-net unchanged
+pod/pod-sidecar created
+pod/ubuntu-pod created
+```
+
+두 Node가 모두 `Ready,SchedulingDisabled`이므로 모든 일반 Pod가 생성은 됐지만 배치되지는 않았다.
+
+```text
+myapp         0/1   Pending   IP=<none>   NODE=<none>
+pod-env       0/1   Pending   IP=<none>   NODE=<none>
+pod-net       0/1   Pending   IP=<none>   NODE=<none>
+pod-sidecar   0/2   Pending   IP=<none>   NODE=<none>
+ubuntu-pod    0/1   Pending   IP=<none>   NODE=<none>
+```
+
+마지막으로 실습 Pod를 정리했다. 첫 명령은 Resource 종류가 없어 실패했고, `pod`를 명시한 두 번째 명령이 성공했다.
+
+```console
+$ kubectl delete --all
+error: at least one resource must be specified to use a selector
+
+$ kubectl delete pod --all
+pod "myapp" deleted
+pod "pod-env" deleted
+pod "pod-net" deleted
+pod "pod-sidecar" deleted
+pod "ubuntu-pod" deleted
+
+$ kubectl get pod
+No resources found in default namespace.
+```
+
+### 결과와 실무 해석
+
+최종 상태는 다음과 같다.
+
+- Worker Node 2대 모두 `Ready,SchedulingDisabled`
+- `default` Namespace의 실습 Pod 없음
+- CoreDNS 대체 Pod 2개는 배치 가능한 Node가 없어 `Pending`
+- DaemonSet인 `aws-node`, `kube-proxy`, `eks-pod-identity-agent`는 각 Node에 계속 실행
+
+실무에서 `drain`은 Server 점검, Kernel Upgrade, Node Group 교체처럼 Node를 안전하게 서비스에서 제외할 때 사용한다. 보통은 **한 Node씩** Drain하고, 다른 Node에 대체 Pod가 정상 배치된 것을 확인한 뒤 다음 Node로 넘어간다. 이번처럼 모든 Worker Node를 동시에 닫고 `--disable-eviction`으로 PDB까지 우회한 것은 `cordon`, `drain`, Controller, PDB의 차이를 확인하기 위한 의도적인 장애 실험이다.
+
+복구할 때는 Node를 다시 Scheduling 대상으로 연다.
+
+```bash
+kubectl uncordon ip-172-28-11-97.ap-northeast-2.compute.internal
+kubectl uncordon ip-172-28-31-206.ap-northeast-2.compute.internal
+```
+
+이후 `kubectl get nodes`와 `kubectl get pods -A -o wide`로 Node가 `Ready`인지, CoreDNS가 다시 `Running`인지 확인해야 한다.
+
 ## 오류와 해석 요약
 
 | 증상 | 확인한 원인 또는 현재 판단 | 조치·다음 확인 |
@@ -1157,12 +1404,15 @@ Toleration은 출입 허가일 뿐 해당 Node로 끌어당기지는 않는다. 
 | Boot·Nginx Pod 6개 `Pending` | Node의 `project=melong`이 Pod의 `project=boot/nginx` Selector와 불일치 | Node Label을 `project=boot --overwrite`로 보정 |
 | Required NodeAffinity Boot Pod `Pending` | `key: melong`, `operator: Exists`지만 어떤 Node에도 `melong` Key가 없음 | 필수 조건과 Node Label을 일치시키거나 Soft 조건 사용 |
 | `NoExecute` 적용 후 Pod 두 개가 사라짐 | `test` Toleration이 `nodename` Taint와 일치하지 않아 Taint Manager가 축출 | 의도된 결과이며 Event의 `TaintManagerEviction`으로 확인 |
+| 기본 `drain`이 독립 Pod·DaemonSet에서 중단 | Controller 없는 Pod와 DaemonSet을 기본 안전장치가 보호 | 실습 의도 확인 후 `--force`, `--ignore-daemonsets` 사용 |
+| Drain이 CoreDNS에서 5초마다 반복 | 두 Node가 cordon되어 대체 CoreDNS가 `Pending`이고 PDB 허용 중단 수가 0 | 정상 운영은 다른 Node를 열어 가용성 회복, 전체 중단 실험만 `--disable-eviction` 사용 |
+| `kubectl delete --all` 실패 | 삭제할 Resource 종류가 없음 | `kubectl delete pod --all`처럼 Resource 명시 |
 | Zone Selector 변경 Apply가 Boot Pod만 실패 | 기존 Boot Pod의 `nodeSelector`는 생성 후 변경 불가 | 기존 Pod 삭제 후 새 Manifest로 재생성 |
 | `cd ..\node_selectors` 실패 | Linux에서 Windows식 경로 구분자 사용 | `cd ../node_selectors` |
 | VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
 | Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
 
-## 16. 이전 환경의 Terraform Destroy와 잔존 확인
+## 17. 이전 환경의 Terraform Destroy와 잔존 확인
 
 수업 종료 후 `D:\terraform\workspace\00_eks` Root Module을 대상으로 Destroy했다. 실행 전 Local State에는 Data Source를 포함해 104개 주소가 있었고, 새로 생성한 Destroy Plan은 다음과 같았다.
 
@@ -1209,6 +1459,9 @@ Destroy complete! Resources: 84 destroyed.
 - PDF p.19의 환경변수·`fieldRef` 예제 시각 대조
 - Required·Preferred NodeAffinity의 Hard·Soft 배치 차이
 - `NoExecute`와 Toleration 일치 여부에 따른 생존·축출 비교
+- `cordon`의 신규 Scheduling 차단과 기존 Pod 유지 확인
+- 두 Node Drain, 독립 Pod·DaemonSet 안전장치, CoreDNS PDB 차단·우회 확인
+- 두 Node가 닫힌 상태에서 일반 Pod 전체 `Pending` 확인
 - `00_eks` Destroy: 84개 Resource 삭제, State 0
 - `00_eks` 주요 EKS·VPC·EC2·ASG·ENI·IAM·OIDC 잔존 없음
 
@@ -1221,14 +1474,14 @@ Destroy complete! Resources: 84 destroyed.
 - Ubuntu Container의 `kubectl exec` 결과
 - p.19 환경변수 Manifest의 Server-side dry run·Apply·`exec env` 결과
 - BusyBox에서 다른 Pod IP로 요청하고 `pod-net`의 Nginx Log에서 Source 확인
-- 현재 2c Node의 `nodename=node2:NoExecute`와 살아남은 `boot-pod-1` 정리
+- 두 Worker Node `uncordon` 후 CoreDNS `Running` 복구 확인
 - AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. EX.7이 끝나면 2c Node의 `nodename=node2:NoExecute`와 `boot-pod-1`을 정리한다.
-2. 다음 범위인 EX.8 cordon·drain 실습으로 이어간다.
-3. 더 이상 사용하지 않는 사용자 지정 `project` Node Label을 정리한다.
+1. 두 Worker Node를 `uncordon`하고 CoreDNS가 다시 `Running`이 되는지 확인한다.
+2. 더 이상 사용하지 않는 사용자 지정 `project` Node Label을 정리한다.
+3. 다음 범위인 p.52 ReplicaSet 실습으로 이어간다.
 4. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
 5. 수업 종료 후 `00_eks`를 Destroy한다.
 
@@ -1247,3 +1500,6 @@ Destroy complete! Resources: 84 destroyed.
 - [Kubernetes Pods](https://kubernetes.io/docs/concepts/workloads/pods/)
 - [kubectl apply](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_apply/)
 - [kubectl exec](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_exec/)
+- [kubectl drain](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_drain/)
+- [Safely Drain a Node](https://kubernetes.io/docs/tasks/administer-cluster/safely-drain-node/)
+- [Disruptions와 PodDisruptionBudget](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/)
