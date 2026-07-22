@@ -14,7 +14,7 @@ verified_on: 2026-07-22
 # EKS 첫 접속과 Pod 기초 실습
 
 > [!summary]
-> Terraform으로 EKS와 Bastion을 구성하고, Cluster 연결을 확인한 뒤 첫 Pod와 Sidecar Pod를 생성했다. 이 과정에서 IAM Credential 재생성, AWS CLI Profile 혼동, 빈 YAML, Resource 이름 오타, Pod 불변 필드, Jib 실행 위치, VS Code Remote-SSH 고착을 겪었다.
+> Terraform으로 EKS와 Bastion을 구성하고, Cluster 연결을 확인한 뒤 첫 Pod·Sidecar·Label Selector 실습을 수행했다. 이 과정에서 IAM Credential 재생성, AWS CLI Profile 혼동, 빈 YAML, Resource 이름 오타, Pod 불변 필드, Jib 실행 위치, VS Code Remote-SSH 고착을 겪었다.
 
 > [!warning] Secret 기록 경계
 > 실제 AWS Access Key·Secret Access Key, Docker Hub 비밀번호·Access Token, Public IP는 기록하지 않는다. 이 노트의 명령에는 Placeholder만 사용한다.
@@ -556,7 +556,123 @@ Server: nginx/1.31.3
 
 - BusyBox Container에서 다른 Pod인 `pod-net`의 IP로 직접 요청
 - `kubectl logs pod-net nginx-app`에서 요청 Source 확인
-- 실습 Pod 전체 삭제
+
+## 12. p.24-p.30 Label과 Selector 실습
+
+### Label이 다른 Pod 생성
+
+`labels/` Directory에는 다음 네 Manifest가 있었다.
+
+| Pod | 직접 정의한 Label | 실제 Image |
+|---|---|---|
+| `label-app-1` | `group=web`, `app=app-1`, `version=v1`, `env=prod` | `httpd:latest` |
+| `label-app-2` | `group=web`, `app=app-2`, `version=v1`, `env=stage` | `httpd:latest` |
+| `label-app-3` | `group=web`, `app=app-3`, `version=v1`, `env=test` | `httpd:latest` |
+| `label-app-4` | 없음 | `httpd:latest` |
+
+PDF p.24-p.25의 Image는 `nginx:latest`지만, 이번에 실제 사용한 배포 자료는 `httpd:latest`였다. Label과 Selector의 동작을 확인하는 목적에는 영향을 주지 않는다.
+
+현재 위치가 이미 `labels/`였기 때문에 하위 `label` 경로는 존재하지 않았다.
+
+```console
+$ kubectl apply -f label
+error: the path "label" does not exist
+
+$ kubectl apply -f .
+pod/label-app-1 created
+pod/label-app-2 created
+pod/label-app-3 created
+pod/label-app-4 created
+```
+
+`--show-labels`와 `-L`로 Label 전체와 선택한 Label Column을 확인했다.
+
+```console
+$ kubectl get pod -L app,group,env
+NAME          APP     GROUP   ENV
+label-app-1   app-1   web     prod
+label-app-2   app-2   web     stage
+label-app-3   app-3   web     test
+label-app-4
+```
+
+이번 EKS 출력에는 Manifest에 직접 쓰지 않은 `topology.kubernetes.io/region`과 `topology.kubernetes.io/zone` Label도 Pod에 추가돼 있었다. 추가 주체와 목적은 이번 실습에서 조사하지 않았다.
+
+### Label 추가·덮어쓰기·삭제
+
+처음 Label이 없던 `label-app-4`를 대상으로 동일한 Key의 생명주기를 확인했다.
+
+```console
+$ kubectl label pod label-app-4 app=app-4
+pod/label-app-4 labeled
+
+$ kubectl label pod label-app-4 app=app-test --overwrite
+pod/label-app-4 labeled
+
+$ kubectl label pod label-app-4 app-
+pod/label-app-4 unlabeled
+```
+
+- `app=app-4`: Label 추가
+- `--overwrite`: 기존 `app` 값 변경
+- `app-`: `app` Key 삭제
+
+### Selector 결과
+
+```console
+$ kubectl get pod -l env=prod
+label-app-1
+
+$ kubectl get pod -l 'group=web,version=v1'
+label-app-1
+label-app-2
+label-app-3
+
+$ kubectl get pod -l 'env in (test,stage)'
+label-app-2
+label-app-3
+
+$ kubectl get pod -l 'env notin (test,stage)'
+label-app-1
+label-app-4
+pod-net
+pod-sidecar
+```
+
+`env!=prod`도 `label-app-2`, `label-app-3`뿐 아니라 `env` Key가 없는 `label-app-4`, `pod-net`, `pod-sidecar`를 선택했다. `!env`는 `env` Key 자체가 없는 네 Pod만 선택했다.
+
+이 실습에서 확인한 Selector 의미는 다음과 같다.
+
+| Selector | 의미 |
+|---|---|
+| `env=prod` | `env` 값이 정확히 `prod` |
+| `group=web,version=v1` | 두 조건을 모두 만족하는 AND |
+| `env in (test,stage)` | 지정한 값 집합 중 하나와 일치 |
+| `env notin (test,stage)` | 지정한 값이 아니거나 `env` Key가 없음 |
+| `!env` | `env` Key 자체가 없음 |
+
+### 현재 정리 상태
+
+Label 실습이 끝난 뒤 먼저 네 Label Pod를 이름으로 지정해 삭제했다.
+
+```console
+kubectl delete pod label-app-1 label-app-2 label-app-3 label-app-4
+pod "label-app-1" deleted from default namespace
+pod "label-app-2" deleted from default namespace
+pod "label-app-3" deleted from default namespace
+pod "label-app-4" deleted from default namespace
+```
+
+이후 사용자 승인에 따라 `pod-net`과 `pod-sidecar`도 삭제했다. `pod-sidecar`는 잠시 `Terminating` 상태였지만 강제 삭제하지 않고 정상 종료를 기다렸다.
+
+```console
+$ kubectl delete pod pod-net pod-sidecar
+pod "pod-net" deleted from default namespace
+pod "pod-sidecar" deleted from default namespace
+
+$ kubectl get pods
+No resources found in default namespace.
+```
 
 ## 오류와 해석 요약
 
@@ -571,10 +687,12 @@ Server: nginx/1.31.3
 | Pod Update `Forbidden` | Container 이름은 Pod 불변 필드 | 실습 Pod 삭제 후 재생성 |
 | `unknown flag: --dryrun` | `--dry-run`의 Hyphen 누락 | `--dry-run=server`로 입력 |
 | `unknown shorthand flag: '0' in -0` | 숫자 `0`과 영문 소문자 `o` 혼동 | `kubectl get pods -o wide` 사용 |
+| `path "label" does not exist` | 현재 위치가 이미 `labels/`라 하위 `label` Directory가 없음 | 현재 Directory 전체는 `kubectl apply -f .` |
+| `ubectl: command not found` | `kubectl`의 첫 글자 누락 | 명령어를 다시 입력 |
 | VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
 | Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
 
-## 12. 이전 환경의 Terraform Destroy와 잔존 확인
+## 13. 이전 환경의 Terraform Destroy와 잔존 확인
 
 수업 종료 후 `D:\terraform\workspace\00_eks` Root Module을 대상으로 Destroy했다. 실행 전 Local State에는 Data Source를 포함해 104개 주소가 있었고, 새로 생성한 Destroy Plan은 다음과 같았다.
 
@@ -631,15 +749,13 @@ Destroy complete! Resources: 84 destroyed.
 - Ubuntu Container의 `kubectl exec` 결과
 - p.19 환경변수 Manifest의 Server-side dry run·Apply·`exec env` 결과
 - BusyBox에서 다른 Pod IP로 요청하고 `pod-net`의 Nginx Log에서 Source 확인
-- 현재 `pod-sidecar`와 `pod-net` 삭제
 - AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. BusyBox Container에서 `pod-net`의 Pod IP로 요청해 Pod 간 통신을 확인한다.
-2. `kubectl logs pod-net nginx-app`에서 요청 Source를 확인한다.
-3. p.19 환경변수 실습이 아직 필요하면 Server-side dry run부터 다시 수행한다.
-4. 확인이 끝난 Pod는 삭제하고 수업 종료 후 `00_eks`를 Destroy한다.
+1. 다음 진도인 p.31 EX.5 NodeSelector를 진행한다.
+2. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
+3. 확인이 끝난 Pod는 삭제하고 수업 종료 후 `00_eks`를 Destroy한다.
 
 ## 관련 노트
 
