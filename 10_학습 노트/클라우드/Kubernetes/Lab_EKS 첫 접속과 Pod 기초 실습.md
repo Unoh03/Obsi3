@@ -674,6 +674,126 @@ $ kubectl get pods
 No resources found in default namespace.
 ```
 
+## 13. EX.5 NodeSelector 실습
+
+### 실습 목적과 Manifest
+
+Worker Node 두 대 중 한 대에만 `project=boot` Label을 붙이고, 다음 Selector를 가진 Boot Pod 세 개가 해당 Node에만 배치되는지 확인했다.
+
+```yaml
+spec:
+  nodeSelector:
+    project: boot
+```
+
+`pod-boot-1.yml`, `pod-boot-2.yml`, `pod-boot-3.yml`의 Container Image는 강사 계정의 Image에서 다음 사용자 Image로 변경했다.
+
+```yaml
+image: unoh03/boot:latest
+```
+
+같은 Directory에는 `project=nginx`를 요구하는 `pod-nginx-1.yml`부터 `pod-nginx-3.yml`도 있었다.
+
+### Label 값 불일치로 인한 `Pending`
+
+처음에는 Node 한 대에 Manifest와 다른 값을 붙였다.
+
+```console
+$ kubectl label node ip-172-28-11-97.ap-northeast-2.compute.internal project=melong
+node/ip-172-28-11-97.ap-northeast-2.compute.internal labeled
+```
+
+`kubectl apply -f .`는 현재 Directory의 Boot·Nginx Manifest 여섯 개를 모두 적용했다.
+
+```console
+$ kubectl apply -f .
+pod/boot-pod-1 created
+pod/boot-pod-2 created
+pod/boot-pod-3 created
+pod/nginx-pod-1 created
+pod/nginx-pod-2 created
+pod/nginx-pod-3 created
+```
+
+Node에는 `project=melong`만 있고 Pod들은 `project=boot` 또는 `project=nginx`를 요구했으므로, 여섯 Pod 모두 배치할 Node를 찾지 못했다.
+
+```console
+$ kubectl get pods -o wide
+NAME          READY   STATUS    IP       NODE
+boot-pod-1    0/1     Pending   <none>   <none>
+boot-pod-2    0/1     Pending   <none>   <none>
+boot-pod-3    0/1     Pending   <none>   <none>
+nginx-pod-1   0/1     Pending   <none>   <none>
+nginx-pod-2   0/1     Pending   <none>   <none>
+nginx-pod-3   0/1     Pending   <none>   <none>
+```
+
+Scheduler Event도 Selector 불일치를 직접 기록했다.
+
+```text
+FailedScheduling: 0/2 nodes are available:
+2 node(s) didn't match Pod's node affinity/selector.
+```
+
+`nodeSelector`는 선호 조건이 아니라 반드시 만족해야 하는 배치 조건이다. 일치하는 Node가 없으면 Pod Object는 생성되지만 Node·Pod IP가 할당되지 않은 `Pending` 상태에 머문다.
+
+### Node Label 보정과 배치 성공
+
+기존 `project` 값을 Manifest가 요구하는 `boot`로 덮어썼다.
+
+```console
+$ kubectl label node ip-172-28-11-97.ap-northeast-2.compute.internal project=boot --overwrite
+node/ip-172-28-11-97.ap-northeast-2.compute.internal labeled
+
+$ kubectl get nodes -L project
+NAME                                               PROJECT
+ip-172-28-11-97.ap-northeast-2.compute.internal    boot
+ip-172-28-31-206.ap-northeast-2.compute.internal
+```
+
+새로 Apply하지 않아도 Scheduler가 기존 `Pending` Pod를 다시 평가했다. Boot Pod 세 개는 모두 `project=boot` Node에 배치됐고, `project=nginx`를 요구하는 Nginx Pod 세 개는 계속 `Pending`이었다.
+
+```console
+$ kubectl get pods -o wide
+NAME         READY   STATUS    IP              NODE
+boot-pod-1   1/1     Running   172.28.11.84    ip-172-28-11-97.ap-northeast-2.compute.internal
+boot-pod-2   1/1     Running   172.28.11.153   ip-172-28-11-97.ap-northeast-2.compute.internal
+boot-pod-3   1/1     Running   172.28.11.245   ip-172-28-11-97.ap-northeast-2.compute.internal
+```
+
+`boot-pod-1`의 Event에는 `FailedScheduling` 이후 다음 성공 과정이 이어졌다.
+
+```text
+Scheduled → Pulling unoh03/boot:latest → Pulled → Created → Started
+```
+
+즉 Node Label을 수정하면 이미 생성된 `Pending` Pod를 삭제·재생성하지 않아도 조건이 충족되는 시점에 자동 배치된다.
+
+### Nginx Pod 정리와 현재 상태
+
+이번 지시는 Boot Pod 세 개의 배치를 확인하는 것이므로, 함께 생성된 Nginx Pod 세 개는 이름을 명시해 삭제했다.
+
+```console
+$ kubectl delete pod nginx-pod-1
+$ kubectl delete pod nginx-pod-2
+$ kubectl delete pod nginx-pod-3
+```
+
+현재 `boot-pod-1`부터 `boot-pod-3`까지만 동일 Node에서 `Running`이며 아직 삭제하지 않았다.
+
+### Shell 경로 오타
+
+Linux Shell에서 Windows식 Backslash로 상위 Directory를 이동하려고 해 실패했다.
+
+```console
+$ cd ..\node_selectors
+-bash: cd: ..node_selectors: No such file or directory
+
+$ cd ../node_selectors
+```
+
+Linux 경로 구분자는 `/`다.
+
 ## 오류와 해석 요약
 
 | 증상 | 확인한 원인 또는 현재 판단 | 조치·다음 확인 |
@@ -689,10 +809,12 @@ No resources found in default namespace.
 | `unknown shorthand flag: '0' in -0` | 숫자 `0`과 영문 소문자 `o` 혼동 | `kubectl get pods -o wide` 사용 |
 | `path "label" does not exist` | 현재 위치가 이미 `labels/`라 하위 `label` Directory가 없음 | 현재 Directory 전체는 `kubectl apply -f .` |
 | `ubectl: command not found` | `kubectl`의 첫 글자 누락 | 명령어를 다시 입력 |
+| Boot·Nginx Pod 6개 `Pending` | Node의 `project=melong`이 Pod의 `project=boot/nginx` Selector와 불일치 | Node Label을 `project=boot --overwrite`로 보정 |
+| `cd ..\node_selectors` 실패 | Linux에서 Windows식 경로 구분자 사용 | `cd ../node_selectors` |
 | VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
 | Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
 
-## 13. 이전 환경의 Terraform Destroy와 잔존 확인
+## 14. 이전 환경의 Terraform Destroy와 잔존 확인
 
 수업 종료 후 `D:\terraform\workspace\00_eks` Root Module을 대상으로 Destroy했다. 실행 전 Local State에는 Data Source를 포함해 104개 주소가 있었고, 새로 생성한 Destroy Plan은 다음과 같았다.
 
@@ -749,13 +871,15 @@ Destroy complete! Resources: 84 destroyed.
 - Ubuntu Container의 `kubectl exec` 결과
 - p.19 환경변수 Manifest의 Server-side dry run·Apply·`exec env` 결과
 - BusyBox에서 다른 Pod IP로 요청하고 `pod-net`의 Nginx Log에서 Source 확인
+- 현재 `boot-pod-1`부터 `boot-pod-3`까지 삭제
 - AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. 다음 진도인 p.31 EX.5 NodeSelector를 진행한다.
-2. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
-3. 확인이 끝난 Pod는 삭제하고 수업 종료 후 `00_eks`를 Destroy한다.
+1. 현재 동일 Node에서 실행 중인 Boot Pod 세 개의 다음 실습 지시를 확인한다.
+2. NodeSelector 실습이 끝나면 Boot Pod 세 개와 사용자 지정 Node Label을 정리한다.
+3. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
+4. 수업 종료 후 `00_eks`를 Destroy한다.
 
 ## 관련 노트
 
