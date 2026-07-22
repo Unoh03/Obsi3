@@ -28,6 +28,10 @@ parent_moc: "[[10_학습 노트/클라우드/00_클라우드_목차]]"
 - [[03_AWS EKS]]
 - [[04_Kubernetes Pod와 ReplicaSet]]
 
+## 공식 문서
+
+- [Kubernetes 공식 문서 한국어 홈](https://kubernetes.io/ko/docs/home/)
+
 ## Source / RAW
 
 - 원자료: [[40_자료/강의 자료/Kubernetes.pdf|Kubernetes.pdf]]
