@@ -769,6 +769,28 @@ Scheduled → Pulling unoh03/boot:latest → Pulled → Created → Started
 
 즉 Node Label을 수정하면 이미 생성된 `Pending` Pod를 삭제·재생성하지 않아도 조건이 충족되는 시점에 자동 배치된다.
 
+### NodeSelector로 얻는 이점과 한계
+
+이 실습에서 `nodeSelector`가 주는 직접적인 이점은 **특정 조건을 갖춘 Node에만 Workload를 배치할 수 있다는 것**이다.
+
+예를 들어 다음과 같은 Node를 Label로 구분해 사용할 수 있다.
+
+- 특정 애플리케이션 실행에 필요한 설정이나 도구가 준비된 Node
+- GPU·고성능 CPU·대용량 Memory처럼 특정 Hardware를 가진 Node
+- 개발·검증·운영 등 용도가 구분된 Node
+- 특정 가용영역·망·보안 요구사항에 맞는 Node
+
+이번 실습에서는 `project=boot`가 붙은 Node를 “Boot 애플리케이션을 실행하도록 준비된 Node”라고 가정했고, Boot Pod 세 개가 다른 Node로 흩어지지 않도록 배치 위치를 제한했다. 잘못된 Node에서 실행해 생길 수 있는 환경 차이와 운영 실수를 줄이는 것이 핵심 이점이다.
+
+다만 `nodeSelector`는 다음까지 해결하지는 않는다.
+
+- Node가 조건을 만족하는지만 확인하며, Pod를 여러 Node에 고르게 분산하지 않는다.
+- 이번처럼 조건을 만족하는 Node가 한 대뿐이면 Pod 세 개가 모두 그 Node에 모인다.
+- 해당 Node가 장애 나면 세 Pod가 함께 영향을 받을 수 있다.
+- Label 자체는 보안 격리 장치가 아니며, 사용자가 Node Label을 변경할 권한이 있으면 배치 조건도 바꿀 수 있다.
+
+따라서 정확한 Node 종류를 고르는 데는 `nodeSelector`를 사용할 수 있지만, 고가용성이나 분산 배치는 Pod Affinity·Anti-Affinity, Topology Spread Constraints 같은 별도 Scheduling 규칙이 필요하다. 특정 Workload 외의 Pod가 해당 Node에 들어오는 것까지 막으려면 Taint와 Toleration도 별도로 고려한다.
+
 ### Nginx Pod 정리와 현재 상태
 
 이번 지시는 Boot Pod 세 개의 배치를 확인하는 것이므로, 함께 생성된 Nginx Pod 세 개는 이름을 명시해 삭제했다.
