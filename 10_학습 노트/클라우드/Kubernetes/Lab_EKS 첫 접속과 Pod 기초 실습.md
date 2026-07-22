@@ -8,13 +8,13 @@ parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[10_학습 노트/클라우드/Kubernetes/Source Digest/Kubernetes - Source Digest 04 Pod and ReplicaSet]]"
 environment: "Amazon EKS ap-northeast-2; Kubernetes v1.35.6-eks-8f14419; Bastion Amazon Linux t3.micro"
 evidence: "사용자 제공 Terminal 출력과 Local AWS read-only 진단"
-verified_on: 2026-07-21
+verified_on: 2026-07-22
 ---
 
 # EKS 첫 접속과 Pod 기초 실습
 
 > [!summary]
-> Terraform으로 EKS와 Bastion을 구성하고, Cluster 연결을 확인한 뒤 첫 Pod를 생성했다. 이 과정에서 IAM Credential 재생성, AWS CLI Profile 혼동, 빈 YAML, Resource 이름 오타, Pod 불변 필드, Jib 실행 위치, VS Code Remote-SSH 고착을 겪었다.
+> Terraform으로 EKS와 Bastion을 구성하고, Cluster 연결을 확인한 뒤 첫 Pod와 Sidecar Pod를 생성했다. 이 과정에서 IAM Credential 재생성, AWS CLI Profile 혼동, 빈 YAML, Resource 이름 오타, Pod 불변 필드, Jib 실행 위치, VS Code Remote-SSH 고착을 겪었다.
 
 > [!warning] Secret 기록 경계
 > 실제 AWS Access Key·Secret Access Key, Docker Hub 비밀번호·Access Token, Public IP는 기록하지 않는다. 이 노트의 명령에는 Placeholder만 사용한다.
@@ -439,6 +439,125 @@ kubectl get pod pod -o wide
 kubectl exec pod -- env | grep -E 'ENV1|NodeName|NameSpace|NodeIP|PodIP'
 ```
 
+## 11. p.21-p.23 Sidecar와 Pod Network 실습
+
+### Manifest 구성
+
+`pod-sidecar-net.yml`에는 하나의 Pod 안에 Nginx와 BusyBox Container를 함께 정의했다.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-sidecar
+  labels:
+    name: pod-sidecar
+spec:
+  containers:
+    - name: nginx-sidecar-app
+      image: nginx:latest
+      ports:
+        - containerPort: 80
+    - name: busybox-sidecar-app
+      image: busybox:latest
+      command: ["sh", "-c", "echo The app is running! && sleep 3600"]
+```
+
+`pod-net.yml`에는 Pod 간 통신을 비교할 Nginx Container 하나를 정의했다.
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-net
+  labels:
+    name: pod-net
+spec:
+  containers:
+    - name: nginx-app
+      image: nginx:latest
+      ports:
+        - containerPort: 80
+```
+
+### 명령 오타와 배포
+
+처음에는 `--dry-run`을 `--dryrun`으로 잘못 입력했다.
+
+```console
+$ kubectl apply --dryrun -f pod-sidecar-net.yml
+error: unknown flag: --dryrun
+```
+
+이번에는 도움말에서 올바른 Flag를 확인했지만, Server-side dry run을 다시 실행하지 않고 실제 Apply로 진행했다.
+
+```console
+$ kubectl apply -f pod-sidecar-net.yml
+pod/pod-sidecar created
+
+$ kubectl apply -f pod-net.yml
+pod/pod-net created
+```
+
+두 Pod는 생성 직후 잠시 `ContainerCreating`이었고, 이후 다음 상태가 됐다.
+
+```console
+$ kubectl get pods -o wide
+NAME          READY   STATUS    RESTARTS   IP              NODE
+pod-net       1/1     Running   0          172.28.31.170   ip-172-28-31-206.ap-northeast-2.compute.internal
+pod-sidecar   2/2     Running   0          172.28.11.84    ip-172-28-11-97.ap-northeast-2.compute.internal
+```
+
+- `pod-sidecar`의 `2/2`는 같은 Pod 안의 Nginx와 BusyBox가 모두 Ready라는 뜻이다.
+- 두 Container는 별도 Container IP가 아니라 `pod-sidecar`의 Pod IP `172.28.11.84`를 공유한다.
+- `pod-net`은 다른 Node에 배치됐고 별도의 Pod IP `172.28.31.170`을 받았다.
+
+조회 명령에서도 숫자 `0`을 영문 소문자 `o` 대신 입력하는 오타가 있었다.
+
+```console
+$ kubectl get pods -0 wide
+error: unknown shorthand flag: '0' in -0
+```
+
+올바른 Output Flag는 `-o wide`다.
+
+### Pod IP와 같은 Pod 내부 통신 확인
+
+Bastion에서 두 Pod IP에 직접 요청했고 양쪽 모두 Nginx Welcome Page를 반환했다.
+
+```console
+$ curl 172.28.11.84
+<h1>Welcome to nginx!</h1>
+
+$ curl 172.28.31.170
+<h1>Welcome to nginx!</h1>
+```
+
+이어 `pod-sidecar`의 BusyBox Container에 들어가 `localhost:80`으로 같은 Pod의 Nginx에 접근했다.
+
+```console
+$ kubectl exec -it pod-sidecar -c busybox-sidecar-app -- sh
+/ # wget -Sq localhost:80
+HTTP/1.1 200 OK
+Server: nginx/1.31.3
+```
+
+이 결과로 이번 환경에서 확인된 것은 다음과 같다.
+
+```text
+하나의 Pod
+├─ nginx-sidecar-app : 80번 Port에서 HTTP 응답
+└─ busybox-sidecar-app : localhost:80으로 Nginx 접근
+```
+
+즉 같은 Pod의 Container는 Network Namespace와 Pod IP를 공유하므로 `localhost`로 서로 통신할 수 있다. 서로 다른 Pod에는 각각 별도의 Pod IP가 있으며, Bastion에서는 두 Pod IP에 직접 접근할 수 있었다. 다만 Pod IP는 재생성 시 바뀔 수 있으므로 고정된 서비스 진입점으로 사용하지 않는다.
+
+### 아직 확인하지 않은 p.23 단계
+
+- BusyBox Container에서 다른 Pod인 `pod-net`의 IP로 직접 요청
+- `kubectl logs pod-net nginx-app`에서 요청 Source 확인
+- 실습 Pod 전체 삭제
+
 ## 오류와 해석 요약
 
 | 증상 | 확인한 원인 또는 현재 판단 | 조치·다음 확인 |
@@ -450,10 +569,12 @@ kubectl exec pod -- env | grep -E 'ENV1|NodeName|NameSpace|NodeIP|PodIP'
 | `aws login`이 Browser 대기 | Remote SSH 환경에 부적합 | 취소하고 기존 Credential Profile 확인 |
 | `No plugin found for prefix 'jib'` | 잘못된 Maven Base directory 가능성이 높음 | `${workspace_loc:/boot}` 확인 |
 | Pod Update `Forbidden` | Container 이름은 Pod 불변 필드 | 실습 Pod 삭제 후 재생성 |
+| `unknown flag: --dryrun` | `--dry-run`의 Hyphen 누락 | `--dry-run=server`로 입력 |
+| `unknown shorthand flag: '0' in -0` | 숫자 `0`과 영문 소문자 `o` 혼동 | `kubectl get pods -o wide` 사용 |
 | VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
 | Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
 
-## 11. Terraform Destroy와 잔존 확인
+## 12. 이전 환경의 Terraform Destroy와 잔존 확인
 
 수업 종료 후 `D:\terraform\workspace\00_eks` Root Module을 대상으로 Destroy했다. 실행 전 Local State에는 Data Source를 포함해 104개 주소가 있었고, 새로 생성한 Destroy Plan은 다음과 같았다.
 
@@ -509,15 +630,16 @@ Destroy complete! Resources: 84 destroyed.
 - `ubuntu-pod` Apply와 실행 상태
 - Ubuntu Container의 `kubectl exec` 결과
 - p.19 환경변수 Manifest의 Server-side dry run·Apply·`exec env` 결과
+- BusyBox에서 다른 Pod IP로 요청하고 `pod-net`의 Nginx Log에서 Source 확인
+- 현재 `pod-sidecar`와 `pod-net` 삭제
 - AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. 다음 실습 전에 `00_eks`를 다시 Apply하고 EKS·Worker Node·Bastion 상태를 확인한다.
-2. p.19 환경변수 Manifest는 먼저 Server-side dry run으로 들여쓰기와 Schema를 검사한다.
-3. Apply 후 `get -o wide`와 `exec env`로 Node·Namespace·Node IP·Pod IP 주입 결과를 확인한다.
-4. Spring Boot 실행이 목적이면 `command`를 제거하고, 환경변수 실습이 목적이면 현재 `sleep` 명령을 사용한다.
-5. 확인된 출력만 이 노트에 추가하고 수업 종료 후 다시 Destroy한다.
+1. BusyBox Container에서 `pod-net`의 Pod IP로 요청해 Pod 간 통신을 확인한다.
+2. `kubectl logs pod-net nginx-app`에서 요청 Source를 확인한다.
+3. p.19 환경변수 실습이 아직 필요하면 Server-side dry run부터 다시 수행한다.
+4. 확인이 끝난 Pod는 삭제하고 수업 종료 후 `00_eks`를 Destroy한다.
 
 ## 관련 노트
 
