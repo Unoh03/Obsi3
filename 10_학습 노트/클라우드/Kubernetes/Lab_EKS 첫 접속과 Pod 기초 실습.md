@@ -1003,6 +1003,142 @@ nginx-pod-1   1/1     Running   ip-172-28-31-206.ap-northeast-2.compute.internal
 
 같은 이름으로 Pod를 삭제·재생성했기 때문에 `kubectl get events`에는 앞서 삭제된 Boot Pod의 `FailedScheduling` Event가 잠시 남아 있었다. 현재 상태는 `kubectl get pods`와 Pod의 생성 시각을 함께 기준으로 판단해야 한다.
 
+## 15. EX.7 Taints와 Tolerations 실습
+
+### 개념과 명령 구조
+
+NodeAffinity가 Pod 입장에서 원하는 Node를 고르는 규칙이라면, Taint는 Node 입장에서 받아들이지 않을 Pod를 밀어내는 규칙이다. Toleration은 Pod가 특정 Taint를 견딜 수 있다고 선언하는 예외표다.
+
+```text
+NodeAffinity  → Pod가 "저 Node로 가고 싶다"고 요청
+Taint         → Node가 "조건 없는 Pod는 들어오지 마라"고 제한
+Toleration    → Pod가 "나는 그 제한을 견딜 수 있다"고 선언
+```
+
+실습에서 사용한 Taint 명령의 구조는 다음과 같다.
+
+```bash
+kubectl taint nodes <Node 이름> nodename=node2:NoExecute
+```
+
+```text
+kubectl                 Kubernetes에 명령
+taint nodes             Node에 Taint를 추가
+<Node 이름>             실제 적용 대상
+nodename=node2          Taint의 Key와 Value
+NoExecute               일치하는 Toleration이 없는 기존 Pod까지 축출
+```
+
+`NoSchedule`은 Toleration이 없는 새 Pod의 배치만 막고 기존 Pod는 남겨 둔다. `NoExecute`는 새 배치를 막는 것에 더해 이미 실행 중인 Pod도 축출한다.
+
+### 세 Manifest의 Toleration 차이
+
+`taint-tolerations/`의 세 Pod는 Toleration 범위를 비교하도록 구성됐다.
+
+`boot-pod-1`은 Key를 지정하지 않아 모든 Key의 `NoExecute`를 견딘다.
+
+```yaml
+tolerations:
+  - effect: NoExecute
+    operator: Exists
+```
+
+`boot-pod-2`와 `nginx-pod-1`은 Key가 `test`인 `NoExecute`만 견딘다. `Exists`이므로 `test`의 Value는 무엇이든 허용하지만, 다른 Key는 허용하지 않는다.
+
+```yaml
+tolerations:
+  - key: test
+    effect: NoExecute
+    operator: Exists
+```
+
+Toleration은 Pod를 해당 Node로 보내는 배치 지시가 아니다. 조건에 맞는 Taint가 있어도 거부·축출되지 않을 자격만 준다.
+
+### 같은 Node에서 생존·축출 비교
+
+Toleration 차이만 비교하기 위해 기존 Pod와 2c Node의 `NoExecute`를 정리하고, 2a Node를 잠시 `cordon`했다. 그 상태에서 세 Pod를 생성해 모두 2c Node에 배치했다.
+
+```console
+$ kubectl cordon ip-172-28-11-97.ap-northeast-2.compute.internal
+node/ip-172-28-11-97.ap-northeast-2.compute.internal cordoned
+
+$ kubectl apply -f .
+pod/boot-pod-1 created
+pod/boot-pod-2 created
+pod/nginx-pod-1 created
+
+$ kubectl get pods -o wide
+NAME          READY   STATUS    NODE
+boot-pod-1    1/1     Running   ip-172-28-31-206.ap-northeast-2.compute.internal
+boot-pod-2    1/1     Running   ip-172-28-31-206.ap-northeast-2.compute.internal
+nginx-pod-1   1/1     Running   ip-172-28-31-206.ap-northeast-2.compute.internal
+```
+
+세 Pod가 같은 Node에 있는 것을 확인한 뒤 2a Node를 다시 `uncordon`하고, 2c Node에 `nodename=node2:NoExecute`를 적용했다.
+
+```console
+$ kubectl uncordon ip-172-28-11-97.ap-northeast-2.compute.internal
+node/ip-172-28-11-97.ap-northeast-2.compute.internal uncordoned
+
+$ kubectl taint nodes ip-172-28-31-206.ap-northeast-2.compute.internal \
+  nodename=node2:NoExecute
+node/ip-172-28-31-206.ap-northeast-2.compute.internal tainted
+```
+
+결과는 Toleration 범위에 따라 갈렸다.
+
+| Pod | `NoExecute` 허용 범위 | 결과 |
+|---|---|---|
+| `boot-pod-1` | 모든 Key | 2c Node에서 계속 `Running` |
+| `boot-pod-2` | `test` Key만 | `nodename`과 불일치하여 축출·삭제 |
+| `nginx-pod-1` | `test` Key만 | `nodename`과 불일치하여 축출·삭제 |
+
+Event에서도 두 Pod의 축출이 확인됐다.
+
+```text
+TaintManagerEviction pod/boot-pod-2
+Marking for deletion Pod default/boot-pod-2
+
+TaintManagerEviction pod/nginx-pod-1
+Marking for deletion Pod default/nginx-pod-1
+```
+
+최종적으로 `boot-pod-1`만 2c Node에서 살아남았다. 세 Pod를 같은 Node에 먼저 모았기 때문에, 다른 Node에 있었던 우연이 아니라 Toleration 일치 여부로 결과가 갈렸음을 확인할 수 있다.
+
+### 실제 상황으로 이해하기
+
+Node를 작업장, Taint를 출입 제한 표지, Toleration을 예외 출입증으로 생각할 수 있다.
+
+```text
+NoSchedule
+→ "지금부터 일반 작업자는 새로 들어오지 마시오"
+→ 이미 안에 있는 작업자는 계속 일함
+
+NoExecute
+→ "일반 작업자는 즉시 퇴실하시오"
+→ 예외 출입증이 있는 작업자만 남음
+```
+
+실무에서 가장 흔한 용도는 **특정 Node를 전용 구역으로 예약하는 것**이다.
+
+- GPU Node: 비싼 GPU가 필요한 Pod만 Toleration을 주고, 일반 Pod가 자리를 차지하지 못하게 한다.
+- 보안·운영 전용 Node: Log 수집기나 보안 Agent처럼 관리 Workload만 들어가게 한다.
+- 장애가 감지된 Node: `not-ready`, `memory-pressure`, `disk-pressure` 같은 상태에 따라 Kubernetes가 Taint를 붙이고 새 배치를 막거나 Pod를 축출한다.
+
+Toleration은 출입 허가일 뿐 해당 Node로 끌어당기지는 않는다. 전용 Workload를 그 Node에 확실히 보내려면 같은 Label을 붙이고 NodeAffinity도 함께 사용하는 것이 일반적이다. Kubernetes 공식 문서도 전용 Node와 특수 Hardware를 대표 용례로 들고 있다: [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+
+보안 사고 상황에 적용하면 다음과 같이 이해할 수 있다. Worker Node에서 악성 Process, Kernel 이상, Disk 장애처럼 심각한 문제가 의심된다고 가정한다.
+
+1. 운영자는 해당 Node에 `NoExecute` Taint를 붙여 일반 Workload를 축출한다.
+2. 일반 애플리케이션 Pod는 해당 Node에서 제거된다.
+3. 장애 조사·Log 수집·보안 감시처럼 반드시 남아야 하는 관리 Pod만 정확한 Toleration으로 유지할 수 있다.
+4. Deployment나 ReplicaSet이 관리하는 애플리케이션이라면 Controller가 건강한 다른 Node에 대체 Pod를 생성한다.
+5. 조사와 증거 보존 후 문제가 확인된 Node는 복구하거나 폐기·재생성한다.
+
+이번 실습을 이 상황에 비유하면 `boot-pod-2`와 `nginx-pod-1`은 일반 애플리케이션이고, 모든 `NoExecute`를 견딘 `boot-pod-1`은 예외 출입증을 가진 관리 작업의 역할을 맡았다고 볼 수 있다. 실제 `boot-pod-1`이 보안 관리 Pod라는 뜻은 아니다.
+
+다만 Taint는 침해를 탐지하거나 Network를 차단하는 보안 기능이 아니다. 실제 침해 대응에서는 Audit Log·Runtime 탐지로 상황을 판단하고, Security Group·NetworkPolicy·Credential 폐기 등으로 격리한 뒤 Taint·cordon·drain·Node 재생성을 함께 사용해야 한다. 또한 Key 없는 광범위한 Toleration은 원치 않는 위험 Node에서도 Pod를 살려둘 수 있으므로, 실무에서는 필요한 Key·Value·Effect만 좁게 허용하는 편이 안전하다.
+
 ## 오류와 해석 요약
 
 | 증상 | 확인한 원인 또는 현재 판단 | 조치·다음 확인 |
@@ -1020,12 +1156,13 @@ nginx-pod-1   1/1     Running   ip-172-28-31-206.ap-northeast-2.compute.internal
 | `ubectl: command not found` | `kubectl`의 첫 글자 누락 | 명령어를 다시 입력 |
 | Boot·Nginx Pod 6개 `Pending` | Node의 `project=melong`이 Pod의 `project=boot/nginx` Selector와 불일치 | Node Label을 `project=boot --overwrite`로 보정 |
 | Required NodeAffinity Boot Pod `Pending` | `key: melong`, `operator: Exists`지만 어떤 Node에도 `melong` Key가 없음 | 필수 조건과 Node Label을 일치시키거나 Soft 조건 사용 |
+| `NoExecute` 적용 후 Pod 두 개가 사라짐 | `test` Toleration이 `nodename` Taint와 일치하지 않아 Taint Manager가 축출 | 의도된 결과이며 Event의 `TaintManagerEviction`으로 확인 |
 | Zone Selector 변경 Apply가 Boot Pod만 실패 | 기존 Boot Pod의 `nodeSelector`는 생성 후 변경 불가 | 기존 Pod 삭제 후 새 Manifest로 재생성 |
 | `cd ..\node_selectors` 실패 | Linux에서 Windows식 경로 구분자 사용 | `cd ../node_selectors` |
 | VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
 | Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
 
-## 15. 이전 환경의 Terraform Destroy와 잔존 확인
+## 16. 이전 환경의 Terraform Destroy와 잔존 확인
 
 수업 종료 후 `D:\terraform\workspace\00_eks` Root Module을 대상으로 Destroy했다. 실행 전 Local State에는 Data Source를 포함해 104개 주소가 있었고, 새로 생성한 Destroy Plan은 다음과 같았다.
 
@@ -1070,6 +1207,8 @@ Destroy complete! Resources: 84 destroyed.
 - `boot` Project의 Jib Plugin·Application Port 확인
 - `ubuntu:26.04` Official Image Tag 존재 확인
 - PDF p.19의 환경변수·`fieldRef` 예제 시각 대조
+- Required·Preferred NodeAffinity의 Hard·Soft 배치 차이
+- `NoExecute`와 Toleration 일치 여부에 따른 생존·축출 비교
 - `00_eks` Destroy: 84개 Resource 삭제, State 0
 - `00_eks` 주요 EKS·VPC·EC2·ASG·ENI·IAM·OIDC 잔존 없음
 
@@ -1082,14 +1221,14 @@ Destroy complete! Resources: 84 destroyed.
 - Ubuntu Container의 `kubectl exec` 결과
 - p.19 환경변수 Manifest의 Server-side dry run·Apply·`exec env` 결과
 - BusyBox에서 다른 Pod IP로 요청하고 `pod-net`의 Nginx Log에서 Source 확인
-- 현재 Preferred NodeAffinity로 실행 중인 Boot·Nginx Pod 두 개의 후속 실습과 정리
+- 현재 2c Node의 `nodename=node2:NoExecute`와 살아남은 `boot-pod-1` 정리
 - AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. 현재 Preferred NodeAffinity로 `ap-northeast-2c`에 배치된 Boot·Nginx Pod의 다음 실습 지시를 확인한다.
-2. EX.6이 끝나면 현재 Pod와 더 이상 사용하지 않는 사용자 지정 `project` Node Label을 정리한다.
-3. 다음 범위인 EX.7 Taint·Toleration 실습으로 이어간다.
+1. EX.7이 끝나면 2c Node의 `nodename=node2:NoExecute`와 `boot-pod-1`을 정리한다.
+2. 다음 범위인 EX.8 cordon·drain 실습으로 이어간다.
+3. 더 이상 사용하지 않는 사용자 지정 `project` Node Label을 정리한다.
 4. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
 5. 수업 종료 후 `00_eks`를 Destroy한다.
 
