@@ -1386,6 +1386,73 @@ kubectl uncordon ip-172-28-31-206.ap-northeast-2.compute.internal
 
 이후 `kubectl get nodes`와 `kubectl get pods -A -o wide`로 Node가 `Ready`인지, CoreDNS가 다시 `Running`인지 확인해야 한다.
 
+## 17. EX.1 ReplicaSet Basic 시작
+
+오늘 마지막으로 Bastion에 ReplicaSet 실습 Directory와 `rs-basic.yml`을 직접 만들었다.
+
+```console
+$ cd ~/kube-worksapce
+$ mkdir replicaset
+$ cd replicaset
+$ vi rs-basic.yml
+```
+
+작성한 Manifest는 다음과 같다.
+
+```yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: rs-basic
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: nginx-app
+  template:
+    metadata:
+      labels:
+        app: nginx-app
+    spec:
+      containers:
+        - name: nginx-con
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+```
+
+`selector.matchLabels.app`과 `template.metadata.labels.app`은 모두 `nginx-app`으로 일치한다. ReplicaSet은 이 Label을 기준으로 자신이 관리할 Pod를 식별한다.
+
+```console
+$ kubectl apply -f .
+replicaset.apps/rs-basic created
+```
+
+생성 직후 ReplicaSet은 원하는 Pod 수에 맞춰 Pod Object 5개를 만들었다.
+
+```text
+NAME       DESIRED   CURRENT   READY
+rs-basic   5         5         0
+```
+
+```text
+rs-basic-64zxk   0/1   Pending   IP=<none>   NODE=<none>
+rs-basic-mq6dj   0/1   Pending   IP=<none>   NODE=<none>
+rs-basic-ps4zs   0/1   Pending   IP=<none>   NODE=<none>
+rs-basic-t8dkf   0/1   Pending   IP=<none>   NODE=<none>
+rs-basic-tf99d   0/1   Pending   IP=<none>   NODE=<none>
+```
+
+이 `Pending`은 ReplicaSet Manifest 오류가 아니다. 직전 EX.8에서 Worker Node 2대를 모두 `cordon`한 상태였기 때문에 Scheduler가 선택할 Node가 없었다.
+
+```text
+0/2 nodes are available: 2 node(s) were unschedulable.
+```
+
+여기까지로도 ReplicaSet이 `replicas: 5`라는 희망 상태를 보고 Pod Object 5개를 즉시 생성한다는 점은 확인했다. 다만 실제 Container 실행과 `READY 5`, Pod 삭제 후 Self-Healing은 아직 검증하지 않았다.
+
+`~/kube-worksapce/replicaset/rs-basic.yml`은 현재 Bastion에서 수동 생성한 파일이다. Terraform Destroy 시 Bastion과 함께 사라지므로 다음 환경에서는 이 기록을 바탕으로 다시 생성해야 한다. Local Terraform Source의 `user_data`에 반영된 설정만 새 Bastion 생성 때 자동 재현된다.
+
 ## 오류와 해석 요약
 
 | 증상 | 확인한 원인 또는 현재 판단 | 조치·다음 확인 |
@@ -1407,12 +1474,13 @@ kubectl uncordon ip-172-28-31-206.ap-northeast-2.compute.internal
 | 기본 `drain`이 독립 Pod·DaemonSet에서 중단 | Controller 없는 Pod와 DaemonSet을 기본 안전장치가 보호 | 실습 의도 확인 후 `--force`, `--ignore-daemonsets` 사용 |
 | Drain이 CoreDNS에서 5초마다 반복 | 두 Node가 cordon되어 대체 CoreDNS가 `Pending`이고 PDB 허용 중단 수가 0 | 정상 운영은 다른 Node를 열어 가용성 회복, 전체 중단 실험만 `--disable-eviction` 사용 |
 | `kubectl delete --all` 실패 | 삭제할 Resource 종류가 없음 | `kubectl delete pod --all`처럼 Resource 명시 |
+| `rs-basic` Pod 5개가 모두 `Pending` | ReplicaSet은 정상 생성됐지만 두 Worker Node가 모두 `SchedulingDisabled` | 다음 환경에서 Node가 `Ready`인 상태로 다시 Apply해 `READY 5` 확인 |
 | Zone Selector 변경 Apply가 Boot Pod만 실패 | 기존 Boot Pod의 `nodeSelector`는 생성 후 변경 불가 | 기존 Pod 삭제 후 새 Manifest로 재생성 |
 | `cd ..\node_selectors` 실패 | Linux에서 Windows식 경로 구분자 사용 | `cd ../node_selectors` |
 | VS Code dynamic forwarding 실패 | SSH Server가 배너를 보내지 못함 | Bastion Resource·Swap·VS Code Server 점검 |
 | Docker Hub Image 삭제 | AWS 과금 Resource로 오인 | 필요 시 Jib로 다시 Push |
 
-## 17. 이전 환경의 Terraform Destroy와 잔존 확인
+## 18. 이전 환경의 Terraform Destroy와 잔존 확인
 
 수업 종료 후 `D:\terraform\workspace\00_eks` Root Module을 대상으로 Destroy했다. 실행 전 Local State에는 Data Source를 포함해 104개 주소가 있었고, 새로 생성한 Destroy Plan은 다음과 같았다.
 
@@ -1462,6 +1530,7 @@ Destroy complete! Resources: 84 destroyed.
 - `cordon`의 신규 Scheduling 차단과 기존 Pod 유지 확인
 - 두 Node Drain, 독립 Pod·DaemonSet 안전장치, CoreDNS PDB 차단·우회 확인
 - 두 Node가 닫힌 상태에서 일반 Pod 전체 `Pending` 확인
+- ReplicaSet `rs-basic`: `DESIRED 5`, `CURRENT 5`, `READY 0`과 Pod Object 5개 생성 확인
 - `00_eks` Destroy: 84개 Resource 삭제, State 0
 - `00_eks` 주요 EKS·VPC·EC2·ASG·ENI·IAM·OIDC 잔존 없음
 
@@ -1474,16 +1543,16 @@ Destroy complete! Resources: 84 destroyed.
 - Ubuntu Container의 `kubectl exec` 결과
 - p.19 환경변수 Manifest의 Server-side dry run·Apply·`exec env` 결과
 - BusyBox에서 다른 Pod IP로 요청하고 `pod-net`의 Nginx Log에서 Source 확인
-- 두 Worker Node `uncordon` 후 CoreDNS `Running` 복구 확인
+- ReplicaSet Pod의 `READY 5`와 Self-Healing 동작
 - AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. 두 Worker Node를 `uncordon`하고 CoreDNS가 다시 `Running`이 되는지 확인한다.
-2. 더 이상 사용하지 않는 사용자 지정 `project` Node Label을 정리한다.
-3. 다음 범위인 p.52 ReplicaSet 실습으로 이어간다.
-4. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
-5. 수업 종료 후 `00_eks`를 Destroy한다.
+1. 오늘 환경은 `D:\terraform\workspace\00_eks`에서 Terraform Destroy하고 State 0 및 주요 잔존 Resource를 확인한다.
+2. 다음 환경에서 `rs-basic.yml`을 복원하고 ReplicaSet Pod 5개가 `Running`·`READY 5`가 되는지 확인한다.
+3. Pod 한 개를 삭제해 ReplicaSet이 대체 Pod를 생성하는 Self-Healing을 확인한다.
+4. 더 이상 사용하지 않는 사용자 지정 `project` Node Label을 정리한다.
+5. p.23의 다른 Pod 직접 통신·Log 확인이 필요하면 Pod 두 개를 다시 생성해 수행한다.
 
 ## 관련 노트
 
