@@ -14,7 +14,7 @@ verified_on: 2026-07-23
 # EKS Deployment 기초와 Rolling Update 실습
 
 > [!summary]
-> `deploy-basic` Deployment를 생성하고 `httpd:alpine3.23 → httpd:alpine3.24 → unoh03/boot:latest`로 Pod Template Image를 변경했다. 각 변경에서 새 ReplicaSet과 Revision이 생겼고, `kubectl rollout undo`로 직전 `httpd:alpine3.24` Template을 현재 Revision 4로 되돌리는 과정까지 확인했다.
+> `deploy-basic` Deployment를 생성하고 `httpd:alpine3.23 → httpd:alpine3.24 → unoh03/boot:latest`로 Pod Template Image를 변경했다. 각 변경에서 새 ReplicaSet과 Revision이 생겼고, `kubectl rollout undo`로 직전 `httpd:alpine3.24` Template을 현재 Revision 4로 되돌리는 과정까지 확인했다. 이후 `prod`와 `stage` Namespace에 같은 이름의 Deployment를 독립적으로 배포하고 Namespace 삭제 시 하위 Workload가 함께 제거되는 과정도 검증했다.
 
 > [!info] 선행 실습
 > Pod와 ReplicaSet의 직접 생성·Scale·Self-Healing·Template 변경 원리는 [[Lab_EKS ReplicaSet 기초 실습]]에 기록한다. 이 노트는 Deployment가 ReplicaSet과 Pod Revision을 관리하는 단계부터 담당한다.
@@ -958,6 +958,216 @@ Pod Label   experiment=max-unavailable-2
 >
 > `maxSurge`는 “최대로 유지할 Pod 수”가 아니라 **목표 Replica 수를 초과해 임시로 추가 생성할 수 있는 최대 Pod 수**다.
 
+## 14. Namespace로 환경 분리
+
+### 14.1 시작 전 `default` 확인
+
+기존 실습 Resource를 정리한 뒤 `default` Namespace를 조회했다.
+
+```console
+$ kubectl get pod
+No resources found in default namespace.
+```
+
+왼쪽 tmux Pane의 다음 명령도 `default`만 조회하므로 화면이 비어 있었다.
+
+```bash
+watch -n 0.5 'kubectl get deployment,replicaset,pod'
+```
+
+> [!important] “Resource가 없다”가 아니라 “현재 조회한 Namespace에 없다”
+> `kubectl get`에서 `-n` 또는 `--all-namespaces`를 생략하면 현재 Context의 Namespace만 조회한다. 다른 Namespace의 Workload는 정상 실행 중이어도 이 화면에는 나타나지 않는다.
+
+여러 Namespace를 함께 관찰하려면 다음과 같이 사용한다.
+
+```bash
+# Cluster의 모든 Namespace를 함께 조회한다.
+watch -n 0.5 'kubectl get deployment,replicaset,pod -A'
+
+# 이번 실습의 두 Namespace만 구분해서 조회한다.
+watch -n 0.5 'kubectl get deployment,replicaset,pod -n prod; echo; kubectl get deployment,replicaset,pod -n stage'
+```
+
+### 14.2 Namespace 생성
+
+```console
+$ kubectl create namespace delivery
+namespace/delivery created
+
+$ kubectl create namespace stage
+namespace/stage created
+
+$ kubectl create namespace test
+namespace/test created
+
+$ kubectl create namespace prod
+namespace/prod created
+```
+
+`delivery`와 `test`는 Namespace 생성만 확인했고, 실제 Deployment는 `prod`와 `stage`에 만들었다.
+
+두 Manifest는 동일한 Deployment 이름과 Selector를 사용하고 Namespace만 달랐다.
+
+```yaml
+# deployment-prod.yml
+metadata:
+  name: deploy-basic
+  namespace: prod
+```
+
+```yaml
+# deployment-stage.yml
+metadata:
+  name: deploy-basic
+  namespace: stage
+```
+
+Namespace 안에서는 이름이 고유해야 하지만 Namespace가 다르면 같은 이름을 사용할 수 있다.
+
+```text
+prod/deploy-basic
+stage/deploy-basic
+```
+
+이 둘은 이름이 같아도 서로 다른 Kubernetes Object다. 한쪽의 ReplicaSet·Pod·Rollout은 다른 쪽에 영향을 주지 않는다.
+
+### 14.3 첫 배포와 `ImagePullBackOff`
+
+```console
+$ kubectl apply -f deployment-prod.yml
+deployment.apps/deploy-basic created
+
+$ kubectl apply -f deployment-stage.yml
+deployment.apps/deploy-basic created
+```
+
+첫 Manifest의 Image Tag는 실제 Docker Hub에서 찾을 수 없었다.
+
+```text
+prod  → unoh03/boot:1.1
+stage → kys8502/boot:1.1
+```
+
+Event의 확정 오류:
+
+```text
+docker.io/unoh03/boot:1.1: not found
+docker.io/kys8502/boot:1.1: not found
+```
+
+따라서 두 Namespace의 Pod는 `ErrImagePull`과 `ImagePullBackOff`가 됐다. Namespace나 Scheduling 문제가 아니라 **지정한 Registry Image Tag가 존재하지 않는 문제**였다.
+
+`stage` Manifest의 Image를 `kys8502/boot:1.1 → unoh03/boot:1.1`로 변경해 다시 Apply하자 `stage` 안에서만 새 ReplicaSet이 생성됐다.
+
+```text
+stage/deploy-basic
+├─ 기존 RS: kys8502/boot:1.1, 4개
+└─ 신규 RS: unoh03/boot:1.1, 3개
+```
+
+두 Image가 모두 Pull에 실패해 Ready Pod가 하나도 없었으므로 Rollout도 완료되지 못했다. 이는 Namespace별 Deployment가 독립적으로 Revision과 ReplicaSet 계보를 관리한다는 증거이면서, **새 Image가 Ready가 되지 않으면 Rolling Update가 중간 상태에서 정지한다**는 사례다.
+
+### 14.4 Namespace 삭제와 Manifest 의존성
+
+문제가 있는 Workload를 Namespace 단위로 정리했다.
+
+```console
+$ kubectl delete namespace stage
+namespace "stage" deleted
+
+$ kubectl delete namespace prod
+namespace "prod" deleted
+```
+
+Namespace를 삭제하자 그 안의 Deployment·ReplicaSet·Pod도 함께 제거됐다.
+
+삭제된 `prod`를 Manifest가 계속 가리키는 상태에서 Apply하면 생성되지 않는다.
+
+```console
+$ kubectl apply -f deployment-prod.yml
+Error from server (NotFound): error when creating "deployment-prod.yml": namespaces "prod" not found
+```
+
+`metadata.namespace: prod`는 단순한 표시가 아니다. API Server가 Resource를 저장할 실제 범위이므로 대상 Namespace가 먼저 존재해야 한다.
+
+### 14.5 올바른 Image로 재배포
+
+Namespace를 다시 생성했다.
+
+```console
+$ kubectl create namespace prod
+namespace/prod created
+
+$ kubectl create namespace stage
+namespace/stage created
+```
+
+두 Manifest의 Image를 실제 존재하는 `unoh03/boot:latest`로 교정하고 다시 배포했다.
+
+```console
+$ kubectl apply -f deployment-prod.yml
+deployment.apps/deploy-basic created
+
+$ kubectl apply -f deployment-stage.yml
+deployment.apps/deploy-basic created
+```
+
+`prod` 결과:
+
+```text
+Deployment  prod/deploy-basic             5/5
+ReplicaSet  deploy-basic-74959cd798        5/5
+Image       unoh03/boot:latest
+Pod         5개 모두 Running
+```
+
+`stage` 결과:
+
+```text
+Deployment  stage/deploy-basic            5/5
+ReplicaSet  deploy-basic-74959cd798        5/5
+Image       unoh03/boot:latest
+Pod         5개 모두 Running
+```
+
+두 ReplicaSet의 Hash가 같은 이유는 Pod Template 내용이 같기 때문이다. 그러나 전체 식별자는 Namespace를 포함하므로 `prod/deploy-basic-74959cd798`과 `stage/deploy-basic-74959cd798`은 별개의 Object다.
+
+Pod는 두 Worker Node와 `ap-northeast-2a`, `ap-northeast-2c`에 분산됐지만, Namespace 경계가 특정 Node에 Workload를 물리적으로 분리한 것은 아니다.
+
+### 14.6 최종 정리
+
+검증 후 `prod`와 `stage` Namespace를 다시 삭제했다.
+
+```console
+$ kubectl delete namespace stage
+namespace "stage" deleted
+
+$ kubectl delete namespace prod
+namespace "prod" deleted
+```
+
+최종 조회에서는 두 Namespace와 그 하위 Deployment·ReplicaSet·Pod가 모두 사라졌다. `default`에도 사용자 Workload가 없고 Cluster 운영용 `kube-system` Resource만 실행 중이다.
+
+```text
+남은 사용자 생성 Namespace
+├─ delivery  Active, Workload 없음
+└─ test      Active, Workload 없음
+```
+
+### 14.7 이번 실습에서 확인한 Namespace의 역할
+
+| 확인한 동작 | 의미 |
+|---|---|
+| `prod`와 `stage`에 같은 이름의 Deployment 생성 | 이름은 Namespace 안에서만 고유하면 됨 |
+| `default` 조회에는 두 Deployment가 보이지 않음 | 조회·명령 범위가 Namespace별로 구분됨 |
+| `stage` Image 변경이 `prod`에 영향 없음 | Rollout과 하위 Object가 Namespace별로 독립됨 |
+| 없는 `prod`에 Manifest Apply 실패 | `metadata.namespace`는 실제 저장 범위를 지정함 |
+| Namespace 삭제 후 하위 Workload 제거 | Namespace 단위로 Resource 생명주기를 정리할 수 있음 |
+| 두 Namespace의 Pod가 같은 Node에 배치됨 | Namespace 자체는 물리적 Node 격리 기능이 아님 |
+
+> [!warning] Namespace만으로 보안 격리가 완성되지는 않는다
+> Namespace는 Resource의 논리적 소속과 이름 범위를 제공한다. 사용자 권한은 RBAC, Resource 제한은 ResourceQuota·LimitRange, Pod 간 Network 차단은 NetworkPolicy를 별도로 적용해야 한다.
+
 ## 검증 완료와 미완료
 
 ### 완료
@@ -982,20 +1192,28 @@ Pod Label   experiment=max-unavailable-2
 - Strategy만 변경했을 때 새 ReplicaSet이 생성되지 않고 Pod Template Label 변경 후 Revision 3이 생성되는 차이 확인
 - `maxUnavailable: 2`에서 새 Pod 1개 생성 후 구 ReplicaSet을 `5 → 3`으로 줄인 Event 확인
 - 최종 Revision 3, 새 ReplicaSet 5/5, Pod 5개의 `experiment=max-unavailable-2` Label 확인
+- `delivery`, `stage`, `test`, `prod` Namespace 생성
+- `prod`와 `stage`에 같은 이름 `deploy-basic`을 독립적으로 생성
+- 존재하지 않는 `1.1` Image Tag로 `ErrImagePull`·`ImagePullBackOff` 재현
+- `stage` Image 변경 시 `stage` 안에서만 새 ReplicaSet이 생성되고 Rollout이 정지하는 과정 확인
+- 삭제된 `prod` Namespace를 가리키는 Manifest의 `NotFound` 오류 확인
+- `unoh03/boot:latest`로 교정 후 `prod`·`stage` 각각 Deployment 5/5와 Pod 5개 `Running` 확인
+- `prod`·`stage` Namespace 삭제 후 하위 Deployment·ReplicaSet·Pod 제거 확인
 
 ### 미완료·추가 증거 필요
 
 - 특정 Revision을 지정한 Rollback
 - `Recreate` 전략 Runtime 비교
-- PDF p.103 이후 Namespace 실습
 - Rollback 결과와 `deployment-basic.yml`의 원하는 Image 정렬
+- 실습용으로 생성한 빈 `delivery`, `test` Namespace 정리
 - 오늘 사용한 `00_eks` Terraform Destroy와 잔존 Resource 확인
 
 ## 다음 재시작 지점
 
-1. 현재 `deploy-rolling`은 Revision 3, `httpd:alpine3.21`, 5/5 Ready다.
-2. Strategy는 `maxUnavailable: 2`, `maxSurge: 1`이며 Pod에는 `experiment=max-unavailable-2` Label이 있다.
-3. Rolling Update Strategy 비교는 Runtime 증거까지 확보했다. 다음 범위는 강사 지시에 따른 후속 실습 또는 PDF p.103 Namespace다.
+1. PDF p.103-p.109 Namespace 실습은 Runtime 증거까지 완료했다.
+2. `default`, `prod`, `stage`에 사용자 Workload는 없으며 `prod`·`stage` Namespace도 삭제됐다.
+3. 사용자 생성 Namespace 중 `delivery`와 `test`만 빈 상태로 남아 있다.
+4. 다음 범위는 강사 지시에 따른 후속 Chapter이며, 수업 종료 후 Terraform Destroy와 잔존 Resource 확인이 필요하다.
 
 ## 관련 노트
 
@@ -1014,6 +1232,7 @@ Pod Label   experiment=max-unavailable-2
 - [Declarative Management of Kubernetes Objects](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/)
 - [kubectl diff](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_diff/)
 - [AWS - Rolling deployments](https://docs.aws.amazon.com/whitepapers/latest/overview-deployment-options/rolling-deployments.html)
+- [Kubernetes Namespaces](https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/)
 - [Bungie - Destiny 2 Outage and Rollback](https://www.bungie.net/7/en/News/article/48723)
 - [Git `revert`](https://git-scm.com/docs/git-revert)
 - [Git `restore`](https://git-scm.com/docs/git-restore)
