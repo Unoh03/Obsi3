@@ -17,16 +17,16 @@ parent_moc: "[[10_학습 노트/클라우드/00_클라우드_목차]]"
 
 - 원자료 지도: [[Source Digest/Kubernetes - Source Digest v1]]
 - 현재 실습: [[Lab_EKS Deployment 기초와 Rolling Update 실습]]
-- 현재 수업 범위: `Kubernetes.pdf` p.74 이후 Deployment Basic과 첫 Image Rolling Update
-- 확인됨: `deploy-basic`의 `httpd:alpine3.23 → 3.24` Rollout, Revision 1 ReplicaSet 0개와 Revision 2 ReplicaSet 5/5, `ScalingReplicaSet` Event
-- 다음 재시작: `kubectl rollout history deployment/deploy-basic`을 확인하고 강사 지시에 따라 직전 Revision Rollback을 검증한다.
+- 현재 수업 범위: `Kubernetes.pdf` p.74-p.85 Deployment Basic·Rolling Update·직전 Revision Rollback
+- 확인됨: `deploy-basic`의 `httpd:alpine3.23 → 3.24 → unoh03/boot:latest` Rollout과 직전 Template Rollback. Rollback 후 `httpd:alpine3.24`가 현재 Revision 4가 되었고 Deployment와 현재 ReplicaSet은 5/5, 이전 ReplicaSet은 0/0이다.
+- 다음 재시작: p.86 Change Cause Annotation을 기록하고 `--to-revision`으로 특정 Revision Rollback을 검증한다.
 
 ## 실습 계보
 
 - p.13-p.30 Pod 기본·Network·Label: [[Lab_EKS 첫 접속과 Pod 기초 실습]]
 - p.31-p.51 Scheduling·Node 운영: [[Lab_EKS Pod Scheduling과 Node 운영 실습]]
 - p.52-p.73 ReplicaSet: [[Lab_EKS ReplicaSet 기초 실습]]
-- p.74-현재 Deployment·Rolling Update: [[Lab_EKS Deployment 기초와 Rolling Update 실습]]
+- p.74-p.85 Deployment·Rolling Update·직전 Revision Rollback: [[Lab_EKS Deployment 기초와 Rolling Update 실습]]
 
 ## 핵심 개념
 

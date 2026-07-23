@@ -14,7 +14,7 @@ verified_on: 2026-07-23
 # EKS Deployment 기초와 Rolling Update 실습
 
 > [!summary]
-> `deploy-basic` Deployment를 생성하고 `httpd:alpine3.23`에서 `httpd:alpine3.24`로 Pod Template Image를 변경했다. Deployment가 새 ReplicaSet을 만들고 기존 ReplicaSet을 5→0으로 줄이면서 새 ReplicaSet을 0→5로 늘리는 Rolling Update를 확인했다. 현재 Runtime 검증은 첫 Image Rollout과 Revision 1·2 확인까지다.
+> `deploy-basic` Deployment를 생성하고 `httpd:alpine3.23 → httpd:alpine3.24 → unoh03/boot:latest`로 Pod Template Image를 변경했다. 각 변경에서 새 ReplicaSet과 Revision이 생겼고, `kubectl rollout undo`로 직전 `httpd:alpine3.24` Template을 현재 Revision 4로 되돌리는 과정까지 확인했다.
 
 > [!info] 선행 실습
 > Pod와 ReplicaSet의 직접 생성·Scale·Self-Healing·Template 변경 원리는 [[Lab_EKS ReplicaSet 기초 실습]]에 기록한다. 이 노트는 Deployment가 ReplicaSet과 Pod Revision을 관리하는 단계부터 담당한다.
@@ -249,7 +249,93 @@ Scaled down replica set deploy-basic-65c6c974d4 from 1 to 0
 
 이 순서는 Deployment가 새 ReplicaSet을 늘리고 기존 ReplicaSet을 줄이는 방식으로 Rolling Update를 수행했다는 직접 증거다.
 
-## 8. 시행착오와 해석
+## 8. 저장 전 Apply와 Revision 3
+
+`deployment-basic.yml`의 Image를 `unoh03/boot:latest`로 편집했지만, 처음에는 파일을 저장하지 않고 Apply했다.
+
+```console
+$ kubectl apply -f deployment-basic.yml
+deployment.apps/deploy-basic unchanged
+```
+
+`kubectl apply`는 Editor 화면의 미저장 내용을 읽지 않고 Disk에 실제 저장된 Manifest를 읽는다. 파일에는 여전히 `httpd:alpine3.24`가 있었으므로 Cluster의 현재 상태와 차이가 없었다.
+
+파일을 저장한 뒤 다시 Apply하자 변경이 반영됐다.
+
+```console
+$ kubectl apply -f deployment-basic.yml
+deployment.apps/deploy-basic configured
+```
+
+새 Pod Template으로 Revision 3 ReplicaSet이 생성됐다.
+
+```text
+Revision 1  deploy-basic-65c6c974d4  httpd:alpine3.23    0/0
+Revision 2  deploy-basic-5b8cb8c465  httpd:alpine3.24    0/0
+Revision 3  deploy-basic-d6c756b96   unoh03/boot:latest  5/5
+```
+
+```console
+$ kubectl rollout history deploy deploy-basic
+REVISION  CHANGE-CAUSE
+1         <none>
+2         <none>
+3         <none>
+```
+
+같은 Manifest를 다시 Apply한 `unchanged`는 새 Revision을 만들지 않았고, Pod Template Image가 실제로 변경된 `configured`에서만 Revision 3이 생겼다.
+
+## 9. 직전 Revision Rollback
+
+현재 Revision 3에서 별도 Revision 번호를 지정하지 않고 Rollback했다.
+
+```console
+$ kubectl rollout undo deploy deploy-basic
+deployment.apps/deploy-basic rolled back
+```
+
+`--to-revision`을 생략하면 직전 Pod Template으로 되돌린다. 이 환경에서는 Revision 2의 `httpd:alpine3.24`가 대상이었다.
+
+> [!tip] `--to-revision`이란?
+> `kubectl rollout undo deployment/deploy-basic --to-revision=1`처럼 사용하며, 직전 상태가 아니라 **지정한 Revision의 Pod Template**으로 Rollback한다. 숫자는 `kubectl rollout history deployment/deploy-basic`에서 먼저 확인한다. Rollback 후에는 그 Template이 다시 현재 상태가 되면서 새로운 Revision으로 기록된다.
+
+```console
+$ kubectl get deploy -o wide
+NAME          READY  UP-TO-DATE  AVAILABLE  IMAGE
+deploy-basic  5/5    5           5          httpd:alpine3.24
+```
+
+Deployment는 Revision 2에서 사용했던 기존 ReplicaSet을 다시 Scale Up하고 Revision 3 ReplicaSet을 Scale Down했다.
+
+```text
+deploy-basic-5b8cb8c465  httpd:alpine3.24    0→5
+deploy-basic-d6c756b96   unoh03/boot:latest  5→0
+```
+
+Rollback 후 최종 상태:
+
+```text
+Revision 1 RS  deploy-basic-65c6c974d4  0/0  httpd:alpine3.23
+현재 RS        deploy-basic-5b8cb8c465  5/5  httpd:alpine3.24
+이전 RS        deploy-basic-d6c756b96   0/0  unoh03/boot:latest
+```
+
+History는 다음처럼 바뀌었다.
+
+```console
+$ kubectl rollout history deploy deploy-basic
+REVISION  CHANGE-CAUSE
+1         <none>
+3         <none>
+4         <none>
+```
+
+Rollback은 “Revision 번호를 3에서 2로 낮추는 것”이 아니다. Revision 2의 Pod Template을 다시 현재 상태로 채택하는 **새 Rollout**이므로 현재 Revision은 4가 된다. 기존 `deploy-basic-5b8cb8c465` ReplicaSet을 재사용하지만 그 Template이 최신 Revision 4로 승격되어 History에서 2 대신 4로 표시된다.
+
+> [!warning] Manifest와 Cluster의 현재 상태가 다름
+> Rollback은 Cluster의 Deployment를 `httpd:alpine3.24`로 되돌렸지만 Bastion의 `deployment-basic.yml`에는 여전히 `unoh03/boot:latest`가 저장돼 있다. 이 파일을 그대로 다시 Apply하면 Rollback을 덮어쓰고 `unoh03/boot:latest`로 다시 Rollout될 수 있다. 원하는 최종 상태에 맞게 Manifest도 정렬해야 한다.
+
+## 10. 시행착오와 해석
 
 | 증상 | 원인 | 결과·조치 |
 |---|---|---|
@@ -257,6 +343,8 @@ Scaled down replica set deploy-basic-65c6c974d4 from 1 to 0
 | `kubectl get deploy -o wide \| grep IMAGES:` 출력 없음 | 실제 Header는 `IMAGES`이며 Colon이 없음 | 전체 출력을 보거나 `grep IMAGES` 사용 |
 | `show event too!`가 `command not found` | 공유 tmux에서 Codex에게 남긴 문장을 Shell도 명령으로 해석 | Cluster 영향 없음; `kubectl describe deployment deploy-basic`으로 Event 확인 |
 | Update 중 Image가 여섯 줄 표시 | 구 Version 1개와 신 Version 5개가 일시 공존 | Rolling Update와 Surge 과정의 정상 중간 상태 |
+| Image 편집 후 첫 Apply가 `unchanged` | Editor에서 변경했지만 파일을 저장하지 않음 | 저장 후 다시 Apply해 Revision 3 생성 |
+| `kubectl get deploy -o -wide` 오류 | 출력 형식은 `-wide`가 아니라 `wide` | `kubectl get deploy -o wide` 사용 |
 
 ## 검증 완료와 미완료
 
@@ -270,22 +358,27 @@ Scaled down replica set deploy-basic-65c6c974d4 from 1 to 0
 - Rollout History Revision 1·2 확인
 - `kubectl describe deployment`에서 기본 RollingUpdate Strategy·Condition·Scaling Event 확인
 - 최종 `READY 5 / UP-TO-DATE 5 / AVAILABLE 5`
+- 저장 전 Apply는 `unchanged`, 저장 후 Apply는 `configured`가 되는 차이 확인
+- `unoh03/boot:latest` Revision 3 생성과 세 ReplicaSet 계보 확인
+- `kubectl rollout undo`로 직전 `httpd:alpine3.24` Template Rollback
+- Rollback 시 기존 Revision 2 ReplicaSet을 재사용하면서 현재 Revision 4가 되는 동작 확인
+- Rollback 후 `READY 5 / UP-TO-DATE 5 / AVAILABLE 5`
 
 ### 미완료·추가 증거 필요
 
-- `kubectl rollout undo`를 이용한 직전 Revision Rollback
 - 특정 Revision을 지정한 Rollback과 Change Cause
 - `Recreate` 전략 Runtime 비교
 - `maxUnavailable`·`maxSurge` 값을 직접 변경한 Rolling Update
-- PDF p.85 이후 Rollback·Strategy·Namespace 실습
+- PDF p.86 이후 Change Cause·특정 Revision Rollback·Strategy·Namespace 실습
+- Rollback 결과와 `deployment-basic.yml`의 원하는 Image 정렬
 - 오늘 사용한 `00_eks` Terraform Destroy와 잔존 Resource 확인
 
 ## 다음 재시작 지점
 
-1. `kubectl rollout history deployment/deploy-basic`에서 Revision 1·2를 확인한다.
-2. 강사 지시에 따라 직전 Revision Rollback 명령을 실행한다.
-3. `kubectl describe deployment deploy-basic`에서 새 Rollout Event를 확인한다.
-4. 구 Version `httpd:alpine3.23` Pod가 다시 배포되는지 검증한다.
+1. `kubectl rollout history deployment/deploy-basic`에서 Revision 1·3·4를 확인한다.
+2. 현재 Cluster Image `httpd:alpine3.24`와 Manifest Image `unoh03/boot:latest`의 차이를 인지한다.
+3. 강사 지시에 따라 현재 Revision에 Change Cause Annotation을 기록한다.
+4. `--to-revision`으로 특정 Revision Rollback을 검증한다.
 
 ## 관련 노트
 
@@ -297,3 +390,4 @@ Scaled down replica set deploy-basic-65c6c974d4 from 1 to 0
 
 - [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 - [kubectl rollout](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/)
+- [kubectl rollout undo](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/kubectl_rollout_undo/)
