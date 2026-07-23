@@ -156,7 +156,6 @@ flowchart TD
     P --> Q["영향 계정을 완전히 식별하기 어려움"]
     Q --> R["전체 계정을 Backup으로 Rollback"]
 ```
-```
 
 ### 7. Rolling Update와 정확히 어떤 관계인가
 
