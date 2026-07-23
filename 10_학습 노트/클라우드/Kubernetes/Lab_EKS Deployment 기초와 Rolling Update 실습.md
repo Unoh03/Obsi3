@@ -28,30 +28,159 @@ verified_on: 2026-07-23
 
 이번 실습에서도 `httpd:alpine3.23 → 3.24` 교체 중 신 Version Pod 5개와 구 Version Pod 1개가 동시에 조회됐다. 이것은 오류가 아니라 Rolling Update의 정상 중간 상태다. 따라서 Application은 이 공존 구간을 견딜 수 있어야 한다.
 
-### 실제 사례: Destiny 2의 구·신 Server 상태 혼합
+## 실제 장애 사례: Destiny 2 계정 데이터 손상과 전체 Rollback
 
-2020년 2월 Bungie의 공식 장애 분석에 따르면, Destiny 2 Hotfix 배포 과정에서 일부 WorldServer가 시작 중 Crash한 뒤 수동으로 재시작됐다. 이 Server들은 Character Data 손상을 막는 최신 설정 Override와 Version 검증 절차를 적용하지 못했다.
+> [!info] 근거 분류
+> **② Authoritative external evidence** — [Bungie 개발팀의 공식 장애 분석](https://www.bungie.net/7/en/News/article/48723)을 초보자 관점에서 재구성했다.
 
-결과적으로 다음 두 상태가 동시에 운영됐다.
+이 사건의 핵심은 단순히 “배포한 Server가 고장났다”가 아니다.
+
+> **정상 동작하는 Server와 오래된 잘못된 동작을 하는 Server가 동시에 사용자 요청을 처리했고, 일반적인 Test와 Version 검증이 그 혼합 상태를 발견하지 못해 실제 계정 데이터가 손상된 사건**이다.
+
+### 1. 시작점: Inventory 정리 Code의 작은 수정
+
+Destiny 2는 Quest도 Currency·Material과 비슷한 Inventory Item으로 관리한다. 사용자가 Login할 때 Inventory를 정리하는 Code가 실행되며, Item별 보유 한도 같은 현재 규칙에 맞춰 데이터를 정돈한다.
+
+Bungie는 Quest 정렬 문제를 고치기 위해 일부 Quest의 Timestamp를 초기화하지 않도록 Code를 수정했다. 의도는 Quest 획득 순서를 보존하는 것이었지만, 이 변경에는 예상하지 못한 부작용이 있었다.
+
+```text
+의도
+Quest Timestamp 초기화를 막아 획득 순서를 보존
+
+실제 부작용
+Inventory 정리 과정의 더 넓은 부분까지 비활성화
+→ 중첩 Item의 최대 보유량을 잘못 계산
+→ 한도를 넘었다고 판단된 Currency·Material 손실
+```
+
+두 명의 담당자가 Code Review까지 수행했고 내부 Test에서도 이상 현상을 발견했지만, Test 도구의 문제라고 잘못 판단했다. 결국 버그는 2020년 1월 28일 Update `2.7.1`에 포함됐고, Bungie는 첫 번째 계정 데이터 Rollback을 수행했다.
+
+### 2. 빠른 복구를 위한 임시 설정 Override
+
+정식 실행 파일 전체를 새로 Build·배포하려면 시간이 걸린다. Bungie는 긴급 복구를 위해 WorldServer의 설정을 바꿔 문제가 있는 Character Data 처리 Code를 Override하고, Server를 재시작해 새 설정을 읽게 했다.
+
+```text
+문제가 있는 Game Code
+       ↓
+Server 설정 Override로 문제 동작을 우회
+       ↓
+WorldServer 재시작
+       ↓
+수정 설정을 읽은 Server는 정상 처리
+```
+
+이 방식은 빠르지만 중요한 전제가 있다.
+
+> **모든 WorldServer가 재시작하면서 같은 Override를 읽고, 그 적용 여부를 검증해야 한다.**
+
+정식 Code가 교체된 것이 아니라 실행 시 읽는 설정으로 동작을 덮었기 때문에, 설정을 놓친 Server는 다시 옛 버그를 실행할 수 있었다.
+
+### 3. 두 번째 장애: 일부 WorldServer만 옛 동작으로 복귀
+
+2020년 2월 11일 Hotfix `2.7.1.1`과 Crimson Days가 배포됐다. WorldServer가 대량으로 동시에 시작하면서 일부가 시작 단계에서 Crash했다. Bungie는 이전에도 이 현상을 겪었고, 당시에는 Crash한 Server를 수동으로 재시작하면 별다른 사용자 문제가 보이지 않았다.
+
+이번에는 달랐다. 수동 재시작된 일부 WorldServer가 다음 두 단계를 모두 건너뛰었다.
+
+1. Character Data 손상을 막는 설정 Override 적용
+2. 예상 Version·Configuration으로 실행 중인지 확인하는 검증
+
+Bungie는 당시 이 두 절차를 함께 우회하는 실행 경로가 존재할 수 없다고 생각했다. 하지만 실제로는 다음 두 종류의 Server가 동시에 서비스에 들어왔다.
 
 ```text
 대부분의 WorldServer
-→ 수정된 설정 적용
-→ 정상 동작
+→ 설정 Override 적용
+→ Version·Configuration 검증 통과
+→ 정상적인 Character Data 처리
 
-일부 WorldServer
-→ 이전의 잘못된 코드·설정 유지
-→ 접속한 사용자의 Currency·Material 손상
+일부 재시작 WorldServer
+→ 설정 Override 누락
+→ 검증 절차도 건너뜀
+→ 이전 버그가 있는 방식으로 Character Data 처리
 ```
 
-Test 계정은 우연히 정상 Server에만 연결되어 문제를 놓쳤다. 실제 사용자 일부가 오래된 Server를 거치며 Character Data가 손상됐고, Bungie는 서비스를 중단한 뒤 전체 Character Data를 Hotfix 이전 Backup 시점으로 복구했다.
+### 4. 왜 Test에서 발견하지 못했나
 
-> [!important] 이 사례의 정확한 경계
-> Bungie는 이 사고가 Kubernetes Rolling Update였다고 밝히지 않았다. 따라서 “Destiny 2가 Kubernetes Rollout에 실패했다”는 사례로 쓰면 안 된다.
->
-> 다만 **정상 Server와 오래된 Server가 섞여 Traffic을 처리할 때, 단순 Process Health만으로는 Version·Configuration·Data 호환성을 보장할 수 없다**는 점은 Rolling Update가 가진 동일한 운영 위험을 매우 분명하게 보여준다.
+Bungie의 운영 환경에는 수백 대의 Server가 있었다. 잘못된 상태의 Server는 전체 중 극히 일부였고, Test 계정으로 수행한 수동 Login은 우연히 모두 정상 Server에 연결됐다.
 
-### 실무에서 발생할 수 있는 문제
+```text
+Test 계정 몇 개
+→ 모두 정상 Server에 연결
+→ “배포 정상” 판정
+
+실제 사용자 수십만 명
+→ 일부는 잘못된 Server에 연결
+→ Currency·Material 손실
+```
+
+이것은 “Test를 하지 않았다”는 문제가 아니다. **표본 Test가 전체 Server Fleet의 상태 다양성을 확인하지 못한 문제**다. Process가 실행 중인지 확인하는 것만으로는 각 Server가 같은 Code·Configuration·Override를 적용했는지 알 수 없다.
+
+### 5. 왜 일부 계정만 고치지 않고 전체를 Rollback했나
+
+잘못된 WorldServer에 Character가 한 번이라도 접근되면 Currency·Material이 손상될 수 있었다. Bungie가 문제를 조사하는 동안 수십만 명의 사용자가 Game에 Login하거나 외부 Service를 통해 Character Data에 접근했다.
+
+어떤 계정이 어느 Server를 거쳤고 정확히 무엇을 잃었는지 완벽하게 식별하려다 한 건이라도 놓치면 손상이 남는다. Bungie는 이 위험을 감수하는 대신 모든 Character Data를 Hotfix 배포 직전인 오전 8시 30분 PST Backup으로 복구했다.
+
+그 결과:
+
+- 손상된 Currency·Material은 복구됐다.
+- 정상적으로 플레이한 사용자도 Backup 이후의 Quest 진행·획득 Item을 잃었다.
+- Application Server만 이전 Version으로 돌리는 Rollback으로는 부족했고, **이미 변경된 사용자 데이터까지 Backup으로 복원**해야 했다.
+
+### 6. 사건 전체 흐름
+
+```mermaid
+flowchart TD
+    A["Quest 정렬 Code 수정"] --> B["Inventory 정리 부작용 발생"]
+    B --> C["Update 2.7.1에서 Currency·Material 손실"]
+    C --> D["계정 데이터 1차 Rollback"]
+    D --> E["Server 설정 Override로 긴급 우회"]
+    E --> F["Hotfix 2.7.1.1 배포 중 일부 WorldServer Crash"]
+    F --> G["수동 재시작 과정에서 Override와 검증 누락"]
+    G --> H["정상 Server와 옛 동작 Server가 동시에 Traffic 처리"]
+    H --> I["Test 계정은 정상 Server에만 연결"]
+    I --> J["실제 사용자 일부의 Character Data 손상"]
+    J --> K["서비스 중단"]
+    K --> L["오전 8시 30분 Backup으로 전체 계정 복구"]
+```
+
+### 7. Rolling Update와 정확히 어떤 관계인가
+
+> [!important] 이 사건은 Kubernetes 사고로 확인된 것이 아니다
+> Bungie는 WorldServer가 Kubernetes에서 실행됐다거나 Kubernetes Rolling Update가 실패했다고 밝히지 않았다. 따라서 이 사례를 “Kubernetes 장애 사례”라고 부르면 안 된다.
+
+그럼에도 Rolling Update를 배울 때 중요한 이유는 운영 위험의 형태가 같기 때문이다.
+
+| Destiny 2 사건 | Kubernetes Rolling Update에서 대응하는 위험 |
+|---|---|
+| 정상 Server와 Override가 빠진 Server가 공존 | 구 Version Pod와 신 Version Pod가 함께 Traffic 처리 |
+| Server Process는 실행됐지만 동작 상태가 다름 | Pod가 `Running`이어도 Configuration·Migration·Cache 상태가 다를 수 있음 |
+| 일부 Server가 Version 검증을 우회 | 부실한 Readiness Probe가 준비되지 않은 Pod를 정상으로 판정 |
+| Test 계정이 정상 Server에만 연결 | 소수 Sample Request가 문제 Pod를 우연히 피함 |
+| Character Data가 이미 손상됨 | Application Rollback만으로 Database·외부 상태가 복구되지 않음 |
+| 전체 계정을 Backup으로 복원 | 별도의 Data Backup·복구 절차가 필요 |
+
+즉, Kubernetes가 새 Pod 5개를 모두 `Running`·`Ready`로 만들었다고 해도 다음은 별도로 검증해야 한다.
+
+- 모든 Pod가 기대한 Image Digest와 Configuration을 사용하는가?
+- 구·신 Version이 같은 Request와 Data를 안전하게 처리하는가?
+- 실제 Business 동작을 검사하는 Readiness·Smoke Test가 있는가?
+- 일부 Pod만 잘못됐을 때 탐지할 Metric과 Version 표시가 있는가?
+- 이미 변경된 Database·Queue·사용자 데이터를 어떻게 복구할 것인가?
+
+### 8. Bungie가 선택한 재발 방지 방향
+
+Bungie는 사후 대책으로 다음 방향을 제시했다.
+
+- Server가 예상하지 않은 Version으로 시작하지 못하도록 Hot Patch 절차에 보호 장치 추가
+- 일부 WorldServer가 시작 중 Crash하던 원인 수정
+- 설정 Override가 아니라 다음 Update의 실행 Code에 영구 수정 포함
+- Rollback과 복구 속도 개선
+- Server가 설정 Loading을 건너뛰는 경로 차단
+- Login 시 실행되는 중요 데이터 정리 Code의 보호와 개발 절차 강화
+
+Kubernetes 관점으로 번역하면 **Immutable Image, 배포 전후 Version 검증, 정확한 Probe, Fleet 전체 관찰, Data 복구 계획**을 함께 준비해야 한다는 뜻이다.
+
+## Rolling Update의 실무 위험과 대응
 
 | 상황 | 구·신 Version 공존 시 발생 가능한 문제 | 필요한 대응 |
 |---|---|---|
@@ -639,9 +768,9 @@ flowchart TD
 | `cannot restore slice from string` | `env`는 List인데 `"prod"` 문자열을 직접 지정 | 잘못된 `env`를 제거한 뒤 다시 Apply |
 | `kubectl delete deploy` 실패 | Resource Type만 지정하고 이름·`--all`을 생략 | 실습 Resource 전체 삭제 의도에 따라 `kubectl delete deploy --all` 사용 |
 
-## 13. `maxSurge: 3`과 `maxSurge: 1` 비교 실습
+## 13. `maxSurge`와 `maxUnavailable` 비교 실습
 
-마구잡이로 실행한 것처럼 보였지만, 실제로는 서로 다른 두 번의 Rolling Update 실험이었다.
+마구잡이로 실행한 것처럼 보였지만, 실제로는 설정 목적이 다른 세 번의 Rolling Update 실험이었다.
 
 ### 13.1 첫 실험: Replica 3개와 `maxSurge: 3`
 
@@ -741,12 +870,88 @@ Revision    2
 유지해야 하는 최소 Available Pod: 4
 ```
 
-### 13.4 두 실험의 차이
+### 13.4 세 번째 실험: `maxUnavailable: 2`
+
+앞의 두 실험은 `maxSurge`에 따른 추가 Pod 수를 비교했다. 이번에는 다음 설정으로 Update 중 사용할 수 없어도 되는 Pod 수를 직접 지정했다.
+
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 2
+    maxSurge: 1
+replicas: 5
+
+template:
+  metadata:
+    labels:
+      name: pod-basic
+      app: web
+      develop: spring-boot
+      experiment: max-unavailable-2
+```
+
+Apply 과정은 세 단계로 나뉘었다.
+
+```console
+$ kubectl apply -f deployment-rolling-update.yml
+deployment.apps/deploy-rolling configured
+
+$ kubectl apply -f deployment-rolling-update.yml
+deployment.apps/deploy-rolling unchanged
+
+$ kubectl apply -f deployment-rolling-update.yml
+deployment.apps/deploy-rolling configured
+```
+
+1. Strategy만 `maxUnavailable: 2`로 바꾼 첫 Apply는 Deployment 설정을 갱신했지만 Pod Template이 그대로여서 새 ReplicaSet을 만들지 않았다.
+2. 같은 Manifest를 다시 Apply하자 변경점이 없어 `unchanged`가 출력됐다.
+3. Pod Template에 `experiment: max-unavailable-2` Label을 추가한 뒤 Apply하자 새 Template Hash와 Revision 3이 생성됐다.
+
+> [!important] Strategy 변경만으로는 새 Rollout이 시작되지 않을 수 있다
+> Deployment의 새 ReplicaSet은 Pod Template이 바뀔 때 생성된다. 이번에는 Image를 그대로 유지하고 `experiment` Label만 추가해 새 Rollout을 일으켰다. 덕분에 Application Version 변경과 섞지 않고 Strategy의 동작에 집중할 수 있었다.
+
+실제 Event:
+
+```text
+신 ReplicaSet deploy-rolling-67b74846b9: 0 → 1
+구 ReplicaSet deploy-rolling-d559b9d46: 5 → 3
+신 ReplicaSet deploy-rolling-67b74846b9: 1 → 3
+구 ReplicaSet deploy-rolling-d559b9d46: 3 → 2
+신 ReplicaSet deploy-rolling-67b74846b9: 3 → 4
+구 ReplicaSet deploy-rolling-d559b9d46: 2 → 1
+신 ReplicaSet deploy-rolling-67b74846b9: 4 → 5
+구 ReplicaSet deploy-rolling-d559b9d46: 1 → 0
+```
+
+첫 새 Pod를 만든 직후 구 ReplicaSet을 `5 → 3`으로 한 번에 2개 줄였다. 이는 `maxUnavailable: 2`가 실제 Scale Down에 반영됐다는 직접 증거다.
+
+```text
+목표 Replica: 5
+동시 생성 가능한 최대 Pod: 6
+유지해야 하는 최소 Available Pod: 3
+```
+
+이 값은 Controller가 지켜야 하는 **경계**다. 매 순간 Pod 수를 반드시 최대 6개 또는 최소 3개까지 사용한다는 뜻은 아니다. 실제 Event에서는 Workload 상태에 맞춰 그 범위 안에서 교대했다.
+
+최종 상태:
+
+```text
+Deployment  deploy-rolling                 5/5
+Revision    3
+현재 RS     deploy-rolling-67b74846b9       5/5  httpd:alpine3.21
+이전 RS     deploy-rolling-d559b9d46        0/0  httpd:alpine3.21
+이전 RS     deploy-rolling-5b8cb8c465       0/0  httpd:alpine3.24
+Pod Label   experiment=max-unavailable-2
+```
+
+### 13.5 세 실험의 차이
 
 | 설정 | 교대 방식 | 장점 | 비용·주의 |
 |---|---|---|---|
 | Replica 3, `maxSurge: 3` | 새 Pod 3개를 먼저 모두 생성한 뒤 구 Pod 제거 | 교체가 빠르고 Available 수를 높게 유지 | 최대 6개를 수용할 Resource 필요 |
 | Replica 5, `maxSurge: 1` | 새 Pod와 구 Pod를 거의 1개씩 교대 | 추가 Resource 사용량이 작음 | 교체 단계가 많아지고 완료 시간이 늘 수 있음 |
+| Replica 5, `maxUnavailable: 2`, `maxSurge: 1` | 새 Pod 1개 생성 후 구 Pod를 한 번에 2개 줄이는 단계 허용 | Resource 사용과 배포 속도 사이의 절충 | 최소 Available이 3개까지 낮아질 수 있어 Traffic 처리 여유 확인 필요 |
 
 > [!note] `maxUnavailable` 주석 바로잡기
 > `maxUnavailable`은 “최소로 유지할 Pod 수”가 아니라 **Update 중 동시에 사용할 수 없어도 되는 최대 Pod 수**다. 최소 Available 수는 `replicas - maxUnavailable`로 해석한다.
@@ -774,21 +979,23 @@ Revision    2
 - `maxSurge: 3`에서 신 Pod 3개를 먼저 생성한 뒤 구 Pod를 제거한 Event 확인
 - Deployment 삭제·재생성 시 Revision History가 새 Revision 1로 시작하는 동작 확인
 - `maxSurge: 1`에서 `3.24 → 3.21`을 거의 한 Pod씩 교대한 Event와 최종 Revision 2 확인
+- Strategy만 변경했을 때 새 ReplicaSet이 생성되지 않고 Pod Template Label 변경 후 Revision 3이 생성되는 차이 확인
+- `maxUnavailable: 2`에서 새 Pod 1개 생성 후 구 ReplicaSet을 `5 → 3`으로 줄인 Event 확인
+- 최종 Revision 3, 새 ReplicaSet 5/5, Pod 5개의 `experiment=max-unavailable-2` Label 확인
 
 ### 미완료·추가 증거 필요
 
 - 특정 Revision을 지정한 Rollback
 - `Recreate` 전략 Runtime 비교
-- `maxUnavailable` 값을 명시적으로 변경한 Rolling Update
-- PDF p.86 이후 특정 Revision Rollback·Strategy·Namespace 실습
+- PDF p.103 이후 Namespace 실습
 - Rollback 결과와 `deployment-basic.yml`의 원하는 Image 정렬
 - 오늘 사용한 `00_eks` Terraform Destroy와 잔존 Resource 확인
 
 ## 다음 재시작 지점
 
-1. 현재 `deploy-rolling`은 Revision 2, `httpd:alpine3.21`, 5/5 Ready다.
-2. tmux 왼쪽 Pane은 `watch`, 오른쪽 Pane은 명령 입력용이다.
-3. 다음 강사 지시에 따라 `maxUnavailable` 명시 값 또는 후속 Deployment Strategy를 실습한다.
+1. 현재 `deploy-rolling`은 Revision 3, `httpd:alpine3.21`, 5/5 Ready다.
+2. Strategy는 `maxUnavailable: 2`, `maxSurge: 1`이며 Pod에는 `experiment=max-unavailable-2` Label이 있다.
+3. Rolling Update Strategy 비교는 Runtime 증거까지 확보했다. 다음 범위는 강사 지시에 따른 후속 실습 또는 PDF p.103 Namespace다.
 
 ## 관련 노트
 
