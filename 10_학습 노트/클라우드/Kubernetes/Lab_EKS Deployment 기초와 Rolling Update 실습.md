@@ -368,7 +368,210 @@ REVISION  CHANGE-CAUSE
 > [!example] Git으로 비유하면
 > `commit`이나 `push` 없이 배포 Revision에 설명 메모를 붙이는 것에 가깝다. 다만 Git의 Commit Message를 고치는 것과는 다르다. Git Commit Message 수정은 Commit 자체를 다시 만들어 Hash가 바뀌지만, Kubernetes Annotation 수정은 Workload 내용과 Revision 번호를 그대로 둔 채 Resource의 부가 Metadata만 바꾼다.
 
-## 11. 시행착오와 해석
+## 11. 실무 배포 Sequence
+
+실무에서는 **Git에 저장된 Manifest를 원하는 상태의 기준(Source of Truth)**으로 두고, Cluster는 그 Manifest가 배포된 결과로 취급하는 경우가 많다. 따라서 Image 변경, 변경 이유, 검증, 배포, 관찰, 복구를 하나의 흐름으로 관리한다.
+
+### 11.1 Manifest에서 Image와 변경 이유 수정
+
+Image와 `kubernetes.io/change-cause` Annotation을 같은 Manifest에 기록하면 무엇을 왜 배포했는지 Git에서 함께 추적할 수 있다.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-basic
+  annotations:
+    # 이번 배포의 변경 이유
+    kubernetes.io/change-cause: "httpd 3.23 → 3.24 / 보안 업데이트"
+spec:
+  template:
+    spec:
+      containers:
+        - name: web-containers
+          # 새로 배포할 Container Image
+          image: httpd:alpine3.24
+```
+
+> [!note] Annotation의 역할
+> Annotation은 배포 자체를 실행하는 명령이 아니다. Resource에 부가 설명을 저장하는 Metadata다. Image처럼 Pod Template의 실행 내용을 변경해야 새 Deployment Revision과 ReplicaSet이 생성된다.
+
+### 11.2 배포 전 검증
+
+```bash
+# Manifest를 API Server에 보내 문법·Resource Schema·Admission 규칙을 검증한다.
+# 실제 Cluster에는 저장하지 않는다.
+kubectl apply --dry-run=server -f deployment-basic.yml
+
+# 현재 Cluster 상태와 적용 예정 Manifest를 비교한다.
+# 실제로 변경될 필드를 Apply 전에 확인한다.
+kubectl diff -f deployment-basic.yml
+```
+
+> [!tip] `kubectl diff`의 종료 코드
+> 차이가 없으면 `0`, 적용할 차이가 있으면 `1`, 명령 자체가 실패하면 `1`보다 큰 값이 될 수 있다. 따라서 Script나 CI에서는 단순히 Non-zero만 보고 오류라고 판정하면 안 된다.
+
+### 11.3 Git에 변경 기록
+
+```bash
+# 현재 수정된 파일과 추적 상태를 확인한다.
+git status --short
+
+# Manifest에서 실제로 무엇이 바뀌었는지 확인한다.
+git diff -- deployment-basic.yml
+
+# 검토한 Manifest만 다음 Commit 대상으로 올린다.
+git add deployment-basic.yml
+
+# 변경 목적이 드러나도록 Commit을 만든다.
+git commit -m "Update deploy-basic to httpd alpine 3.24"
+
+# 공유 Repository에 Commit을 전송한다.
+git push
+```
+
+실무에서는 보통 `push → Pull Request Review → CI 검사 → CD 배포`가 이어진다. GitOps 환경에서는 배포 담당 Controller가 Git의 Manifest를 읽어 Cluster에 반영하므로 사용자가 직접 `kubectl apply`하지 않을 수도 있다.
+
+### 11.4 Cluster에 배포
+
+```bash
+# 검토가 끝난 Manifest를 Cluster에 반영한다.
+# Object가 없으면 생성하고, 있으면 차이만 갱신한다.
+kubectl apply -f deployment-basic.yml
+```
+
+### 11.5 Rollout 진행과 최종 상태 확인
+
+```bash
+# Deployment Rollout이 성공하거나 실패할 때까지 감시한다.
+# 무한 대기를 피하기 위해 5분 Timeout을 둔다.
+kubectl rollout status deployment/deploy-basic --timeout=5m
+
+# Deployment의 Replica 수와 실제 Image를 확인한다.
+kubectl get deployment deploy-basic -o wide
+
+# 새·이전 ReplicaSet의 DESIRED·CURRENT·READY 수를 확인한다.
+kubectl get replicasets
+
+# 실제 Pod의 상태·Node·Pod IP를 확인한다.
+kubectl get pods -o wide
+
+# 생성된 Revision과 CHANGE-CAUSE를 확인한다.
+kubectl rollout history deployment/deploy-basic
+```
+
+### 11.6 실패 원인 조사
+
+```bash
+# Deployment의 Strategy·Condition·ReplicaSet 교대 Event를 확인한다.
+kubectl describe deployment deploy-basic
+
+# Pod가 Pending·CrashLoopBackOff·ImagePullBackOff일 때 개별 원인을 확인한다.
+kubectl describe pod <문제-Pod-이름>
+
+# Namespace의 Event를 생성 시각 순서로 확인한다.
+kubectl get events --sort-by=.metadata.creationTimestamp
+```
+
+### 11.7 정상적인 Git 기반 복구
+
+문제를 만든 Commit을 찾아 그 Commit의 변경 효과를 취소한다.
+
+```bash
+# 최근 Commit과 변경 목적을 확인한다.
+git log --oneline
+
+# 문제를 만든 Commit B의 변경을 반대로 적용한 새 Commit C를 만든다.
+git revert <문제를-만든-Commit-ID>
+
+# Revert Commit을 공유 Repository로 전송한다.
+# 이후 CI/CD 또는 GitOps Controller가 복구된 Manifest를 배포한다.
+git push
+```
+
+> [!important] 왜 “이전 정상 Commit”이 아니라 “문제 Commit”을 지정하는가?
+> `git revert B`는 B의 Diff에서 추가된 내용은 제거하고 제거된 내용은 복원하는 역방향 Patch를 현재 상태에 적용한 뒤, 그 결과를 새 Commit C로 기록한다.
+>
+> ```text
+> A: 정상 상태
+> B: 문제 변경
+> C: B를 Revert한 새 Commit
+> ```
+>
+> B 뒤에 정상 변경이 더 있다면 `revert B`는 가능한 한 B의 영향만 취소하고 이후 변경은 유지한다. 단, 이후 변경이 B에 의존하면 Conflict가 생기거나 사람이 결과를 다시 검토해야 한다.
+
+> [!example] `git revert B`와 과거 파일 복원의 차이
+> `git restore --source=A -- deployment-basic.yml` 또는 과거 방식인 `git checkout A -- deployment-basic.yml`은 파일 전체를 A 시점의 Snapshot으로 바꾼다. 따라서 A 이후 그 파일에 추가된 정상 변경도 함께 사라질 수 있으며, 복원 결과를 별도로 Commit해야 한다.
+>
+> 반면 `git revert B`는 B라는 변경 하나를 취소한 새 Commit을 자동으로 남긴다. 최종 파일이 우연히 A와 같을 수는 있지만, 변경 이력과 이후 변경 보존 방식이 다르다.
+
+> [!warning] 공유 Branch에서 `git reset --hard A`를 기본 복구법으로 쓰지 않기
+> `reset --hard`는 Branch의 `HEAD`와 작업 파일을 과거 Commit으로 직접 이동시킨다. 이미 공유된 이력을 다시 쓰거나 로컬 변경을 잃을 수 있으므로, 공동 작업의 배포 복구에는 보통 새 이력을 남기는 `git revert`가 안전하다.
+
+### 11.8 긴급 Kubernetes Rollback
+
+서비스 장애를 우선 중단해야 한다면 Git 기반 배포를 기다리지 않고 Kubernetes Revision을 직접 되돌릴 수 있다.
+
+```bash
+# 사용 가능한 Revision과 변경 이유를 확인한다.
+kubectl rollout history deployment/deploy-basic
+
+# 지정한 Revision의 Pod Template을 새 현재 상태로 승격한다.
+kubectl rollout undo deployment/deploy-basic --to-revision=<정상-Revision>
+
+# Rollback Rollout이 끝났는지 확인한다.
+kubectl rollout status deployment/deploy-basic --timeout=5m
+
+# 현재 Image와 Replica 상태를 확인한다.
+kubectl get deployment deploy-basic -o wide
+kubectl get replicasets
+kubectl get pods -o wide
+```
+
+> [!danger] 긴급 Rollback 뒤에는 Git Manifest도 반드시 복구
+> `kubectl rollout undo`는 Cluster만 바꾼다. Git Manifest가 여전히 문제 Version이면 다음 CI/CD 또는 GitOps 동기화에서 문제 Version이 다시 배포될 수 있다.
+>
+> ```text
+> 긴급 Cluster Rollback
+> → 서비스 복구 확인
+> → 문제 Commit Revert 또는 Manifest 수정
+> → Git push
+> → CD 재배포
+> → Git Manifest와 Cluster 상태 일치 확인
+> ```
+
+### 11.9 전체 흐름
+
+```mermaid
+flowchart TD
+    A["Manifest의 Image와 Annotation 수정"] --> B["kubectl apply --dry-run=server"]
+    B --> C["kubectl diff로 적용 예정 변경 확인"]
+    C --> D{"사전 검증 정상?"}
+
+    D -- "아니오" --> A
+    D -- "예" --> E["Git commit · push · Pull Request"]
+    E --> F["CI 검사"]
+    F --> G{"CI 통과?"}
+
+    G -- "아니오" --> A
+    G -- "예" --> H["CD 또는 kubectl apply로 배포"]
+    H --> I["kubectl rollout status"]
+    I --> J{"Deployment 정상?"}
+
+    J -- "예" --> K["Deployment · ReplicaSet · Pod · History 확인"]
+    K --> L["배포 완료"]
+
+    J -- "아니오" --> M{"긴급 장애?"}
+    M -- "아니오" --> N["Manifest 수정 또는 문제 Commit Revert"]
+    N --> E
+
+    M -- "예" --> O["kubectl rollout undo --to-revision=N"]
+    O --> P["Rollout과 서비스 복구 확인"]
+    P --> Q["Git Manifest도 정상 상태로 복구"]
+    Q --> E
+```
+
+## 12. 시행착오와 해석
 
 | 증상 | 원인 | 결과·조치 |
 |---|---|---|
@@ -425,3 +628,8 @@ REVISION  CHANGE-CAUSE
 - [kubectl rollout](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/)
 - [kubectl rollout undo](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/kubectl_rollout_undo/)
 - [kubectl annotate](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_annotate/)
+- [Declarative Management of Kubernetes Objects](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/)
+- [kubectl diff](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_diff/)
+- [Git `revert`](https://git-scm.com/docs/git-revert)
+- [Git `restore`](https://git-scm.com/docs/git-restore)
+- [Git `reset`](https://git-scm.com/docs/git-reset)
