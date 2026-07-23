@@ -14,7 +14,7 @@ verified_on: 2026-07-23
 # EKS ReplicaSet 기초 실습
 
 > [!summary]
-> 첫 환경에서는 Scheduling 불가로 `DESIRED 5 / CURRENT 5 / READY 0`까지 확인했다. 다음 환경에서는 잘못된 Image와 Directory 전체 Apply 때문에 의도하지 않은 상태를 겪었지만, 그 과정에서 기존 Pod 편입·Cascade 삭제·ReplicaSet Self-Healing을 관찰하고 Image를 보정해 최종 `READY 5`를 확인했다.
+> 첫 환경에서는 Scheduling 불가로 `DESIRED 5 / CURRENT 5 / READY 0`까지 확인했다. 다음 환경에서는 잘못된 Image와 Directory 전체 Apply 때문에 의도하지 않은 상태를 겪었지만, 그 과정에서 기존 Pod 편입·Cascade 삭제·ReplicaSet Self-Healing을 관찰하고 Image를 보정해 `READY 5`를 확인했다. 이후 `5→3→0→3`으로 Scale하며 Pod 삭제와 새 Pod 생성을 확인했다.
 
 > [!info] 선행 실습
 > EKS 접속·Pod 기본은 [[Lab_EKS 첫 접속과 Pod 기초 실습]], Node Scheduling·Drain은 [[Lab_EKS Pod Scheduling과 Node 운영 실습]]에 기록한다.
@@ -202,6 +202,227 @@ rs-basic  5        5        5      unoh03/boot:latest
 
 다섯 Pod는 Worker Node 두 대에 분산되어 모두 `Running 1/1`이 됐다. 같은 시점에 너무 일찍 생성된 `rs-rollback`도 `DESIRED 3 / CURRENT 3 / READY 3` 상태로 남아 있었다.
 
+### 7. `5→3→0→3` Scale과 새 Pod 생성
+
+`rs-rollback`을 정리한 뒤 `rs-basic`만 남겨 Scale 동작을 확인했다.
+
+먼저 희망 수를 5개에서 3개로 줄였다.
+
+```console
+$ kubectl scale rs rs-basic --replicas=3
+replicaset.apps/rs-basic scaled
+```
+
+ReplicaSet은 초과한 Pod 두 개를 종료하고 세 개만 유지했다.
+
+```text
+rs-basic-46s7p   1/1   Running
+rs-basic-fbqf4   1/1   Running
+rs-basic-gkgb5   1/1   Running
+```
+
+다음으로 희망 수를 0으로 내렸다.
+
+```console
+$ kubectl scale rs rs-basic --replicas=0
+replicaset.apps/rs-basic scaled
+
+$ kubectl get pod -o wide
+No resources found in default namespace.
+```
+
+Pod는 모두 사라졌지만 ReplicaSet Object 자체는 삭제되지 않았다. 다시 희망 수를 3으로 올리자 이전 Pod를 되살리는 대신 Template으로 새 Pod 세 개를 생성했다.
+
+```console
+$ kubectl scale rs rs-basic --replicas=3
+replicaset.apps/rs-basic scaled
+```
+
+```text
+NAME             READY  STATUS   IMAGE
+rs-basic-6klxf   1/1    Running  unoh03/boot:latest
+rs-basic-rfpcj   1/1    Running  unoh03/boot:latest
+rs-basic-vcjn6   1/1    Running  unoh03/boot:latest
+```
+
+최종 ReplicaSet 상태는 다음과 같았다.
+
+```text
+DESIRED  CURRENT  READY
+3        3        3
+```
+
+Pod 이름이 Scale Down 전과 달라졌으므로, Scale Up은 종료된 Pod Process를 다시 시작하는 동작이 아니라 새 Pod Object를 만드는 동작임을 확인했다.
+
+### 8. `kubectl edit`으로 `replicas: 2` 저장
+
+```console
+$ kubectl edit rs rs-basic
+Edit cancelled, no changes made.
+```
+
+처음 두 번은 저장하지 않고 종료되어 Object가 바뀌지 않았다. 세 번째 시도에서는 `spec.replicas`를 3에서 2로 바꾸고 저장했다.
+
+```console
+$ kubectl edit rs rs-basic
+replicaset.apps/rs-basic edited
+```
+
+실제 조회에서도 Pod 한 개가 줄어 최종 상태가 일치했다.
+
+```text
+NAME      DESIRED  CURRENT  READY
+rs-basic  2        2        2
+```
+
+```text
+rs-basic-6klxf  1/1  Running
+rs-basic-rfpcj  1/1  Running
+```
+
+`kubectl scale`은 명령 한 줄로 `spec.replicas`를 바꾸고, `kubectl edit`은 API Server에 저장된 Object YAML을 Editor에서 직접 수정한다. 입력 방식은 다르지만 이번 실습에서는 둘 다 같은 `spec.replicas` 희망 상태를 변경했다.
+
+## ReplicaSet Template Update·수동 Rollback 해설 — PDF p.63-p.73
+
+> [!warning] 검증 경계
+> 아래 내용은 원본 PDF p.63-p.73과 현재 Bastion의 `rs-update-rollback.yml`을 대조해 정리한 강의 해설이다. 현재 Cluster에는 `rs-rollback`이 존재하지 않으므로 Apply·Image 변경·Pod 교체 결과는 아직 이 환경에서 실행 검증하지 않았다.
+
+### 1. 이 실습에서 확인하려는 질문
+
+```text
+ReplicaSet의 Pod Template을 수정하면
+이미 실행 중인 Pod도 자동으로 바뀌는가?
+```
+
+결론부터 말하면 **바뀌지 않는다.** ReplicaSet의 Template은 현재 Pod를 수정하는 명령서가 아니라, 앞으로 Pod가 부족할 때 새로 만들 Pod의 설계도다.
+
+```text
+기존 Pod = 만들어질 당시 Template을 유지
+새 Pod   = 변경된 최신 Template으로 생성
+```
+
+### 2. PDF와 현재 강사 배포본의 차이
+
+| 구분 | PDF p.63-p.73 | 현재 Bastion Manifest |
+|---|---|---|
+| ReplicaSet | `rs-rollback` | `rs-rollback` |
+| replicas | `3` | `3` |
+| Selector | `app=node-app` | `app=http-app` |
+| Container | `node-con` | `web-container` |
+| Image 변경 예시 | `node:16-alpine3.15 → node:18-alpine3.15` | 주석상 `httpd:alpine3.20 → httpd:alpine3.21` |
+| 현재 파일 Image | PDF 단계에 따라 변경 | `httpd:alpine3.21` |
+
+Image 이름은 달라도 학습 원리는 같다. 현재 Manifest는 다음 상태다.
+
+```yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: rs-rollback
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: http-app
+  template:
+    metadata:
+      labels:
+        app: http-app
+    spec:
+      containers:
+        - name: web-container
+          image: httpd:alpine3.21
+          ports:
+            - containerPort: 80
+```
+
+### 3. Template Label을 바꿔도 기존 Pod는 그대로
+
+PDF는 Template에 다음 Label을 추가한다.
+
+```yaml
+labels:
+  app: node-app
+  version: v1
+  env: prod
+```
+
+Manifest를 다시 Apply해도 기존 Pod 세 개에는 새 Label이 생기지 않는다. 이후 기존 Pod 하나를 삭제하면 ReplicaSet이 최신 Template으로 대체 Pod 하나를 만들고, **그 새 Pod에만** `version=v1`, `env=prod`가 붙는다.
+
+```text
+기존 Pod 2개: app=node-app
+새 Pod 1개:   app=node-app, version=v1, env=prod
+```
+
+이 때문에 하나의 ReplicaSet 안에서도 생성 시점에 따라 Pod의 부가 Label이나 Image가 서로 다를 수 있다.
+
+### 4. Template Image를 바꿔도 기존 Pod는 그대로
+
+PDF에서는 Image를 다음처럼 바꾼다.
+
+```text
+node:16-alpine3.15
+→ node:18-alpine3.15
+```
+
+Apply 뒤 ReplicaSet 조회에는 새 Image가 보이지만, 이미 Running 중인 Pod를 `describe`하면 계속 이전 Image를 사용한다.
+
+```text
+ReplicaSet Template: node:18-alpine3.15
+기존 Pod Image:      node:16-alpine3.15
+```
+
+새 Image를 모든 Pod에 적용하려고 PDF에서는 `replicas: 0`으로 기존 Pod를 전부 없앤 뒤 다시 `replicas: 3`으로 올린다.
+
+```text
+Scale 3→0: 기존 Pod 전부 종료
+Scale 0→3: 최신 Template으로 새 Pod 3개 생성
+```
+
+이 방식은 이해하기 쉽지만, 실제 서비스에서는 Pod가 0개가 되는 중단 시간이 발생할 수 있다.
+
+### 5. PDF의 Rollback은 자동 Rollback이 아니다
+
+PDF는 `kubectl set image`로 ReplicaSet Template을 이전 Image로 되돌린다.
+
+```bash
+kubectl set image rs/rs-rollback node-con=node:16-alpine3.15
+```
+
+이 명령도 기존 Pod를 즉시 바꾸지 않는다. 그래서 기존 Pod의 Selector 핵심 Label을 다른 값으로 변경해 ReplicaSet 관리 대상에서 제외한다.
+
+```text
+기존 Pod: app=node-app
+Label 변경: app=delay-app
+```
+
+ReplicaSet 관점에서는 관리 대상 Pod가 3개에서 0개로 줄어든다.
+
+```text
+현재 0 < 희망 3
+→ 이전 Image가 들어 있는 최신 Template으로 새 Pod 3개 생성
+```
+
+그 뒤 `app=delay-app`으로 빠져나간 기존 Pod 세 개를 수동 삭제한다.
+
+```text
+Template을 이전 Image로 변경
+→ 기존 Pod를 Selector 밖으로 분리
+→ ReplicaSet이 이전 Image Pod를 새로 생성
+→ 분리한 기존 Pod 삭제
+```
+
+강의자료에서는 이를 Rollback Test라고 부르지만, ReplicaSet이 Version History를 기억했다가 자동 복원한 것은 아니다. 사람이 이전 Image를 지정하고 Pod를 교체한 **수동 Rollback**이다. 실제 배포에서는 보통 Deployment가 ReplicaSet들을 관리하면서 Rolling Update와 Revision Rollback을 제공한다.
+
+### 6. 이 구간에서 기억할 것
+
+```text
+ReplicaSet은 Pod 수를 유지한다.
+ReplicaSet은 기존 Pod 내용을 자동 업데이트하지 않는다.
+Template 변경은 이후 새로 생성되는 Pod부터 적용된다.
+직접 ReplicaSet을 이용한 전체 교체는 서비스 중단이나 혼합 Version을 만들 수 있다.
+```
+
 > [!tip] 이번 시행착오의 핵심
 > 성공한 Apply 한 번보다, Controller를 남긴 채 Pod만 삭제했을 때 다시 살아나는 과정을 통해 ReplicaSet의 역할을 더 직접적으로 확인했다. ReplicaSet을 다룰 때는 **Pod 상태뿐 아니라 어떤 Controller가 어떤 Selector와 희망 수를 가지고 있는지** 함께 확인해야 한다.
 
@@ -247,6 +468,7 @@ Destroy complete! Resources: 84 destroyed.
 | `rs-basic`이 `CURRENT 5 / READY 1` | 기존 `pod-basic` 1개를 Selector로 편입했고, 새 Pod 4개는 존재하지 않는 강사 Image를 사용 | `rs-basic.yml`을 `unoh03/boot:latest`로 보정하고 Controller를 재생성해 `READY 5` 확인 |
 | `kubectl delete pod --all` 뒤 `rs-rollback-*`이 다시 생김 | `rs-rollback` Controller가 `replicas: 3`을 계속 유지 | 완전히 제거하려면 `kubectl delete rs rs-rollback` 또는 의도적으로 `replicas: 0` 사용 |
 | Basic 실습 중 `rs-rollback`까지 생성됨 | `kubectl apply -f .`이 `replicasets/`의 세 Manifest를 전부 적용 | 실습 범위를 제한할 때는 정확한 파일명 지정 |
+| 첫 두 `kubectl edit rs rs-basic` 뒤 변화 없음 | `Edit cancelled, no changes made`로 종료 | 세 번째 시도에서 `spec.replicas: 2`를 저장하고 `2/2/2` 확인 |
 
 ## 검증 완료와 미완료
 
@@ -261,22 +483,27 @@ Destroy complete! Resources: 84 destroyed.
 - Controller를 둔 채 Pod만 삭제하면 희망 수만큼 다시 생성되는 Self-Healing 확인
 - 기본 ReplicaSet 삭제 시 관리 Pod가 함께 삭제되는 Cascade 동작 확인
 - `unoh03/boot:latest` 보정 후 `DESIRED 5 / CURRENT 5 / READY 5` 확인
+- `kubectl scale`로 `5→3→0→3` 변경 확인
+- Scale Down 시 초과 Pod 삭제, Scale Up 시 새로운 이름의 Pod 생성 확인
+- 최종 `DESIRED 3 / CURRENT 3 / READY 3` 확인
+- `kubectl edit`으로 `spec.replicas: 2`를 저장하고 `DESIRED 2 / CURRENT 2 / READY 2` 확인
+- PDF p.63-p.73 Template Update·수동 Rollback의 단계와 현재 강사 Manifest 차이 정리
 - `00_eks` Destroy: 84개 Resource 삭제, State 0
 - `00_eks` 주요 EKS·VPC·EC2·ASG·ENI·IAM·OIDC 잔존 없음
 
 ### 미완료·추가 증거 필요
 
 - 개별 `rs-basic` Pod 하나를 삭제한 뒤 대체 Pod 1개가 생성되는 최소 Self-Healing 실험
-- Scale Up·Down과 Template 변경·수동 Rollback
+- 현재 `rs-update-rollback.yml`을 이용한 Template 변경·수동 Rollback의 Runtime 검증
 - 오늘 사용한 현재 `00_eks` 환경의 Terraform Destroy·State 0·주요 잔존 Resource 확인
 - AWS 계정 전체 Region·서비스의 비용 Resource 전수 확인
 
 ## 다음 재시작 지점
 
-1. `rs-basic`이 계속 `DESIRED 5 / CURRENT 5 / READY 5`인지 확인한다.
-2. `rs-basic-*` Pod 한 개만 삭제한다.
-3. 새로운 이름의 대체 Pod 한 개가 생성되어 다시 `READY 5`가 되는지 확인한다.
-4. 강의 순서에 따라 Scale과 Template Update 실습으로 진행한다.
+1. `rs-basic`이 계속 `DESIRED 2 / CURRENT 2 / READY 2`인지 확인한다.
+2. 강사 지시에 따라 Basic 실습 Resource를 정리한다.
+3. `rs-update-rollback.yml`의 시작 Image와 변경 목표를 확인한다.
+4. Template 변경 전후의 ReplicaSet Image와 기존 Pod Image를 각각 조회한다.
 
 ## 관련 노트
 
