@@ -16,10 +16,10 @@ parent_moc: "[[10_학습 노트/클라우드/00_클라우드_목차]]"
 ## 현재 재시작 지점
 
 - 원자료 지도: [[Source Digest/Kubernetes - Source Digest v1]]
-- 현재 실습: [[Lab_EKS Deployment 기초와 Rolling Update 실습]]
-- 현재 수업 범위: `Kubernetes.pdf` p.74-p.85 Deployment Basic·Rolling Update·직전 Revision Rollback
-- 확인됨: `deploy-basic`의 `httpd:alpine3.23 → 3.24 → unoh03/boot:latest` Rollout과 직전 Template Rollback. Rollback 후 `httpd:alpine3.24`가 현재 Revision 4가 되었고 Deployment와 현재 ReplicaSet은 5/5, 이전 ReplicaSet은 0/0이다.
-- 다음 재시작: p.86 Change Cause Annotation을 기록하고 `--to-revision`으로 특정 Revision Rollback을 검증한다.
+- 현재 실습: [[Lab_EKS Service 기초 실습]]
+- 현재 수업 범위: Chapter 06 Service의 ClusterIP Runtime까지
+- 확인됨: `delivery` Namespace의 `cluster-svc`가 selector와 일치하는 Pod 3개를 EndpointSlice에 등록했다. ClusterIP와 같은 Namespace의 DNS 이름으로 `HTTP 200`을 받았고, 반복 요청에서 복수 Backend가 응답했다.
+- 다음 재시작: PDF p.121 흐름에 따라 다른 Namespace에서 `cluster-svc.delivery` 또는 FQDN 접근을 확인한 뒤 p.122 NodePort로 진행한다.
 
 ## 실습 계보
 
@@ -27,6 +27,7 @@ parent_moc: "[[10_학습 노트/클라우드/00_클라우드_목차]]"
 - p.31-p.51 Scheduling·Node 운영: [[Lab_EKS Pod Scheduling과 Node 운영 실습]]
 - p.52-p.73 ReplicaSet: [[Lab_EKS ReplicaSet 기초 실습]]
 - p.74-p.85 Deployment·Rolling Update·직전 Revision Rollback: [[Lab_EKS Deployment 기초와 Rolling Update 실습]]
+- Chapter 06 ClusterIP Service: [[Lab_EKS Service 기초 실습]]
 
 ## 핵심 개념
 
