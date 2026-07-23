@@ -25,7 +25,7 @@ verified_on: 2026-07-22
 - `replicas` 희망 상태가 Pod Object 생성으로 이어지는 과정을 관찰한다.
 - 다음 환경에서 `READY 5`와 Pod 삭제 후 Self-Healing을 검증한다.
 
-## EX.1 ReplicaSet Basic 시작
+## ReplicaSet EX.1 — Basic
 
 오늘 마지막으로 Bastion에 ReplicaSet 실습 Directory와 `rs-basic.yml`을 직접 만들었다.
 
