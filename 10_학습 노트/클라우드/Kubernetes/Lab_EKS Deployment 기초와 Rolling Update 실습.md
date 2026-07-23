@@ -19,6 +19,59 @@ verified_on: 2026-07-23
 > [!info] 선행 실습
 > Pod와 ReplicaSet의 직접 생성·Scale·Self-Healing·Template 변경 원리는 [[Lab_EKS ReplicaSet 기초 실습]]에 기록한다. 이 노트는 Deployment가 ReplicaSet과 Pod Revision을 관리하는 단계부터 담당한다.
 
+## Rolling Update를 배우기 전에: 만능이 아니다
+
+> [!danger] Rolling Update는 “무중단 교체 방식”이지 “안전 보장 장치”가 아니다
+> Kubernetes는 구 Version Pod를 조금씩 줄이고 신 Version Pod를 조금씩 늘린다. 그러나 두 Version의 Application·API·Database Schema·Session·Message 형식이 서로 호환되는지까지 판단하지 않는다.
+>
+> **구 Version과 신 Version이 동시에 요청을 처리해도 안전하다는 전제가 깨지면, Pod가 모두 `Running`·`Ready`여도 서비스 오류나 데이터 손상이 발생할 수 있다.**
+
+이번 실습에서도 `httpd:alpine3.23 → 3.24` 교체 중 신 Version Pod 5개와 구 Version Pod 1개가 동시에 조회됐다. 이것은 오류가 아니라 Rolling Update의 정상 중간 상태다. 따라서 Application은 이 공존 구간을 견딜 수 있어야 한다.
+
+### 실제 사례: Destiny 2의 구·신 Server 상태 혼합
+
+2020년 2월 Bungie의 공식 장애 분석에 따르면, Destiny 2 Hotfix 배포 과정에서 일부 WorldServer가 시작 중 Crash한 뒤 수동으로 재시작됐다. 이 Server들은 Character Data 손상을 막는 최신 설정 Override와 Version 검증 절차를 적용하지 못했다.
+
+결과적으로 다음 두 상태가 동시에 운영됐다.
+
+```text
+대부분의 WorldServer
+→ 수정된 설정 적용
+→ 정상 동작
+
+일부 WorldServer
+→ 이전의 잘못된 코드·설정 유지
+→ 접속한 사용자의 Currency·Material 손상
+```
+
+Test 계정은 우연히 정상 Server에만 연결되어 문제를 놓쳤다. 실제 사용자 일부가 오래된 Server를 거치며 Character Data가 손상됐고, Bungie는 서비스를 중단한 뒤 전체 Character Data를 Hotfix 이전 Backup 시점으로 복구했다.
+
+> [!important] 이 사례의 정확한 경계
+> Bungie는 이 사고가 Kubernetes Rolling Update였다고 밝히지 않았다. 따라서 “Destiny 2가 Kubernetes Rollout에 실패했다”는 사례로 쓰면 안 된다.
+>
+> 다만 **정상 Server와 오래된 Server가 섞여 Traffic을 처리할 때, 단순 Process Health만으로는 Version·Configuration·Data 호환성을 보장할 수 없다**는 점은 Rolling Update가 가진 동일한 운영 위험을 매우 분명하게 보여준다.
+
+### 실무에서 발생할 수 있는 문제
+
+| 상황 | 구·신 Version 공존 시 발생 가능한 문제 | 필요한 대응 |
+|---|---|---|
+| Database Schema 변경 | 신 Version이 Column을 삭제·이름 변경하면 구 Version Query가 실패 | 먼저 새 Column을 추가하고 양쪽 Version이 호환되게 한 뒤, 구 Version 제거 후 옛 Column 삭제 |
+| API·Message 형식 변경 | 신 Version이 만든 Response·Event를 구 Version이 해석하지 못함 | Versioning, 하위 호환, Contract Test |
+| Session·인증 형식 변경 | 요청이 구·신 Pod를 오갈 때 Cookie·Token·Session을 서로 읽지 못해 `401`·Login 반복 | 공통 Key와 호환 가능한 Session 형식 유지 |
+| 잘못된 Readiness Probe | Process만 켜졌지만 Cache Warm-up·외부 연결·Migration이 끝나지 않은 Pod에 Traffic 전달 | 실제 요청 처리 가능 여부를 확인하는 Readiness·Startup Probe 설계 |
+| Resource 여유 부족 | `maxSurge`로 만든 추가 Pod를 배치할 CPU·Memory가 없어 Rollout 정지 | 배포 전 여유 Capacity와 Scheduling 조건 확인 |
+| 상태·데이터 변경 | Application Pod만 Rollback해도 이미 변경된 DB·외부 상태는 자동 복구되지 않음 | Backup, 호환 가능한 Migration, Roll-forward·복구 절차 준비 |
+| 단일 Worker·중복 처리 민감 작업 | 구·신 Worker가 같은 Queue Message를 서로 다른 방식으로 처리 | Leader Election, 중복 방지, 작업 Version 분리 |
+
+> [!tip] Rolling Update가 적합한 조건
+> - 구·신 Version이 동시에 실행돼도 호환된다.
+> - Readiness가 “실제로 요청을 처리할 준비”를 정확히 판정한다.
+> - `maxSurge`를 감당할 Resource 여유가 있다.
+> - 오류율·Latency·Business Metric을 관찰할 수 있다.
+> - Application뿐 아니라 Database·Message·외부 상태까지 복구 계획이 있다.
+
+위 조건을 만족하지 못하면 Blue/Green, Canary, 점검 시간 배포, 단계적 Database Migration 등을 검토한다. `Recreate`는 구·신 Pod 공존을 없애지만 Downtime이 생기며, 이미 변경된 Database나 외부 상태까지 자동으로 되돌리지는 않는다.
+
 ## 목표
 
 - Deployment → ReplicaSet → Pod의 소유·관리 계층을 확인한다.
@@ -625,11 +678,15 @@ flowchart TD
 ## 공식 참고
 
 - [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
+- [Update a Deployment Without Downtime](https://kubernetes.io/docs/tasks/run-application/update-deployment-rolling/)
+- [Liveness, Readiness, and Startup Probes](https://kubernetes.io/docs/concepts/workloads/pods/probes/)
 - [kubectl rollout](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/)
 - [kubectl rollout undo](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/kubectl_rollout_undo/)
 - [kubectl annotate](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_annotate/)
 - [Declarative Management of Kubernetes Objects](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/declarative-config/)
 - [kubectl diff](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_diff/)
+- [AWS - Rolling deployments](https://docs.aws.amazon.com/whitepapers/latest/overview-deployment-options/rolling-deployments.html)
+- [Bungie - Destiny 2 Outage and Rollback](https://www.bungie.net/7/en/News/article/48723)
 - [Git `revert`](https://git-scm.com/docs/git-revert)
 - [Git `restore`](https://git-scm.com/docs/git-restore)
 - [Git `reset`](https://git-scm.com/docs/git-reset)
