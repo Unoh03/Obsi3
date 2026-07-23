@@ -335,7 +335,40 @@ Rollback은 “Revision 번호를 3에서 2로 낮추는 것”이 아니다. Re
 > [!warning] Manifest와 Cluster의 현재 상태가 다름
 > Rollback은 Cluster의 Deployment를 `httpd:alpine3.24`로 되돌렸지만 Bastion의 `deployment-basic.yml`에는 여전히 `unoh03/boot:latest`가 저장돼 있다. 이 파일을 그대로 다시 Apply하면 Rollback을 덮어쓰고 `unoh03/boot:latest`로 다시 Rollout될 수 있다. 원하는 최종 상태에 맞게 Manifest도 정렬해야 한다.
 
-## 10. 시행착오와 해석
+## 10. Change Cause Annotation
+
+현재 Revision 4에 변경 이유를 기록했다.
+
+```console
+$ kubectl annotate deploy deploy-basic kubernetes.io/change-cause="3.24"
+deployment.apps/deploy-basic annotated
+
+$ kubectl rollout history deploy deploy-basic
+REVISION  CHANGE-CAUSE
+1         <none>
+3         <none>
+4         3.24
+```
+
+같은 Annotation의 값을 `unoh03`으로 다시 지정하자 Revision 번호는 그대로이고 설명만 바뀌었다.
+
+```console
+$ kubectl annotate deploy deploy-basic kubernetes.io/change-cause="unoh03"
+deployment.apps/deploy-basic annotated
+
+$ kubectl rollout history deploy deploy-basic
+REVISION  CHANGE-CAUSE
+1         <none>
+3         <none>
+4         unoh03
+```
+
+`annotate`는 Pod Template을 바꾸지 않으므로 새 ReplicaSet이나 새 Rollout을 만들지 않았다. 여기서는 현재 Revision 4의 `CHANGE-CAUSE` 설명만 갱신됐으며, 같은 Key를 다시 지정한 마지막 값이 보였다.
+
+> [!example] Git으로 비유하면
+> `commit`이나 `push` 없이 배포 Revision에 설명 메모를 붙이는 것에 가깝다. 다만 Git의 Commit Message를 고치는 것과는 다르다. Git Commit Message 수정은 Commit 자체를 다시 만들어 Hash가 바뀌지만, Kubernetes Annotation 수정은 Workload 내용과 Revision 번호를 그대로 둔 채 Resource의 부가 Metadata만 바꾼다.
+
+## 11. 시행착오와 해석
 
 | 증상 | 원인 | 결과·조치 |
 |---|---|---|
@@ -363,13 +396,14 @@ Rollback은 “Revision 번호를 3에서 2로 낮추는 것”이 아니다. Re
 - `kubectl rollout undo`로 직전 `httpd:alpine3.24` Template Rollback
 - Rollback 시 기존 Revision 2 ReplicaSet을 재사용하면서 현재 Revision 4가 되는 동작 확인
 - Rollback 후 `READY 5 / UP-TO-DATE 5 / AVAILABLE 5`
+- `kubernetes.io/change-cause` Annotation을 변경해 Revision 4의 `CHANGE-CAUSE`가 바뀌고 새 Revision은 생기지 않는 동작 확인
 
 ### 미완료·추가 증거 필요
 
-- 특정 Revision을 지정한 Rollback과 Change Cause
+- 특정 Revision을 지정한 Rollback
 - `Recreate` 전략 Runtime 비교
 - `maxUnavailable`·`maxSurge` 값을 직접 변경한 Rolling Update
-- PDF p.86 이후 Change Cause·특정 Revision Rollback·Strategy·Namespace 실습
+- PDF p.86 이후 특정 Revision Rollback·Strategy·Namespace 실습
 - Rollback 결과와 `deployment-basic.yml`의 원하는 Image 정렬
 - 오늘 사용한 `00_eks` Terraform Destroy와 잔존 Resource 확인
 
@@ -377,8 +411,7 @@ Rollback은 “Revision 번호를 3에서 2로 낮추는 것”이 아니다. Re
 
 1. `kubectl rollout history deployment/deploy-basic`에서 Revision 1·3·4를 확인한다.
 2. 현재 Cluster Image `httpd:alpine3.24`와 Manifest Image `unoh03/boot:latest`의 차이를 인지한다.
-3. 강사 지시에 따라 현재 Revision에 Change Cause Annotation을 기록한다.
-4. `--to-revision`으로 특정 Revision Rollback을 검증한다.
+3. `--to-revision`으로 특정 Revision Rollback을 검증한다.
 
 ## 관련 노트
 
@@ -391,3 +424,4 @@ Rollback은 “Revision 번호를 3에서 2로 낮추는 것”이 아니다. Re
 - [Deployments](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/)
 - [kubectl rollout](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/)
 - [kubectl rollout undo](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/kubectl_rollout_undo/)
+- [kubectl annotate](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_annotate/)
