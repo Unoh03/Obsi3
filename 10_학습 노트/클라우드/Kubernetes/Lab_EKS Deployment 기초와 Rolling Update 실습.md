@@ -634,6 +634,124 @@ flowchart TD
 | Update 중 Image가 여섯 줄 표시 | 구 Version 1개와 신 Version 5개가 일시 공존 | Rolling Update와 Surge 과정의 정상 중간 상태 |
 | Image 편집 후 첫 Apply가 `unchanged` | Editor에서 변경했지만 파일을 저장하지 않음 | 저장 후 다시 Apply해 Revision 3 생성 |
 | `kubectl get deploy -o -wide` 오류 | 출력 형식은 `-wide`가 아니라 `wide` | `kubectl get deploy -o wide` 사용 |
+| `deployment/deploy-rollingupdate.yml`, `deploy-rollingupdate.yml`을 찾지 못함 | 실제 파일명은 `deployment-rolling-update.yml` | 현재 Directory의 실제 파일명으로 Apply |
+| `kubectl describr deploy` 실패 | `describe` 철자 오타 | `kubectl describe deploy` 사용 |
+| `cannot restore slice from string` | `env`는 List인데 `"prod"` 문자열을 직접 지정 | 잘못된 `env`를 제거한 뒤 다시 Apply |
+| `kubectl delete deploy` 실패 | Resource Type만 지정하고 이름·`--all`을 생략 | 실습 Resource 전체 삭제 의도에 따라 `kubectl delete deploy --all` 사용 |
+
+## 13. `maxSurge: 3`과 `maxSurge: 1` 비교 실습
+
+마구잡이로 실행한 것처럼 보였지만, 실제로는 서로 다른 두 번의 Rolling Update 실험이었다.
+
+### 13.1 첫 실험: Replica 3개와 `maxSurge: 3`
+
+초기 설정:
+
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 3
+replicas: 3
+```
+
+Revision 1은 `httpd:alpine3.21` Pod 3개였다. Image를 `httpd:alpine3.24`로 변경해 Apply하자 Revision 2 ReplicaSet을 먼저 0→3으로 늘린 후 구 ReplicaSet을 3→2→1→0으로 줄였다.
+
+```text
+신 ReplicaSet: 0 → 3
+구 ReplicaSet: 3 → 2 → 1 → 0
+```
+
+`maxSurge: 3`은 목표 Replica 3개를 초과해 임시 Pod를 최대 3개 추가할 수 있다는 뜻이다. 따라서 새 Pod 3개를 한꺼번에 준비한 뒤 구 Pod를 제거할 수 있었다.
+
+### 13.2 Deployment 삭제와 새 기준선
+
+첫 실험을 마친 뒤 Deployment를 삭제했다.
+
+```console
+$ kubectl delete deploy --all
+deployment.apps "deploy-rolling" deleted from default namespace
+```
+
+삭제 후 같은 이름으로 다시 생성한 Deployment는 이전 Object의 Revision History를 이어받지 않는다. 다음 설정으로 새 Revision 1을 만들었다.
+
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+replicas: 5
+
+# 최초 Image
+image: httpd:alpine3.24
+```
+
+```text
+Revision 1
+deploy-rolling-5b8cb8c465
+httpd:alpine3.24
+5/5 Ready
+```
+
+### 13.3 두 번째 실험: Replica 5개와 `maxSurge: 1`
+
+왼쪽 tmux Pane에서 0.5초마다 Deployment·ReplicaSet·Pod를 관찰했다.
+
+```bash
+# 교대 중 Resource 수 변화를 반복 출력한다.
+watch -n 0.5 'kubectl get deployment,replicaset,pod'
+```
+
+오른쪽 Pane에서 Image를 `httpd:alpine3.21`로 저장한 Manifest를 Apply했다.
+
+```bash
+# 3.24에서 3.21로 변경한 Manifest를 적용한다.
+kubectl apply -f deployment-rolling-update.yml
+```
+
+Rollout은 매우 빨리 끝나 `watch` 화면에는 최종 상태만 남았지만, Deployment Event에서 교대 순서를 복원했다.
+
+```text
+신 ReplicaSet 0 → 1
+구 ReplicaSet 5 → 4
+신 ReplicaSet 1 → 2
+구 ReplicaSet 4 → 3
+신 ReplicaSet 2 → 3
+구 ReplicaSet 3 → 2
+신 ReplicaSet 3 → 4
+구 ReplicaSet 2 → 1
+신 ReplicaSet 4 → 5
+구 ReplicaSet 1 → 0
+```
+
+현재 결과:
+
+```text
+Deployment  deploy-rolling                 5/5
+Revision    2
+현재 RS     deploy-rolling-d559b9d46       5/5  httpd:alpine3.21
+이전 RS     deploy-rolling-5b8cb8c465      0/0  httpd:alpine3.24
+```
+
+`maxUnavailable`을 생략했으므로 기본값 25%가 적용됐다. Replica 5개에서 25%는 내림 계산되어 최대 1개가 동시에 사용할 수 없어도 된다. `maxSurge: 1`과 함께 보면 이 Rollout의 경계는 다음과 같다.
+
+```text
+목표 Replica: 5
+동시 생성 가능한 최대 Pod: 6
+유지해야 하는 최소 Available Pod: 4
+```
+
+### 13.4 두 실험의 차이
+
+| 설정 | 교대 방식 | 장점 | 비용·주의 |
+|---|---|---|---|
+| Replica 3, `maxSurge: 3` | 새 Pod 3개를 먼저 모두 생성한 뒤 구 Pod 제거 | 교체가 빠르고 Available 수를 높게 유지 | 최대 6개를 수용할 Resource 필요 |
+| Replica 5, `maxSurge: 1` | 새 Pod와 구 Pod를 거의 1개씩 교대 | 추가 Resource 사용량이 작음 | 교체 단계가 많아지고 완료 시간이 늘 수 있음 |
+
+> [!note] `maxUnavailable` 주석 바로잡기
+> `maxUnavailable`은 “최소로 유지할 Pod 수”가 아니라 **Update 중 동시에 사용할 수 없어도 되는 최대 Pod 수**다. 최소 Available 수는 `replicas - maxUnavailable`로 해석한다.
+>
+> `maxSurge`는 “최대로 유지할 Pod 수”가 아니라 **목표 Replica 수를 초과해 임시로 추가 생성할 수 있는 최대 Pod 수**다.
 
 ## 검증 완료와 미완료
 
@@ -653,21 +771,24 @@ flowchart TD
 - Rollback 시 기존 Revision 2 ReplicaSet을 재사용하면서 현재 Revision 4가 되는 동작 확인
 - Rollback 후 `READY 5 / UP-TO-DATE 5 / AVAILABLE 5`
 - `kubernetes.io/change-cause` Annotation을 변경해 Revision 4의 `CHANGE-CAUSE`가 바뀌고 새 Revision은 생기지 않는 동작 확인
+- `maxSurge: 3`에서 신 Pod 3개를 먼저 생성한 뒤 구 Pod를 제거한 Event 확인
+- Deployment 삭제·재생성 시 Revision History가 새 Revision 1로 시작하는 동작 확인
+- `maxSurge: 1`에서 `3.24 → 3.21`을 거의 한 Pod씩 교대한 Event와 최종 Revision 2 확인
 
 ### 미완료·추가 증거 필요
 
 - 특정 Revision을 지정한 Rollback
 - `Recreate` 전략 Runtime 비교
-- `maxUnavailable`·`maxSurge` 값을 직접 변경한 Rolling Update
+- `maxUnavailable` 값을 명시적으로 변경한 Rolling Update
 - PDF p.86 이후 특정 Revision Rollback·Strategy·Namespace 실습
 - Rollback 결과와 `deployment-basic.yml`의 원하는 Image 정렬
 - 오늘 사용한 `00_eks` Terraform Destroy와 잔존 Resource 확인
 
 ## 다음 재시작 지점
 
-1. `kubectl rollout history deployment/deploy-basic`에서 Revision 1·3·4를 확인한다.
-2. 현재 Cluster Image `httpd:alpine3.24`와 Manifest Image `unoh03/boot:latest`의 차이를 인지한다.
-3. `--to-revision`으로 특정 Revision Rollback을 검증한다.
+1. 현재 `deploy-rolling`은 Revision 2, `httpd:alpine3.21`, 5/5 Ready다.
+2. tmux 왼쪽 Pane은 `watch`, 오른쪽 Pane은 명령 입력용이다.
+3. 다음 강사 지시에 따라 `maxUnavailable` 명시 값 또는 후속 Deployment Strategy를 실습한다.
 
 ## 관련 노트
 
