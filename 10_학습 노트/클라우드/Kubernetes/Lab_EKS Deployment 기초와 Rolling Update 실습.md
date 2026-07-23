@@ -128,19 +128,34 @@ Test 계정 몇 개
 
 ### 6. 사건 전체 흐름
 
+
 ```mermaid
 flowchart TD
-    A["Quest 정렬 Code 수정"] --> B["Inventory 정리 부작용 발생"]
-    B --> C["Update 2.7.1에서 Currency·Material 손실"]
-    C --> D["계정 데이터 1차 Rollback"]
-    D --> E["Server 설정 Override로 긴급 우회"]
-    E --> F["Hotfix 2.7.1.1 배포 중 일부 WorldServer Crash"]
-    F --> G["수동 재시작 과정에서 Override와 검증 누락"]
-    G --> H["정상 Server와 옛 동작 Server가 동시에 Traffic 처리"]
-    H --> I["Test 계정은 정상 Server에만 연결"]
-    I --> J["실제 사용자 일부의 Character Data 손상"]
-    J --> K["서비스 중단"]
-    K --> L["오전 8시 30분 Backup으로 전체 계정 복구"]
+    A["Update 2.7.1의 Inventory Bug"] --> B["1차 계정 Rollback"]
+    B --> C["Server 설정 Override로 긴급 우회"]
+    C --> D["Hotfix 2.7.1.1 배포"]
+
+    D --> E["대부분의 WorldServer"]
+    D --> F["시작 중 Crash한 일부 WorldServer"]
+
+    E --> G["Override 적용 + 검증 통과"]
+    F --> H["수동 재시작"]
+    H --> I["Override와 검증 모두 누락"]
+
+    G --> J["정상 Server"]
+    I --> K["옛 Bug가 남은 Server"]
+
+    L["수동 Test 계정"] --> J
+    J --> M["정상으로 오판"]
+
+    N["실제 사용자"] --> J
+    N --> K
+    K --> O["일부 계정 Currency·Material 손상"]
+
+    O --> P["서비스 중단"]
+    P --> Q["영향 계정을 완전히 식별하기 어려움"]
+    Q --> R["전체 계정을 Backup으로 Rollback"]
+```
 ```
 
 ### 7. Rolling Update와 정확히 어떤 관계인가
