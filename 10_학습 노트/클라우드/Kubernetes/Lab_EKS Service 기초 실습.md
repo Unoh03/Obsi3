@@ -2,25 +2,22 @@
 type: lab
 status: active
 created: 2026-07-23
-lab_date: 2026-07-24
+lab_date: 2026-07-23
 topic: kubernetes
 parent_moc: "[[10_학습 노트/클라우드/Kubernetes/00_Kubernetes MOC]]"
 source: "[[10_학습 노트/클라우드/Kubernetes/Source Digest/Kubernetes - Source Digest 06 Service Object]]"
 environment: "Amazon EKS ap-northeast-2; Kubernetes v1.35.6-eks-8f14419; Worker Node 2대"
-evidence: "Bastion service manifests·사용자 제공 kubectl Deployment/Service/Pod 출력·Pod 내부 curl"
-verified_on: 2026-07-24
+evidence: "Bastion service manifests·tmux·kubectl Service/Pod/EndpointSlice 출력·Pod 내부 curl"
+verified_on: 2026-07-23
 ---
 
 # EKS Service 기초 실습
 
 > [!summary]
-> Terraform `destroy → apply` 후 다시 생성한 EKS Runtime에서 `delivery` Namespace에 Deployment Pod 2개와 독립 Pod 1개를 만들고, `ClusterIP` Service인 `cluster-svc`를 생성했다. Pod 내부에서 새 ClusterIP `10.100.2.104`와 Namespace를 포함한 DNS 이름 `cluster-svc.delivery`로 접속해 Application 응답을 받았으며, 응답 본문에서 서로 다른 Server IP `172.28.31.40`, `172.28.11.103`을 확인했다.
-
-> [!info] Runtime 교체
-> 이전 실습 뒤 Terraform으로 인프라를 Destroy하고 다시 Apply했으므로 Service ClusterIP, Pod IP, ReplicaSet Hash와 Pod 이름이 새로 부여됐다. 이 노트는 현재 Runtime을 기준으로 갱신하며 이전 Runtime 수치는 유지하지 않는다.
+> `delivery` Namespace에 Deployment Pod 2개와 독립 Pod 1개를 만들고, `ClusterIP` Service인 `cluster-svc`가 같은 Label을 가진 세 Pod를 Backend로 선택하는 과정을 확인했다. Pod 내부에서 Service의 ClusterIP와 DNS 이름으로 접속해 `HTTP 200`을 받았으며, 같은 주소로 보낸 요청이 서로 다른 Pod IP로 전달되는 것도 확인했다.
 
 > [!info] 이 노트의 범위
-> 현재 실행 증거는 `ClusterIP`와 같은 Namespace에서의 Service DNS 접근까지다. 현재 Runtime의 EndpointSlice 전체 Backend, 다른 Namespace DNS, `NodePort`, `ExternalName`, `LoadBalancer`는 아직 실행한 것으로 기록하지 않는다.
+> 현재 실행 증거는 `ClusterIP`까지다. `NodePort`, `ExternalName`, `LoadBalancer`는 아직 실행한 것으로 기록하지 않는다.
 
 ## 1. Service가 필요한 이유
 
@@ -34,15 +31,15 @@ Service는 다음 두 역할을 맡는다.
 ```text
 Client Pod
     │
-    │ ClusterIP 또는 Service DNS
+    │ cluster-svc:80
     ▼
-Service 10.100.2.104:80
+Service 10.100.40.171:80
     │ selector: develop=spring-boot
     ▼
-Backend Pod 집합
-    ├─ 응답 확인: 172.28.31.40:80
-    ├─ 응답 확인: 172.28.11.103:80
-    └─ 전체 Endpoint는 재확인 필요
+EndpointSlice
+    ├─ 172.28.11.109:80
+    ├─ 172.28.31.62:80
+    └─ 172.28.11.24:80
 ```
 
 > [!tip] 전화로 비유하면
@@ -123,123 +120,124 @@ spec:
         - containerPort: 80
 ```
 
-이 Pod는 통신을 시작하는 시험용 Pod인 동시에 `develop=spring-boot` Label을 갖는다. Manifest 기준으로는 `cluster-svc`의 Backend 후보에 포함되지만, 현재 Runtime의 EndpointSlice는 아직 다시 조회하지 않았다.
+이 Pod는 통신을 시작하는 시험용 Pod인 동시에 `develop=spring-boot` Label을 갖는다. 따라서 자신도 `cluster-svc`의 Backend 후보에 포함된다.
 
 ## 3. 실행 흐름
 
-### 3.1 Namespace와 Deployment·Service 생성
+### 3.1 Deployment와 Service 생성
 
-Terraform Apply로 새 Cluster가 생성된 뒤 `delivery` Namespace를 다시 만들었다.
-
-```console
-$ kubectl create namespace delivery
-namespace/delivery created
+```bash
+kubectl apply -f deployment-basic.yml
+kubectl apply -f service-ClusterIP.yml
 ```
 
-`services` Directory에서 Deployment와 ClusterIP Service를 적용했다.
-
-```console
-$ cd ~/kube-workspace/services
-
-$ kubectl apply -f deployment-basic.yml
+```text
 deployment.apps/deploy-basic created
-
-$ kubectl apply -f service-ClusterIP.yml
 service/cluster-svc created
 ```
 
-생성 직후 상태:
+실제 생성 상태:
 
-```console
-$ kubectl get all -n delivery
-NAME                                READY   STATUS    RESTARTS   AGE
-pod/deploy-basic-5d44b9f8f7-jxpdj   1/1     Running   0          32s
-pod/deploy-basic-5d44b9f8f7-rxhb7   1/1     Running   0          32s
-
-NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-service/cluster-svc   ClusterIP   10.100.2.104   <none>        80/TCP    20s
-
-NAME                           READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/deploy-basic   2/2     2            2           32s
-
-NAME                                      DESIRED   CURRENT   READY   AGE
-replicaset.apps/deploy-basic-5d44b9f8f7   2         2         2       32s
+```text
+Deployment deploy-basic   2/2
+Service    cluster-svc    ClusterIP 10.100.40.171:80
 ```
 
-- Deployment가 요구한 Pod 2개가 모두 `Running 1/1`이다.
-- Deployment는 `READY 2/2`, ReplicaSet은 `DESIRED 2 / CURRENT 2 / READY 2`다.
-- 새 Service ClusterIP는 `10.100.2.104`다.
+### 3.2 Namespace를 지정하지 않아 다른 Service를 조회함
 
-### 3.2 독립 Pod 생성
-
-```console
-$ kubectl apply -f pod-basic.yml
-pod/pod-basic created
+```bash
+kubectl get svc
 ```
 
-```console
-$ kubectl get all -n delivery
-NAME                                READY   STATUS    RESTARTS   AGE
-pod/deploy-basic-5d44b9f8f7-jxpdj   1/1     Running   0          2m35s
-pod/deploy-basic-5d44b9f8f7-rxhb7   1/1     Running   0          2m35s
-pod/pod-basic                       1/1     Running   0          3s
-
-NAME                  TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-service/cluster-svc   ClusterIP   10.100.2.104   <none>        80/TCP    2m23s
-
-NAME                           READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/deploy-basic   2/2     2            2           2m35s
-
-NAME                                      DESIRED   CURRENT   READY   AGE
-replicaset.apps/deploy-basic-5d44b9f8f7   2         2         2       2m35s
+```text
+NAME         TYPE        CLUSTER-IP   PORT(S)
+kubernetes   ClusterIP   10.100.0.1   443/TCP
 ```
 
-Deployment Pod 2개와 독립 `pod-basic` 1개가 모두 정상 실행됐다.
+`cluster-svc`는 `delivery` Namespace에 만들었지만 위 명령은 현재 `default` Namespace를 조회했다. 이때 보인 `kubernetes` Service는 Kubernetes API Server에 접근하기 위한 기본 Service이며, 이번에 만든 `cluster-svc`가 아니다.
 
-### 3.3 Service 주소 확인
+잘못 고른 IP의 Port 80으로 접속해 다음 Timeout이 발생했다.
 
-```console
-$ kubectl get svc -n delivery
-NAME          TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-cluster-svc   ClusterIP   10.100.2.104   <none>        80/TCP    6m49s
+```bash
+curl 10.100.0.1
 ```
 
-Service 이름·Namespace·Type·ClusterIP·Port를 함께 확인했다.
+```text
+curl: (28) Failed to connect to 10.100.0.1 port 80 ... Could not connect to server
+```
+
+이번 Service를 조회하려면 Namespace를 지정해야 한다.
+
+```bash
+kubectl get svc -n delivery
+```
+
+> [!warning] IP만 보고 접속하지 말 것
+> `10.100.0.1`은 이번 Application Service가 아니며 출력에도 `443/TCP`라고 표시됐다. Service 이름·Namespace·Port를 함께 확인해야 한다.
+
+### 3.3 독립 Pod 생성
+
+```bash
+kubectl apply -f pod-basic.yml
+kubectl get all -n delivery
+```
+
+```text
+pod/deploy-basic-74959cd798-b299n   1/1   Running
+pod/deploy-basic-74959cd798-pfpcp   1/1   Running
+pod/pod-basic                       1/1   Running
+
+service/cluster-svc   ClusterIP   10.100.40.171   80/TCP
+deployment.apps/deploy-basic      2/2
+replicaset.apps/deploy-basic-74959cd798   2   2   2
+```
+
+`kubectl get all`은 자주 쓰는 Workload와 Service를 한 번에 보여주지만 `EndpointSlice`까지 모두 보여주는 명령은 아니다. Service의 실제 Backend 목록은 별도로 확인한다.
 
 ## 4. Selector와 EndpointSlice 확인
 
-Service와 세 Pod Manifest는 모두 다음 Label 관계를 사용한다.
-
-```text
-Service selector: develop=spring-boot
-Deployment Pod:   develop=spring-boot
-독립 pod-basic:   develop=spring-boot
-```
-
-따라서 세 Pod는 모두 Backend 후보가 된다. 다만 현재 Runtime에서는 아직 Service 상세정보와 EndpointSlice를 다시 조회하지 않았으므로, 실제 등록된 전체 Endpoint와 Pod 이름·IP 대응은 후속 확인 대상으로 남긴다.
+Service 상세 상태:
 
 ```bash
 kubectl describe svc cluster-svc -n delivery
+```
 
+```text
+Selector:        develop=spring-boot
+Type:            ClusterIP
+IP:              10.100.40.171
+Port:            80/TCP
+TargetPort:      80/TCP
+Endpoints:       172.28.11.109:80,172.28.31.62:80,172.28.11.24:80
+Session Affinity: None
+```
+
+현재 Kubernetes에서 Service Backend 목록을 직접 확인:
+
+```bash
 kubectl get endpointslice -n delivery \
   -l kubernetes.io/service-name=cluster-svc -o wide
-
-kubectl get pod -n delivery -o wide
 ```
+
+```text
+NAME                PORTS   ENDPOINTS
+cluster-svc-fqmsw   80      172.28.11.109,172.28.31.62,172.28.11.24
+```
+
+Pod와의 대응:
+
+| 역할 | Pod IP | Node 가용 영역 |
+|---|---|---|
+| Deployment Pod | `172.28.11.109` | `ap-northeast-2a` |
+| Deployment Pod | `172.28.31.62` | `ap-northeast-2c` |
+| 독립 `pod-basic` | `172.28.11.24` | `ap-northeast-2a` |
 
 > [!info] 강의자료의 `Endpoints`와 현재 Kubernetes
 > 원자료는 `kubectl get endpoints`를 사용한다. 공식 문서 기준으로 기존 `Endpoints` API는 Kubernetes v1.33부터 deprecated이며, 현재 Backend 확인에는 `EndpointSlice` API 사용이 권장된다. Service에 selector가 있으면 Control Plane이 대응하는 EndpointSlice를 자동 생성·갱신한다.
 
 ## 5. ClusterIP 통신 검증
 
-독립 Pod 내부 Shell에 진입하려다 `--`와 실행 명령을 붙여 쓴 오타가 발생했다.
-
-```console
-$ kubectl exec -it pod-basic -n delivery --bash
-error: unknown flag: --bash
-```
-
-`--`는 `kubectl` Option과 Container 내부에서 실행할 명령을 나누는 구분자다. 다음처럼 Space를 두고 `bash`를 별도 명령으로 전달해야 한다.
+독립 Pod 내부 Shell에 진입했다.
 
 ```bash
 kubectl exec -it pod-basic -n delivery -- bash
@@ -247,90 +245,80 @@ kubectl exec -it pod-basic -n delivery -- bash
 
 ### ClusterIP로 접속
 
-```console
-root@pod-basic:/# curl 10.100.2.104
+```bash
+curl 10.100.40.171
 ```
 
-CARE Application의 HTML이 반환됐고 응답 본문에서 Server IP `172.28.31.40`이 확인됐다.
+Application Page가 반환됐고 응답 본문에서 Server IP `172.28.11.24`가 확인됐다.
 
 ```text
-pod-basic 내부 curl
-→ cluster-svc 10.100.2.104:80
-→ Backend 172.28.31.40:80
-→ Application HTML 응답
+요청 위치: pod-basic 172.28.11.24
+접속 주소: Service 10.100.40.171
+실제 응답: pod-basic 172.28.11.24
 ```
 
-이번 명령은 HTTP 상태 Code를 별도로 출력하지 않았으므로 `HTTP 200`이라고 기록하지 않고, Application 응답 본문을 수신한 사실까지만 확정한다.
+즉, Service를 호출한 Pod 자신도 selector에 일치하므로 요청이 자기 자신에게 돌아올 수 있다.
 
-### Namespace를 포함한 Service DNS로 접속
+### Service DNS로 접속
 
-다시 Pod Shell에 들어가 다음 이름으로 접속했다.
+같은 Namespace에서는 Service 이름만으로 접근할 수 있다.
 
-```console
-root@pod-basic:/# curl cluster-svc.delivery
+```bash
+curl http://cluster-svc:80/
 ```
 
-Application HTML이 반환됐고 이번에는 Server IP `172.28.11.103`이 확인됐다.
+`HTTP 200`을 확인했다. IP를 직접 기억하지 않아도 `cluster-svc`라는 이름을 사용할 수 있다.
+
+### 반복 요청의 Backend 변화
+
+같은 `cluster-svc` 주소로 요청을 반복한 결과:
 
 ```text
-pod-basic
-→ cluster-svc.delivery
-→ delivery Namespace의 cluster-svc
-→ Backend 172.28.11.103:80
-→ Application HTML 응답
+TRY-1 → 172.28.11.109
+TRY-2 → 172.28.11.109
+TRY-3 → 172.28.31.62
+TRY-4 → 172.28.31.62
+TRY-5 → 172.28.11.109
 ```
 
-`pod-basic`도 `delivery` Namespace에 있으므로 이번 결과는 **다른 Namespace에서의 접근 검증이 아니다.** 같은 Namespace에서 Namespace를 포함한 Service 이름 `cluster-svc.delivery`도 해석된다는 것을 확인한 것이다.
-
-### 확인된 Backend 변화
-
-| 접속 방법 | 응답 본문에서 확인한 Server IP |
-|---|---|
-| `curl 10.100.2.104` | `172.28.31.40` |
-| `curl cluster-svc.delivery` | `172.28.11.103` |
-
-하나의 Service 뒤에서 최소 두 Backend가 응답할 수 있음을 확인했다. 두 IP의 Pod 이름 대응과 세 번째 Pod의 Endpoint 등록 여부는 `kubectl get pod -o wide`와 EndpointSlice 조회 전까지 확정하지 않는다.
+첫 수동 요청에서는 `172.28.11.24`도 응답했다. 따라서 하나의 ClusterIP 뒤에 등록된 세 Pod가 모두 Backend가 될 수 있음을 실제로 확인했다.
 
 > [!important] Round Robin을 보장한다고 단정하지 않는다
-> 관찰된 사실은 두 요청이 서로 다른 Backend에서 응답했다는 것이다. 이 결과만으로 정확한 분산 Algorithm이나 균등 분배를 확정하지 않는다.
+> 관찰된 사실은 요청이 여러 Backend로 전달됐다는 것이다. 짧은 출력의 순서만으로 정확한 분산 Algorithm이나 균등 분배를 확정하지 않는다.
 
 ## 6. 이번 실습에서 확인한 원리
 
 ```mermaid
 flowchart LR
-    C["pod-basic<br/>Client"]
-    D["Cluster DNS<br/>cluster-svc.delivery"]
-    S["cluster-svc<br/>10.100.2.104:80"]
-    P1["응답 Backend<br/>172.28.31.40:80"]
-    P2["응답 Backend<br/>172.28.11.103:80"]
-    U["전체 Endpoint<br/>재확인 필요"]
+    C["Client Pod"]
+    S["cluster-svc<br/>10.100.40.171:80"]
+    E["EndpointSlice<br/>selector 결과"]
+    P1["Pod<br/>172.28.11.109:80"]
+    P2["Pod<br/>172.28.31.62:80"]
+    P3["pod-basic<br/>172.28.11.24:80"]
 
-    C -->|"ClusterIP"| S
-    C -->|"Namespace-qualified DNS"| D
-    D --> S
-    S --> P1
-    S --> P2
-    S -.-> U
+    C -->|"ClusterIP 또는 DNS"| S
+    S --> E
+    E --> P1
+    E --> P2
+    E --> P3
 ```
 
-- Client는 매번 바뀔 수 있는 Pod IP 대신 Service의 ClusterIP 또는 DNS를 사용한다.
-- Terraform으로 환경을 다시 만들면 Runtime IP와 ReplicaSet Hash가 바뀌지만 Manifest의 Service·Label 연결 의도는 유지된다.
-- 같은 Service에 보낸 요청이 서로 다른 Backend에서 응답할 수 있다.
-- `cluster-svc.delivery`는 Service 이름과 Namespace를 결합한 DNS 이름이다.
+- Client는 매번 바뀔 수 있는 Pod IP 대신 Service의 IP 또는 DNS를 사용한다.
+- Service selector와 Pod Label이 연결 관계를 결정한다.
+- 선택된 Pod 주소는 EndpointSlice에 기록된다.
+- Pod가 여러 Node와 가용 영역에 있어도 Client는 같은 Service 주소를 사용한다.
 - `ClusterIP`는 Cluster 내부 통신용이며 외부 Browser가 이 IP로 직접 접근하는 방식은 아니다.
 
 ## 7. 증거와 해석 경계
 
 ### ① Local primary evidence
 
-- `delivery` Namespace 생성 성공
-- Deployment Pod 2개와 독립 Pod 1개가 `Running`
-- Deployment `READY 2/2`
-- ReplicaSet `DESIRED 2 / CURRENT 2 / READY 2`
-- `cluster-svc`의 ClusterIP `10.100.2.104`
-- ClusterIP 접속에서 Application HTML과 Server IP `172.28.31.40` 확인
-- `cluster-svc.delivery` 접속에서 Application HTML과 Server IP `172.28.11.103` 확인
-- `--bash` 오류와 `-- bash` 성공
+- EKS Runtime의 Deployment Pod 2개와 독립 Pod 1개
+- `cluster-svc`의 ClusterIP `10.100.40.171`
+- EndpointSlice의 Backend IP 3개
+- ClusterIP와 Service DNS 접속의 `HTTP 200`
+- 반복 요청에서 서로 다른 Backend IP가 응답한 결과
 
 ### ② Authoritative external evidence
 
@@ -347,31 +335,26 @@ flowchart LR
 
 | 관찰 | 원인 | 배운 점 |
 |---|---|---|
-| 기존 노트와 ClusterIP·Pod IP·ReplicaSet Hash가 달라짐 | Terraform Destroy 후 Apply로 Runtime 재생성 | Runtime 식별자는 재생성 시 바뀔 수 있다 |
-| `--bash`가 Unknown Flag | `--`와 `bash` 사이 Space 누락 | `--` 뒤에 Container 내부 명령을 분리한다 |
-| `cluster-svc.delivery` 접속 성공 | Cluster DNS가 Service 이름과 Namespace를 해석 | Namespace를 포함한 Service 이름을 사용할 수 있다 |
-| 두 요청에서 서로 다른 Server IP가 응답 | Service 뒤에서 최소 두 Backend가 응답 | Client는 개별 Pod IP를 지정하지 않는다 |
+| `kubectl get svc`에 `cluster-svc`가 없음 | `default` Namespace를 조회함 | Service가 존재하는 Namespace를 지정한다 |
+| `curl 10.100.0.1` Timeout | 기본 Kubernetes API Service의 IP를 골랐고 Port 80으로 접속함 | 이름·Namespace·Port를 함께 확인한다 |
+| 독립 Pod가 Endpoint에 추가됨 | Service selector와 Pod Label이 일치함 | 통신 시험 Pod도 Backend가 될 수 있다 |
+| 같은 주소에서 서로 다른 Server IP가 응답 | Service 뒤에 Backend가 여러 개 등록됨 | Client는 개별 Pod IP를 알 필요가 없다 |
 
 ## 9. 검증 완료와 미완료
 
 ### 완료
 
-- `delivery` Namespace 생성
-- Deployment Pod 2개와 독립 Pod 1개 실행
 - `ClusterIP` Service 생성
-- 새 ClusterIP `10.100.2.104` 확인
-- Pod 내부에서 ClusterIP 접속
-- 같은 Namespace에서 `cluster-svc.delivery` 접속
-- 두 요청에서 서로 다른 Backend IP 응답
-- `kubectl exec`의 `--` 구분자 의미 확인
+- `port: 80 → targetPort: 80` 연결
+- selector가 Deployment Pod 2개와 독립 Pod 1개를 선택
+- EndpointSlice에 세 Pod IP 등록
+- ClusterIP 접속
+- 같은 Namespace의 Service DNS 접속
+- 반복 요청에서 복수 Backend 응답
 
 ### 미완료·후속 범위
 
-- Pod 이름과 응답 IP 대응 확인
-- EndpointSlice에 등록된 전체 Backend 확인
-- 독립 `pod-basic`이 실제 Endpoint에 포함됐는지 확인
-- 다른 Namespace에서 `cluster-svc.delivery` 접속
-- FQDN `cluster-svc.delivery.svc.cluster.local` 접속
+- 다른 Namespace에서 `cluster-svc.delivery` 또는 FQDN으로 접속
 - Pod 교체 시 EndpointSlice 자동 갱신 관찰
 - selector 불일치 시 Endpoint가 비는 현상
 - `NodePort`, `ExternalName`, `LoadBalancer`
@@ -379,16 +362,11 @@ flowchart LR
 
 ## 10. 다음 재시작 지점
 
-먼저 현재 Runtime의 Pod와 Endpoint 대응을 확인한다.
+오늘 수업 범위는 `service-ClusterIP.yml`이다. 다음 Service 유형을 시작하기 전 다음 상태를 먼저 확인한다.
 
 ```bash
-kubectl get pod -n delivery -o wide
-
-kubectl get endpointslice -n delivery \
-  -l kubernetes.io/service-name=cluster-svc -o wide
+kubectl get pod,svc,endpointslice -n delivery -o wide
 ```
-
-그다음 다른 Namespace에서 Service DNS와 FQDN을 확인한 뒤 PDF p.122의 `NodePort` 실습으로 넘어간다.
 
 ## 관련 노트
 
@@ -400,3 +378,294 @@ kubectl get endpointslice -n delivery \
 
 - [Kubernetes 공식 문서 — Service](https://kubernetes.io/docs/concepts/services-networking/service/)
 - [Kubernetes 공식 문서 — EndpointSlice](https://kubernetes.io/docs/concepts/services-networking/endpoint-slices/)
+- [Kubernetes 공식 문서 — DNS for Services and Pods](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/)
+
+
+---
+
+## 2026-07-24 재실습 — ClusterIP 재검증과 NodePort 생성
+
+> [!summary]
+> 새 `delivery` Namespace에서 Deployment Pod 2개와 독립 `pod-basic`을 다시 생성했다. 새 `ClusterIP` `10.100.2.104`와 Service DNS `cluster-svc.delivery`로 CARE Application 응답을 받았고, 응답 본문에서 서로 다른 Backend IP `172.28.31.40`, `172.28.11.103`을 확인했다. 이후 `cluster-svc`를 삭제하고 `NodePort` Service `nodeport-svc`를 생성해 ClusterIP `10.100.103.127`과 자동 할당된 NodePort `32214`를 확인했다. 아직 `NodeIP:32214` 실제 접속은 수행하지 않았다.
+
+> [!warning] 기존 기록과 이번 Runtime을 구분한다
+> 위의 기존 본문은 2026-07-23 Runtime의 ClusterIP·Pod IP·EndpointSlice를 기록한다. 아래 절은 2026-07-24에 제공된 새 Runtime 출력만 추가한 것이다. 두 환경의 IP와 ReplicaSet Hash를 하나의 동시 상태로 해석하지 않는다.
+
+### 1. Namespace와 Workload 재생성
+
+```console
+$ kubectl create namespace delivery
+namespace/delivery created
+
+$ cd ~/kube-workspace/services
+
+$ kubectl apply -f deployment-basic.yml
+deployment.apps/deploy-basic created
+
+$ kubectl apply -f service-ClusterIP.yml
+service/cluster-svc created
+```
+
+생성 직후 Deployment Pod 2개는 모두 `Running 1/1`이었다.
+
+```text
+pod/deploy-basic-5d44b9f8f7-jxpdj   1/1   Running
+pod/deploy-basic-5d44b9f8f7-rxhb7   1/1   Running
+
+deployment.apps/deploy-basic             2/2
+replicaset.apps/deploy-basic-5d44b9f8f7  2  2  2
+service/cluster-svc                      ClusterIP  10.100.2.104  80/TCP
+```
+
+독립 Pod도 같은 Namespace에 생성했다.
+
+```console
+$ kubectl apply -f pod-basic.yml
+pod/pod-basic created
+```
+
+최종적으로 다음 세 Pod가 실행됐다.
+
+```text
+Deployment Pod 2개
+독립 pod-basic 1개
+```
+
+### 2. 새 ClusterIP와 Service DNS 통신
+
+Service 주소를 Namespace와 함께 확인했다.
+
+```console
+$ kubectl get svc -n delivery
+NAME          TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)
+cluster-svc   ClusterIP   10.100.2.104  <none>        80/TCP
+```
+
+#### ClusterIP 직접 접속
+
+처음에는 `--`와 Container 내부 명령을 붙여 입력했다.
+
+```console
+$ kubectl exec -it pod-basic -n delivery --bash
+error: unknown flag: --bash
+```
+
+`--`는 `kubectl exec` Option과 Container 내부에서 실행할 명령을 구분한다. 다음처럼 `bash`를 별도 인자로 전달해야 한다.
+
+```bash
+kubectl exec -it pod-basic -n delivery -- bash
+```
+
+Pod 내부에서 새 ClusterIP로 접속했다.
+
+```console
+root@pod-basic:/# curl 10.100.2.104
+```
+
+CARE Application HTML이 반환됐고 응답 본문에서 다음 Server IP를 확인했다.
+
+```text
+172.28.31.40
+```
+
+이번 출력은 HTTP Header나 Status Code를 별도로 표시하지 않았으므로, 이 절에서는 `HTTP 200`이라고 단정하지 않고 **Application 응답 본문을 정상 수신했다**고 기록한다.
+
+#### Namespace를 포함한 DNS 이름 접속
+
+```console
+root@pod-basic:/# curl cluster-svc.delivery
+```
+
+CARE Application HTML이 다시 반환됐고 이번 응답 본문에서는 다음 Server IP가 확인됐다.
+
+```text
+172.28.11.103
+```
+
+`cluster-svc.delivery`는 `Service 이름.Namespace` 형식이다. 다만 요청을 보낸 `pod-basic`도 `delivery` Namespace에 있으므로, 이번 결과는 **다른 Namespace에서의 DNS 접근 검증이 아니다.** 같은 Namespace에서 Namespace를 명시한 이름도 해석된다는 점을 확인한 것이다.
+
+| 접속 주소 | 응답 본문에서 확인한 Server IP |
+|---|---|
+| `10.100.2.104` | `172.28.31.40` |
+| `cluster-svc.delivery` | `172.28.11.103` |
+
+두 요청에서 서로 다른 Backend가 응답했다. 이는 하나의 Service 뒤에 복수 Backend가 존재할 수 있다는 관찰 증거지만, 두 번의 요청만으로 Round Robin·균등 분배·요청 순서를 단정하지 않는다.
+
+### 3. Shell 오타와 Exit Code `127`
+
+ClusterIP 접속 뒤 `exit` 대신 `ext`를 입력했다.
+
+```console
+root@pod-basic:/# ext
+bash: ext: command not found
+root@pod-basic:/# exit
+exit
+command terminated with exit code 127
+```
+
+`127`은 Shell이 실행할 명령을 찾지 못했을 때 사용하는 종료 상태다. 인자 없이 실행한 `exit`이 직전 실패 명령의 상태를 반환하면서 `kubectl exec`에도 `127`이 표시됐다. 이는 Pod·Service 장애가 아니라 Container Shell 내부의 명령 오타다.
+
+### 4. ClusterIP Service 삭제와 NodePort 생성
+
+기존 ClusterIP Service를 삭제했다.
+
+```console
+$ kubectl delete -f service-ClusterIP.yml
+service "cluster-svc" deleted from delivery namespace
+```
+
+그다음 NodePort Manifest를 적용했다.
+
+```console
+$ kubectl apply -f service-NodePort.yml
+service/nodeport-svc created
+```
+
+첨부된 `service-NodePort.yml`의 핵심 구조는 다음과 같다.
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeport-svc
+  namespace: delivery
+spec:
+  type: NodePort
+  selector:
+    develop: spring-boot
+  ports:
+    - port: 80
+      targetPort: 80
+```
+
+- `type: NodePort`: 각 Node의 지정 Port를 Service 진입점으로 사용한다.
+- `selector: develop=spring-boot`: 기존 ClusterIP 실습과 같은 Label의 Pod를 Backend 후보로 선택한다.
+- `port: 80`: Cluster 내부에서 Service가 받는 Port다.
+- `targetPort: 80`: 선택된 Pod의 Application Port다.
+- `nodePort`를 Manifest에 직접 지정하지 않았으므로 Cluster가 사용 가능한 값을 자동 할당했다.
+
+실제 할당 결과:
+
+```console
+$ kubectl get all -n delivery
+NAME                   TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)
+service/nodeport-svc   NodePort   10.100.103.127   <none>        80:32214/TCP
+```
+
+`80:32214/TCP`의 의미는 다음과 같다.
+
+```text
+Service port: 80
+NodePort:     32214
+Protocol:     TCP
+```
+
+교안 p.122-p.126에서 제시하는 기본 NodePort 범위는 `30000-32767`이며, 자동 할당된 `32214`는 이 범위 안에 있다.
+
+### 5. Worker Node 주소 확인
+
+```console
+$ kubectl get node -o wide
+NAME                                               STATUS   INTERNAL-IP     EXTERNAL-IP
+ip-172-28-11-19.ap-northeast-2.compute.internal    Ready    172.28.11.19    <none>
+ip-172-28-31-105.ap-northeast-2.compute.internal   Ready    172.28.31.105   <none>
+```
+
+두 Worker Node는 모두 `Ready`이며 Internal IP만 확인됐다.
+
+현재까지 예상되는 통신 경로는 다음과 같다.
+
+```text
+Bastion 또는 Cluster 내부 Client
+→ 172.28.11.19:32214 또는 172.28.31.105:32214
+→ nodeport-svc의 port 80
+→ selector가 고른 Pod의 targetPort 80
+```
+
+> [!warning] 예상 경로와 실행 증거를 구분한다
+> NodePort Service 생성과 Node 주소 확인까지는 실행 증거가 있다. 그러나 아직 `curl NodeIP:32214`를 실행하지 않았으므로, 위 경로로 CARE Application 응답이 실제 반환됐다고 기록하면 안 된다. Security Group·Route·Network ACL에 따른 접근 가능 여부도 아직 검증하지 않았다.
+
+### 6. 이번 재실습의 증거 경계
+
+#### ① Local primary evidence
+
+- 사용자가 제공한 `kubectl create/apply/get/delete/exec` 출력
+- 새 ClusterIP `10.100.2.104`
+- CARE Application 응답 본문의 Backend IP `172.28.31.40`, `172.28.11.103`
+- NodePort Service의 ClusterIP `10.100.103.127`
+- 자동 할당 NodePort `32214/TCP`
+- Worker Node Internal IP `172.28.11.19`, `172.28.31.105`
+- 첨부된 `service-NodePort.yml`의 `selector`, `port`, `targetPort`
+
+#### ② 강의자료
+
+- `Kubernetes.pdf` p.122-p.126의 NodePort Manifest와 기본 Port 범위
+- `NodeIP:nodePort → Service port → Pod targetPort` 흐름
+
+#### ④ 해석·추론
+
+- 두 ClusterIP 요청에서 서로 다른 Backend가 응답했지만 분산 Algorithm은 확정하지 않는 판단
+- 현재 NodePort 접근 후보로 Worker Node Internal IP를 사용하는 해설
+- Security Group·Route·Network ACL을 실제 통신 실패 시 확인해야 한다는 운영 해석
+
+### 7. 오류와 해석
+
+| 관찰 | 원인 | 판정·학습 |
+|---|---|---|
+| `--bash`가 Unknown Flag | `--`와 `bash` 사이 Space 누락 | `kubectl exec ... -- bash`로 구분 |
+| `ext: command not found`와 exit code `127` | `exit` 오타와 직전 실패 상태 반환 | Kubernetes Resource 장애 아님 |
+| 기존 기록과 ClusterIP·ReplicaSet Hash가 다름 | 이번 출력은 다른 Runtime 상태 | 이전 기록을 수정하지 않고 별도 재실습으로 추가 |
+| `cluster-svc.delivery` 접속 성공 | Service 이름과 Namespace를 포함한 DNS 사용 | 다른 Namespace 접근은 아직 미검증 |
+| `nodeport-svc`에 `32214` 할당 | Manifest에 `nodePort`를 고정하지 않음 | Cluster가 기본 범위에서 자동 할당 |
+| Worker Node의 `EXTERNAL-IP`가 `<none>` | 출력상 Public Node IP가 없음 | 외부 PC 접근 가능 여부를 현재 로그만으로 단정하지 않음 |
+
+### 8. 완료와 미완료
+
+#### 완료
+
+- `delivery` Namespace 생성
+- Deployment Pod 2개와 독립 Pod 1개 실행
+- 새 ClusterIP Service `10.100.2.104:80` 생성
+- Pod 내부에서 ClusterIP로 CARE Application 응답 수신
+- 같은 Namespace에서 `cluster-svc.delivery`로 응답 수신
+- 두 요청에서 서로 다른 Backend IP 확인
+- ClusterIP Service 삭제
+- NodePort Service `10.100.103.127:80` 생성
+- NodePort `32214/TCP` 자동 할당 확인
+- Worker Node 2대의 Internal IP 확인
+
+#### 미완료·후속 범위
+
+- 현재 Runtime의 Pod 이름과 IP 대응
+- `nodeport-svc`의 EndpointSlice와 전체 Backend 확인
+- 독립 `pod-basic`의 실제 Endpoint 포함 여부
+- 다른 Namespace에서 Service DNS 접근
+- FQDN `nodeport-svc.delivery.svc.cluster.local` 접근
+- `172.28.11.19:32214`, `172.28.31.105:32214` 실제 통신
+- Security Group·Route·Network ACL에 따른 NodePort 허용 여부
+- Pod 교체 시 EndpointSlice 자동 갱신
+- selector 불일치 시 Endpoint가 비는 현상
+- `ExternalName`, `LoadBalancer`, Session Affinity
+
+### 9. 다음 재시작 지점
+
+먼저 NodePort Service가 선택한 Backend와 Port 연결을 확인한다.
+
+```bash
+kubectl describe svc nodeport-svc -n delivery
+
+kubectl get endpointslice -n delivery \
+  -l kubernetes.io/service-name=nodeport-svc -o wide
+
+curl -v http://172.28.11.19:32214/
+curl -v http://172.28.31.105:32214/
+```
+
+확인 기준:
+
+```text
+1. Service의 port 80·targetPort 80·nodePort 32214가 일치하는가
+2. EndpointSlice에 기대한 Pod IP가 등록됐는가
+3. 두 Node Internal IP 중 어느 주소에서 CARE Application 응답이 오는가
+4. 실패한다면 Endpoint 부재인지 Network/Security Group 문제인지 구분 가능한가
+```
