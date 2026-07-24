@@ -669,3 +669,317 @@ curl -v http://172.28.31.105:32214/
 3. 두 Node Internal IP 중 어느 주소에서 CARE Application 응답이 오는가
 4. 실패한다면 Endpoint 부재인지 Network/Security Group 문제인지 구분 가능한가
 ```
+
+
+---
+
+## 2026-07-24 추가 실습 — LoadBalancer 생성·재생성과 Resource 정리
+
+> [!summary]
+> 기존 `nodeport-svc`를 삭제한 뒤 `LoadBalancer` Service인 `lb-svc`를 생성해 AWS ELB DNS 이름과 자동 할당된 NodePort를 확인했다. 첫 번째 `lb-svc`를 삭제하고 Workload까지 모두 정리한 뒤, 이미 삭제된 Resource에 다시 `kubectl delete`를 실행하면 `NotFound`가 발생한다는 점도 확인했다. 이후 `pod-basic`, `cluster-svc`, `lb-svc`를 다시 생성하고 `cluster-svc`만 삭제했으며, 재생성된 `lb-svc`에는 처음과 다른 ClusterIP·NodePort·ELB DNS가 할당됐다. LoadBalancer DNS를 통한 실제 Application 통신은 아직 검증하지 않았다.
+
+### 1. NodePort 삭제 후 LoadBalancer Service 생성
+
+기존 NodePort Service를 삭제했다.
+
+```console
+$ kubectl delete -f service-NodePort.yml
+service "nodeport-svc" deleted from delivery namespace
+```
+
+이어서 LoadBalancer Manifest를 적용했다.
+
+```console
+$ kubectl apply -f service-LoadBalancer.yml
+service/lb-svc created
+```
+
+첫 번째 생성 결과:
+
+```console
+$ kubectl get svc -n delivery
+NAME     TYPE           CLUSTER-IP    EXTERNAL-IP                                                                   PORT(S)        AGE
+lb-svc   LoadBalancer   10.100.8.93   a3a89ec5b5f6f43268a933835a86774b-998391405.ap-northeast-2.elb.amazonaws.com   80:32083/TCP   14s
+```
+
+Runtime에서 직접 확인된 값:
+
+| 항목 | 첫 번째 `lb-svc` |
+|---|---|
+| Service Type | `LoadBalancer` |
+| ClusterIP | `10.100.8.93` |
+| External 주소 | `a3a89ec5b5f6f43268a933835a86774b-998391405.ap-northeast-2.elb.amazonaws.com` |
+| Service Port | `80/TCP` |
+| 자동 할당 NodePort | `32083/TCP` |
+
+`LoadBalancer` Type이어도 출력에 ClusterIP와 NodePort가 함께 나타났다. 다만 이번 로그에는 ELB DNS를 대상으로 한 `curl` 또는 Browser 접속 결과가 없으므로, 외부 요청이 CARE Application까지 전달됐다고 기록하지 않는다.
+
+> [!warning] DNS 할당과 통신 성공은 다른 증거다
+> `EXTERNAL-IP` 열에 ELB DNS가 나타난 것은 외부 진입 주소가 할당됐다는 증거다. Target 상태, Security Group, Listener, Endpoint 연결과 실제 HTTP 응답은 별도 검증이 필요하다.
+
+### 2. 첫 번째 LoadBalancer 삭제와 Workload 정리
+
+첫 번째 `lb-svc` 삭제 요청은 정상 처리됐다.
+
+```console
+$ kubectl delete -f service-LoadBalancer.yml
+service "lb-svc" deleted from delivery namespace
+```
+
+삭제 직후 `delivery` Namespace에는 Deployment Pod 2개와 독립 `pod-basic`만 남아 있었다.
+
+```text
+pod/deploy-basic-5d44b9f8f7-jxpdj   1/1   Running
+pod/deploy-basic-5d44b9f8f7-rxhb7   1/1   Running
+pod/pod-basic                       1/1   Running
+deployment.apps/deploy-basic        2/2
+replicaset.apps/deploy-basic-5d44b9f8f7
+```
+
+Deployment를 삭제했다.
+
+```console
+$ kubectl delete -f deployment-basic.yml
+deployment.apps "deploy-basic" deleted from delivery namespace
+```
+
+Deployment가 관리하던 Pod와 ReplicaSet이 함께 사라지고 독립 Pod만 남았다.
+
+```console
+$ kubectl get all -n delivery
+NAME            READY   STATUS    RESTARTS   AGE
+pod/pod-basic   1/1     Running   0          86m
+```
+
+마지막으로 독립 Pod를 삭제했다.
+
+```console
+$ kubectl delete -f pod-basic.yml
+pod "pod-basic" deleted from delivery namespace
+```
+
+정리 완료 확인:
+
+```console
+$ kubectl get all -n delivery
+No resources found in delivery namespace.
+```
+
+이 출력은 `delivery` Namespace 자체가 삭제됐다는 뜻이 아니라, `kubectl get all`이 보여주는 범위의 Resource가 현재 없다는 뜻이다.
+
+### 3. 이미 삭제된 Resource를 다시 삭제한 경우
+
+이미 삭제된 `pod-basic`을 다시 삭제했다.
+
+```console
+$ kubectl delete -f pod-basic.yml
+Error from server (NotFound): error when deleting "pod-basic.yml": pods "pod-basic" not found
+```
+
+이미 삭제된 `cluster-svc`에도 같은 현상이 발생했다.
+
+```console
+$ kubectl delete -f service-ClusterIP.yml
+Error from server (NotFound): error when deleting "service-ClusterIP.yml": services "cluster-svc" not found
+```
+
+`NotFound`는 대상 Resource가 현재 API Server에 존재하지 않는다는 의미다. 이번 경우에는 삭제가 실패해 Resource가 남은 것이 아니라, **이미 삭제된 대상을 다시 삭제했기 때문에 발생한 결과**다.
+
+반복 실행 가능한 정리 명령이 필요하면 다음처럼 처리한다.
+
+```bash
+# Resource가 이미 없어도 NotFound를 오류로 취급하지 않는다.
+kubectl delete -f service-ClusterIP.yml --ignore-not-found
+
+# 이름과 Namespace를 직접 지정하는 방식
+kubectl delete svc cluster-svc -n delivery --ignore-not-found=true
+```
+
+### 4. Namespace를 지정하지 않은 조회의 의미
+
+다음 조회는 `-n delivery`를 사용하지 않았다.
+
+```console
+$ kubectl get all
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.100.0.1   <none>        443/TCP   4h26m
+```
+
+따라서 이 출력은 `delivery`가 아니라 현재 기본 Namespace인 `default`를 조회한 것이다.
+
+`service/kubernetes`는 Kubernetes API Server 접근에 사용되는 기본 Service이며, 이번 실습에서 만든 `cluster-svc`, `nodeport-svc`, `lb-svc`가 아니다. Application Resource 정리를 위해 이 Service를 삭제해서는 안 된다.
+
+Namespace별 상태를 확인할 때는 다음 명령을 구분해서 사용한다.
+
+```bash
+# delivery Namespace만 조회
+kubectl get all -n delivery
+
+# 모든 Namespace의 자주 쓰는 Resource 조회
+kubectl get all -A
+
+# delivery Namespace의 Service만 조회
+kubectl get svc -n delivery
+```
+
+### 5. Pod와 Service 재생성
+
+전체 정리 후 독립 Pod와 두 Service를 다시 생성했다.
+
+```console
+$ kubectl apply -f pod-basic.yml
+pod/pod-basic created
+
+$ kubectl apply -f service-ClusterIP.yml
+service/cluster-svc created
+
+$ kubectl apply -f service-LoadBalancer.yml
+service/lb-svc created
+```
+
+이후 `cluster-svc`만 삭제했다.
+
+```console
+$ kubectl delete -f service-ClusterIP.yml
+service "cluster-svc" deleted from delivery namespace
+```
+
+마지막 Service 조회에서는 두 번째로 생성된 `lb-svc`만 확인됐다.
+
+```console
+$ kubectl get svc -n delivery
+NAME     TYPE           CLUSTER-IP      EXTERNAL-IP                                                                   PORT(S)        AGE
+lb-svc   LoadBalancer   10.100.148.97   ab6c013114d0f4518b94eb7d181b2100-621648698.ap-northeast-2.elb.amazonaws.com   80:31039/TCP   4m2s
+```
+
+두 번째 생성 결과:
+
+| 항목 | 두 번째 `lb-svc` |
+|---|---|
+| Service Type | `LoadBalancer` |
+| ClusterIP | `10.100.148.97` |
+| External 주소 | `ab6c013114d0f4518b94eb7d181b2100-621648698.ap-northeast-2.elb.amazonaws.com` |
+| Service Port | `80/TCP` |
+| 자동 할당 NodePort | `31039/TCP` |
+
+### 6. LoadBalancer 재생성 전후 비교
+
+| 항목 | 첫 번째 생성 | 두 번째 생성 |
+|---|---|---|
+| ClusterIP | `10.100.8.93` | `10.100.148.97` |
+| NodePort | `32083` | `31039` |
+| ELB DNS 앞부분 | `a3a89ec5...` | `ab6c0131...` |
+| 확인된 최종 상태 | Service 삭제 요청 완료 | 마지막 Service 조회에서 존재 |
+
+삭제 후 새로 생성된 Service에는 이전과 다른 ClusterIP·NodePort·ELB DNS가 할당됐다. 따라서 삭제된 Service의 이전 주소를 운영 설정이나 Client 접속 주소로 계속 사용하면 안 된다.
+
+> [!important] Service 재생성은 같은 주소의 복구가 아니다
+> Manifest의 `metadata.name`이 같더라도 삭제 후 재생성된 Resource는 새 할당 값을 받을 수 있다. 외부 DNS·Firewall Rule·문서·Monitoring 설정에서 이전 값을 고정해 사용했다면 함께 점검해야 한다.
+
+### 7. 마지막 상태의 증거 경계
+
+#### Runtime으로 직접 확인
+
+- `delivery` Namespace의 기존 Resource가 한 차례 모두 정리됨
+- `pod-basic` 재생성 명령 성공
+- `cluster-svc` 재생성 후 다시 삭제
+- 두 번째 `lb-svc` 생성
+- 두 번째 `lb-svc`의 ClusterIP `10.100.148.97`
+- 두 번째 `lb-svc`의 NodePort `31039/TCP`
+- 두 번째 AWS ELB DNS 이름
+- 마지막 `kubectl get svc -n delivery`에서 `lb-svc`만 존재
+
+#### 명령 이력으로 추론되지만 마지막에 재조회하지 않은 상태
+
+- `pod-basic`은 재생성 후 삭제 명령이 없으므로 남아 있을 가능성이 높다.
+- 그러나 마지막에 `kubectl get pod -n delivery`를 실행하지 않았으므로 현재 Running 상태는 직접 확인하지 않았다.
+- `lb-svc`가 `pod-basic`을 실제 Backend Endpoint로 등록했는지도 확인하지 않았다.
+
+#### 아직 검증하지 않은 항목
+
+- `lb-svc`의 EndpointSlice
+- `pod-basic`의 Label과 `lb-svc` Selector 일치 여부 재확인
+- AWS Load Balancer Target 상태
+- ELB DNS를 통한 CARE Application 응답
+- HTTP Status Code
+- Internet-facing 또는 Internal Scheme
+- Security Group·Network ACL·Route에 따른 접근 범위
+- 첫 번째 `lb-svc` 삭제 후 AWS Load Balancer 자원 정리 완료 여부
+- LoadBalancer 삭제 후 관련 AWS 비용 발생 여부
+
+### 8. 오류와 해석 추가
+
+| 관찰 | 원인 | 판정·학습 |
+|---|---|---|
+| 삭제된 Pod를 다시 삭제하자 `NotFound` | Resource가 이미 없음 | Kubernetes 장애가 아니라 중복 삭제 |
+| 삭제된 `cluster-svc`를 다시 삭제하자 `NotFound` | Service가 이미 없음 | 필요하면 `--ignore-not-found` 사용 |
+| `kubectl get all`에 `service/kubernetes`만 표시 | Namespace를 지정하지 않아 `default` 조회 | `delivery` 확인에는 `-n delivery` 필요 |
+| LoadBalancer 재생성 후 주소와 Port가 변경 | 기존 Service 삭제 후 새 Resource 생성 | 이전 할당 값을 고정 주소로 간주하지 않음 |
+| ELB DNS는 보이지만 Application 응답 기록은 없음 | 통신 시험을 실행하지 않음 | 생성 완료와 통신 성공을 분리해서 기록 |
+
+### 9. 완료와 미완료 추가
+
+#### 완료
+
+- NodePort Service 삭제
+- 첫 번째 LoadBalancer Service 생성
+- 첫 번째 ClusterIP·NodePort·ELB DNS 확인
+- 첫 번째 LoadBalancer Service 삭제 요청
+- Deployment와 독립 Pod 삭제
+- `delivery` Namespace의 Resource 정리 확인
+- 중복 삭제 시 `NotFound` 확인
+- `pod-basic`, `cluster-svc`, `lb-svc` 재생성
+- 재생성한 `cluster-svc` 삭제
+- 두 번째 LoadBalancer Service의 새 ClusterIP·NodePort·ELB DNS 확인
+
+#### 미완료·후속 범위
+
+- 재생성된 `pod-basic`의 현재 상태 확인
+- `lb-svc`의 Selector와 EndpointSlice 확인
+- AWS Load Balancer Target 상태 확인
+- ELB DNS 실제 HTTP 접속
+- 외부 또는 VPC 내부 접근 범위 확인
+- 첫 번째 LoadBalancer 삭제에 따른 AWS Resource 정리 완료 확인
+- 실습 종료 후 두 번째 `lb-svc`와 `pod-basic` 정리
+
+### 10. 다음 재시작 지점
+
+현재 Kubernetes 상태와 LoadBalancer Backend를 먼저 확인한다.
+
+```bash
+# 현재 남아 있는 Pod와 Service 확인
+kubectl get pod,svc -n delivery -o wide
+
+# LoadBalancer Service의 Port·Selector·Event 확인
+kubectl describe svc lb-svc -n delivery
+
+# 실제 Backend Endpoint 확인
+kubectl get endpointslice -n delivery \
+  -l kubernetes.io/service-name=lb-svc -o wide
+```
+
+ELB DNS 접속을 검증할 때는 현재 출력에 표시된 주소를 다시 조회해서 사용한다.
+
+```bash
+# 현재 ELB DNS를 변수로 가져온다.
+LB_DNS=$(kubectl get svc lb-svc -n delivery \
+  -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+
+# DNS 할당 여부를 확인한다.
+echo "$LB_DNS"
+
+# 실제 HTTP 연결과 응답 Header를 확인한다.
+curl -v "http://${LB_DNS}/"
+```
+
+실습을 끝내고 비용 발생 가능성이 있는 Resource를 정리할 때:
+
+```bash
+kubectl delete -f service-LoadBalancer.yml --ignore-not-found
+kubectl delete -f pod-basic.yml --ignore-not-found
+
+kubectl get all -n delivery
+```
+
+> [!warning] AWS Console 확인
+> `kubectl delete`가 성공해도 AWS Load Balancer와 관련 Target Group이 실제로 정리됐는지는 AWS Console 또는 AWS CLI에서 별도로 확인한다. 실습 후에는 남은 Load Balancer Resource가 없는지 점검한다.
