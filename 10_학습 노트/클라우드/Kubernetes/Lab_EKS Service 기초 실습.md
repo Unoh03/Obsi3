@@ -1264,3 +1264,205 @@ p.113 그림은 `LoadBalancer`가 외부 요청의 진입점을 제공하는 방
 ````
 
 이미지는 **각 `<!-- [이미지 삽입: ...] -->` 위치에 넣으면 된다.**
+
+
+---
+
+## 2026-07-24 추가 실습 — ExternalName과 HTTP Host Header
+
+> [!summary]
+> `external-svc`를 생성하고 `pod-basic`에서 해당 Service 이름으로 외부 Web Server에 접속했다. `curl external-svc`에서는 Google의 `404` Page가 반환됐고, 직접 Domain 요청에서는 `301 Moved`가 반환됐다. 이후 `Host: www.google.com`과 Browser 형태의 User-Agent를 지정하자 Google Home Page HTML이 반환됐다. 이를 통해 ExternalName은 외부 Domain을 가리키는 DNS Alias이며, HTTP Host Header나 URL을 대신 바꾸는 Proxy가 아니라는 점을 확인했다.
+
+### 1. ExternalName Service와 시험용 Pod 생성
+
+```console
+$ kubectl apply -f service-ExternalName.yml
+service/external-svc created
+
+$ kubectl apply -f pod-basic.yml
+pod/pod-basic created
+```
+
+ExternalName Service와 통신 시험용 Pod가 정상 생성됐다.
+
+### 2. `kubectl exec`에는 실행할 명령이 필요함
+
+명령을 지정하지 않고 실행하자 오류가 발생했다.
+
+```console
+$ kubectl exec -it pod-basic -n delivery
+error: you must specify at least one command for the container
+```
+
+Container 내부에서 실행할 `bash`를 `--` 뒤에 지정하자 Shell에 진입했다.
+
+```bash
+kubectl exec -it pod-basic -n delivery -- bash
+```
+
+`--` 앞은 `kubectl exec`의 Option이고, 뒤는 Container 내부에서 실행할 명령이다.
+
+### 3. ExternalName으로 접속했을 때 Google 404 반환
+
+```console
+root@pod-basic:/# curl external-svc
+```
+
+Google의 다음 응답 Page가 반환됐다.
+
+```text
+404. That's an error.
+The requested URL / was not found on this server.
+```
+
+이 결과는 `external-svc`의 DNS 해석과 외부 Server까지의 TCP·HTTP 통신이 실패했다는 뜻이 아니다. 오히려 Google Server가 HTTP 응답을 반환했으므로 외부 Server까지 요청이 도달한 증거다.
+
+ExternalName은 DNS 이름을 외부 Domain으로 연결하지만, HTTP 요청의 `Host` Header를 외부 Domain으로 자동 변경하지 않는다.
+
+```text
+DNS 해석:
+external-svc
+→ ExternalName이 가리키는 외부 Domain
+→ 외부 Server IP
+
+HTTP 요청:
+GET / HTTP/1.1
+Host: external-svc
+```
+
+외부 Server는 `Host: external-svc`를 자신이 처리할 정상 Host 이름으로 인식하지 못해 404를 반환한 것으로 해석된다.
+
+### 4. 외부 Domain 직접 요청
+
+```console
+root@pod-basic:/# curl www.gooogle.com
+```
+
+```text
+301 Moved
+The document has moved
+https://www.google.com/
+```
+
+`www.gooogle.com`을 직접 사용하면 HTTP Host Header에도 해당 Domain이 들어간다. Google 측은 요청을 `https://www.google.com/`으로 Redirect했다.
+
+```text
+ExternalName 이름으로 요청 → Google 404 Page
+외부 Domain 직접 요청      → 301 Redirect
+```
+
+두 요청의 차이는 ExternalName이 단순 DNS Alias이며 HTTP Layer의 Host 이름을 대신 수정하지 않는다는 점과 일치한다.
+
+### 5. Host Header를 지정한 추가 검증
+
+다음 명령에서는 접속 주소는 `external-svc`로 유지하면서 HTTP Host Header와 User-Agent를 지정했다.
+
+```console
+root@pod-basic:/# curl -A "Mozilla/5.0" \
+  -H "Host: www.google.com" \
+  http://external-svc
+```
+
+응답에서 다음 항목이 확인됐다.
+
+```text
+<title>Google</title>
+Google Home Page HTML
+```
+
+즉, 같은 `external-svc` 주소를 통해 외부 Server에 접속하면서 Google이 인식하는 Host 이름을 전달하자 404 Page가 아니라 Google Home Page가 반환됐다.
+
+> [!important] 단일 변수 검증은 아님
+> 이 명령에서는 `Host` Header와 User-Agent를 동시에 변경했다. 따라서 결과는 Host Header 원인 해석을 강하게 뒷받침하지만, 두 변수 중 Host Header 하나만의 효과를 완전히 분리한 실험은 아니다.
+
+변수를 분리하려면 다음 두 명령을 각각 비교한다.
+
+```bash
+# Host Header만 변경
+curl -H "Host: www.google.com" http://external-svc
+
+# User-Agent만 변경
+curl -A "Mozilla/5.0" http://external-svc
+```
+
+### 6. 이번 실습에서 확인한 ExternalName의 역할
+
+```text
+ExternalName
+= Kubernetes 내부 Service 이름을 외부 DNS 이름에 연결
+= DNS Alias
+
+ExternalName
+≠ Reverse Proxy
+≠ HTTP Redirect
+≠ Host Header 변환
+≠ Port Forwarding
+≠ Backend Load Balancing
+```
+
+ExternalName Service는 일반적인 selector 기반 Service와 달리 Pod를 Backend로 선택하지 않는다. Client가 Service 이름을 조회하면 Kubernetes DNS가 외부 Domain을 가리키는 DNS 응답을 제공하고, 이후 통신은 Client가 외부 Server와 직접 수행한다.
+
+> [!warning] HTTP·HTTPS 사용 시 이름 불일치
+> Application이 HTTP Host Header를 검사하거나 HTTPS 인증서의 Domain 이름을 검증한다면, Kubernetes 내부 Service 이름과 외부 Domain의 차이 때문에 404, Virtual Host 불일치 또는 TLS 인증서 오류가 발생할 수 있다.
+
+### 7. 증거와 해석 경계
+
+#### Runtime으로 직접 확인
+
+- `external-svc` 생성 성공
+- `pod-basic` 생성 성공
+- 명령 없는 `kubectl exec`에서 오류 발생
+- `kubectl exec ... -- bash`로 Shell 진입
+- `curl external-svc`에서 Google 404 Page 수신
+- `curl www.gooogle.com`에서 `301 Moved` 수신
+- `Host: www.google.com`과 `Mozilla/5.0`을 지정한 요청에서 Google Home Page HTML 수신
+
+#### 해석
+
+- ExternalName DNS 해석과 외부 HTTP 통신은 동작함
+- 최초 404는 HTTP Host 이름 불일치와 일치하는 현상
+- Host Header를 바꾼 결과는 이 해석을 강하게 뒷받침함
+- 다만 마지막 명령은 User-Agent도 동시에 변경했으므로 Host Header만의 단일 변수 검증은 아님
+
+#### 아직 확인하지 않은 항목
+
+- `service-ExternalName.yml`의 실제 `externalName` 값 재확인
+- `external-svc`의 CNAME Chain
+- Host Header와 User-Agent를 각각 단독 변경한 비교
+- HTTPS 접속 시 인증서 이름 검증 결과
+- ExternalName Service의 ClusterIP·EndpointSlice 부재 확인
+
+### 8. 오류와 해석 추가
+
+| 관찰 | 원인 | 판정·학습 |
+|---|---|---|
+| 명령 없는 `kubectl exec` 실패 | Container에서 실행할 명령 미지정 | `-- bash`처럼 명령을 지정 |
+| `curl external-svc`에서 Google 404 | DNS는 외부 Server로 연결됐지만 HTTP Host는 `external-svc` | ExternalName은 Host Header를 바꾸지 않음 |
+| 직접 Domain 요청에서 301 | 외부 Domain이 Host Header에 사용됨 | 외부 Server가 HTTPS Google 주소로 Redirect |
+| Host와 User-Agent 지정 후 Google Page 반환 | 외부 Server가 요청을 정상 Virtual Host로 처리 | Host Header 원인 해석을 지지하지만 단일 변수 실험은 아님 |
+
+### 9. 완료와 후속 범위
+
+#### 완료
+
+- ExternalName Service 생성
+- Pod에서 ExternalName Service 이름으로 외부 HTTP 요청
+- 외부 Server 응답 수신
+- 내부 Service 이름과 외부 Domain 직접 요청의 응답 차이 확인
+- Host Header를 지정한 추가 요청에서 Google Home Page 수신
+- ExternalName이 Proxy가 아니라 DNS Alias라는 동작 확인
+
+#### 후속 범위
+
+```bash
+# Service의 ExternalName 설정 확인
+kubectl get svc external-svc -n delivery -o yaml
+
+# DNS Alias와 최종 주소 확인
+kubectl exec -it pod-basic -n delivery -- \
+  getent hosts external-svc
+
+# Host Header만 변경해 단일 변수로 재검증
+kubectl exec -it pod-basic -n delivery -- \
+  curl -H "Host: www.google.com" http://external-svc
+```
