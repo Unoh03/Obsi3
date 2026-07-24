@@ -45,6 +45,131 @@ EndpointSlice
 > [!tip] 전화로 비유하면
 > Pod IP는 직원 개인의 내선번호이고, Service의 ClusterIP와 DNS는 회사 대표번호다. 직원이 교체되어 내선번호가 바뀌어도 Client는 대표번호만 사용한다.
 
+## Service Type 구조 비교 — 교안 이미지 해설
+
+> [!info] 증거 범위
+> 아래 내용은 실제 Runtime 출력이 아니라 `Kubernetes.pdf` p.112-p.113의 개념도를 해설한 것이다.
+> 실제 생성·접속 여부는 각 실습 기록에서 별도로 판단한다.
+
+### ClusterIP와 NodePort
+![[40_자료/캡쳐 창고/Kubernetes 1.webp]]
+
+[[Kubernetes.pdf#page=112&rect=133,45,900,340|Kubernetes, p.112]]
+
+#### ClusterIP
+
+왼쪽 그림은 `ClusterIP` Service가 Kubernetes Cluster 내부의 고정된 접속 지점으로 동작하는 구조를 나타낸다.
+
+```text
+Cluster 내부 Client
+→ Service의 ClusterIP 또는 DNS
+→ selector가 선택한 Backend Pod
+````
+
+Pod는 교체되면서 IP가 달라질 수 있지만, Client는 개별 Pod IP 대신 Service의 ClusterIP 또는 DNS 이름을 사용한다.
+
+그림의 External Client 앞에 표시된 `X`는 Cluster 외부에서 ClusterIP로 직접 접속할 수 없다는 의미다.
+
+> [!warning] 외부 접근 불가의 의미  
+> `ClusterIP`는 Kubernetes Cluster 내부 전용 주소다.  
+> 외부 Client가 Pod에 접근하려면 `NodePort`, `LoadBalancer`, `Ingress`와 같은 별도 진입점이 필요하다.
+
+#### NodePort
+
+오른쪽 그림은 모든 Worker Node에서 동일한 Port를 열어 Service로 연결하는 `NodePort` 구조다.
+
+```text
+Client
+→ NodeIP:NodePort
+→ NodePort Service
+→ Backend Pod의 targetPort
+```
+
+예시에서는 모든 Node가 `30000`번 Port를 열고 있다. Client는 접근 가능한 Worker Node 중 하나의 IP와 NodePort를 사용한다.
+
+요청을 받은 Node와 실제 Backend Pod가 실행 중인 Node가 반드시 같을 필요는 없다. Service가 선택한 다른 Node의 Pod로도 요청이 전달될 수 있다.
+
+> [!note] `30000`은 고정값이 아니다  
+> 그림의 `30000`은 예시다. NodePort는 일반적으로 `30000-32767` 범위에서 지정하거나 자동 할당된다.
+
+> [!warning] NodePort가 곧 Public Internet 공개를 의미하지는 않는다  
+> NodePort가 생성돼도 Node IP까지의 Route, Security Group, Network ACL 등이 허용되어야 접근할 수 있다.  
+> Worker Node에 `EXTERNAL-IP`가 없다면 외부 인터넷에서 바로 접속 가능하다고 단정할 수 없다.
+
+p.112 그림은 ClusterIP가 내부 진입점이고, NodePort가 각 Node의 동일 Port를 통해 외부 진입점을 추가한다는 차이를 보여준다. 
+
+### LoadBalancer와 ExternalName
+
+![[40_자료/캡쳐 창고/Kubernetes 2.webp]]
+
+[[Kubernetes.pdf#page=113&rect=132,49,901,338|Kubernetes, p.113]]
+#### LoadBalancer
+
+왼쪽 그림은 외부 Load Balancer가 Kubernetes Service 앞에 배치되는 구조를 나타낸다.
+
+```text
+External Client
+→ Cloud Load Balancer
+→ Kubernetes Service
+→ Backend Pod
+````
+
+AWS EKS에서 `type: LoadBalancer` Service를 생성하면 AWS Load Balancer의 DNS 이름이 Service의 외부 주소로 제공될 수 있다.
+
+이번 실습에서도 `lb-svc`에 다음 항목이 함께 할당됐다.
+
+```text
+ClusterIP
+NodePort
+AWS ELB DNS
+```
+
+따라서 LoadBalancer Service는 단순히 Pod 앞에 Load Balancer 하나만 붙이는 개념이 아니라, 외부 진입점과 Kubernetes 내부 Service 전달 구조가 연결된 형태로 이해한다.
+
+> [!warning] 그림의 두 `svc` 아이콘  
+> 그림은 Load Balancer가 여러 Backend 집합에 요청을 분배하는 모습을 단순화한 것이다.  
+> 반드시 Kubernetes Service Object가 두 개 생성된다는 의미는 아니다.
+
+> [!important] 주소 할당과 통신 성공은 별개  
+> `EXTERNAL-IP`에 AWS ELB DNS가 표시됐더라도 Listener, Target 상태, Security Group과 실제 HTTP 응답은 별도로 검증해야 한다.
+
+#### ExternalName
+
+오른쪽 그림은 Cluster 내부에서 외부 Resource를 Kubernetes Service 이름으로 참조하는 `ExternalName` 구조다.
+
+예를 들어 Pod가 다음 내부 이름을 사용하도록 구성할 수 있다.
+
+```text
+database.delivery.svc.cluster.local
+```
+
+이 이름은 실제 외부 DNS 이름으로 연결된다.
+
+```text
+database.delivery.svc.cluster.local
+→ 실제 RDS Endpoint
+```
+
+> [!important] ExternalName은 Proxy가 아니다  
+> 그림에서는 Service를 거쳐 RDS·S3·ElastiCache로 통신하는 것처럼 보이지만,  
+> 실제 `ExternalName` Service는 Network Traffic을 중계하지 않는다.  
+> Kubernetes DNS가 Service 이름에 대해 외부 Domain을 가리키는 DNS Alias를 반환하는 방식이다.
+
+ExternalName Service에는 일반적으로 다음 항목이 없다.
+
+- Pod를 고르는 `selector`
+- Backend Pod 목록
+- 일반적인 ClusterIP
+- Kubernetes가 관리하는 Traffic Load Balancing
+
+따라서 ExternalName의 핵심 역할은 **외부 Resource의 실제 주소를 Kubernetes 내부의 일정한 Service 이름 뒤에 감추는 것**이다.
+
+p.113 그림은 `LoadBalancer`가 외부 요청의 진입점을 제공하는 방식과, `ExternalName`이 외부 Resource를 DNS 이름으로 참조하게 하는 방식을 비교한다.
+
+`LoadBalancer`는 이번에 실제 생성했지만 `ExternalName`은 실행하지 않았다. 따라서 제목이나 Callout에서 다음처럼 구분하는 것이 맞다.
+
+> [!info] 교안 개념
+> ExternalName은 교안 이미지 해설이며, 현재 Runtime에서 생성하거나 통신을 검증하지 않았다.
 ## 2. 사용한 Manifest
 
 ### Deployment
@@ -983,3 +1108,159 @@ kubectl get all -n delivery
 
 > [!warning] AWS Console 확인
 > `kubectl delete`가 성공해도 AWS Load Balancer와 관련 Target Group이 실제로 정리됐는지는 AWS Console 또는 AWS CLI에서 별도로 확인한다. 실습 후에는 남은 Load Balancer Resource가 없는지 점검한다.
+
+가능하다. **실행 증거와 교안 개념이 섞이지 않도록**, 이미지 해설은 Runtime 절 내부가 아니라 별도의 `교안 이미지 해설` 절로 넣는 편이 맞다.
+
+## 권장 삽입 위치
+
+현재 노트의 개념 설명 뒤, Manifest나 Runtime 기록 전에 다음 절을 넣는 구성이 가장 자연스럽다.
+
+```markdown
+## Service Type 구조 비교 — 교안 이미지 해설
+```
+
+---
+
+## 붙여넣기용 초안
+
+````markdown
+## Service Type 구조 비교 — 교안 이미지 해설
+
+> [!info] 증거 범위
+> 아래 내용은 실제 Runtime 출력이 아니라 `Kubernetes.pdf` p.112-p.113의 개념도를 해설한 것이다.
+> 실제 생성·접속 여부는 각 실습 기록에서 별도로 판단한다.
+
+### ClusterIP와 NodePort
+
+<!-- [이미지 삽입: Kubernetes.pdf p.112 — ClusterIP와 NodePort 비교] -->
+
+#### ClusterIP
+
+왼쪽 그림은 `ClusterIP` Service가 Kubernetes Cluster 내부의 고정된 접속 지점으로 동작하는 구조를 나타낸다.
+
+```text
+Cluster 내부 Client
+→ Service의 ClusterIP 또는 DNS
+→ selector가 선택한 Backend Pod
+````
+
+Pod는 교체되면서 IP가 달라질 수 있지만, Client는 개별 Pod IP 대신 Service의 ClusterIP 또는 DNS 이름을 사용한다.
+
+그림의 External Client 앞에 표시된 `X`는 Cluster 외부에서 ClusterIP로 직접 접속할 수 없다는 의미다.
+
+> [!warning] 외부 접근 불가의 의미  
+> `ClusterIP`는 Kubernetes Cluster 내부 전용 주소다.  
+> 외부 Client가 Pod에 접근하려면 `NodePort`, `LoadBalancer`, `Ingress`와 같은 별도 진입점이 필요하다.
+
+#### NodePort
+
+오른쪽 그림은 모든 Worker Node에서 동일한 Port를 열어 Service로 연결하는 `NodePort` 구조다.
+
+```text
+Client
+→ NodeIP:NodePort
+→ NodePort Service
+→ Backend Pod의 targetPort
+```
+
+예시에서는 모든 Node가 `30000`번 Port를 열고 있다. Client는 접근 가능한 Worker Node 중 하나의 IP와 NodePort를 사용한다.
+
+요청을 받은 Node와 실제 Backend Pod가 실행 중인 Node가 반드시 같을 필요는 없다. Service가 선택한 다른 Node의 Pod로도 요청이 전달될 수 있다.
+
+> [!note] `30000`은 고정값이 아니다  
+> 그림의 `30000`은 예시다. NodePort는 일반적으로 `30000-32767` 범위에서 지정하거나 자동 할당된다.
+
+> [!warning] NodePort가 곧 Public Internet 공개를 의미하지는 않는다  
+> NodePort가 생성돼도 Node IP까지의 Route, Security Group, Network ACL 등이 허용되어야 접근할 수 있다.  
+> Worker Node에 `EXTERNAL-IP`가 없다면 외부 인터넷에서 바로 접속 가능하다고 단정할 수 없다.
+
+````
+
+p.112 그림은 ClusterIP가 내부 진입점이고, NodePort가 각 Node의 동일 Port를 통해 외부 진입점을 추가한다는 차이를 보여준다. :contentReference[oaicite:0]{index=0}
+
+---
+
+```markdown
+### LoadBalancer와 ExternalName
+
+<!-- [이미지 삽입: Kubernetes.pdf p.113 — LoadBalancer와 ExternalName 비교] -->
+
+#### LoadBalancer
+
+왼쪽 그림은 외부 Load Balancer가 Kubernetes Service 앞에 배치되는 구조를 나타낸다.
+
+```text
+External Client
+→ Cloud Load Balancer
+→ Kubernetes Service
+→ Backend Pod
+````
+
+AWS EKS에서 `type: LoadBalancer` Service를 생성하면 AWS Load Balancer의 DNS 이름이 Service의 외부 주소로 제공될 수 있다.
+
+이번 실습에서도 `lb-svc`에 다음 항목이 함께 할당됐다.
+
+```text
+ClusterIP
+NodePort
+AWS ELB DNS
+```
+
+따라서 LoadBalancer Service는 단순히 Pod 앞에 Load Balancer 하나만 붙이는 개념이 아니라, 외부 진입점과 Kubernetes 내부 Service 전달 구조가 연결된 형태로 이해한다.
+
+> [!warning] 그림의 두 `svc` 아이콘  
+> 그림은 Load Balancer가 여러 Backend 집합에 요청을 분배하는 모습을 단순화한 것이다.  
+> 반드시 Kubernetes Service Object가 두 개 생성된다는 의미는 아니다.
+
+> [!important] 주소 할당과 통신 성공은 별개  
+> `EXTERNAL-IP`에 AWS ELB DNS가 표시됐더라도 Listener, Target 상태, Security Group과 실제 HTTP 응답은 별도로 검증해야 한다.
+
+#### ExternalName
+
+오른쪽 그림은 Cluster 내부에서 외부 Resource를 Kubernetes Service 이름으로 참조하는 `ExternalName` 구조다.
+
+예를 들어 Pod가 다음 내부 이름을 사용하도록 구성할 수 있다.
+
+```text
+database.delivery.svc.cluster.local
+```
+
+이 이름은 실제 외부 DNS 이름으로 연결된다.
+
+```text
+database.delivery.svc.cluster.local
+→ 실제 RDS Endpoint
+```
+
+> [!important] ExternalName은 Proxy가 아니다  
+> 그림에서는 Service를 거쳐 RDS·S3·ElastiCache로 통신하는 것처럼 보이지만,  
+> 실제 `ExternalName` Service는 Network Traffic을 중계하지 않는다.  
+> Kubernetes DNS가 Service 이름에 대해 외부 Domain을 가리키는 DNS Alias를 반환하는 방식이다.
+
+ExternalName Service에는 일반적으로 다음 항목이 없다.
+
+- Pod를 고르는 `selector`
+    
+- Backend Pod 목록
+    
+- 일반적인 ClusterIP
+    
+- Kubernetes가 관리하는 Traffic Load Balancing
+    
+
+따라서 ExternalName의 핵심 역할은 **외부 Resource의 실제 주소를 Kubernetes 내부의 일정한 Service 이름 뒤에 감추는 것**이다.
+
+````
+
+p.113 그림은 `LoadBalancer`가 외부 요청의 진입점을 제공하는 방식과, `ExternalName`이 외부 Resource를 DNS 이름으로 참조하게 하는 방식을 비교한다. :contentReference[oaicite:1]{index=1}
+
+## 노트에 넣을 때 주의할 부분
+
+`LoadBalancer`는 이번에 실제 생성했지만 `ExternalName`은 실행하지 않았다. 따라서 제목이나 Callout에서 다음처럼 구분하는 것이 맞다.
+
+```markdown
+> [!info] 교안 개념
+> ExternalName은 교안 이미지 해설이며, 현재 Runtime에서 생성하거나 통신을 검증하지 않았다.
+````
+
+이미지는 **각 `<!-- [이미지 삽입: ...] -->` 위치에 넣으면 된다.**
