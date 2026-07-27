@@ -35,6 +35,10 @@ parent_moc: "[[10_학습 노트/클라우드/00_클라우드_목차]]"
 - [[02_Kubernetes 아키텍처]]
 - [[03_AWS EKS]]
 - [[04_Kubernetes Pod와 ReplicaSet]]
+- [[05_Kubernetes Volume]]
+- [[06_Kubernetes StatefulSet]]
+- [[07_Kubernetes DaemonSet]]
+- [[08_Kubernetes AutoScaling]]
 
 ## 공식 문서
 
