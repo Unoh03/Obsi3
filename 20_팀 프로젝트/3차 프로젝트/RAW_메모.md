@@ -7,6 +7,156 @@
 	- 수현님의 계획은 보안보다는 구축, 인프라, 범위 특화. 나와 타조는 보안 → 컨테이너 침해,침투에 집중.
 	- 점심 먹고오니 타조의 계획으로 진행 되기로 함. 다만, 아직 이글루 멘토님들과 상담 전이라, 테세우스의 배마냥 갈가리 찢길 가능성이 없는건 아님.
 	- 일단 역할 배정은 웹 앱을 하기로 함.
+- 컨테이너 침투, 탈출 경로 공부 모음.
+```mermaid
+flowchart LR
+    subgraph ENTRY["침해 진입 경로"]
+        direction TB
+
+        WEB["웹 애플리케이션 취약점<br/>RCE · Command Injection<br/>SSTI · 안전하지 않은 역직렬화"]
+        LIMITED["제한적인 공격 능력<br/>Local File Read · SSRF<br/>Secret 또는 Token 노출"]
+        SUPPLY["공급망 침해<br/>악성·취약 이미지<br/>의존성 및 Registry 변조"]
+        K8S_IN["Kubernetes 관리면 오용<br/>노출된 API · 과도한 RBAC<br/>탈취한 관리자 자격증명 · kubectl exec"]
+        NODE_IN["Node·Runtime 선행 침해<br/>kubelet · container runtime<br/>Node 또는 Host 장악"]
+    end
+
+    WORKLOAD["컨테이너화된 워크로드 침해<br/><br/>코드 실행 · 파일 읽기<br/>자격증명 사용 중 하나 이상"]
+
+    WEB -->|"애플리케이션 프로세스에서 코드 실행"| WORKLOAD
+    LIMITED -->|"Shell 없이도 파일·Token 접근 가능"| WORKLOAD
+    SUPPLY -->|"악성 코드가 포함된 상태로 배포"| WORKLOAD
+    K8S_IN -->|"Pod 생성·변경·exec 권한 오용"| WORKLOAD
+    NODE_IN -->|"Host에서 Container 접근"| WORKLOAD
+
+    subgraph IMPACT["침해 후 도달 가능한 자산·영향"]
+        direction TB
+
+        LOCAL["Container 내부 자산<br/>환경변수 · 설정 파일<br/>마운트된 Secret · 애플리케이션 데이터"]
+        K8S_OUT["Kubernetes 리소스<br/>다른 Pod · Secret · ConfigMap<br/>ServiceAccount의 RBAC 허용 범위"]
+        AWS["AWS 리소스<br/>S3 · SQS · DynamoDB 등<br/>IRSA·Pod Identity Role 허용 범위"]
+        INTERNAL["내부 서비스<br/>DB · Redis · 내부 API<br/>네트워크 접근과 인증 범위"]
+        HOST_OUT["Node·Host 장악<br/>Container Escape<br/>다른 Container 영향"]
+        EXTERNAL["외부 영향<br/>데이터 유출 · 서비스 변조<br/>추가 공격 거점"]
+    end
+
+    WORKLOAD -->|"현재 프로세스 권한 범위"| LOCAL
+    WORKLOAD -->|"ServiceAccount Token + RBAC 필요"| K8S_OUT
+    WORKLOAD -->|"Workload IAM Credential 필요"| AWS
+    WORKLOAD -->|"Network 경로 + Credential 필요"| INTERNAL
+    WORKLOAD -->|"추가 조건 필요"| HOST_OUT
+
+    LOCAL --> EXTERNAL
+    K8S_OUT --> EXTERNAL
+    AWS --> EXTERNAL
+    INTERNAL --> EXTERNAL
+    HOST_OUT --> EXTERNAL
+
+    classDef entry fill:#fff0e6,stroke:#d97706,color:#111;
+    classDef center fill:#fee2e2,stroke:#dc2626,stroke-width:3px,color:#111;
+    classDef impact fill:#e8f1ff,stroke:#2563eb,color:#111;
+
+    class WEB,LIMITED,SUPPLY,K8S_IN,NODE_IN entry;
+    class WORKLOAD center;
+    class LOCAL,K8S_OUT,AWS,INTERNAL,HOST_OUT,EXTERNAL impact;
+```
+이건 전체.
+
+```mermaid
+flowchart LR
+    subgraph ENTRY["침해 진입 경로"]
+        direction TB
+
+        WEB["웹 애플리케이션 취약점<br/>RCE · Command Injection<br/>SSTI · 안전하지 않은 역직렬화"]
+        LIMITED["제한적인 공격 능력<br/>Local File Read · SSRF<br/>Secret 또는 Token 노출"]
+        SUPPLY["공급망 침해<br/>악성·취약 이미지<br/>의존성 및 Registry 변조"]
+        K8S_IN["Kubernetes 관리면 접근<br/><b>운호안: 통제된 kubectl exec</b><br/>Pod 침해 상태 가정"]
+        NODE_IN["Node·Runtime 선행 침해<br/>kubelet · container runtime<br/>Node 또는 Host 장악"]
+    end
+
+    WORKLOAD["<b>컨테이너화된 Workload 침해</b><br/><br/>Pod 내부 명령 실행 가능"]
+
+    WEB --> WORKLOAD
+    LIMITED --> WORKLOAD
+    SUPPLY --> WORKLOAD
+    K8S_IN ==> WORKLOAD
+    NODE_IN --> WORKLOAD
+
+    subgraph IMPACT["침해 후 도달 가능한 자산·영향"]
+        direction TB
+
+        LOCAL["Container 내부 자산<br/>환경변수 · 설정 파일<br/>마운트된 Secret · 애플리케이션 데이터"]
+        K8S_OUT["Kubernetes 리소스<br/>다른 Pod · Secret · ConfigMap<br/>ServiceAccount의 RBAC 허용 범위"]
+        AWS["<b>AWS 리소스</b><br/>IRSA Role 사용<br/>과도한 s3:GetObject 권한으로<br/>S3 Canary 객체 접근"]
+        INTERNAL["내부 서비스<br/>DB · Redis · 내부 API<br/>네트워크 접근과 인증 범위"]
+        HOST_OUT["Node·Host 장악<br/>Container Escape<br/>다른 Container 영향"]
+        EXTERNAL["외부 영향<br/>데이터 유출 · 서비스 변조<br/>추가 공격 거점"]
+    end
+
+    WORKLOAD --> LOCAL
+    WORKLOAD --> K8S_OUT
+    WORKLOAD ==> AWS
+    WORKLOAD --> INTERNAL
+    WORKLOAD --> HOST_OUT
+
+    LOCAL --> EXTERNAL
+    K8S_OUT --> EXTERNAL
+    AWS --> EXTERNAL
+    INTERNAL --> EXTERNAL
+    HOST_OUT --> EXTERNAL
+
+    classDef inactive fill:#f3f4f6,stroke:#9ca3af,color:#6b7280;
+    classDef active fill:#fee2e2,stroke:#dc2626,stroke-width:4px,color:#111,font-weight:bold;
+    classDef inactiveImpact fill:#eff6ff,stroke:#93c5fd,color:#6b7280;
+
+    class WEB,LIMITED,SUPPLY,NODE_IN inactive;
+    class K8S_IN,WORKLOAD,AWS active;
+    class LOCAL,K8S_OUT,INTERNAL,HOST_OUT,EXTERNAL inactiveImpact;
+
+    linkStyle 0,1,2,4,5,6,8,9,10,11,12,13,14 stroke:#d1d5db,stroke-width:1px;
+    linkStyle 3,7 stroke:#dc2626,stroke-width:5px;
+```
+이건 내 기존 계획의 경우.
+```mermaid
+flowchart LR
+    ENTRY["① 통제된 kubectl exec<br/>Pod 침해 상태 가정"]
+    POD["② 컨테이너화된 Workload 침해<br/>Pod 내부 명령 실행 가능"]
+    TOKEN["③ IRSA Web Identity Token<br/>Workload Identity 확인"]
+    STS["④ STS<br/>AssumeRoleWithWebIdentity"]
+    ROLE["⑤ 임시 IAM Role Credential<br/>과도한 s3:GetObject 권한"]
+    S3["⑥ S3 Canary 객체 접근 성공"]
+    FIX["⑦ IAM 최소 권한 조치"]
+    RETEST["⑧ 동일 조건 재검증<br/>AccessDenied 확인"]
+
+    ENTRY ==> POD
+    POD ==> TOKEN
+    TOKEN ==> STS
+    STS ==> ROLE
+    ROLE ==> S3
+    S3 ==> FIX
+    FIX ==> RETEST
+
+    EKSLOG["EKS Audit Log<br/>pods/exec 증적"]
+    STSLOG["CloudTrail<br/>AssumeRoleWithWebIdentity"]
+    S3LOG["CloudTrail S3 Data Event<br/>GetObject"]
+    DENYLOG["조치 후 응답·CloudTrail<br/>접근 거부 증적"]
+
+    ENTRY -.-> EKSLOG
+    STS -.-> STSLOG
+    S3 -.-> S3LOG
+    RETEST -.-> DENYLOG
+
+    classDef attack fill:#fee2e2,stroke:#dc2626,stroke-width:3px,color:#111,font-weight:bold;
+    classDef evidence fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#111;
+    classDef remediation fill:#dcfce7,stroke:#16a34a,stroke-width:3px,color:#111,font-weight:bold;
+
+    class ENTRY,POD,TOKEN,STS,ROLE,S3 attack;
+    class EKSLOG,STSLOG,S3LOG,DENYLOG evidence;
+    class FIX,RETEST remediation;
+
+    linkStyle 0,1,2,3,4,5 stroke:#dc2626,stroke-width:4px;
+    linkStyle 6 stroke:#16a34a,stroke-width:4px;
+```
+자세히 보면 이렇게.
 - 웹 앱
 	- 만들기 귀찮. 있는거 갖다 쓰기로 함.
 	- juice shop은 이미 알고 있었음. 다만 코덱스가 말하는게 이거 주스샵은 우리 프로젝트에 부적합할지도 모른단 느낌이 들어, 주스샵과 비슷한 애들 모두 모아서 적합한 애를 골라냄.
@@ -161,3 +311,7 @@ DVWA Security → LOW로 변경 → 서밋.
 ![[Pasted image 20260728152959.png]]
 커맨드 인젝션 → 시험삼아 셀프 핑.
 이후 인젝션 해봄.
+
+
+## 멘토님 상담
+
