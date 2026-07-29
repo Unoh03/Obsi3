@@ -58,3 +58,11 @@ kubectl get nodes -o wide
 kubectl get pods -A
 helm list -A
 ```
+
+### 16:15
+
+- GitHub Actions OIDC용 IAM Role과 ECR Push Policy를 Terraform으로 생성하고, `Uns-DVWA` Repository Variables에 `AWS_REGION`, `ECR_REPOSITORY`, `AWS_ROLE_ARN`을 등록함.
+- Argo CD 웹 접속과 로그인까지 확인했으나 Application은 아직 0개임. Argo CD 설치만 완료된 상태이며 Repository 인증·Application·DVWA Helm 배포는 미구현임.
+- 매일 `terraform destroy → apply`하는 운영을 고려해, AWS 내부의 수동 Kubernetes Secret·Argo Application에 의존하지 않고 GitHub에 남는 Workflow·Manifest·Secret을 기준으로 GitOps 구성을 자동 복원하기로 결정함.
+- 목표 흐름: GitHub Actions가 DVWA Image를 ECR에 Push하고 immutable tag로 Helm 값을 갱신 → GitOps Bootstrap이 private Repository 인증과 Argo Application을 재생성 → Argo CD가 내부 `ClusterIP` Preview를 자동 배포함.
+- 외부 `web-service`·ALB·CloudFront 연결은 첫 검증에서 제외함. `argocd-ui.ps1`은 SSH tunnel, 현재 admin 비밀번호 조회·Clipboard 복사, Argo 웹 관찰만 담당하도록 계획함.
