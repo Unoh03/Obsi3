@@ -156,3 +156,11 @@ helm list -A
 - 팀 계정 이식성을 위해 AWS Profile·Account·Project·Region·EC2 Key Pair 이름을 Wrapper에서 Terraform Plan으로 전달하고, Source만 이전하며 State·Credential·Private Key를 새 노트북에 복사하지 않는 절차를 Runbook에 추가했다.
 - Gitleaks는 기존 공식 DVWA의 `vulnerabilities/csrf/help/help.php` 54행 예제 문자열 1건을 `generic-api-key`로 탐지했다. 해당 파일은 이번 변경 및 `origin/main` 대비 변경되지 않았으며, 새 Credential 유입 증거는 아니다.
 - Foundation Preview는 ECR Repository·Lifecycle Policy·GitHub OIDC Provider·ECR Push 전용 IAM Role·Inline Policy의 `5 create / 0 change / 0 destroy`로 확인됐다. AWS·GitHub 변경은 아직 수행하지 않았고 `SETUP FOUNDATION` 승인 대기 상태다.
+
+### 00:34
+
+- GitHub 실제 설정에서 Repository가 Private이며 immutable OIDC prefix가 `repo:Unoh03@67749487/Uns-DVWA@1315708638`, `use_default: true`로 확인됐고 Foundation의 `main` Branch Subject와 일치했다.
+- 새 노트북에서 이전 Private Key를 복사하지 않아도 되도록 `setup-foundation.ps1`에 명시적 `-RotateDeployKey` 경계를 추가했다. 현재 GitHub Deploy Key는 0개다.
+- Managed Sandbox 안의 Plan은 local State lock 파일 쓰기 권한 때문에 `Access is denied`로 실패했고, AWS·GitHub 변경 없는 Plan 재실행은 정상 통과했다.
+- 최신 Foundation Plan은 다시 `5 create / 0 change / 0 destroy`이며 Apply·Deploy Key 등록·GitHub Variable 갱신은 아직 수행하지 않았다.
+- `ssh-keygen` 일회용 Probe로 Script의 무암호 ED25519 Deploy Key 생성 인자를 검증했고 Probe Key는 즉시 삭제했다.
