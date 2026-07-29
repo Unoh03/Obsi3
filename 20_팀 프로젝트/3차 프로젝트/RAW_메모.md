@@ -43,3 +43,18 @@ kubectl get service -n web
 kubectl get applications.argoproj.io -n argocd
 kubectl describe pod -n kube-system <pending-karpenter-pod>
 ```
+
+### 15:22
+
+- `C:\Users\Unoh\.ssh\config`에 서울 Bastion 접속 별칭 `bas`를 설정하고 `ssh bas`로 직접 접속함.
+- 접속 사용자 `ec2-user`, Bastion Hostname `ip-10-0-0-93.ap-northeast-2.compute.internal` 확인.
+- 서울 EKS Node 2대가 `Ready`; Argo CD, AWS Load Balancer Controller, EFS CSI, Pod Identity Agent, Karpenter 등 주요 Pod가 `Running`.
+- Helm Release `argocd`, `aws-load-balancer-controller`, `karpenter`가 모두 `deployed`.
+
+```bash
+whoami
+hostname
+kubectl get nodes -o wide
+kubectl get pods -A
+helm list -A
+```
