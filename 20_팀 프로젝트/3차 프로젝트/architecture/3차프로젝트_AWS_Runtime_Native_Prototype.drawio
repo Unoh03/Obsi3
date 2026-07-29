@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-07-29T00:00:00.000Z" agent="Codex" version="30.0.4" type="device">
+  <diagram id="aws-native-runtime" name="AWS Native Runtime">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="account-boundary" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#232F3E;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="155" y="105" width="1400" height="720" as="geometry"/>
+        </mxCell>
+        <mxCell id="region-boundary" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#FF9900;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="345" y="160" width="1170" height="610" as="geometry"/>
+        </mxCell>
+        <mxCell id="vpc-boundary" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#8C4FFF;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="390" y="330" width="820" height="385" as="geometry"/>
+        </mxCell>
+        <mxCell id="az-a-boundary" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#147EBA;strokeWidth=2;dashed=1;dashPattern=8 5;" vertex="1" parent="1">
+          <mxGeometry x="430" y="485" width="340" height="190" as="geometry"/>
+        </mxCell>
+        <mxCell id="az-c-boundary" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#147EBA;strokeWidth=2;dashed=1;dashPattern=8 5;" vertex="1" parent="1">
+          <mxGeometry x="830" y="485" width="340" height="190" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="title" value="AWS / EKS Security Validation Runtime" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=28;fontStyle=1;fontColor=#232F3E;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="35" y="25" width="780" height="45" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="Target Architecture · attack path, identity boundary, evidence collection" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=13;fontColor=#687078;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="38" y="68" width="720" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="target-tag" value="TARGET ARCHITECTURE" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#232F3E;strokeColor=#232F3E;fontColor=#FFFFFF;fontFamily=Arial;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1340" y="35" width="185" height="32" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="account-icon" value="" style="shape=mxgraph.aws4.group_account;aspect=fixed;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="168" y="116" width="24" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="account-label" value="AWS Account · Security Test Environment" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=15;fontStyle=1;fontColor=#232F3E;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="198" y="112" width="390" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="region-icon" value="" style="shape=mxgraph.aws4.group_region;aspect=fixed;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="358" y="171" width="24" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="region-label" value="Region · ap-northeast-2" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=14;fontStyle=1;fontColor=#C45500;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="388" y="167" width="260" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="vpc-icon" value="" style="shape=mxgraph.aws4.group_vpc;aspect=fixed;html=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="403" y="341" width="24" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="vpc-label" value="Customer VPC" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=14;fontStyle=1;fontColor=#5A30B5;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="433" y="337" width="170" height="30" as="geometry"/>
+        </mxCell>
+        <mxCell id="az-a-label" value="Availability Zone A · Private App Subnet" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#147EBA;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="445" y="495" width="290" height="24" as="geometry"/>
+        </mxCell>
+        <mxCell id="az-c-label" value="Availability Zone C · Private App Subnet" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#147EBA;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="845" y="495" width="290" height="24" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="users" value="User / Test Runner" style="shape=mxgraph.aws4.users;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#232F3E;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="35" y="350" width="90" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="route53" value="Route 53" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.route_53;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#232F3E;fillColor=#8C4FFF;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="210" y="360" width="82" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="waf" value="AWS WAF" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.waf;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#232F3E;fillColor=#DD344C;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="445" y="220" width="82" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="eks-control" value="EKS Control Plane&lt;br&gt;AWS managed · outside VPC" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.eks;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#232F3E;fillColor=#FF9900;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="700" y="205" width="120" height="115" as="geometry"/>
+        </mxCell>
+        <mxCell id="alb" value="Application Load Balancer&lt;br&gt;Public subnets · multi-AZ" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#232F3E;fillColor=#8C4FFF;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="745" y="370" width="120" height="110" as="geometry"/>
+        </mxCell>
+        <mxCell id="node-a" value="Managed Node Group A" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2_instance_contents;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#232F3E;fillColor=#ED7100;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="470" y="545" width="95" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="node-c" value="Managed Node Group C" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2_instance_contents;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#232F3E;fillColor=#ED7100;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="870" y="545" width="95" height="100" as="geometry"/>
+        </mxCell>
+        <mxCell id="pod-a" value="Vulnerable&lt;br&gt;Workload" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF5F3;strokeColor=#D13212;strokeWidth=2;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#8B1A0E;" vertex="1" parent="1">
+          <mxGeometry x="620" y="555" width="110" height="62" as="geometry"/>
+        </mxCell>
+        <mxCell id="pod-c" value="Remediated&lt;br&gt;Workload" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F2F8F0;strokeColor=#1D8102;strokeWidth=2;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#1D5E09;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="555" width="110" height="62" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="security-rail" value="IDENTITY · DATA · EVIDENCE" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontStyle=1;fontColor=#687078;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="205" width="220" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="iam" value="IAM / Pod Identity" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#232F3E;fillColor=#DD344C;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="255" width="105" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="s3" value="Amazon S3&lt;br&gt;Protected data" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.s3;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=12;fontStyle=1;fontColor=#232F3E;fillColor=#7AA116;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1405" y="255" width="95" height="105" as="geometry"/>
+        </mxCell>
+        <mxCell id="cloudtrail" value="CloudTrail" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudtrail;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=11;fontStyle=1;fontColor=#232F3E;fillColor=#E7157B;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="490" width="85" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="cloudwatch" value="CloudWatch" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch;aspect=fixed;html=1;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontFamily=Arial;fontSize=11;fontStyle=1;fontColor=#232F3E;fillColor=#E7157B;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1405" y="490" width="85" height="95" as="geometry"/>
+        </mxCell>
+        <mxCell id="evidence-label" value="Audit trail · metrics · application and access logs" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#687078;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="610" width="265" height="42" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="traffic-1" value="DNS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#232F3E;endArrow=block;endFill=1;fontFamily=Arial;fontSize=11;fontColor=#232F3E;" edge="1" parent="1" source="users" target="route53">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="traffic-2" value="HTTPS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#232F3E;endArrow=block;endFill=1;fontFamily=Arial;fontSize=11;fontColor=#232F3E;" edge="1" parent="1" source="route53" target="alb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="traffic-a" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#232F3E;endArrow=block;endFill=1;" edge="1" parent="1" source="alb" target="pod-a">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="traffic-c" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#232F3E;endArrow=block;endFill=1;" edge="1" parent="1" source="alb" target="pod-c">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="waf-association" value="Association" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=2;strokeColor=#DD344C;endArrow=none;dashed=1;dashPattern=8 5;fontFamily=Arial;fontSize=10;fontColor=#B12704;" edge="1" parent="1" source="waf" target="alb">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="control-a" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#8C4FFF;endArrow=none;dashed=1;dashPattern=6 5;" edge="1" parent="1" source="eks-control" target="node-a">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="control-c" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#8C4FFF;endArrow=none;dashed=1;dashPattern=6 5;" edge="1" parent="1" source="eks-control" target="node-c">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="attack-identity" value="3 · credential / role abuse" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#D13212;endArrow=block;endFill=1;fontFamily=Arial;fontSize=11;fontStyle=1;fontColor=#B12704;" edge="1" parent="1" source="pod-a" target="iam">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="attack-data" value="4 · unauthorized access" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=3;strokeColor=#D13212;endArrow=block;endFill=1;fontFamily=Arial;fontSize=11;fontStyle=1;fontColor=#B12704;" edge="1" parent="1" source="iam" target="s3">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="log-alb" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#687078;endArrow=block;endFill=1;dashed=1;dashPattern=4 4;" edge="1" parent="1" source="alb" target="cloudwatch">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="log-iam" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeWidth=1;strokeColor=#687078;endArrow=block;endFill=1;dashed=1;dashPattern=4 4;" edge="1" parent="1" source="iam" target="cloudtrail">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="legend-traffic" value="Normal traffic" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#232F3E;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="430" y="750" width="120" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-attack" value="Validated attack path" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#B12704;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="590" y="750" width="150" height="25" as="geometry"/>
+        </mxCell>
+        <mxCell id="legend-control" value="Control / telemetry" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Arial;fontSize=11;fontColor=#687078;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="790" y="750" width="150" height="25" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
