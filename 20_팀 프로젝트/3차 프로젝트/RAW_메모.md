@@ -147,3 +147,12 @@ helm list -A
 - 신뢰성 결함 후보: SSM Association을 1회만 조회함, Daily State가 비었을 때 EKS·RDS만 Drift 확인함, `daily-down.ps1`이 빈 State에서 과금 잔존 Resource 확인 없이 종료함, Argo CD 첫 Sync의 일시 실패에 같은 Commit 재시도 정책이 없음.
 - 다음 정적 보정: `gh` 경로 자동 해석, SSM bounded polling, Project Tag·Name 기반 Daily 과금 Resource Drift/잔존 검사, Argo CD bounded retry. 알 수 없는 Resource는 자동 삭제하지 않고 ID를 보고한 뒤 중단한다.
 - 팀 노트북·팀 AWS 계정 이전 시 Source만 이전하고 개인 계정 State·Credential·Private Key는 복사하지 않는다. 팀 계정에서 AWS 인증, Foundation, Deploy Key, GitHub Variables를 1회 재생성해야 하며 Account·Path Parameter화가 끝나야 간편한 인계가 가능하다.
+
+### 2026-07-30 00:24
+
+- Daily Script 신뢰성 보정: User·Machine PATH 자동 갱신, SSM Association 최대 20분 bounded polling, 빈 State의 Project Tag 기반 AWS Runtime 검사, Destroy 후 State 기반·Tag 기반 이중 잔존 검사를 반영했다.
+- Tag API가 종료된 EC2와 `PendingDeletion` KMS도 잠시 반환하는 것을 확인해, 각 Service의 실제 활성 상태를 다시 조회한 Resource만 Drift·잔존으로 판정하도록 보정했다. 현재 개인 계정의 활성 `aws-topology` Daily Runtime 판정은 0개다.
+- Argo CD Application에 동일 Revision의 일시적 첫 Sync 실패를 위한 최대 5회 exponential backoff retry와 새 Revision refresh를 추가했다.
+- 팀 계정 이식성을 위해 AWS Profile·Account·Project·Region·EC2 Key Pair 이름을 Wrapper에서 Terraform Plan으로 전달하고, Source만 이전하며 State·Credential·Private Key를 새 노트북에 복사하지 않는 절차를 Runbook에 추가했다.
+- Gitleaks는 기존 공식 DVWA의 `vulnerabilities/csrf/help/help.php` 54행 예제 문자열 1건을 `generic-api-key`로 탐지했다. 해당 파일은 이번 변경 및 `origin/main` 대비 변경되지 않았으며, 새 Credential 유입 증거는 아니다.
+- Foundation Preview는 ECR Repository·Lifecycle Policy·GitHub OIDC Provider·ECR Push 전용 IAM Role·Inline Policy의 `5 create / 0 change / 0 destroy`로 확인됐다. AWS·GitHub 변경은 아직 수행하지 않았고 `SETUP FOUNDATION` 승인 대기 상태다.
