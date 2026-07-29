@@ -139,3 +139,11 @@ helm list -A
 - 공식 DVWA 원본의 `.github/workflows/vulnerable.yml`은 `master` push 시 GitHub Secrets·Variables를 JSON과 Base64 형태로 출력하도록 작성된 의도적 취약 예제임.
 - 현재 작업 브랜치는 `main`이므로 자동 실행 조건에는 해당하지 않지만, `master` 사용·Trigger 변경·Workflow 재사용 시 Secret 노출 경로가 될 수 있음.
 - 신규 DVWA CI/CD Workflow는 이 파일을 호출하거나 재사용하지 않으며, GitHub OIDC 임시 자격증명과 ECR 최소 권한 Role만 사용하기로 함.
+
+### 23:44
+
+- CI/CD Goal 중간 점검: `D:\DVWA`는 `origin/main`보다 3 Commit 앞서 있으며, Foundation/Daily State 분리·DVWA Database 자동 초기화·`daily-up.ps1`·`daily-down.ps1` 정적 구현과 검증은 완료됐다. AWS Foundation Apply, E2E 배포, Down→Up 2회 재현은 아직 미검증이다.
+- GitHub CLI 2.96.0은 공식 배포본 Hash 검증 후 설치·인증됐으나 현재 실행 중인 Codex Process는 갱신된 User PATH를 아직 보지 못한다. GitHub Repository Variables는 남아 있지만 대응하는 AWS OIDC·ECR·IAM Role은 현재 없고 Deploy Key도 아직 없다.
+- 신뢰성 결함 후보: SSM Association을 1회만 조회함, Daily State가 비었을 때 EKS·RDS만 Drift 확인함, `daily-down.ps1`이 빈 State에서 과금 잔존 Resource 확인 없이 종료함, Argo CD 첫 Sync의 일시 실패에 같은 Commit 재시도 정책이 없음.
+- 다음 정적 보정: `gh` 경로 자동 해석, SSM bounded polling, Project Tag·Name 기반 Daily 과금 Resource Drift/잔존 검사, Argo CD bounded retry. 알 수 없는 Resource는 자동 삭제하지 않고 ID를 보고한 뒤 중단한다.
+- 팀 노트북·팀 AWS 계정 이전 시 Source만 이전하고 개인 계정 State·Credential·Private Key는 복사하지 않는다. 팀 계정에서 AWS 인증, Foundation, Deploy Key, GitHub Variables를 1회 재생성해야 하며 Account·Path Parameter화가 끝나야 간편한 인계가 가능하다.
