@@ -111,3 +111,16 @@ helm list -A
 - `setup.php`는 로그인 없이 Session CSRF Token으로 실행할 수 있고, 내부 `MySQL.php`는 기존 Database를 먼저 `DROP`한 뒤 재생성함.
 - 영향: DVWA가 외부 또는 신뢰하지 않는 내부 경로에 노출되면 Setup Endpoint를 통한 데이터 초기화·파괴 경로가 될 수 있음. 단순 `/login.php` HTTP 200과 Pod Ready만으로 DB가 온전하다고 판정할 수도 없음.
 - 조치 방향: HTTP Setup Endpoint를 자동 호출하지 않고, 새 Database에서 필수 Table이 없을 때만 실행되는 비파괴적·Idempotent 초기화 Job과 Table 존재 검증을 사용함. Preview Service는 계속 내부 `ClusterIP`로 유지함.
+
+### 18:17
+
+- Bastion User Data가 `kubectl`의 최신 Patch와 고정 Version의 Helm 압축 파일을 HTTPS로 내려받아 `root` 권한으로 설치하지만, 현재 Script에는 SHA-256 또는 서명 검증이 없음.
+- 영향: Download 경로·배포 Artifact가 변조되면 EKS 관리자 권한을 가진 Bastion에 임의 Code가 설치될 수 있고, 같은 Terraform Source를 다시 Apply해도 다른 `kubectl` Patch가 설치되어 환경 재현성이 달라질 수 있음.
+- 현재 경계: GitHub Actions의 외부 Action과 Session Manager Plugin은 SHA로 고정·검증했지만 Bastion CLI 공급망은 아직 같은 수준으로 닫히지 않음.
+- 후속 조치: 검증된 Version과 공식 Checksum을 함께 고정하고, Update 시 Version·Checksum을 명시적으로 갱신하는 방식으로 Hardening할 후보로 기록함.
+
+### 18:21
+
+- GitOps Runtime 검증용 Kubernetes RBAC에 `dvwa-db` Secret의 `get`을 허용하면, Workflow는 Type만 조회하더라도 탈취된 GitOps Role이 API 응답의 실제 DB 자격증명까지 읽을 수 있음을 확인함.
+- `kubectl exec` 기반 DB 확인도 `pods/exec create` 권한을 요구해, 같은 Role이 DVWA Container에서 임의 명령을 실행하거나 환경변수의 Secret을 꺼낼 수 있는 권한 상승 경계가 됨.
+- 조치: Secret 조회와 `pods/exec` 권한을 모두 제거하고, Deployment Ready와 DB 초기화 Init Container의 정상 종료 상태를 읽기 전용으로 확인하여 Secret 전달·Schema 초기화 성공을 증명하도록 보정함.
