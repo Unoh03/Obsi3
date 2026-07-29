@@ -124,3 +124,12 @@ helm list -A
 - GitOps Runtime 검증용 Kubernetes RBAC에 `dvwa-db` Secret의 `get`을 허용하면, Workflow는 Type만 조회하더라도 탈취된 GitOps Role이 API 응답의 실제 DB 자격증명까지 읽을 수 있음을 확인함.
 - `kubectl exec` 기반 DB 확인도 `pods/exec create` 권한을 요구해, 같은 Role이 DVWA Container에서 임의 명령을 실행하거나 환경변수의 Secret을 꺼낼 수 있는 권한 상승 경계가 됨.
 - 조치: Secret 조회와 `pods/exec` 권한을 모두 제거하고, Deployment Ready와 DB 초기화 Init Container의 정상 종료 상태를 읽기 전용으로 확인하여 Secret 전달·Schema 초기화 성공을 증명하도록 보정함.
+
+### 19:27
+
+- DVWA Repository의 Commit·Push를 기준으로 GitHub Actions가 Image Build·ECR Push·GitOps Revision 갱신을 수행하고, Argo CD가 Pod를 자동 배포하는 구성을 구현함.
+- 매일 전체 환경을 `destroy → apply`하면 ECR Image·EKS·Argo CD·AWS 측 IAM 연결이 사라지는 문제를 확인해, `apply-and-bootstrap.ps1`이 Terraform Apply 뒤 Build와 GitOps Bootstrap을 다시 호출하는 방향을 설계함. `workflow_dispatch`, `paths-ignore`, `[skip ci]`, `GITHUB_TOKEN` 재귀 방지는 중복 실행 대책일 뿐 Resource 재생성 문제의 해결책은 아니었음.
+- 시행착오: “완전 복구”를 기존 DB 데이터 보존까지 포함한다고 과대 해석해 RDS 유지·Snapshot·Backup/Restore·State 분리를 검토했으나, 사용자는 비용 절약용 DVWA Lab의 DB 데이터 보존을 원하지 않았음. 최종 결정은 Primary RDS·DR Replica와 데이터를 매일 삭제하고 Snapshot·Backup·Restore 없이 다음 Apply에서 빈 DB와 DVWA 기본 Schema·Seed를 자동 생성하는 것임.
+- 비용·수명주기 경계는 GitHub OIDC Provider·IAM Role·ECR 최신 Image·GitHub Secret/Variable/Deploy Key만 보존하고, VPC·EKS·Node·Bastion·Argo CD·ALB·NAT·RDS·DR Replica 등 실행 환경은 삭제하는 방향으로 보정함. ECR Image 저장비 외에는 보존 계층의 지속 비용이 거의 없음.
+- 현재 상태: `D:\DVWA`의 CI/CD·Helm·GitOps 변경은 Staged 상태이며 Commit·Push 및 Runtime 검증 전임. `D:\terraform\aws_terraform_build_code`는 Git Repository가 아닌 로컬 변경본이고, 현재 RDS Code의 `deletion_protection = true`, `skip_final_snapshot = false`는 위 최종 결정에 아직 맞추지 않았음.
+- 수현 씨가 전달한 원본 후보 `aws_terraform_build_code.zip`은 32개 Entry, SHA-256 `EC61DD604EBC5F3D45356F515FAB0350B76EB9BFA86AA31085AFAB3E92B55020`으로 확인함. 현재 작업본을 덮어쓰지 않고 별도 기준선 폴더에만 압축 해제해 Diff할 예정임.
