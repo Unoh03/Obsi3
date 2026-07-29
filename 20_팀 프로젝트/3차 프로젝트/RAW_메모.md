@@ -66,3 +66,11 @@ helm list -A
 - 매일 `terraform destroy → apply`하는 운영을 고려해, AWS 내부의 수동 Kubernetes Secret·Argo Application에 의존하지 않고 GitHub에 남는 Workflow·Manifest·Secret을 기준으로 GitOps 구성을 자동 복원하기로 결정함.
 - 목표 흐름: GitHub Actions가 DVWA Image를 ECR에 Push하고 immutable tag로 Helm 값을 갱신 → GitOps Bootstrap이 private Repository 인증과 Argo Application을 재생성 → Argo CD가 내부 `ClusterIP` Preview를 자동 배포함.
 - 외부 `web-service`·ALB·CloudFront 연결은 첫 검증에서 제외함. `argocd-ui.ps1`은 SSH tunnel, 현재 admin 비밀번호 조회·Clipboard 복사, Argo 웹 관찰만 담당하도록 계획함.
+
+### 17:27
+
+- 보안 설계 검토에서 `AWS-StartPortForwardingSessionToRemoteHost`가 `host`·`portNumber`를 임의 지정하게 해 GitOps Role이 Bastion을 경유해 IMDS(`169.254.169.254:80`)나 RDS 등 내부 Endpoint에 Tunnel할 수 있는 권한 확대 경로를 발견함. 실제 악용은 수행하지 않았고 현재 Draft는 외부에 적용되지 않음.
+- 영향: GitHub Workflow가 변조되면 Bastion Role의 임시 자격증명과 RDS Master Secret·EKS 관리자 권한으로 이어질 가능성이 있음.
+- 보정 결정: Remote-host Document를 제거하고, Bastion의 `127.0.0.1:19443 → EKS API:443` 고정 Proxy와 Remote Port를 Literal로 고정한 Custom Session Document만 허용함. Workflow는 Local Port만 전달함.
+- Kubernetes RBAC의 `create`는 `resourceNames`로 이름을 제한할 수 없어, Repo Secret·Application 1개만 생성하게 하려던 Draft 권한이 의도보다 넓어질 수 있음을 발견함. Named Placeholder를 관리자 Bootstrap에서 먼저 만들고 GitHub Role에는 Exact `get/patch/update`만 허용하는 보정을 검토 중임.
+- 2026-07-15 이후 생성 GitHub Repository의 Immutable OIDC `sub`에 Owner·Repository Numeric ID가 포함되므로, 실제 ID 확인 전에는 IAM Trust를 추정하지 않고 Terraform Plan을 실패시키기로 함.
