@@ -133,3 +133,9 @@ helm list -A
 - 비용·수명주기 경계는 GitHub OIDC Provider·IAM Role·ECR 최신 Image·GitHub Secret/Variable/Deploy Key만 보존하고, VPC·EKS·Node·Bastion·Argo CD·ALB·NAT·RDS·DR Replica 등 실행 환경은 삭제하는 방향으로 보정함. ECR Image 저장비 외에는 보존 계층의 지속 비용이 거의 없음.
 - 현재 상태: `D:\DVWA`의 CI/CD·Helm·GitOps 변경은 Staged 상태이며 Commit·Push 및 Runtime 검증 전임. `D:\terraform\aws_terraform_build_code`는 Git Repository가 아닌 로컬 변경본이고, 현재 RDS Code의 `deletion_protection = true`, `skip_final_snapshot = false`는 위 최종 결정에 아직 맞추지 않았음.
 - 수현 씨가 전달한 원본 후보 `aws_terraform_build_code.zip`은 32개 Entry, SHA-256 `EC61DD604EBC5F3D45356F515FAB0350B76EB9BFA86AA31085AFAB3E92B55020`으로 확인함. 현재 작업본을 덮어쓰지 않고 별도 기준선 폴더에만 압축 해제해 Diff할 예정임.
+
+### 20:19
+
+- 공식 DVWA 원본의 `.github/workflows/vulnerable.yml`은 `master` push 시 GitHub Secrets·Variables를 JSON과 Base64 형태로 출력하도록 작성된 의도적 취약 예제임.
+- 현재 작업 브랜치는 `main`이므로 자동 실행 조건에는 해당하지 않지만, `master` 사용·Trigger 변경·Workflow 재사용 시 Secret 노출 경로가 될 수 있음.
+- 신규 DVWA CI/CD Workflow는 이 파일을 호출하거나 재사용하지 않으며, GitHub OIDC 임시 자격증명과 ECR 최소 권한 Role만 사용하기로 함.
