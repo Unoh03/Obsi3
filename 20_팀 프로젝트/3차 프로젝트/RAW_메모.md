@@ -164,3 +164,12 @@ helm list -A
 - Managed Sandbox 안의 Plan은 local State lock 파일 쓰기 권한 때문에 `Access is denied`로 실패했고, AWS·GitHub 변경 없는 Plan 재실행은 정상 통과했다.
 - 최신 Foundation Plan은 다시 `5 create / 0 change / 0 destroy`이며 Apply·Deploy Key 등록·GitHub Variable 갱신은 아직 수행하지 않았다.
 - `ssh-keygen` 일회용 Probe로 Script의 무암호 ED25519 Deploy Key 생성 인자를 검증했고 Probe Key는 즉시 삭제했다.
+
+### 00:49
+
+- Foundation 첫 Apply에서 ECR Repository와 Lifecycle Policy는 생성됐지만 IAM OIDC Provider 생성이 `HTTP 302 / UnknownError`로 일시 실패했다. State에는 성공한 Resource만 기록됐다.
+- State 기준 재계획은 `3 create / 0 change / 0 destroy`였고 재시도에서 OIDC Provider·GitHub Actions IAM Role·ECR Push Inline Policy가 생성됐다.
+- GitHub Deploy Key 목록이 비어 있을 때 StrictMode가 `null.title`을 읽는 오류를 발견해 빈 배열 처리를 보정했다. 이후 Terraform `0/0/0`, read-only Deploy Key 등록, `AWS_REGION`·`ECR_REPOSITORY`·`AWS_ROLE_ARN` 갱신이 완료됐다.
+- DVWA `main` Push 뒤 GitHub Actions Run `30467506262`가 EKS Cluster 0개 상태에서도 OIDC 인증·ECR 로그인·Image Build/Push·GitOps Commit을 모두 성공했다.
+- ECR에는 `sha-a737dca315311f08c22309d4463d42db55aebadf` Image가 생성됐고, GitOps Bot Commit `b73cd025`가 같은 Repository와 Tag를 `deploy/dvwa/values.yaml`에 기록했다.
+- Bot Commit은 `[skip ci]`를 사용해 추가 Workflow 실행 없이 종료됐으며 로컬 `main`도 `origin/main`으로 fast-forward 동기화했다.
