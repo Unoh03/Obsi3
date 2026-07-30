@@ -203,3 +203,12 @@ helm list -A
 - CloudTrail `aws-topology-security-trail`은 Multi-Region Management Event를 기록 중이며 CloudWatch Log Group은 7일 보존으로 확인했다.
 - 전용 S3 Bucket은 Versioning·AES256·Public Access Block·7일 Lifecycle이 적용됐고, 실제 CloudTrail Event 5개와 `.json.gz` 객체 전달을 확인했다.
 - Apply 후 Foundation 재계획은 `No changes`였다. Daily Runtime과 `daily-down`은 이번 단계에서 변경·실행하지 않았다.
+
+### 18:18
+
+- `Unoh03/Uns-DVWA` PR #1(`feature/service-shell → main`)을 검토하고 합의된 수정 사항을 Push했다. PR은 아직 Merge하지 않았다.
+- 회원가입의 원본 DB 오류 노출·사용자명 출력·`MAX(user_id)+1` 동시성 문제를 Security Level별로 보정했다. `low/medium`의 교육용 취약 동작은 남기고 `high/impossible`에는 입력 제한·출력 인코딩을 적용했으며, MySQL Advisory Lock으로 중복 검사와 ID 할당 구간을 직렬화했다.
+- Docker Compose로 Image Build와 Runtime을 검증했다. PHP 8.5 Lint, 일반 회원가입·로그인, `low/medium`의 취약 출력, `high/impossible`의 Markup 사용자명 거부, 8개 동시 회원가입 성공을 확인했다. 검증 Container와 Network는 내렸고 DB Volume은 보존했다.
+- CI의 `master/main` 불일치와 개인용 `.claude/launch.json`을 정리했다. 의도적으로 Secret을 출력하는 `.github/workflows/vulnerable.yml`은 `master` 조건을 유지해 `main`에서 활성화하지 않았다.
+- 외부 참고 사이트의 429·Timeout이 PR을 연쇄적으로 깨는 URL Test를 보정했다. 예상 밖 HTTP 오류는 계속 실패시키되 일시적인 네트워크 접근 불가는 출력만 하고 차단하지 않도록 했고, 최신 Pytest가 통과했다.
+- Private Repository에서 GitHub Code Scanning을 사용할 수 없는 제품 경계를 확인했다. CodeQL은 Public 또는 `CODEQL_PRIVATE_ENABLED=true`일 때만 실행하도록 조건화했고, SL Scan SARIF는 Workflow Artifact로 보존하도록 변경했다. 최신 결과는 `Pytest pass`, `Scan-Build pass`, `CodeQL skip`이며 `D:\DVWA` 작업 트리는 Clean이다. 관리자 모듈로 Setup·Security 제어 링크를 옮기는 작업은 후속으로 보류했다.
