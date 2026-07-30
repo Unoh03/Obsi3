@@ -188,3 +188,11 @@ helm list -A
 - EKS Module의 `use_latest_ami_release_version` 기본 동작 때문에 Plan 시 최신 권장 AMI Release를 따라가는 것이 자동 Drift의 원인으로 확인됐다.
 - 현재 Primary와 DR의 Release가 서로 달라 단일 Version으로 고정하지 않고, 추후 지역별 `ami_release_version` 입력으로 각각 고정하는 방향을 검토한다.
 - 지금은 Argo CD와 DVWA Runtime 확인을 위해 Terraform Source·AWS Runtime을 변경하지 않고 후속 작업으로 보류한다.
+
+### 14:41
+
+- Daily 자동화를 `automation/project.psd1`의 Application·Evidence 계약과 공용 Module로 분리하고, Terraform-only Service 추가는 Entry Script 수정 없이 수용하도록 보정했다.
+- Foundation에 Application Bucket과 분리된 CloudTrail 전용 S3·CloudWatch 계층을 추가했다. 보존 기간은 7일이며 Daily Destroy 대상에서 제외한다.
+- `daily-down.ps1`은 Destroy 전·후 S3 Evidence를 노트북 `Documents/aws-topology-evidence`로 동기화하고 SHA-256 Index·Run Manifest를 생성하도록 보정했다.
+- 실제 `-EvidenceOnly` 검증에서 기존 Daily CloudTrail 532개 파일을 복사·Hash 처리했다. AWS Resource 변경은 수행하지 않았다.
+- 기존 Foundation Lock의 AWS Provider `6.57.0`이 Registry에서 해소되지 않아 `6.57.1`로 재초기화했다. Foundation Plan은 보안 로그 계층 `10 create / 0 change / 0 destroy`이며 Apply는 보류했다.
