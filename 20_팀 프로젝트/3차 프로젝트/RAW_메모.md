@@ -233,3 +233,23 @@ helm list -A
 - EKS Deployment는 Image `sha-35e419c339d3ae42dfc21573578c8bba2518d046`로 Rolling Update됐고, 새 Pod `Ready` 후 기존 Pod가 제거되며 최종 `1/1 Running`이 됐다. CloudFront 외부 응답은 최종 `200 OK`였다.
 - Argo CD 웹의 `Refresh` 버튼과 수동 refresh annotation이 모두 개입해 자연 Polling 지연은 측정하지 못했다. 현재 `timeout.reconciliation=180s`, GitHub Webhook 없음, `auto-sync` 활성 상태다.
 - Deployment는 `replicas=1`, `revisionHistoryLimit=10`, 현재 Revision `5`다. ReplicaSet 5개 중 과거 4개는 `replicas=0`인 Rollback 이력이다.
+
+## 미해결 문제 순서 보정·로그 수집 논점
+
+### 20:41
+
+- 실제 `daily-down → cold up` 검증은 내일 아침에 수행하는 것이 적기다.
+- 대표 시나리오는 시나리오 이해도가 가장 높은 타조가 DVWA 재조립과 함께 진행 중이다.
+- 로그는 관련 범위를 모두 수집할 수 있는지부터 논의한다. 탐지·자동 조치는 DVWA 재조립 이후, 보고서 초안은 모의공격과 조치 이후에 진행할 예정이다.
+- 현재 논의의 초점은 Evidence 반출이 아니라 실제 로그를 어떻게 수집할지다.
+- 기존 CloudWatch·S3 지속 저장이 있으므로 `daily-down` 때마다 S3 로그를 로컬로 반출하고 Hash·Manifest를 만드는 과정이 필수인지 재검토한다.
+- `CloudWatch`, `Fluent Bit`, `CloudWatch Agent`, `OpenTelemetry`, `Loki`, `OpenSearch`, `SIEM`을 같은 종류의 선택지로 볼 수 있는지도 다시 분류한다.
+
+### 20:43
+
+- 검토 결과 위 7개는 동종 도구가 아니다. `Fluent Bit`·`CloudWatch Agent`·`OpenTelemetry`는 수집·운반 계층, `CloudWatch Logs`·`Loki`·`OpenSearch`는 저장·검색 계층, `SIEM`은 보안 상관분석·사건관리 계층에 가깝다.
+- `Athena`는 S3에 저장된 로그를 SQL로 조회하는 서버리스 분석 계층이며 실시간 수집기나 저장소가 아니다.
+- 현재 Source에서 확인된 지속 로그는 CloudTrail Management Event의 CloudWatch·S3 전달뿐이다. EKS Control Plane·Pod/Application·WAF·ALB/CloudFront·VPC Flow·S3 Data Event 로그는 아직 구성되지 않았다.
+- Foundation S3와 CloudWatch는 Daily Destroy에서 보존되고 CloudTrail `enable_log_file_validation = true`도 적용돼 있다. 따라서 매일 로컬 반출·Hash를 로그 수집의 필수 과정으로 둘 필요는 낮다.
+- 로컬 Evidence 반출은 기존 Daily CloudTrail 제거 전 보존, 특정 실험 종료 시점의 오프라인 묶음, 7일 이상 보존이 필요할 때 사용하는 선택 기능으로 좁히는 안을 검토한다.
+- 모든 관련 로그 Source를 수집하는 것과 CloudWatch·Loki·OpenSearch·SIEM 등 모든 제품을 동시에 도입하는 것은 구분한다.
