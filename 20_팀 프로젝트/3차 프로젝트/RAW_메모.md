@@ -173,3 +173,18 @@ helm list -A
 - DVWA `main` Push 뒤 GitHub Actions Run `30467506262`가 EKS Cluster 0개 상태에서도 OIDC 인증·ECR 로그인·Image Build/Push·GitOps Commit을 모두 성공했다.
 - ECR에는 `sha-a737dca315311f08c22309d4463d42db55aebadf` Image가 생성됐고, GitOps Bot Commit `b73cd025`가 같은 Repository와 Tag를 `deploy/dvwa/values.yaml`에 기록했다.
 - Bot Commit은 `[skip ci]`를 사용해 추가 Workflow 실행 없이 종료됐으며 로컬 `main`도 `origin/main`으로 fast-forward 동기화했다.
+
+### 10:26
+
+- Daily Runtime 최초 Apply `249 create / 0 change / 0 destroy`가 완료됐고, EKS·RDS·Bastion·Argo CD 등 개인 Account Runtime이 생성됐다.
+- 시행착오: Windows 임시 Secret 파일 ACL의 Account 문자열 오류, MariaDB 11.8의 `require_secure_transport=ON`에 따른 `ERROR 3159`, Argo CD CRD가 거부한 `spec.syncPolicy.retry.refresh`, ALB→Kubernetes Node 80/TCP SG 누락으로 인한 Target Timeout·CloudFront 504를 확인했다.
+- 조치: 정확한 Windows Identity ACL, RDS Global CA Bundle 기반 TLS, 비지원 Argo 필드 제거, Primary·DR ALB에서 Node SG 80/TCP로 가는 Ingress Rule을 반영했다.
+- GitHub Actions Run `30502223778`에서 Image Build·ECR Push·GitOps Commit이 성공했고, Image `sha-1231eb8b091e4911868dddb0c5290e1edf2b1cde`가 배포됐다.
+- 최종 업 검증: DVWA Database·전용 User·Kubernetes Secret·Schema 준비, Argo CD `Synced / Healthy`, DVWA Pod `Running / Ready`, 외부 URL 응답까지 확인했다. 마지막 `daily-up.ps1`은 1.3분에 완료됐고 요청에 따라 `daily-down`은 실행하지 않았다.
+- 추가 관찰: EKS Managed Node Group `release_version`이 `1.35.6-20260724 → 1.35.6-20260728`로 자동 Drift해 의도하지 않은 Rolling Update가 발생했고 앞선 재실행 시간이 크게 늘었다.
+
+### 10:35
+
+- EKS Module의 `use_latest_ami_release_version` 기본 동작 때문에 Plan 시 최신 권장 AMI Release를 따라가는 것이 자동 Drift의 원인으로 확인됐다.
+- 현재 Primary와 DR의 Release가 서로 달라 단일 Version으로 고정하지 않고, 추후 지역별 `ami_release_version` 입력으로 각각 고정하는 방향을 검토한다.
+- 지금은 Argo CD와 DVWA Runtime 확인을 위해 Terraform Source·AWS Runtime을 변경하지 않고 후속 작업으로 보류한다.
