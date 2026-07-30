@@ -222,3 +222,14 @@ helm list -A
 - 상담 전 목표: 인프라와 웹 애플리케이션을 팀 기준 약 90% 수준으로 준비하고, 보고서는 방향성과 전체적인 느낌을 판단할 수 있는 초안까지 작성한다.
 - 판정 경계: 위 `90%`는 프로젝트 전체 완성도가 아니라 `멘토 평가 준비도`다. 로그·탐지·자동 조치의 본편 완성도와 구분한다.
 - 후속 기록: 2026-07-30 일일 로그에서도 이 계획을 최상위 판단 기준으로 명시한다.
+
+## PR 병합·GitOps 배포 검증
+
+### 19:52
+
+- `Unoh03/Uns-DVWA` PR #1을 Squash Merge했다. Merge Commit은 `35e419c339d3ae42dfc21573578c8bba2518d046`이다.
+- `CI`, `SL Scan`, `DVWA CI to ECR and GitOps`가 성공했다. Private Repository 조건에 따라 `CodeQL`은 의도적으로 Skip됐다.
+- GitOps Bot Commit `34181530eedf16b098f41c651d26c51575ffebfe`가 새 Image Tag를 기록했고, Argo CD는 해당 Revision을 `Synced / Healthy`로 반영했다.
+- EKS Deployment는 Image `sha-35e419c339d3ae42dfc21573578c8bba2518d046`로 Rolling Update됐고, 새 Pod `Ready` 후 기존 Pod가 제거되며 최종 `1/1 Running`이 됐다. CloudFront 외부 응답은 최종 `200 OK`였다.
+- Argo CD 웹의 `Refresh` 버튼과 수동 refresh annotation이 모두 개입해 자연 Polling 지연은 측정하지 못했다. 현재 `timeout.reconciliation=180s`, GitHub Webhook 없음, `auto-sync` 활성 상태다.
+- Deployment는 `replicas=1`, `revisionHistoryLimit=10`, 현재 Revision `5`다. ReplicaSet 5개 중 과거 4개는 `replicas=0`인 Rollback 이력이다.
