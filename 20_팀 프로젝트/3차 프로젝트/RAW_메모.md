@@ -253,3 +253,14 @@ helm list -A
 - Foundation S3와 CloudWatch는 Daily Destroy에서 보존되고 CloudTrail `enable_log_file_validation = true`도 적용돼 있다. 따라서 매일 로컬 반출·Hash를 로그 수집의 필수 과정으로 둘 필요는 낮다.
 - 로컬 Evidence 반출은 기존 Daily CloudTrail 제거 전 보존, 특정 실험 종료 시점의 오프라인 묶음, 7일 이상 보존이 필요할 때 사용하는 선택 기능으로 좁히는 안을 검토한다.
 - 모든 관련 로그 Source를 수집하는 것과 CloudWatch·Loki·OpenSearch·SIEM 등 모든 제품을 동시에 도입하는 것은 구분한다.
+
+## 최초 Daily Down 실제 검증
+
+### 21:14
+
+- 최초 실제 Down Plan은 `0 create / 0 change / 251 destroy`였고, Foundation 금지 자원 검사를 통과했다. 삭제 전 Foundation·기존 Daily CloudTrail Evidence 동기화와 Manifest 생성도 성공했다.
+- AWS 변경 전 PowerShell에서 빈 Generic List 바인딩과 List 배열 반환 오류를 발견해 `AllowEmptyCollection`과 `ToArray()`로 보정했다. Parser와 `test-daily-automation.ps1` 검증을 통과했다.
+- 첫 Destroy는 대부분의 Runtime을 제거했으나 Primary·DR S3가 versioned object 때문에 `BucketNotEmpty`로 남았다. Source는 `force_destroy = true`였지만 실제 State는 `false`여서, 복구 Plan `0 add / 2 change / 0 destroy`를 적용한 뒤 남은 두 버킷을 제거했다.
+- 최종 Daily Terraform State는 비었다. Tagging API가 삭제된 SG Rule 2개와 EKS Pod Identity Association 4개를 잠시 반환했지만 개별 AWS API에서는 모두 `NotFound`였고, 잔존 검사기에 두 Resource Type의 실재 확인 로직을 추가했다.
+- 보정 후 `daily-down.ps1` 재실행 결과 `Tagged daily AWS runtime: none`이었고, Foundation ECR·GitHub OIDC/Role·CloudTrail·보안 로그 S3는 보존됐다. Foundation Refresh Plan도 `No changes`였다.
+- KMS Customer Managed Key는 삭제 예약 후 기본 30일(설정 가능 7~30일) 동안 `PendingDeletion`으로 남지만, AWS 공식 가격 기준 이 상태에는 Key 보관 요금이 부과되지 않는다. 실제 확인 결과 두 Region에 Customer Managed Key 14개가 모두 `PendingDeletion`이고 활성 Key는 없었다. 반복 생성 시 콘솔·Quota 관리 문제와 활성 시간 비용은 별도로 검토한다.
