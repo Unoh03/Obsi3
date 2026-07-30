@@ -196,3 +196,10 @@ helm list -A
 - `daily-down.ps1`은 Destroy 전·후 S3 Evidence를 노트북 `Documents/aws-topology-evidence`로 동기화하고 SHA-256 Index·Run Manifest를 생성하도록 보정했다.
 - 실제 `-EvidenceOnly` 검증에서 기존 Daily CloudTrail 532개 파일을 복사·Hash 처리했다. AWS Resource 변경은 수행하지 않았다.
 - 기존 Foundation Lock의 AWS Provider `6.57.0`이 Registry에서 해소되지 않아 `6.57.1`로 재초기화했다. Foundation Plan은 보안 로그 계층 `10 create / 0 change / 0 destroy`이며 Apply는 보류했다.
+
+### 16:23
+
+- Foundation 보안 로그 Plan을 적용했다: `10 added / 0 changed / 0 destroyed`.
+- CloudTrail `aws-topology-security-trail`은 Multi-Region Management Event를 기록 중이며 CloudWatch Log Group은 7일 보존으로 확인했다.
+- 전용 S3 Bucket은 Versioning·AES256·Public Access Block·7일 Lifecycle이 적용됐고, 실제 CloudTrail Event 5개와 `.json.gz` 객체 전달을 확인했다.
+- Apply 후 Foundation 재계획은 `No changes`였다. Daily Runtime과 `daily-down`은 이번 단계에서 변경·실행하지 않았다.
