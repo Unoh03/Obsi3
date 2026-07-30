@@ -212,3 +212,13 @@ helm list -A
 - CI의 `master/main` 불일치와 개인용 `.claude/launch.json`을 정리했다. 의도적으로 Secret을 출력하는 `.github/workflows/vulnerable.yml`은 `master` 조건을 유지해 `main`에서 활성화하지 않았다.
 - 외부 참고 사이트의 429·Timeout이 PR을 연쇄적으로 깨는 URL Test를 보정했다. 예상 밖 HTTP 오류는 계속 실패시키되 일시적인 네트워크 접근 불가는 출력만 하고 차단하지 않도록 했고, 최신 Pytest가 통과했다.
 - Private Repository에서 GitHub Code Scanning을 사용할 수 없는 제품 경계를 확인했다. CodeQL은 Public 또는 `CODEQL_PRIVATE_ENABLED=true`일 때만 실행하도록 조건화했고, SL Scan SARIF는 Workflow Artifact로 보존하도록 변경했다. 최신 결과는 `Pytest pass`, `Scan-Build pass`, `CodeQL skip`이며 `D:\DVWA` 작업 트리는 Clean이다. 관리자 모듈로 Setup·Security 제어 링크를 옮기는 작업은 후속으로 보류했다.
+
+## 당분간의 최상위 계획 — 다음 멘토 상담 전 평가 가능한 상태 준비
+
+### 19:44
+
+- 일정: 다음 멘토 상담이 다음 주 화요일에서 다다음 주 화요일로 연기됐다.
+- 의도: 팀 내부·AI 평가만으로 결론을 확정하기보다, 현업 멘토가 구체적으로 평가할 수 있는 재료를 충분히 준비한다.
+- 상담 전 목표: 인프라와 웹 애플리케이션을 팀 기준 약 90% 수준으로 준비하고, 보고서는 방향성과 전체적인 느낌을 판단할 수 있는 초안까지 작성한다.
+- 판정 경계: 위 `90%`는 프로젝트 전체 완성도가 아니라 `멘토 평가 준비도`다. 로그·탐지·자동 조치의 본편 완성도와 구분한다.
+- 후속 기록: 2026-07-30 일일 로그에서도 이 계획을 최상위 판단 기준으로 명시한다.
