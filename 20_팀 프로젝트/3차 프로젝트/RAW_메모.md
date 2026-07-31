@@ -76,3 +76,11 @@
 - CI 시행착오: 외부 참고 URL의 `403/429`와 TLS Timeout을 문서 단절로 오판하던 Pytest를 보정. 임시 Python 환경에서 전체 `4 passed`; Commit `8a0099a`와 GitOps Bot Commit `3be7f3b`가 원격 `main`에 반영됨.
 - 종료 경계: Destroy 직전 Runtime은 아직 이전 GitOps Revision `0d85591`과 Image `sha-289c14e...`였음. 최신 선언 `3be7f3b`는 다음 Daily Up에서 Argo CD가 재조정해야 함.
 - 결정: 현재까지의 Source·Git·ECR Image·Foundation Log를 보존하고 Daily Runtime만 `daily-down.ps1`로 제거한다.
+
+### 18:21
+
+- Daily Down: Terraform Destroy 완료. Daily State `0`, Tagged Daily Runtime `0`으로 확인.
+- Foundation 보존: State 24개, ECR `aws-topology/application`, Security Log Bucket과 30일 CloudWatch Log Group이 실제 API에서 존재함을 확인.
+- Evidence: Local `daily-20260731T085159Z-6c0a6831-pre-destroy`·`post-destroy` Bundle 생성. SHA-256 대조는 각각 131개·129개 파일 모두 불일치 0.
+- 시행착오: 삭제된 VPC Flow Log가 Resource Groups Tagging API에 잠시 남아 최초 종료 검사가 실패. EC2 `describe-flow-logs`는 실제 0건이어서 삭제 직후 Tagging 오탐으로 판정.
+- 보정: `daily-common.ps1`에 VPC Flow Log 실재 API 검증과 회귀 계약 Test를 추가. PowerShell Parser·Daily Automation Self-test 통과 후 종료 검사를 재실행해 정상 완료.
