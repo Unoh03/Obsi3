@@ -33,3 +33,11 @@
 - 검증: 실제 EKS·DVWA·WAF Log Group 모두 7일, CloudFront Delivery Destination `S3`, Daily 소유 0·Foundation 소유 1, Foundation 재계획 `No changes`.
 - Daily Plan: Observability Runtime `8 create / 6 update / 0 delete`. 기존 EKS Log Group 삭제 회귀 없음.
 - 남음: Daily Apply는 별도 승인 전까지 미실행. CloudFront·WAF·ALB·VPC Flow·DVWA Log 전달은 아직 Runtime 미검증.
+
+### 15:28
+
+- 결정 반영: 보안 로그 보존기간을 30일로 변경하고 DR EKS에도 DVWA Namespace Fluent Bit·Pod Identity·Evidence Collector를 준비.
+- Foundation Apply: `1 added / 5 changed / 0 destroyed`. DR DVWA Log Group 생성, CloudTrail·Primary EKS·Primary DVWA·WAF·S3 Lifecycle을 `7 → 30일`로 변경.
+- 검증: Primary·DR·Global CloudWatch Log Group과 S3 Current/Noncurrent Version 모두 30일, Foundation 재계획 `No changes`.
+- Daily Plan: `11 create / 6 update / 0 delete`. Primary·DR Log Forwarder, CloudFront·WAF·ALB·VPC Flow Log 배관 포함.
+- 남음: Daily Apply는 별도 승인 전까지 미실행. 실제 Log 전달과 Query 결과는 미검증.
