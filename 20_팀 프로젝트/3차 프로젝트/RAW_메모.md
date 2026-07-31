@@ -41,3 +41,11 @@
 - 검증: Primary·DR·Global CloudWatch Log Group과 S3 Current/Noncurrent Version 모두 30일, Foundation 재계획 `No changes`.
 - Daily Plan: `11 create / 6 update / 0 delete`. Primary·DR Log Forwarder, CloudFront·WAF·ALB·VPC Flow Log 배관 포함.
 - 남음: Daily Apply는 별도 승인 전까지 미실행. 실제 Log 전달과 Query 결과는 미검증.
+
+### 16:02
+
+- Daily Apply: 승인된 `11 create / 6 update / 0 delete` Plan 중 16개 반영, `aws_cloudwatch_log_delivery.cloudfront_access[0]` 1개만 실패.
+- 오류: `ValidationException: Provided field delimiter is not applicable for delivery destination's output format`.
+- 원인·보정: Foundation Destination은 `JSON`인데 Daily Delivery에 `field_delimiter = "\t"`가 있어 충돌. 구분자를 제거하고 같은 조합의 재발을 막는 정적 계약 Test 추가.
+- 검증: Terraform `fmt -check`·`validate`, Daily Automation Self-test 통과. 보정 후 Plan은 `1 create / 0 update / 0 delete`.
+- 남음: 보정된 CloudFront Log Delivery의 두 번째 Apply와 실제 S3 Log 도착은 별도 승인 전까지 미실행.
