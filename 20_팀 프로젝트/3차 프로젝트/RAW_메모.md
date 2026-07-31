@@ -49,3 +49,12 @@
 - 원인·보정: Foundation Destination은 `JSON`인데 Daily Delivery에 `field_delimiter = "\t"`가 있어 충돌. 구분자를 제거하고 같은 조합의 재발을 막는 정적 계약 Test 추가.
 - 검증: Terraform `fmt -check`·`validate`, Daily Automation Self-test 통과. 보정 후 Plan은 `1 create / 0 update / 0 delete`.
 - 남음: 보정된 CloudFront Log Delivery의 두 번째 Apply와 실제 S3 Log 도착은 별도 승인 전까지 미실행.
+
+### 16:36
+
+- CloudFront Log Delivery 재Apply 성공. 정상 요청 뒤 Security Log Bucket에 실제 CloudFront Object 도착을 확인.
+- Runtime: WAF Logging, ALB Access Log, VPC Flow `REJECT`, Primary·DR EKS Control Plane Log는 활성 상태. Primary DVWA CloudWatch Log는 Event 0건.
+- 문제: Primary `aws-for-fluent-bit` DaemonSet은 `2 desired / 0 ready`, 두 Pod 모두 `CrashLoopBackOff`. 이전 Container Log에 `fluent-bit.conf:30: undefined value`가 기록됨.
+- 원인·보정: Chart의 `filter.extraFilters`는 기존 Kubernetes Filter 내부 Option용인데 새 `[FILTER]` Block을 넣어 설정이 중첩됨. 전체 Filter Section용 최상위 `additionalFilters`로 Local Source와 회귀 Test를 수정.
+- 검증: Terraform `fmt -check`·`validate`, Daily Automation Self-test 통과. 저장 Plan은 Primary·DR SSM Document와 Association만 `0 create / 4 update / 0 delete`.
+- 남음: 위 4개 Update Apply와 Fluent Bit Ready·Primary/DR DVWA Log 실제 도착 검증은 별도 승인 대기.
