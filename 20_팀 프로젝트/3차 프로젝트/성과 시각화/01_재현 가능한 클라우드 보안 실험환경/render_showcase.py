@@ -19,6 +19,17 @@ def e(value: Any) -> str:
     return html.escape(str(value), quote=True)
 
 
+def render_inline_emphasis(value: Any) -> str:
+    """Render **text** as strong while escaping every text segment."""
+    parts = re.split(r"(\*\*.+?\*\*)", str(value))
+    return "".join(
+        f"<strong>{e(part[2:-2])}</strong>"
+        if part.startswith("**") and part.endswith("**")
+        else e(part)
+        for part in parts
+    )
+
+
 def safe_script(source: str) -> str:
     return source.replace("</script>", r"<\/script>")
 
@@ -117,7 +128,7 @@ def render_automation_column(
         f"""
         <li>
           <span class="automation-dot"></span>
-          <span>{e(step)}</span>
+          <span>{render_inline_emphasis(step)}</span>
         </li>
         """
         for step in data["steps"]

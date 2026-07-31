@@ -808,6 +808,15 @@ code[class*=language-],pre[class*=language-]{color:#ccc;background:0 0;font-fami
       border-top: 1px dashed var(--showcase-line);
     }
 
+    .automation-list strong {
+      color: var(--showcase-blue);
+      font-weight: 850;
+    }
+
+    .automation-down .automation-list strong {
+      color: var(--showcase-orange);
+    }
+
     .automation-dot {
       position: relative;
       width: 16px;
@@ -1787,42 +1796,42 @@ code[class*=language-],pre[class*=language-]{color:#ccc;background:0 0;font-fami
         <ol class="automation-list">
         <li>
           <span class="automation-dot"></span>
-          <span>AWS Account·Region·Foundation 선행 조건 검증</span>
+          <span>AWS Account·Region·Foundation <strong>선행 조건 검증</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>빈 State일 때 Tag 기반 미추적 Runtime 확인</span>
+          <span>빈 State일 때 Tag 기반 <strong>미추적 Runtime 확인</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>Terraform Plan 요약 후 명시적 승인 문자열 확인</span>
+          <span>Terraform Plan 요약 후 명시적 <strong>승인 문자열 확인</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>EKS·RDS·Bastion·Argo CD 생성</span>
+          <span>EKS·RDS·Bastion·Argo CD 등 <strong>리소스 생성</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>DB·전용 User·Secret·Schema 초기화</span>
+          <span>DB·전용 User·Secret·Schema <strong>초기화</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>필요한 경우 CI를 실행하고 ECR Image 확인</span>
+          <span>필요한 경우 CI 실행 후 <strong>ECR Image 확인</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>Argo Synced / Healthy와 Workload Rollout 대기</span>
+          <span>Argo <strong>Synced / Healthy</strong> 및 <strong>Workload Rollout 대기</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>실행 Image 일치와 외부 HTTP 응답 확인</span>
+          <span><strong>실행 Image 일치</strong>와 <strong>외부 HTTP 응답 확인</strong></span>
         </li>
         </ol>
       </article>
@@ -1834,37 +1843,37 @@ code[class*=language-],pre[class*=language-]{color:#ccc;background:0 0;font-fami
         <ol class="automation-list">
         <li>
           <span class="automation-dot"></span>
-          <span>Destroy Plan에서 Foundation Resource 포함 여부 차단</span>
+          <span>Destroy Plan에서 <strong>Foundation Resource 포함 여부 차단</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>Destroy 전 보안 Evidence 동기화·Manifest 생성</span>
+          <span>Destroy 전 <strong>보안 Evidence 동기화·Manifest 생성</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>Terraform Destroy 실행</span>
+          <span><strong>Terraform Destroy 실행</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>Destroy가 만든 감사 Event를 다시 동기화</span>
+          <span>Destroy 감사 Event <strong>재동기화</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>Daily Terraform State가 비었는지 확인</span>
+          <span><strong>Daily Terraform State 비움 확인</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>State 추적 Resource와 Project Tag Resource를 이중 검사</span>
+          <span>State 추적 Resource·Project Tag Resource <strong>이중 잔존 검사</strong></span>
         </li>
         
         <li>
           <span class="automation-dot"></span>
-          <span>Foundation ECR·OIDC Role·CloudTrail·Log S3 보존 확인</span>
+          <span>Foundation ECR·OIDC Role·CloudTrail·Log S3 <strong>보존 확인</strong></span>
         </li>
         </ol>
       </article>
@@ -2201,7 +2210,7 @@ code[class*=language-],pre[class*=language-]{color:#ccc;background:0 0;font-fami
   <footer class="footer">
     <div class="showcase-shell footer-inner">
       <div><strong>장운호</strong> · Evidence-led engineering case</div>
-      <div>Generated 2026-07-30 22:08:22 대한민국 표준시 · Tabler + Mermaid + PrismJS</div>
+      <div>Generated 2026-07-31 10:37:17 대한민국 표준시 · Tabler + Mermaid + PrismJS</div>
     </div>
   </footer>
 
