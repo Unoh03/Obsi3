@@ -25,3 +25,11 @@
 - 실행 Gate: 기존 `/aws/eks/aws-topology-primary/cluster`를 Foundation State에 Import한 뒤 Daily State의 기존 주소를 제거하고 Foundation Apply·Daily Plan을 순서대로 검증해야 함.
 - 문제: 현재 AWS CLI Credential이 `UnrecognizedClientException`으로 만료되어 실제 Runtime 재조회와 Apply를 진행할 수 없음.
 - 결정: 실행 중인 Terraform 작업 없음. State 변경·Foundation Apply는 사용자 승인과 AWS 인증 복구 전까지 중단.
+
+### 14:53
+
+- 한 일: 사용자 승인 후 양쪽 Local State를 민감 백업하고 기존 EKS Log Group을 Daily State에서 Foundation State로 이전.
+- Foundation Apply: `3 added / 2 changed / 0 destroyed`. DVWA·WAF 7일 Log Group, CloudFront S3 Delivery Destination 생성, Security Log Bucket Policy 갱신, EKS Log Group 보존기간 `90 → 7`.
+- 검증: 실제 EKS·DVWA·WAF Log Group 모두 7일, CloudFront Delivery Destination `S3`, Daily 소유 0·Foundation 소유 1, Foundation 재계획 `No changes`.
+- Daily Plan: Observability Runtime `8 create / 6 update / 0 delete`. 기존 EKS Log Group 삭제 회귀 없음.
+- 남음: Daily Apply는 별도 승인 전까지 미실행. CloudFront·WAF·ALB·VPC Flow·DVWA Log 전달은 아직 Runtime 미검증.
