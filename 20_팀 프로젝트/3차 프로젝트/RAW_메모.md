@@ -58,3 +58,12 @@
 - 원인·보정: Chart의 `filter.extraFilters`는 기존 Kubernetes Filter 내부 Option용인데 새 `[FILTER]` Block을 넣어 설정이 중첩됨. 전체 Filter Section용 최상위 `additionalFilters`로 Local Source와 회귀 Test를 수정.
 - 검증: Terraform `fmt -check`·`validate`, Daily Automation Self-test 통과. 저장 Plan은 Primary·DR SSM Document와 Association만 `0 create / 4 update / 0 delete`.
 - 남음: 위 4개 Update Apply와 Fluent Bit Ready·Primary/DR DVWA Log 실제 도착 검증은 별도 승인 대기.
+
+### 17:09
+
+- Apply: SSM Document·Association `0 added / 4 changed / 0 destroyed`. Primary·DR Association 모두 `Success`.
+- Fluent Bit: Primary `2/2`, DR `1/1` DaemonSet Ready, 새 Pod 모두 `Running`, Restart 0.
+- 실제 전달: Primary DVWA 정상 요청 뒤 CloudWatch Access Log 51건 확인. DR은 Application Workload가 없어 임시 Smoke Pod의 Marker 1건 도착을 확인한 뒤 Pod 삭제.
+- Edge·Network: CloudFront 실제 Object 2개와 ALB 실제 Access Log 3개가 Security Log Bucket에 도착. VPC Flow `REJECT`·EKS Control Plane Log 활성 상태 유지.
+- WAF: XSS 형태의 무해한 Probe가 `CrossSiteScripting_QUERYARGUMENTS`에 Match됐으나 COUNT Override로 최종 `ALLOW`; CloudWatch Event 1건 확인.
+- Redaction: 가짜 Authorization·Cookie Header를 사용한 Probe에서 두 Header 값 모두 `REDACTED`로 저장됨을 값 노출 없이 확인.
