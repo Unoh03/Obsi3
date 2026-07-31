@@ -1,0 +1,31 @@
+Third-Party Notices
+===================
+
+This showcase bundles the following open-source software into its generated
+standalone HTML output.
+
+1. Tabler Core 1.4.0
+   Project: https://github.com/tabler/tabler
+   Asset: @tabler/core/dist/css/tabler.min.css
+   License: MIT
+   Local license copy: vendor/licenses/TABLER_LICENSE.txt
+
+2. Mermaid 11.16.0
+   Project: https://github.com/mermaid-js/mermaid
+   Asset: mermaid/dist/mermaid.min.js
+   License: MIT
+   Local license copy: vendor/licenses/MERMAID_LICENSE.txt
+
+3. PrismJS 1.30.0
+   Project: https://github.com/PrismJS/prism
+   Assets:
+     - prism.min.js
+     - prism-powershell.min.js
+     - prism-hcl.min.js
+     - prism-tomorrow.min.css
+   License: MIT
+   Local license copy: vendor/licenses/PRISM_LICENSE.txt
+
+The generated HTML also contains custom layout, Korean project content, and
+evidence summaries authored for this project. The third-party license texts
+remain available beside the editable sources in this folder.

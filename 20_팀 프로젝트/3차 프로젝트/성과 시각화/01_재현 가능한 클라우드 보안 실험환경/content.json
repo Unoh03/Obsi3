@@ -1,0 +1,306 @@
+{
+  "meta": {
+    "title": "매일 지워도 다시 살아나는 AWS 실험환경",
+    "subtitle": "Foundation / Daily Runtime 수명주기 분리와 GitHub OIDC·ECR·Argo CD GitOps로 비용과 재현성을 함께 다룬 사례",
+    "author": "장운호",
+    "project": "보안 위협 대응을 위한 보안 엔지니어 양성 과정 · 3차 프로젝트",
+    "as_of": "2026-07-30 21:14 KST",
+    "status": "부분 검증",
+    "status_detail": "최초 Up·Down 검증 완료 / 두 번째 Cold Up 미검증",
+    "one_liner": "비용 때문에 매일 Runtime을 제거해야 하는 제약을, 지워도 남아야 할 Foundation과 매일 재생성할 Runtime의 분리 문제로 다시 정의했다."
+  },
+  "metrics": [
+    {
+      "value": "249",
+      "label": "최초 Daily Up 생성",
+      "detail": "0 change · 0 destroy",
+      "tone": "blue"
+    },
+    {
+      "value": "251",
+      "label": "최초 Daily Down 제거",
+      "detail": "0 create · 0 change",
+      "tone": "orange"
+    },
+    {
+      "value": "0",
+      "label": "최종 Daily Runtime 잔존",
+      "detail": "State·Tag 이중 확인",
+      "tone": "green"
+    },
+    {
+      "value": "1.3분",
+      "label": "수렴 후 Up 재실행",
+      "detail": "Cold Start 시간 아님",
+      "tone": "purple"
+    }
+  ],
+  "problem": {
+    "eyebrow": "문제 재정의",
+    "title": "매일 Destroy해야 하지만, 매일 처음부터 시작할 수는 없었다",
+    "description": "EKS·RDS·NAT·ALB 같은 비용 Runtime은 하원 전에 제거해야 했다. 그러나 ECR Image, GitHub OIDC 신뢰관계, GitOps 선언과 보안 증거까지 함께 사라지면 다음 날의 실험은 복원이 아니라 재구축이 된다.",
+    "before": [
+      "전체 Terraform Root를 매일 Destroy",
+      "ECR·IAM·GitOps 연결도 함께 사라질 위험",
+      "DB·Argo CD·애플리케이션 준비를 수동 반복",
+      "실행 결과와 보안 증거가 Runtime 수명주기에 종속"
+    ],
+    "after": [
+      "Persistent Foundation과 Daily Runtime의 State 분리",
+      "Source Push만으로 immutable Image와 GitOps 선언 보존",
+      "daily-up.ps1 한 번으로 Infra·DB·Argo·Workload 검증",
+      "daily-down.ps1이 증거 보존 후 Runtime 잔존까지 점검"
+    ]
+  },
+  "architecture": {
+    "title": "수명주기 분리 구조",
+    "caption": "초록 영역은 일반 Daily Destroy에서 보존하고, 주황 영역만 매일 생성·삭제한다.",
+    "mermaid": "flowchart TB\n  classDef persistent fill:#e8f7ee,stroke:#2fb344,color:#16351f,stroke-width:2px;\n  classDef daily fill:#fff1e6,stroke:#f76707,color:#5f2a00,stroke-width:2px;\n  classDef external fill:#eef4ff,stroke:#206bc4,color:#183153,stroke-width:2px;\n  classDef evidence fill:#f3efff,stroke:#7950f2,color:#2f1b69,stroke-width:2px;\n\n  DEV[\"Git Push / Pull Request\"]:::external --> GHA[\"GitHub Actions\\nOIDC 임시 인증\"]:::external\n\n  subgraph F[\"Persistent Foundation · 일반 Daily Destroy에서 보존\"]\n    OIDC[\"GitHub OIDC Provider\"]:::persistent\n    ROLE[\"main 전용\\nECR Push Role\"]:::persistent\n    ECR[\"ECR\\nimmutable sha tag\"]:::persistent\n    GIT[\"GitOps 선언\\nvalues.yaml\"]:::persistent\n    TRAIL[\"Multi-Region CloudTrail\"]:::evidence\n    CW[\"CloudWatch Logs\\n7일 보존\"]:::evidence\n    S3[\"Security Log S3\\nVersioning · 7일 보존\"]:::evidence\n    OIDC --> ROLE --> ECR\n    TRAIL --> CW\n    TRAIL --> S3\n  end\n\n  GHA --> OIDC\n  GHA --> ECR\n  GHA --> GIT\n\n  subgraph D[\"Daily Runtime · 매일 생성 / 삭제\"]\n    NET[\"VPC · NAT · ALB · CloudFront\"]:::daily\n    EKS[\"EKS · Node · Add-ons\"]:::daily\n    ARGO[\"Argo CD\"]:::daily\n    APP[\"BANK / DVWA Workload\"]:::daily\n    RDS[\"RDS · App DB\"]:::daily\n    NET --> EKS --> ARGO --> APP\n    APP --> RDS\n  end\n\n  GIT --> ARGO\n  ECR --> APP\n  APP -. \"Management Event\" .-> TRAIL\n  UP[\"daily-up.ps1\"]:::external --> D\n  DOWN[\"daily-down.ps1\"]:::external --> D\n  DOWN --> S3"
+  },
+  "delivery_flow": {
+    "title": "Commit에서 실행 Pod까지 추적",
+    "caption": "동일한 변경을 Source Commit, ECR Image Tag, GitOps Revision, Argo 상태와 Running Pod로 연결했다.",
+    "steps": [
+      {
+        "index": "01",
+        "title": "PR 병합",
+        "value": "35e419c…",
+        "detail": "회원가입 보정 변경을 Squash Merge"
+      },
+      {
+        "index": "02",
+        "title": "OIDC 인증·Build",
+        "value": "GitHub Actions",
+        "detail": "장기 AWS Access Key 없이 Role Assume"
+      },
+      {
+        "index": "03",
+        "title": "Immutable Image",
+        "value": "sha-35e419c…",
+        "detail": "ECR Push 후 같은 Commit과 연결"
+      },
+      {
+        "index": "04",
+        "title": "GitOps 선언",
+        "value": "3418153…",
+        "detail": "Bot Commit으로 values.yaml 갱신"
+      },
+      {
+        "index": "05",
+        "title": "Argo CD",
+        "value": "Synced / Healthy",
+        "detail": "새 Pod Ready 후 기존 Pod 제거"
+      },
+      {
+        "index": "06",
+        "title": "외부 확인",
+        "value": "HTTP 200",
+        "detail": "CloudFront를 통한 최종 응답 확인"
+      }
+    ]
+  },
+  "decisions": [
+    {
+      "title": "Terraform -target 대신 Root / State 분리",
+      "problem": "매일 일부 Resource만 억지로 남기면 소유권과 Destroy 경계가 흐려진다.",
+      "decision": "보존 계층과 비용 Runtime을 독립 Root로 분리했다.",
+      "effect": "Destroy Plan에 Foundation Resource가 포함되면 Script가 중단한다.",
+      "status": "verified"
+    },
+    {
+      "title": "장기 Access Key 대신 GitHub OIDC",
+      "problem": "CI가 ECR에 Push하려면 AWS 인증이 필요하지만 정적 Credential 저장은 피해야 한다.",
+      "decision": "정확한 main Branch subject만 신뢰하는 OIDC Role을 만들었다.",
+      "effect": "ECR Push에 필요한 작업과 Repository 하나로 권한을 좁혔다.",
+      "status": "verified"
+    },
+    {
+      "title": "latest 대신 immutable sha tag",
+      "problem": "동일 Tag를 덮어쓰면 어떤 Source가 실제 배포됐는지 추적하기 어렵다.",
+      "decision": "Source Commit 전체 SHA를 Image Tag로 사용했다.",
+      "effect": "Commit·Image·GitOps Revision·Pod를 같은 식별자로 연결했다.",
+      "status": "verified"
+    },
+    {
+      "title": "로그와 Runtime의 수명주기 분리",
+      "problem": "실험환경을 지운 뒤 보안 증거까지 사라지면 조치와 재검증을 설명할 수 없다.",
+      "decision": "CloudTrail·CloudWatch·전용 S3를 Foundation에 두었다.",
+      "effect": "Runtime Destroy 뒤에도 Management Event와 Manifest를 보존한다.",
+      "status": "verified"
+    }
+  ],
+  "automation": {
+    "title": "두 개의 명령이 책임지는 범위",
+    "up": {
+      "command": ".\\daily-up.ps1 -ConfirmApply 'APPLY DAILY'",
+      "steps": [
+        "AWS Account·Region·Foundation **선행 조건 검증**",
+        "빈 State일 때 Tag 기반 **미추적 Runtime 확인**",
+        "Terraform Plan 요약 후 명시적 **승인 문자열 확인**",
+        "EKS·RDS·Bastion·Argo CD 등 **리소스 생성**",
+        "DB·전용 User·Secret·Schema **초기화**",
+        "필요한 경우 CI 실행 후 **ECR Image 확인**",
+        "Argo **Synced / Healthy** 및 **Workload Rollout 대기**",
+        "**실행 Image 일치**와 **외부 HTTP 응답 확인**"
+      ]
+    },
+    "down": {
+      "command": ".\\daily-down.ps1 -ConfirmDestroy 'DESTROY DAILY'",
+      "steps": [
+        "Destroy Plan에서 **Foundation Resource 포함 여부 차단**",
+        "Destroy 전 **보안 Evidence 동기화·Manifest 생성**",
+        "**Terraform Destroy 실행**",
+        "Destroy 감사 Event **재동기화**",
+        "**Daily Terraform State 비움 확인**",
+        "State 추적 Resource·Project Tag Resource **이중 잔존 검사**",
+        "Foundation ECR·OIDC Role·CloudTrail·Log S3 **보존 확인**"
+      ]
+    }
+  },
+  "troubleshooting": [
+    {
+      "symptom": "Foundation 첫 Apply 일부 실패",
+      "cause": "IAM OIDC Provider 생성에서 HTTP 302 / UnknownError가 일시 발생",
+      "action": "성공한 ECR Resource는 State에 유지하고 재계획·재시도",
+      "proof": "최종 Terraform 0 create / 0 change / 0 destroy"
+    },
+    {
+      "symptom": "RDS 연결 ERROR 3159",
+      "cause": "MariaDB 11.8의 require_secure_transport=ON",
+      "action": "RDS Global CA Bundle을 사용한 TLS 연결로 전환",
+      "proof": "DB·전용 User·Schema 자동 준비 완료"
+    },
+    {
+      "symptom": "CloudFront 504 / Target Timeout",
+      "cause": "ALB에서 Kubernetes Node 80/TCP로 가는 Security Group Rule 누락",
+      "action": "Primary·DR ALB → Node Ingress Rule 추가",
+      "proof": "Target 정상화·CloudFront HTTP 200"
+    },
+    {
+      "symptom": "최초 Down에서 S3 BucketNotEmpty",
+      "cause": "Source의 force_destroy=true와 실제 State=false 불일치",
+      "action": "두 Bucket의 State를 보정한 뒤 남은 Resource 제거",
+      "proof": "Daily State empty·Tagged Runtime none"
+    },
+    {
+      "symptom": "삭제된 Resource를 잔존으로 오판",
+      "cause": "Tagging API가 삭제된 SG Rule과 Pod Identity Association을 잠시 반환",
+      "action": "Resource별 AWS API로 실제 존재 여부를 재검증",
+      "proof": "재실행 결과 Tagged daily AWS runtime: none"
+    }
+  ],
+  "verification": [
+    {
+      "item": "EKS가 없는 상태의 CI",
+      "result": "통과",
+      "evidence": "Actions Run 30467506262 · ECR Image · GitOps Bot Commit",
+      "status": "verified"
+    },
+    {
+      "item": "최초 Daily Runtime Up",
+      "result": "통과",
+      "evidence": "249 create · Argo Synced/Healthy · Pod Ready · 외부 응답",
+      "status": "verified"
+    },
+    {
+      "item": "PR → EKS Rolling Update",
+      "result": "통과",
+      "evidence": "Merge 35e419c… · Image sha-35e419c… · Bot 3418153…",
+      "status": "verified"
+    },
+    {
+      "item": "Foundation 보안 로그 보존",
+      "result": "통과",
+      "evidence": "CloudTrail Event·CloudWatch·S3 .json.gz 전달 확인",
+      "status": "verified"
+    },
+    {
+      "item": "최초 Daily Runtime Down",
+      "result": "통과",
+      "evidence": "251 destroy · State empty · Tagged Runtime none · Foundation No changes",
+      "status": "verified"
+    },
+    {
+      "item": "두 번째 Cold Up",
+      "result": "미검증",
+      "evidence": "다음 실행에서 Foundation 재사용·최신 GitOps 복원을 확인해야 함",
+      "status": "pending"
+    },
+    {
+      "item": "다른 AWS Account·노트북 이식",
+      "result": "미검증",
+      "evidence": "Source·Parameter만으로 재생성되는지 팀 환경 증거가 필요",
+      "status": "pending"
+    }
+  ],
+  "contribution": {
+    "title": "기여 경계",
+    "team_base": [
+      "Multi-Region AWS Terraform 기반 구성",
+      "EKS·RDS·ALB·CloudFront 등 초기 인프라 후보"
+    ],
+    "user_led": [
+      "비용 제약을 Foundation / Daily Runtime 수명주기 문제로 재정의",
+      "Daily Up / Down 운영 요구사항과 승인·중단 경계 설계",
+      "GitHub OIDC·ECR·GitOps 복원 흐름의 실제 실행과 검증",
+      "실행 중 장애의 원인 분리·보정 승인·재검증",
+      "PR 검토·병합과 Argo Rolling Update 관찰"
+    ],
+    "ai_assisted": [
+      "PowerShell·Terraform 보정안 작성과 정적 검토",
+      "오류 가설 수립과 공식 문서·Source 대조 보조",
+      "실행 증거의 구조화와 검증 체크리스트 작성"
+    ],
+    "boundary": "실제 AWS 변경 승인, 실행 관찰, 결과 판정과 팀 의사결정은 사람이 수행했다. 팀 Terraform 전체를 개인 단독 구현으로 주장하지 않는다."
+  },
+  "open_items": [
+    {
+      "title": "두 번째 Cold Up",
+      "detail": "첫 Down 이후 Foundation·ECR·GitOps 선언을 재사용해 최신 Workload가 자동 복원되는지 확인"
+    },
+    {
+      "title": "팀 환경 이식성",
+      "detail": "개인 State·Credential·Private Key 복사 없이 다른 Account와 노트북에서 Foundation을 재생성"
+    },
+    {
+      "title": "보안 본편",
+      "detail": "현재 로그는 CloudTrail Management Event 중심이다. WAF·ALB·EKS·Application Log와 탐지·자동 조치는 별도 범위"
+    },
+    {
+      "title": "AMI Drift 결정",
+      "detail": "지역별 EKS Managed Node AMI release_version 고정 여부를 운영 정책으로 결정"
+    }
+  ],
+  "sources": [
+    {
+      "type": "runtime",
+      "label": "실제 실행 기록",
+      "value": "RAW_메모.md · 2026-07-30 00:49 / 10:26 / 16:23 / 19:52 / 21:14"
+    },
+    {
+      "type": "source",
+      "label": "Up 자동화",
+      "value": "D:\\terraform\\aws_terraform_build_code\\daily-up.ps1"
+    },
+    {
+      "type": "source",
+      "label": "Down·Evidence 자동화",
+      "value": "D:\\terraform\\aws_terraform_build_code\\daily-down.ps1"
+    },
+    {
+      "type": "source",
+      "label": "Persistent Foundation",
+      "value": "D:\\terraform\\aws_terraform_build_code\\foundation\\main.tf"
+    },
+    {
+      "type": "source",
+      "label": "로그 보존 계층",
+      "value": "D:\\terraform\\aws_terraform_build_code\\foundation\\observability.tf"
+    },
+    {
+      "type": "record",
+      "label": "요약 기록",
+      "value": "일일 로그\\2026-07-30_일일_로그.md"
+    }
+  ]
+}
