@@ -9,3 +9,12 @@
 - 미수집: WAF 없음, CloudFront·ALB·VPC Flow 중앙 로그 없음, DVWA Namespace Container Log 수집 Agent 없음, BANK 구조화 Audit Log 없음.
 - 보안 발견: 공개 정상 요청에서도 Apache·PHP 상세 Version Header와 Session·Security Cookie가 발급됨. 실제 Cookie 값은 기록하지 않음.
 - Evidence 경계: 현재 Collector는 `S3Prefix`만 지원하고 Redaction·Time Window·실험별 Strict Mode가 없음. 로컬 보관본은 CloudTrail 원본을 암호화 없이 동기화하므로 접근권한·민감 Metadata 취급 보강 필요.
+
+### 14:15
+
+- 한 일: 관측성 Goal Phase 2 정적 구현. Foundation 7일 S3·CloudWatch 목적지와 Daily의 CloudFront·WAF `COUNT`·ALB·VPC `REJECT`·EKS Control Plane·DVWA Namespace 로그 수집 Source를 구성.
+- Application: BANK 보안 Event를 JSON으로 stderr에 기록하도록 로그인·회원가입·로그아웃·Security Level·접근 거부·CSRF 실패 Audit Log 추가. Password·Cookie·Session·Request Body는 제외.
+- Evidence: `S3Prefix`·`CloudWatchLogs` Handler, UTC Time Window, Bounded Retry, Redaction, Query Metadata, `manifest.json`·`SHA256SUMS.txt`, Strict Mode를 추가하고 `daily-down.ps1`의 Destroy 전·후 수집과 연결.
+- 시행착오: 공식 `aws-for-fluent-bit` Chart에서 `filter.additionalFilters`가 렌더링되지 않는 것을 발견해 `filter.extraFilters`로 보정하고 DVWA Namespace Filter가 실제 Manifest에 들어가는지 검증.
+- 정적 검증: 양쪽 Terraform `fmt -check`·`validate`, PowerShell Parser·Self-test, `bash -n`, 공식 Fluent Bit Chart render, Helm lint/template, PHP lint·Audit self-test, Docker build, 대상 Workflow actionlint, 변경 파일 gitleaks 통과.
+- 남음: AWS Runtime 전달·Query 결과는 미검증. Apply/Destroy 전 기존 EKS Log Group의 Daily→Foundation State 소유권 이전과 Foundation Plan 검토가 필요. 이번 단계에서 AWS·GitHub 변경과 Commit·Push는 수행하지 않음.
