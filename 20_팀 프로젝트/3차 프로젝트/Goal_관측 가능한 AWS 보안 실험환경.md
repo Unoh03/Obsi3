@@ -27,7 +27,7 @@ project_moc: "[[20_팀 프로젝트/3차 프로젝트/00_3차프로젝트_목차
 3. 한 사건의 관련 로그를 시간·요청·사용자·Source IP 기준으로 연결할 수 있다.
 4. 조치 전과 후에 같은 행위를 실행하여 결과 차이를 증명한다.
 5. 관련 로그·Query 결과·설정 Snapshot을 로컬 Evidence Bundle로 보존한다.
-6. Daily Destroy 후에도 AWS 로그는 7일간, 선택한 실험 증거는 로컬에 남는다.
+6. Daily Destroy 후에도 AWS 로그는 30일간, 선택한 실험 증거는 로컬에 남는다.
 7. 다음 Daily Up에서 로그 수집기와 Application이 자동으로 복원된다.
 8. 결과를 멘토 상담과 최종 보고서에서 바로 평가할 수 있다.
 
@@ -39,7 +39,7 @@ project_moc: "[[20_팀 프로젝트/3차 프로젝트/00_3차프로젝트_목차
 - 기존 배포 흐름: `GitHub Actions → ECR immutable image → GitOps Commit → Argo CD → EKS`
 - Foundation과 Daily Runtime이 별도 Terraform Root·State로 분리돼 있다.
 - Daily Up/Down 자동화와 DB Bootstrap이 존재한다.
-- 기존 CloudTrail Management Event는 CloudWatch·S3에 7일 보존하도록 구현된 기록이 있다.
+- 기존 CloudTrail Management Event는 CloudWatch·S3에 30일 보존하도록 구현·검증됐다.
 - 2026-07-30 일일 로그 기준으로 다음은 미완성이었다.
   - CloudFront·WAF·ALB 접근 로그
   - Pod/Application 중앙 로그
@@ -156,7 +156,7 @@ project_moc: "[[20_팀 프로젝트/3차 프로젝트/00_3차프로젝트_목차
 - 기존 CloudTrail CloudWatch·S3 보존 계층
 - Edge·Network 로그를 위한 S3 Prefix 또는 전용 Bucket
 - 장기 실행 Compute가 필요 없는 CloudWatch Log Group
-- 7일 Lifecycle·Retention
+- 30일 Lifecycle·Retention
 - 필요한 최소 IAM Policy
 - Evidence 조회에 필요한 Output
 
@@ -176,7 +176,7 @@ Foundation Resource가 일반 `daily-down.ps1`의 Destroy Plan에 포함되면 �
 
 비용 통제 원칙:
 
-- 보존 기간은 기본 7일
+- 보존 기간은 기본 30일
 - Application Log는 DVWA Namespace만 수집
 - VPC Flow Logs는 우선 `REJECT`만 수집
 - WAF는 필요한 필드와 규칙을 중심으로 필터링
@@ -479,7 +479,7 @@ Static Test와 실제 Runtime 검증을 구분해서 보고한다.
 7. 조치 후 동일 조건 재실행에서 결과 차이를 증명했다.
 8. 재사용 가능한 Query Pack과 최소 탐지 규칙이 존재한다.
 9. 각 실험에 Local Evidence Bundle과 SHA-256 Manifest가 생성된다.
-10. Daily Destroy 뒤에도 7일 AWS 로그와 선택한 Local Evidence가 보존된다.
+10. Daily Destroy 뒤에도 30일 AWS 로그와 선택한 Local Evidence가 보존된다.
 11. 다음 Daily Up에서 수집기와 Application이 자동 복원된다.
 12. 비용·미구현·미검증·False Positive를 숨기지 않았다.
 13. 멘토가 방향·범위·증거를 비교 평가할 수 있는 보고서 초안이 있다.

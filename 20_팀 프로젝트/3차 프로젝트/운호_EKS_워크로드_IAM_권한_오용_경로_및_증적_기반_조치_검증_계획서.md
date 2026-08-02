@@ -6,7 +6,7 @@ project: 3차 프로젝트
 project_moc: "[[20_팀 프로젝트/3차 프로젝트/00_3차프로젝트_목차]]"
 ---
 
-# EKS 워크로드 IAM 권한 오용 경로 및 증적 기반 조치 검증
+# EKS 워크로드 IAM 권한 오용 경로 및 증적 기반 조치 검증 후보
 
 > [!info] 편집 기준본과 공유본
 > 이 Markdown은 앞으로 내용을 수정할 **편집 기준본(canonical)**이다.
@@ -15,13 +15,13 @@ project_moc: "[[20_팀 프로젝트/3차 프로젝트/00_3차프로젝트_목차
 > 두 파일을 독립적으로 동시에 편집하지 않고, 이후 DOCX가 필요하면 이 Markdown을 기준으로 다시 생성한다.
 
 > [!warning]
-> 팀 구성·강사 요구사항·멘토 검토 전의 조건부 제안서다. 실제 범위는 첫 주의 성립 여부 확인과 팀 합의를 거쳐 확정한다.
+> 우리 조가 확정한 공격·실습 프로젝트가 아니라 팀 구성·강사 요구사항·멘토 검토 전의 조건부 후보 제안서다. 현재 관측 구조를 시험하는 데 사용할 수 있지만, 실제 본편 범위는 성립 여부 확인과 팀 합의를 거쳐 별도로 확정한다.
 
-## 1. 프로젝트 개요
+## 1. 후보 개요
 
 ### 1.1 프로젝트 한 문장
 
-침해된 것으로 가정한 EKS Pod가 IRSA를 통해 과도하게 부여된 IAM 권한을 사용하여 S3 테스트 데이터에 접근하는 과정을 재현하고, EKS Audit Log와 CloudTrail에서 공격 흔적을 확인한 뒤 최소 권한 조치와 동일 조건 재검증을 수행한다.
+침해된 것으로 가정한 EKS Pod가 EKS Pod Identity로 연결된 IAM 권한을 사용하여 S3 테스트 데이터에 접근하는 과정을 재현하고, EKS Audit Log와 CloudTrail에서 행위 흔적을 확인한 뒤 최소 권한 조치와 동일 조건 재검증을 수행한다.
 
 ### 1.2 핵심 질문
 
@@ -61,13 +61,18 @@ project_moc: "[[20_팀 프로젝트/3차 프로젝트/00_3차프로젝트_목차
 - IAM Role과 Policy
 - CloudTrail 및 EKS 감사 로그
 
-### 2.3 핵심 오설정
+### 2.3 현재 Source에서 확인된 권한 경로
 
-애플리케이션은 본래 S3 객체를 읽을 필요가 없지만, Pod의 ServiceAccount에 연결된 IAM Role에 테스트 버킷의 `s3:GetObject` 권한이 과도하게 부여돼 있다.
+현재 Terraform은 `dvwa` Namespace의 `web-app` ServiceAccount에 EKS Pod Identity Association을 선언하고, 연결된 Role에 다음 권한을 부여한다.
 
-> 핵심 취약점은 IRSA 자체가 아니라, 침해 가능한 workload에 업무상 불필요한 AWS 권한을 부여한 최소 권한 위반이다.
+- 대상 Bucket의 `s3:ListBucket`, `s3:GetBucketLocation`
+- `web/*` Prefix의 `s3:GetObject`, `s3:PutObject`, `s3:DeleteObject`
 
-IRSA는 Pod의 OIDC token을 STS `AssumeRoleWithWebIdentity`와 교환해 임시 IAM 자격증명을 얻는다.
+반면 현재 BANK DVWA Deployment는 `web-app`을 사용하지 않고, 애플리케이션 코드에서도 S3 사용 경로가 확인되지 않았다. 따라서 지금 확인된 것은 **활성화된 침해 경로가 아니라, 특정 ServiceAccount를 사용하는 Pod가 생기면 활성화될 수 있는 잠재 권한 경로**다.
+
+> 핵심 위험은 EKS Pod Identity 자체가 아니라, 업무상 필요가 확인되지 않은 AWS 권한과 Association이 Source에 남아 있는 최소 권한 위반 가능성이다. Runtime 실험 전에는 실제 취약점이나 공격 성공으로 단정하지 않는다.
+
+EKS Pod Identity는 OIDC Provider와 `AssumeRoleWithWebIdentity`를 사용하는 IRSA와 다르다. EKS는 Cluster·Namespace·ServiceAccount Association을 기준으로 Pod에 자격 증명 경로를 주입하고, Node의 Pod Identity Agent가 EKS Auth API의 `AssumeRoleForPodIdentity`를 사용해 임시 자격 증명을 제공한다. IAM Role은 `pods.eks.amazonaws.com`에 `sts:AssumeRole`과 `sts:TagSession`을 허용한다.
 
 ### 2.4 명시적 제외 범위
 
@@ -85,14 +90,15 @@ IRSA는 Pod의 OIDC token을 STS `AssumeRoleWithWebIdentity`와 교환해 임시
 ## 3. 공격 시나리오
 
 ```text
-1. 테스트 Pod 내부 명령 실행 상태 확보
-2. Pod에 연결된 workload identity 확인
-3. aws sts get-caller-identity로 IAM Role 확인
-4. 해당 Role로 테스트 S3 객체 접근
-5. EKS Audit Log와 CloudTrail 증적 수집
-6. IAM Policy와 Trust Policy 조치
-7. 동일한 절차 재실행
-8. S3 접근 거부와 로그 차이 확인
+1. 전용 Canary 객체와 정확한 실험 시간 구간 준비
+2. `dvwa/web-app` ServiceAccount를 사용하는 임시 검증 Pod 생성
+3. `kubectl exec`로 통제된 Pod 내부 명령 실행 상태 확보
+4. `aws sts get-caller-identity`로 연결된 IAM Role 확인
+5. `web/experiment-*` 범위에서만 S3 List·Get·Put·Delete 가능 범위 확인
+6. EKS Audit Log와 CloudTrail 증적 수집
+7. 불필요하면 Association 제거, 필요하면 IAM 권한·Prefix 축소
+8. 동일한 Manifest와 명령을 재실행
+9. S3 접근 거부 또는 허용 범위 축소와 로그 차이 확인
 ```
 
 토큰과 임시 자격증명의 실제 값은 출력하거나 보고서에 저장하지 않는다.
@@ -102,13 +108,13 @@ IRSA는 Pod의 OIDC token을 STS `AssumeRoleWithWebIdentity`와 교환해 임시
 | 단계 | 확인할 사실 | 증적 |
 |---|---|---|
 | Pod 내부 진입 | 누가 언제 `exec`를 수행했는가 | EKS Audit Log의 `pods/exec` 관련 이벤트 |
-| Role 획득 | 어떤 web identity가 어떤 Role을 사용했는가 | CloudTrail `AssumeRoleWithWebIdentity` |
-| 데이터 접근 | 어떤 Role이 어떤 객체를 읽었는가 | CloudTrail S3 `GetObject` data event |
+| Role 획득 | 어떤 Namespace·ServiceAccount Association이 어떤 Role을 사용했는가 | CloudTrail `AssumeRoleForPodIdentity`; 실제 `eventSource`와 Session Tag는 Runtime에서 확정 |
+| 데이터 접근 | 어떤 Role이 어떤 Canary 객체에 어떤 작업을 했는가 | CloudTrail S3 `GetObject`·`PutObject`·`DeleteObject` Data Event |
 | 구성 변경 | 권한이 어떻게 축소됐는가 | Terraform plan·diff, IAM Policy 전후 |
 | 재검증 | 같은 요청이 실제로 차단됐는가 | `AccessDenied` 응답과 조치 후 CloudTrail |
 | 종료 | 실험 자원이 제거됐는가 | Terraform destroy 결과와 AWS 잔존 자원 확인 |
 
-S3의 `GetObject`는 CloudTrail 기본 관리 이벤트만으로는 남지 않으므로, 테스트 버킷에 대한 **Read data event**를 명시적으로 활성화한다.
+S3 객체 작업은 CloudTrail 기본 Management Event만으로는 남지 않는다. 현재 Foundation Source에는 Management Event를 유지하면서 프로젝트 Primary·DR Bucket 이름 Prefix의 `GetObject`·`PutObject`·`DeleteObject`만 수집하는 Advanced Event Selector를 추가했다. 아직 Apply하지 않았으므로 실제 S3 Data Event 수집은 미검증이다.
 
 로그 연결은 모든 계층에 동일한 `request_id`를 억지로 넣지 않는다. 다음 정보를 이용해 공격 타임라인을 구성한다.
 
@@ -123,12 +129,12 @@ S3의 `GetObject`는 CloudTrail 기본 관리 이벤트만으로는 남지 않�
 
 ### 5.1 필수 조치
 
-- 업무상 필요하지 않은 `s3:GetObject` 권한 제거
-- S3 접근이 필요하다면 버킷과 prefix를 최소 범위로 제한
+- BANK 업무에 S3 접근이 불필요하면 `web-app` Pod Identity Association과 전용 Role 제거
+- S3 접근이 필요하다면 Action을 실제 기능에 필요한 것만 남기고 Bucket·Prefix를 최소 범위로 제한
 - workload마다 별도 ServiceAccount 사용
-- IRSA Trust Policy의 `sub`를 정확한 namespace와 ServiceAccount로 제한
-- `aud`를 `sts.amazonaws.com`으로 제한
-- 테스트 Role이 다른 AWS 리소스로 확산되지 않도록 권한 상한 설정
+- Pod Manifest의 `serviceAccountName`과 EKS Association의 Namespace·ServiceAccount가 정확히 일치하는지 검증
+- 필요하면 EKS Pod Identity Session Tag 또는 Association Policy로 추가 제한
+- 테스트 Role이 다른 AWS Resource로 확산되지 않도록 권한 상한 설정
 
 ### 5.2 선택 조치
 
@@ -144,7 +150,7 @@ S3의 `GetObject`는 CloudTrail 기본 관리 이벤트만으로는 남지 않�
 
 - EKS 클러스터
 - 테스트 Pod 1개
-- ServiceAccount와 IRSA Role
+- ServiceAccount와 EKS Pod Identity Association·IAM Role
 - 더미 S3 객체 1개
 - CloudTrail과 EKS Audit Log
 - 공격 경로 1개
@@ -155,8 +161,8 @@ S3의 `GetObject`는 CloudTrail 기본 관리 이벤트만으로는 남지 않�
 
 ### 6.2 P1 — P0 완료 후 선택
 
-- Trust Policy에서 `sub` 조건을 제거한 별도 오설정 시나리오
-- 다른 namespace의 ServiceAccount를 이용한 Role 접근 검증
+- 다른 Namespace 또는 ServiceAccount를 사용했을 때 자격 증명이 주입되지 않는지 검증
+- Association Policy와 Session Tag 기반 추가 제한 비교
 - 간단한 CloudWatch Logs Insights 탐지 쿼리
 - CloudWatch 경보 또는 EventBridge 알림
 - 실제 취약 웹 애플리케이션을 통한 최초 진입
@@ -165,7 +171,7 @@ S3의 `GetObject`는 CloudTrail 기본 관리 이벤트만으로는 남지 않�
 
 | 역할 | 주요 업무 |
 |---|---|
-| 인프라·IAM | Terraform, EKS, IRSA, S3, IAM Policy 구성 |
+| 인프라·IAM | Terraform, EKS Pod Identity, S3, IAM Policy 구성 |
 | 공격·검증 | 위협 모델, 공격 절차, 성공·실패 기준, 조치 전후 재현 |
 | 로그·탐지 | EKS Audit Log, CloudTrail, S3 data event 수집과 타임라인 |
 | 증적·통합 | 테스트 케이스, 결과 장부, 보고서, 발표, 비용·삭제 검증 |
@@ -178,7 +184,7 @@ S3의 `GetObject`는 CloudTrail 기본 관리 이벤트만으로는 남지 않�
 
 | 주차 | 핵심 목표 | 통과 조건 |
 |---|---|---|
-| 1주차 | 팀 역할·위협 모델 확정, 최소 EKS·IRSA·S3·로그 환경 구성 | Pod가 의도한 Role을 사용하고 EKS·CloudTrail·S3 data event가 실제 수집됨 |
+| 1주차 | 팀 역할·위협 모델 확정, 최소 EKS Pod Identity·S3·로그 환경 구성 | Pod가 의도한 Role을 사용하고 EKS·CloudTrail·S3 Data Event가 실제 수집됨 |
 | 2주차 | 과도한 IAM Policy 적용, 공격 절차 실행, 단계별 원본 증적 수집 | 각 단계에 명령·실제 결과·판정 기준·관련 로그·영향 범위가 존재함 |
 | 3주차 | IAM 최소 권한 조치, 동일 공격 재실행, 탐지 쿼리 작성 | 취약 상태 성공과 조치 상태 `AccessDenied` 차이가 재현됨 |
 | 4주차 | 새 환경 재배포·전체 재실행, 보고서·발표·destroy 검증 | 새 기능 없이 재현성·증적·개인 기여·자원 삭제가 확인됨 |
@@ -231,7 +237,7 @@ Kubernetes 요소는 사라지지만 workload identity와 AWS IAM 권한 오용�
 - Terraform으로 실험 환경을 재현하고 삭제할 수 있다.
 - 취약 상태에서 테스트 S3 객체 접근이 성공한다.
 - EKS Audit Log에서 통제된 Pod 진입 증거를 찾는다.
-- CloudTrail에서 `AssumeRoleWithWebIdentity`를 확인한다.
+- CloudTrail에서 `AssumeRoleForPodIdentity`를 확인하고 실제 Association·Namespace·ServiceAccount와 연결한다.
 - S3 `GetObject` data event를 확인한다.
 - 조치 후 같은 접근이 실패한다.
 - 취약·조치 상태의 IAM Policy 차이를 설명할 수 있다.
@@ -257,12 +263,15 @@ Kubernetes 요소는 사라지지만 workload identity와 AWS IAM 권한 오용�
 ## 12. 멘토에게 확인할 질문
 
 1. `kubectl exec`로 최초 침해를 가정하고 이후의 workload IAM 권한 오용을 검증하는 것이 신입 프로젝트에서 정직하고 유효한 범위인가요? 실제 애플리케이션 RCE까지 구현해야 의미가 있나요?
-2. `Pod 침해 → IRSA Role 사용 → 테스트 S3 객체 접근 → CloudTrail/EKS Audit Log 확인 → 최소 권한 조치와 재검증`이 4주·3~4명 팀에 적절한 클라우드 보안 범위인가요?
+2. `Pod 침해 가정 → EKS Pod Identity Role 사용 → 테스트 S3 객체 접근 → CloudTrail/EKS Audit Log 확인 → 최소 권한 조치와 재검증`이 4주·3~4명 팀에 적절한 클라우드 보안 범위인가요?
 3. 이 시나리오에서 반드시 남겨야 할 로그와 증적, 반대로 과감히 제외해야 할 부분은 무엇인가요?
 
 ## 13. 기술 근거
 
 - [AWS EKS IAM 모범 사례](https://docs.aws.amazon.com/eks/latest/best-practices/identity-and-access-management.html)
+- [AWS EKS Pod Identity 개요](https://docs.aws.amazon.com/eks/latest/userguide/pod-identities.html)
+- [AWS EKS Pod Identity 동작 방식](https://docs.aws.amazon.com/eks/latest/userguide/pod-id-how-it-works.html)
+- [AWS EKS Pod Identity Association](https://docs.aws.amazon.com/eks/latest/userguide/pod-id-association.html)
 - [AWS IAM·STS CloudTrail 연동](https://docs.aws.amazon.com/IAM/latest/UserGuide/cloudtrail-integration.html)
 - [AWS EKS Control Plane Logging](https://docs.aws.amazon.com/eks/latest/userguide/control-plane-logs.html)
 - [AWS S3 CloudTrail Data Events](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-cloudtrail-logging-for-s3.html)
