@@ -506,12 +506,30 @@ daily-up minimal
 
 - 최초 Baseline 뒤에는 변경된 파일과 관련 Runtime만 다시 확인한다.
 - 같은 Repository·공식 문서·AWS 상태를 반복해서 전체 스캔하지 않는다.
+- 새 구현을 처음부터 작성하기 전에 Terraform Registry의 검증된 Module·Example, 현재 AWS Provider 문서와 AWS 공식 Guide·Sample을 먼저 찾는다. 현재 Version·License·유지보수 상태·보안 경계·Project 요구사항을 대조한 뒤 필요한 부분만 재사용하고, 채택하지 않은 이유도 짧게 기록한다.
 - Sub-agent는 사용자가 명시적으로 요청한 경우에만 사용한다.
 - 중간 보고는 Phase 완료, 승인 필요, 실제 실패 때만 짧게 한다.
 - 긴 실행 증거는 파일에 저장하고 대화에 반복 복사하지 않는다.
 - Apply·Destroy 대기 중 같은 상태를 계속 출력하지 않는다.
 - 승인 Gate에서는 안전하게 멈추고 무한히 다른 작업을 찾지 않는다.
 - 완료 조건을 충족하지 못했으면 시간·예산 때문에 Goal을 완료로 표시하지 않는다.
+
+## 우선 확인할 재사용 자료
+
+아래 자료는 구현 전에 다시 찾는 출발점이다. 목록에 있다는 이유만으로 현재 Source에 복사하거나 Module을 추가하지 않는다.
+
+| 적용 대상 | 우선 자료 | 현재 판단 |
+|---|---|---|
+| `minimal`의 NAT 구성 | [terraform-aws-vpc 공식 Module](https://github.com/terraform-aws-modules/terraform-aws-vpc) | 이미 사용하는 `~> 6.0` Module의 `enable_nat_gateway`, `single_nat_gateway` 입력을 우선 재사용한다. 별도 NAT Module을 만들지 않는다. |
+| EKS Node 1대 시험과 2대 Fallback | [terraform-aws-eks 공식 Module](https://github.com/terraform-aws-modules/terraform-aws-eks) | 이미 사용하는 `~> 21.0` Module의 Managed Node Group `min_size`, `max_size`, `desired_size`를 Profile에서 제어한다. |
+| H1·E2 인증서와 DNS Validation | [terraform-aws-acm Registry Module](https://registry.terraform.io/modules/terraform-aws-modules/acm/aws/latest) | CloudFront용 `us-east-1` Provider Alias와 기존 Hosted Zone 재사용 예시는 참고한다. 현재 직접 정의보다 단순해질 때만 Version을 고정해 채택한다. |
+| Resource를 조건부 Profile로 전환 | [HashiCorp `moved` Block Guide](https://developer.hashicorp.com/terraform/language/modules/develop/refactoring) | 기존 주소에 `count`·`for_each` 또는 Module 경계가 생길 때 의도치 않은 Destroy를 막는 State Migration 근거로 사용한다. |
+| Community Module 선택 | [AWS Prescriptive Guidance: Community Module](https://docs.aws.amazon.com/prescriptive-guidance/latest/terraform-aws-provider-best-practices/community.html) | 새 Module을 만들기 전에 Registry·GitHub를 검색하되, 최근 유지보수·Dependency·License·Version Pinning을 확인한다. 큰 Module을 통째로 도입하지 않는다. |
+| F2 GuardDuty 검증 | [GuardDuty Sample Findings](https://docs.aws.amazon.com/guardduty/latest/ug/sample_findings.html) | 실제 공격 없이 `CreateSampleFindings`로 전달 경로를 먼저 검증한다. Sample Finding과 실제 Finding을 증거에서 구분한다. |
+| F2 전달 경로 | [GuardDuty Finding과 EventBridge](https://docs.aws.amazon.com/guardduty/latest/ug/guardduty_findings_eventbridge.html) | GuardDuty가 기본 EventBridge Bus로 발행하는 Event를 Rule로 선별해 기존 SNS로 보낸다. 초기 F2에는 Lambda를 넣지 않는다. |
+| H1 Hosted Zone 수명주기 | [Route 53 Public Hosted Zone 삭제 지침](https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/DeleteHostedZone.html) | Hosted Zone은 외부 장기 Resource로 유지하고 `data`로 조회한다. Daily는 Record만 소유한다. |
+
+재사용 자료와 현재 Provider·Module Version이 충돌하면 자료를 억지로 맞추지 않는다. 현재 Source와 Lock File을 기준으로 지원 범위를 확인하고, 필요한 최소 구현만 직접 작성한다.
 
 ## 첫 번째 안전 작업
 
