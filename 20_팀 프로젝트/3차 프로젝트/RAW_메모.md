@@ -38,3 +38,11 @@
 - Foundation 검증: contract version 2, `unoh.click`, Route 53 Zone ID와 ACM ARN Output을 확인했다. `us-east-1` ACM은 `ISSUED`, 일치하는 Public Hosted Zone은 1개다.
 - Minimal Gate: 직접 Terraform Plan 결과 `122 create / 0 change / 0 delete / 0 replace`. Foundation·DR·Valkey·EFS Action은 0이다.
 - 비용형 구성: Primary RDS Single-AZ, EKS Node Group `min=1 / desired=1 / max=2`; CloudFront는 `unoh.click`과 Foundation ACM을 사용하고 HTTPS Redirect는 유지한다. Daily State는 0이며 실제 Daily Apply는 아직 하지 않았다.
+
+### 21:21
+
+- Minimal Cold Start: 백그라운드 실행 2회는 PowerShell Module 환경 문제로 Terraform 전에 종료됐고 AWS Resource는 생성되지 않았다. Config Loader와 재현 Test를 보강해 `b1a1d6e`로 Push했다.
+- Foreground `daily-up.ps1`: 17분 만에 `122 added / 0 changed / 0 destroyed`. DB·Secret·Argo Bootstrap까지 완료해 `https://unoh.click`에서 BANK DVWA가 동작했다.
+- 최소 Runtime: DR·Valkey·EFS는 0. Managed Node 1대에 Application용 Karpenter Node 1대가 추가되어 실제 안정 실행은 Node 2대였다.
+- 검증: Argo CD `Synced / Healthy`, DVWA Pod `Running 1/1`, immutable Image SHA 사용, Fluent Bit `2/2`, 최근 DVWA 18건·EKS 20건을 확인했다.
+- WAF: 정상 요청은 현재 Filter가 `BLOCK`·`COUNT`만 보존하므로 0건이 정상이다. Logging Destination·Cookie/Authorization Redaction·30일 Retention을 확인했으며 실제 Rule Match Event는 아직 미검증이다.
