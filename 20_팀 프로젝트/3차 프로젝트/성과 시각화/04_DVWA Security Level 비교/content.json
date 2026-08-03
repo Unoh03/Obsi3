@@ -1,0 +1,368 @@
+{
+  "meta": {
+    "title": "Low부터 Impossible까지, 무엇이 달라지는가",
+    "subtitle": "BANK로 재조립한 DVWA 10개 업무의 Security Level 40개 Source를 직접 비교해, 우회 가능한 부분 방어와 근본 조치의 차이를 한 장에 정리했다.",
+    "author": "장운호",
+    "project": "보안 위협 대응을 위한 보안 엔지니어 양성 과정 · 3차 프로젝트",
+    "as_of": "2026-08-03 · D:\\DVWA 실제 Source 기준",
+    "status": "Application Source 비교 완료",
+    "one_liner": "Security Level이 올라간다는 것은 필터가 많아진다는 뜻이 아니라, 신뢰 경계와 안전한 처리 방식이 바뀌어야 한다는 뜻이다."
+  },
+  "metrics": [
+    {
+      "value": "10",
+      "label": "BANK 업무 기능",
+      "detail": "조회·검색·계정·업로드·명령 실행",
+      "tone": "blue"
+    },
+    {
+      "value": "40",
+      "label": "비교한 Level Source",
+      "detail": "10 Module × 4 Security Levels",
+      "tone": "purple"
+    },
+    {
+      "value": "4",
+      "label": "Security Levels",
+      "detail": "Low · Medium · High · Impossible",
+      "tone": "orange"
+    },
+    {
+      "value": "1",
+      "label": "핵심 판단 기준",
+      "detail": "우회 난도보다 근본 원인이 제거됐는가",
+      "tone": "green"
+    }
+  ],
+  "levels": [
+    {
+      "name": "Low",
+      "eyebrow": "직접 신뢰",
+      "summary": "사용자 입력을 거의 그대로 SQL·HTML·Shell·File Path에 전달한다.",
+      "signal": "취약점의 원인이 가장 선명하게 보이는 시작점",
+      "tone": "red"
+    },
+    {
+      "name": "Medium",
+      "eyebrow": "부분 필터",
+      "summary": "문자열 치환, escape, Referer, MIME 같은 단일 방어를 추가한다.",
+      "signal": "우회 가능한 blacklist·클라이언트 정보 신뢰가 자주 남음",
+      "tone": "orange"
+    },
+    {
+      "name": "High",
+      "eyebrow": "강화됐지만 잔존",
+      "summary": "입력 채널·오류·지연·검사 항목을 더 바꾸지만 근본 원인이 남는 Module도 있다.",
+      "signal": "High라는 이름만으로 안전하다고 판정하면 안 됨",
+      "tone": "yellow"
+    },
+    {
+      "name": "Impossible",
+      "eyebrow": "근본 원인 차단",
+      "summary": "Prepared Statement, 정확한 allowlist, 출력 인코딩, 강한 난수처럼 처리 방식을 바꾼다.",
+      "signal": "해당 실습 취약점의 방어 예시이며 전체 앱의 운영 안전 인증은 아님",
+      "tone": "green"
+    }
+  ],
+  "matrix": [
+    {
+      "business": "계좌조회",
+      "module": "Blind SQL Injection",
+      "route": "/vulnerabilities/sqli_blind/",
+      "low": {
+        "lead": "GET 직접 결합",
+        "detail": "id를 따옴표 SQL에 붙이고 오류는 숨긴 채 존재 여부 차이를 응답한다."
+      },
+      "medium": {
+        "lead": "escape 후 숫자 문맥 결합",
+        "detail": "POST와 mysqli_real_escape_string을 쓰지만 SQL 문자열 결합은 남는다."
+      },
+      "high": {
+        "lead": "Cookie 결합 + 시간 노이즈",
+        "detail": "Cookie 값을 직접 붙이고 LIMIT 1과 임의 지연을 추가한다."
+      },
+      "impossible": {
+        "lead": "숫자 검증 + Prepared",
+        "detail": "Anti-CSRF, intval, PDO PARAM_INT로 입력을 데이터로만 처리한다."
+      },
+      "lesson": "입력 위치를 바꾸거나 응답에 노이즈를 넣어도 문자열 결합이 남으면 근본 조치가 아니다."
+    },
+    {
+      "business": "회원검색",
+      "module": "SQL Injection",
+      "route": "/vulnerabilities/sqli/",
+      "low": {
+        "lead": "REQUEST 직접 결합",
+        "detail": "id를 SQL 문자열에 붙이고 원본 DB 오류까지 사용자에게 노출한다."
+      },
+      "medium": {
+        "lead": "escape 후 직접 결합",
+        "detail": "POST와 escape를 추가하지만 따옴표 없는 숫자 SQL 문맥에 그대로 붙인다."
+      },
+      "high": {
+        "lead": "Session 결합 + 일반 오류",
+        "detail": "입력 채널과 오류 메시지는 바뀌지만 문자열 결합은 유지된다."
+      },
+      "impossible": {
+        "lead": "정수 제한 + Prepared",
+        "detail": "Anti-CSRF, 숫자 검증, intval, bindParam으로 쿼리 구조와 값을 분리한다."
+      },
+      "lesson": "DB 오류를 감추는 것과 SQL Injection을 제거하는 것은 서로 다른 통제다."
+    },
+    {
+      "business": "자료실",
+      "module": "File Inclusion",
+      "route": "/vulnerabilities/fi/",
+      "low": {
+        "lead": "경로 무검증",
+        "detail": "page 값을 그대로 받아 포함 대상 경로로 사용한다."
+      },
+      "medium": {
+        "lead": "문자열 blacklist",
+        "detail": "http://, https://, ../, ..\\ 문자열만 제거한다."
+      },
+      "high": {
+        "lead": "넓은 prefix 규칙",
+        "detail": "file* 또는 include.php만 허용하지만 정확한 파일 목록은 아니다."
+      },
+      "impossible": {
+        "lead": "정확한 allowlist",
+        "detail": "include.php와 file1~3.php 네 이름만 in_array로 허용한다."
+      },
+      "lesson": "위험 문자열을 지우는 방식보다 허용 가능한 리소스를 정확히 열거하는 편이 강하다."
+    },
+    {
+      "business": "통합 검색",
+      "module": "Reflected XSS",
+      "route": "/vulnerabilities/xss_r/",
+      "low": {
+        "lead": "입력 그대로 출력",
+        "detail": "name 값을 HTML 응답에 직접 이어 붙인다."
+      },
+      "medium": {
+        "lead": "literal 태그 치환",
+        "detail": "정확히 <script> 문자열만 제거해 다른 표기와 Event Handler가 남을 수 있다."
+      },
+      "high": {
+        "lead": "script 정규식 제거",
+        "detail": "script 철자를 우회하기 어렵게 만들지만 HTML 문맥 전체를 안전하게 만들지는 않는다."
+      },
+      "impossible": {
+        "lead": "출력 인코딩",
+        "detail": "Anti-CSRF와 htmlspecialchars로 입력을 HTML 코드가 아닌 텍스트로 출력한다."
+      },
+      "lesson": "금지 태그 목록보다 출력 문맥에 맞는 인코딩이 핵심이다."
+    },
+    {
+      "business": "고객의 소리",
+      "module": "Stored XSS",
+      "route": "/vulnerabilities/xss_s/",
+      "low": {
+        "lead": "SQL escape만 적용",
+        "detail": "DB 저장용 escape는 하지만 name·message를 HTML로 안전하게 만들지 않는다."
+      },
+      "medium": {
+        "lead": "필드별 방어 불균형",
+        "detail": "message는 strip_tags·인코딩, name은 literal <script> 제거만 한다."
+      },
+      "high": {
+        "lead": "name에 정규식만 적용",
+        "detail": "message는 인코딩하지만 name은 script 패턴 제거 후 그대로 저장한다."
+      },
+      "impossible": {
+        "lead": "모든 필드 인코딩 + Prepared",
+        "detail": "Anti-CSRF, name·message HTML 인코딩, Prepared INSERT를 함께 사용한다."
+      },
+      "lesson": "SQL Injection 방어와 XSS 방어는 다르며, 저장되는 모든 출력 필드를 따로 지켜야 한다."
+    },
+    {
+      "business": "네트워크 진단",
+      "module": "Command Injection",
+      "route": "/vulnerabilities/exec/",
+      "low": {
+        "lead": "입력 그대로 Shell 실행",
+        "detail": "ip 값을 ping 명령 뒤에 직접 이어 붙인다."
+      },
+      "medium": {
+        "lead": "두 연산자만 차단",
+        "detail": "&&와 ;만 제거한 뒤 여전히 Shell 문자열을 조립한다."
+      },
+      "high": {
+        "lead": "확장 blacklist",
+        "detail": "여러 Shell 문자를 더 제거하지만 blacklist와 문자열 명령 실행 구조는 남는다."
+      },
+      "impossible": {
+        "lead": "IPv4 형식 allowlist",
+        "detail": "4개 숫자 octet만 받아 IP를 다시 조립한 뒤 ping을 실행한다."
+      },
+      "lesson": "차단 문자를 계속 추가하기보다 기대하는 입력 형식을 좁혀 다시 구성해야 한다."
+    },
+    {
+      "business": "비밀번호 변경",
+      "module": "CSRF",
+      "route": "/vulnerabilities/csrf/",
+      "low": {
+        "lead": "Token 없음",
+        "detail": "GET 요청과 새 비밀번호 일치만으로 현재 사용자의 비밀번호를 바꾼다."
+      },
+      "medium": {
+        "lead": "Referer 문자열 검사",
+        "detail": "Referer에 SERVER_NAME이 포함됐는지만 확인한다."
+      },
+      "high": {
+        "lead": "Anti-CSRF Token",
+        "detail": "HTML·JSON 요청 모두 Session Token을 검증하지만 현재 비밀번호 재확인은 없다."
+      },
+      "impossible": {
+        "lead": "Token + 재인증",
+        "detail": "Anti-CSRF와 현재 비밀번호를 함께 검증하고 Prepared Query로 갱신한다."
+      },
+      "lesson": "출처 추정값보다 예측 불가능한 Token이 중요하고, 민감한 변경에는 재인증도 필요하다."
+    },
+    {
+      "business": "프로필 사진",
+      "module": "File Upload",
+      "route": "/vulnerabilities/upload/",
+      "low": {
+        "lead": "모든 파일 저장",
+        "detail": "검증 없이 원본 이름 그대로 Web 경로에 옮긴다."
+      },
+      "medium": {
+        "lead": "Client MIME + 크기",
+        "detail": "브라우저가 보낸 image MIME과 100KB 제한만 확인한다."
+      },
+      "high": {
+        "lead": "확장자 + 이미지 구조",
+        "detail": "jpg·png, 크기, getimagesize를 확인하지만 원본 이름과 내용은 유지한다."
+      },
+      "impossible": {
+        "lead": "Decode·Re-encode + 난수명",
+        "detail": "Token, 다중 검사, 이미지 재인코딩, metadata 제거, random_bytes 파일명을 적용한다."
+      },
+      "lesson": "Client MIME을 믿지 말고 실제로 해석·재생성하며 저장 이름과 실행 가능성도 통제해야 한다."
+    },
+    {
+      "business": "로그인 기기",
+      "module": "Weak Session ID",
+      "route": "/vulnerabilities/weak_id/",
+      "low": {
+        "lead": "증가 Counter",
+        "detail": "1씩 증가하는 값을 그대로 Cookie에 넣는다."
+      },
+      "medium": {
+        "lead": "현재 Timestamp",
+        "detail": "요청 시각을 Session ID로 사용해 추측 범위가 작다."
+      },
+      "high": {
+        "lead": "Counter의 MD5",
+        "detail": "예측 가능한 증가값을 hash로 가릴 뿐 entropy는 늘지 않는다."
+      },
+      "impossible": {
+        "lead": "CSPRNG + Cookie Flags",
+        "detail": "random_bytes(20)를 사용하고 Secure·HttpOnly를 활성화한다."
+      },
+      "lesson": "예측 가능한 값을 hash한 것은 강한 난수가 아니며, 값과 전송 속성을 함께 지켜야 한다."
+    },
+    {
+      "business": "로그인 보안 점검",
+      "module": "Brute Force",
+      "route": "/vulnerabilities/brute/",
+      "low": {
+        "lead": "무제한 즉시 시도",
+        "detail": "GET 인증, 직접 SQL, 실패 지연과 시도 상태 관리가 없다."
+      },
+      "medium": {
+        "lead": "고정 2초 지연",
+        "detail": "입력을 escape하고 실패를 늦추지만 횟수 제한은 없다."
+      },
+      "high": {
+        "lead": "Token + 임의 지연",
+        "detail": "Anti-CSRF와 0~3초 지연을 넣지만 여전히 계정 잠금은 없다."
+      },
+      "impossible": {
+        "lead": "상태 기반 잠금",
+        "detail": "POST·Token·Prepared Query와 3회 실패·15분 잠금·2~4초 지연을 결합한다."
+      },
+      "lesson": "요청을 느리게 만드는 것만으로는 제한이 아니며, 실패 상태·잠금·탐지가 필요하다."
+    }
+  ],
+  "patterns": [
+    {
+      "title": "SQL을 문자열로 만들지 않는다",
+      "modules": "SQL Injection · Blind SQL Injection",
+      "weak": "escape · 입력 채널 변경 · 오류 숨김",
+      "strong": "형식 검증 + Prepared Statement + Type Binding",
+      "verdict": "쿼리 구조와 사용자 값을 분리"
+    },
+    {
+      "title": "HTML 출력 문맥을 안전하게 만든다",
+      "modules": "Reflected XSS · Stored XSS",
+      "weak": "<script> 치환 · 정규식 · DB escape",
+      "strong": "모든 출력 필드의 HTML Encoding",
+      "verdict": "금지 목록이 아니라 코드 해석 자체를 차단"
+    },
+    {
+      "title": "허용할 입력만 재구성한다",
+      "modules": "Command Injection · File Inclusion",
+      "weak": "위험 문자·경로 문자열 blacklist",
+      "strong": "IPv4 재조립 · 정확한 File Allowlist",
+      "verdict": "해석기에 도달하는 표현력을 최소화"
+    },
+    {
+      "title": "민감한 상태 변경은 의도를 증명한다",
+      "modules": "CSRF",
+      "weak": "GET · Referer 문자열",
+      "strong": "Session Token + 현재 비밀번호 재확인",
+      "verdict": "요청 출처 추정이 아니라 사용자 의도 검증"
+    },
+    {
+      "title": "업로드 파일을 새 객체로 취급한다",
+      "modules": "File Upload",
+      "weak": "Client MIME · 확장자 · 원본 이름",
+      "strong": "Decode/Re-encode + 난수명 + 다중 검사",
+      "verdict": "외부 파일을 그대로 신뢰·보존하지 않음"
+    },
+    {
+      "title": "예측 비용과 반복 비용을 함께 높인다",
+      "modules": "Weak Session ID · Brute Force",
+      "weak": "Timestamp · Counter hash · 단순 sleep",
+      "strong": "CSPRNG + Cookie Flags · 실패 상태 기반 잠금",
+      "verdict": "난수성과 서버 측 상태 통제를 결합"
+    }
+  ],
+  "boundaries": {
+    "verified": [
+      "D:\\DVWA의 BANK 연결 Module 10개에서 low.php, medium.php, high.php, impossible.php를 직접 읽어 비교",
+      "비교 대상은 Application Source의 입력 처리·출력 처리·DB Query·File·Shell·Session 통제",
+      "BANK 업무명과 Route는 현재 Application의 공격 표면 지도에 사용한 매핑을 유지"
+    ],
+    "cautions": [
+      "High는 이름 그대로의 안전 등급이 아니다. 일부 Module은 문자열 결합·blacklist·무제한 시도를 그대로 남긴다.",
+      "Impossible은 해당 DVWA 실습 취약점을 막는 교육용 예시다. 비밀번호 흐름의 MD5와 GET 상태 변경 같은 요소가 남아 전체 Application의 Production 기준을 의미하지 않는다.",
+      "이 표는 Source 비교다. 각 Level의 실제 공격 성공·WAF 반응·로그·조치 후 재검증을 모두 Runtime으로 증명했다는 뜻은 아니다.",
+      "CloudFront·WAF·ALB·EKS·IAM 같은 Cloud 통제는 별도 계층이며 Security Level 변경만으로 자동 평가되지 않는다."
+    ]
+  },
+  "sources": [
+    {
+      "type": "local-source",
+      "label": "Security Level Source",
+      "value": "D:\\DVWA\\vulnerabilities\\{sqli_blind,sqli,fi,xss_r,xss_s,exec,csrf,upload,weak_id,brute}\\source\\{low,medium,high,impossible}.php"
+    },
+    {
+      "type": "local-record",
+      "label": "BANK 업무·Route 매핑",
+      "value": "성과 시각화/03_BANK 공격 표면 지도/content.json"
+    },
+    {
+      "type": "method",
+      "label": "판정 기준",
+      "value": "필터 개수나 우회 난도가 아니라 취약점의 근본 원인이 제거됐는지 비교"
+    },
+    {
+      "type": "scope",
+      "label": "변경 범위",
+      "value": "읽기 전용 Source 분석. DVWA·Terraform·AWS Runtime 변경 없음"
+    }
+  ]
+}

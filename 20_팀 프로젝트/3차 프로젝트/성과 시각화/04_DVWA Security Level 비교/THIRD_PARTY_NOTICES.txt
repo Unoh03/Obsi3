@@ -1,0 +1,15 @@
+Third-Party Notices
+===================
+
+This showcase bundles the following open-source software into its generated
+standalone HTML output.
+
+1. Tabler Core 1.4.0
+   Project: https://github.com/tabler/tabler
+   Asset: @tabler/core/dist/css/tabler.min.css
+   License: MIT
+   Local license copy: vendor/licenses/TABLER_LICENSE.txt
+
+The generated HTML also contains custom layout, Korean project content, and
+source comparison summaries authored for this project. The third-party license
+text remains available beside the editable sources in this folder.
