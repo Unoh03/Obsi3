@@ -31,3 +31,10 @@
 - 추가 보정: Foundation 선택 Output을 빈 문자열로 보존해 계약 Key가 누락되지 않게 했고, `setup-foundation.ps1`의 Domain 입력을 필수화해 인자 누락으로 인증서 제거 Plan이 생기는 경로를 차단했다.
 - 이식 경계: `count` 주소 전환은 현재 Daily State 0에서만 안전하다고 Runbook에 명시했다. PowerShell Parser 9/9, 핵심 Test 3종, Diff와 신규 파일 Secret 서명 검사를 통과했다.
 - 다음 Gate: AWS 변경은 추가하지 않았다. Foundation v2·`unoh.click` Plan을 먼저 승인·Apply한 뒤에만 `minimal` Cold Start Preview와 Runtime 검증으로 진행한다.
+
+### 20:28
+
+- Foundation v2 Apply: 승인된 Plan의 ACM 인증서·Route 53 검증 Record·인증서 검증 3개만 생성했다. 변경·삭제는 0이며 GitHub 후속 설정은 실행하지 않았다.
+- Foundation 검증: contract version 2, `unoh.click`, Route 53 Zone ID와 ACM ARN Output을 확인했다. `us-east-1` ACM은 `ISSUED`, 일치하는 Public Hosted Zone은 1개다.
+- Minimal Gate: 직접 Terraform Plan 결과 `122 create / 0 change / 0 delete / 0 replace`. Foundation·DR·Valkey·EFS Action은 0이다.
+- 비용형 구성: Primary RDS Single-AZ, EKS Node Group `min=1 / desired=1 / max=2`; CloudFront는 `unoh.click`과 Foundation ACM을 사용하고 HTTPS Redirect는 유지한다. Daily State는 0이며 실제 Daily Apply는 아직 하지 않았다.
