@@ -309,3 +309,11 @@
 - Valkey는 통째 주석 처리 대신 `enable_valkey` 선택화를 우선 검토한다. 현재 BANK DVWA Source에서 Valkey Endpoint 사용은 발견되지 않았다.
 - Cross-Region DR은 조치 전·후 및 DR 증거 수집에 필요하므로 유지한다. Primary RDS Multi-AZ는 서울 내부 AZ 장애조치용으로 Cross-Region DR과 별개이므로, 시나리오 필요성을 보고 Single-AZ 전환을 따로 판단한다.
 - 후보: Primary EKS Worker `t3.medium` 2대→1대 Runtime 검증, Karpenter의 Spot→On-Demand Fallback 허용. DR을 유지하므로 지역별 NAT Gateway 1개는 당장 변경하지 않는다.
+
+### 11:14
+
+- SQLi Runtime: CloudFront를 거쳐 `/vulnerabilities/sqli/`와 `/vulnerabilities/sqli_blind/` 요청이 DVWA까지 도달했다. Boolean·`ORDER BY`·`UNION SELECT`·`SLEEP(3)` Payload가 Application Access Log에 남았다.
+- XSS Runtime: `xss_r`의 `<script>alert('XSS_TEST')</script>` 요청이 DVWA에서 HTTP 200으로 기록됐다.
+- WAF 판정: XSS Query Argument를 `CrossSiteScripting_QueryArguments`로 탐지했지만 관찰용 `COUNT` 설정 때문에 최종 Action은 `ALLOW`였다.
+- 미탐지 후보: 같은 조회 구간의 WAF Log에서 SQLi Match는 확인되지 않았다. SQLi Rule 적용·Logging Filter 여부는 다음 진단 대상으로 남긴다.
+- 증거 경계: Application Access Log는 요청 경로·Payload·HTTP 상태를 보여 주지만, DB에서 반환된 실제 결과나 Browser에서 Script가 실행됐는지는 단독으로 증명하지 못한다.
