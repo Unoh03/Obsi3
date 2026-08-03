@@ -15,3 +15,12 @@
 - 관제 Review: Windows PowerShell 5.1이 UTF-8 BOM 없는 한글 Module을 해석하지 못한 Parser 오류를 BOM 보정으로 해결했다. 관련 정적 Test 6개와 Secret 서명 검사 통과.
 - Git: 관제 시간창 Review 작업을 `5c14d1b`로 Commit하고 `origin/main`에 Push했다.
 - Daily Down: 사용자 승인 `DESTROY DAILY`로 Full Runtime 제거를 시작했으며 진행 중이다.
+
+### 19:48
+
+- Daily Down 완료: 250개 제거, Daily State 0, 추적·Tag 기준 Daily 잔존 0. Foundation ECR·OIDC/IAM·보안 로그 보존 계층과 30일 Retention은 유지됐다.
+- Evidence: Post-Destroy Bundle에서 CloudTrail 59개, CloudFront 1개, ALB 1개, VPC REJECT 21개, EKS 42,297개, DVWA 628개 Event를 수집했다. WAF·DR Application은 해당 시간창 0건으로 기록됐다.
+- 정적 구현: `minimal / dr-test / full` Runtime Profile, Valkey·EFS Opt-in, HTTPS Redirect 안전 기본값과 HTTP 실험 Toggle, Watchdog On/Off를 추가했다.
+- 수명주기: 기존 Route 53 Hosted Zone은 Foundation에서 조회하고 CloudFront ACM·DNS 검증을 Foundation이 소유하도록 분리했다. Foundation v2 출력이 없으면 Daily Up이 중단되도록 보강했다.
+- 검증: `minimal` Plan 117개 생성에서 DR·Valkey·EFS·복제 0건, `dr-test` Plan 232개 생성에서 Valkey·EFS 0건을 확인했다. Foundation `unoh.click` Plan은 ACM·검증 Record 3개 생성, 변경·삭제 0이며 아직 Apply하지 않았다.
+- 회귀 검사: Daily/Foundation `terraform validate`, Runtime·Watchdog·Daily 자동화·관측성 관련 Test와 `git diff --check`를 통과했다.
