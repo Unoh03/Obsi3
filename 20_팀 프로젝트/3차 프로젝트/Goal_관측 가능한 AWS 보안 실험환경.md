@@ -62,6 +62,89 @@ project_moc: "[[20_팀 프로젝트/3차 프로젝트/00_3차프로젝트_목차
 
 계획 또는 Terraform 정의가 존재한다는 이유만으로 실제 로그 전달·탐지·복구가 검증됐다고 판정하지 않는다.
 
+## Daily Session Timebox
+
+하나의 Daily Session은 `daily-up.ps1` 실행을 시작한 시각부터 계산한다.
+
+- Session 최대 시간: 6시간
+- Soft Deadline: 시작 후 5시간
+- Hard Deadline: 시작 후 6시간
+- 재시도 유예: Hard Deadline 이후 최대 2시간
+- 재확인 간격: 15분
+- 무한 재시도 금지
+
+Session마다 다른 제한이 필요하면 실행 전에 명시적으로 변경한다. 별도 지정이 없으면 위 기본값을 사용한다.
+
+### Soft Deadline
+
+시작 후 5시간이 되면 다음 규칙을 적용한다.
+
+1. 새로운 공격·변경·Terraform Apply를 시작하지 않는다.
+2. 현재 실행 중인 원자적 작업만 안전한 지점까지 마무리한다.
+3. 현재 Git Diff, Runtime 상태, 실험 시간창과 미완료 항목을 기록한다.
+4. 필수 Evidence 수집을 시작한다.
+5. Daily Down을 준비한다.
+6. Goal 완료 조건이 남았더라도 다음 날 이어서 할 재시작 지점을 기록한다.
+
+### Hard Deadline
+
+시작 후 6시간이 되면 Goal 진행보다 Daily Runtime 종료를 우선한다.
+
+1. 현재 AWS Account·Region·Daily State 확인
+2. 실행 중인 Terraform Process와 State Lock 확인
+3. 진행 중인 공격·부하 요청 중단
+4. 현재 시간창의 Evidence 수집
+5. Fresh Terraform Destroy Plan 생성
+6. Foundation Resource 포함 여부 검사
+7. 안전할 경우 `daily-down.ps1 -ConfirmDestroy 'DESTROY DAILY'` 실행
+8. Daily State와 실제 AWS 잔존 Resource 확인
+9. Foundation과 Local Evidence 보존 확인
+10. RAW에 실제 결과 기록
+
+Goal이 완료되지 않았더라도 Daily Down을 수행한다. 미완료 Goal은 다음 Session에서 재개한다.
+
+## 독립 Watchdog
+
+시간 제한은 Codex Goal의 Active·Blocked·Complete 상태에만 의존하지 않는다. Windows Task Scheduler를 이용하는 독립 Watchdog을 구현한다.
+
+- Daily Up 시작 시 해당 Session만을 위한 일회성 예약 작업 생성
+- 기본 실행 시각은 Session 시작 후 6시간
+- 현재 사용자와 작업 경로를 명시적으로 고정
+- AWS Credential, Private Key, Secret을 Task 인수나 상태 파일에 기록하지 않음
+- `WakeToRun`, Network 사용 가능 조건, 늦은 시작 처리를 명시
+- Account, Region, Terraform Root, 시작 시각, Deadline, Experiment ID와 Watchdog 동작 상태만 비민감 Session 상태로 저장
+- Daily Down 성공 시 예약 작업과 활성 Session 상태를 제거
+- 조기 Daily Down에도 예약 작업과 활성 Session 상태를 제거
+- 실패를 성공으로 보고하지 않으며 Watchdog Log에도 Secret을 남기지 않음
+
+노트북이 꺼져 있거나 AWS Credential을 사용할 수 없으면 자동 Down을 절대 보장할 수 없다. 이 경우 실패 원인과 남은 과금 가능 Resource를 명확히 기록한다. Codex Heartbeat는 보조 알림으로 사용할 수 있지만 핵심 안전장치로 의존하지 않는다.
+
+## Terraform Process·Lock 처리
+
+Terraform Apply·Destroy가 진행 중인 상태에서 다른 Destroy를 동시에 실행하지 않는다. Hard Deadline에 Process 또는 Lock이 존재하면 다음을 따른다.
+
+1. 기존 Process를 임의로 Kill하지 않는다.
+2. State Lock을 강제로 해제하지 않는다.
+3. 15분 간격으로 상태를 재확인한다.
+4. 최대 2시간 동안 제한적으로 재시도한다.
+5. Process와 Lock이 해제되면 Fresh Destroy Plan부터 다시 수행한다.
+6. 2시간 뒤에도 해제되지 않으면 반복을 중단한다.
+7. 현재 Process, Lock, State, 확인 가능한 과금 Resource를 기록하고 사용자에게 알린다.
+
+중단된 Apply의 일부 Resource가 존재할 수 있으므로 State가 비었다는 사실만으로 AWS Runtime이 없다고 판정하지 않는다.
+
+## Daily Session 승인 의미
+
+Terraform Apply·Destroy, 공격, WAF 차단 등 기존 승인 경계는 유지한다. 다만 사용자가 정확한 Target·시나리오·요청량·영향을 확인하고 하나의 Daily Session 시작을 승인하면, 그 승인은 해당 Session에 한해 다음을 포함할 수 있다.
+
+- 승인된 `daily-up.ps1`
+- 명시된 통제 실험
+- 명시된 임시 조치와 동일 조건 재검증
+- Evidence 수집
+- 조기 종료 또는 Deadline 도달 시의 안전한 Daily Down
+
+Daily Up 승인에는 같은 Session의 안전한 Daily Down 승인을 함께 포함한다. 따라서 사용자가 자리를 비웠다는 이유로 Deadline의 Down을 다시 묻지 않는다.
+
 ## Phase 0 — 현재 상태와 회귀 기준 고정
 
 읽기 전용으로 다음을 확인한다.
@@ -370,16 +453,18 @@ Metric Filter·Alarm·SNS는 실제 시나리오와 연결되는 최소 항목�
 
 Observability 변경 후 다음을 검증한다.
 
-1. `daily-up.ps1`로 Runtime 생성
-2. Log Collector와 Application 자동 복원
-3. 정상 요청 및 Test Event 생성
-4. 각 Destination에 Log 도착
-5. Evidence Bundle 생성
-6. `daily-down.ps1` 실행
-7. Daily Runtime 제거
-8. Foundation Log와 로컬 Bundle 보존
-9. 다음 Up에서 Collector 재생성
-10. 기존 CI/CD·GitOps 배포가 계속 작동
+1. Daily Session Watchdog 등록
+2. `daily-up.ps1`로 Runtime 생성
+3. Log Collector와 Application 자동 복원
+4. 정상 요청 및 Test Event 생성
+5. 각 Destination에 Log 도착
+6. Evidence Bundle 생성
+7. 조기 완료 또는 Deadline의 `daily-down.ps1` 실행
+8. Daily Runtime 제거
+9. Foundation Log와 로컬 Bundle 보존
+10. Watchdog 예약 작업 제거
+11. 다음 Up에서 Collector 재생성
+12. 기존 CI/CD·GitOps 배포가 계속 작동
 
 장시간이 걸리는 완전한 Down→Up Cycle은 예상 시간·비용과 현재 Runtime 상태를 먼저 보고한다. 정적 검증만 통과한 상태를 Cold Start 성공으로 표시하지 않는다.
 
@@ -397,6 +482,7 @@ Observability 변경 후 다음을 검증한다.
 - Evidence Bundle 목록과 Hash
 - 아직 미검증인 항목
 - 멘토에게 물어볼 결정 질문
+- Daily Session 시작·Soft Deadline·Hard Deadline·Down 결과
 
 Raw Log 전체를 Vault나 Git에 복사하지 않는다.
 
@@ -421,10 +507,12 @@ Phase 종료 시에는 일일 로그로 이관한다. MOC Routing 변경이 필�
 - Query·문서·Evidence Collector 작성
 - 기존 DVWA Repository의 검증된 변경 Commit·Push
 - 민감정보가 없는 RAW 기록
+- Watchdog Source와 Test 작성
 
 다음은 실행 전 정확한 Target과 영향을 보고하고 사용자 승인을 받는다.
 
 - Terraform Apply·Destroy
+- Daily Session 시작
 - GitHub Repository Settings 변경
 - 비용이 지속되는 AWS Service 추가
 - WAF의 실제 차단 모드 전환
@@ -433,6 +521,8 @@ Phase 종료 시에는 일일 로그로 이관한다. MOC Routing 변경이 필�
 - 여러 팀원 작업을 바꾸는 구조 변경
 
 사용자가 자리를 비운 동안 승인이 없으면 해당 Gate에서 멈춘다. 같은 실패를 무한 재시도하거나 다른 변경으로 우회하지 않는다.
+
+승인된 Daily Session의 안전 Down은 다시 묻지 않는다.
 
 ## Git·Secret 안전
 
@@ -452,6 +542,7 @@ Phase 종료 시에는 일일 로그로 이관한다. MOC Routing 변경이 필�
 - Terraform `fmt -check`, `validate`, 저장된 Plan 검토
 - Foundation Resource의 Daily Destroy 포함 여부 검사
 - PowerShell Parser와 Automation Test
+- Watchdog 등록·취소·Deadline·Lock Test
 - Shell `bash -n`
 - Helm `lint`, `template`
 - Kubernetes Manifest Dry Run
@@ -485,6 +576,21 @@ Static Test와 실제 Runtime 검증을 구분해서 보고한다.
 13. 멘토가 방향·범위·증거를 비교 평가할 수 있는 보고서 초안이 있다.
 14. 개인 Account 검증과 팀 Account 이식 가능성을 분리해 표현했다.
 
+추가로 다음 안전 조건도 충족해야 한다.
+
+1. Daily Up 시작 시 독립 Watchdog이 등록된다.
+2. 조기 Daily Down 시 Watchdog이 제거된다.
+3. Soft Deadline 뒤 새로운 변경이나 공격을 시작하지 않는다.
+4. Hard Deadline에 Evidence와 Down 절차가 실행된다.
+5. Foundation이 Destroy Plan에 포함되면 Down을 중단한다.
+6. Terraform Process·Lock 상태에서 동시 Destroy하지 않는다.
+7. 재시도는 제한적이며 무한히 반복하지 않는다.
+8. Down 성공 후 Daily State와 실제 과금 Runtime이 비어 있다.
+9. Foundation Log와 Local Evidence가 보존된다.
+10. Down 실패를 성공으로 보고하지 않고 잔존 Resource와 원인을 남긴다.
+
+Goal 완료 여부와 Daily Runtime 종료 여부는 분리한다. Goal이 미완성이어도 Session Deadline에는 Runtime을 내린다.
+
 코드와 정적 설계만 완성한 상태, 로그가 생성되지만 조회하지 않은 상태, 공격을 한 번 성공시킨 상태, 보고서 문장만 작성한 상태는 완료가 아니다.
 
 ## 작업 방식과 토큰 절약
@@ -496,17 +602,21 @@ Static Test와 실제 Runtime 검증을 구분해서 보고한다.
 - 긴 조사 결과와 실행 증거는 파일에 저장하고 대화에 반복 복사하지 않는다.
 - Apply·Destroy 대기 중 같은 상태를 계속 출력하지 않는다.
 - 사용자 입력이 필요한 Gate에서는 안전하게 멈추며 Goal을 계속 Active 상태로 두고 무한히 다른 일을 찾지 않는다.
+- Soft Deadline 이후 다른 일을 찾지 않는다.
+- Hard Deadline 이후 Goal 작업보다 Down을 우선한다.
 - 완료 조건이 충족되지 않았으면 예산이나 시간 때문에 Goal을 완료로 표시하지 않는다.
 
 ## 첫 번째 안전 작업
 
-먼저 어떠한 AWS·GitHub 변경도 하지 않고 Phase 0을 수행한다.
+현재 Daily Runtime이 Down인 상태에서 AWS 변경 없이 다음을 먼저 수행한다.
 
-그 결과로 다음 네 가지만 사용자에게 보고한다.
+1. canonical Goal 문서에 Daily Session Timebox 규칙 반영
+2. 현재 Daily Script 구조와 충돌 여부 확인
+3. 독립 Watchdog과 비민감 Session 상태 설계
+4. Watchdog Source 구현
+5. PowerShell Parser·등록·취소·Deadline·Lock Test
+6. 기존 Daily Automation Test
+7. Foundation이 Daily Destroy와 분리됐는지 정적 재검증
+8. 변경 파일·Test 결과·남은 Runtime 위험 보고
 
-1. 현재 As-built와 실제 활성 Log Source
-2. Foundation/Daily 소유권 변경 제안
-3. 대표 시나리오 후보와 필요한 로그 대응표
-4. 구현 순서·예상 비용·실행 승인 Gate
-
-그 뒤 승인된 범위부터 단계적으로 구현한다.
+이 안전장치의 정적 검증이 끝나기 전에는 새 Daily Up을 실행하지 않는다. 검증 뒤 사용자가 정확한 Target·시나리오·요청량·비용 영향을 확인하고 Daily Session을 승인하면 승인된 범위 안에서 Observability 실험을 진행한다.

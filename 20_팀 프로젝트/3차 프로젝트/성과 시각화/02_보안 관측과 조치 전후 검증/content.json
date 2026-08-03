@@ -1,0 +1,342 @@
+{
+  "meta": {
+    "title": "공격은 어디에 흔적을 남기는가",
+    "subtitle": "BANK DVWA의 Web·Edge·Application·Kubernetes·AWS API 행위를 수집하고, IAM-01·WEB-01을 Local Evidence Bundle로 연결한 관측 검증",
+    "author": "장운호",
+    "project": "보안 위협 대응을 위한 보안 엔지니어 양성 과정 · 3차 프로젝트",
+    "as_of": "2026-08-02 Runtime Evidence 기준",
+    "status": "부분 검증",
+    "status_detail": "IAM-01 전·후 검증 완료 / WEB-01 관측·Alarm 성공, WAF 차단 미검증",
+    "one_liner": "공격 성공 여부만 보는 대신, 한 행위가 어느 계층에 남고 어떻게 Query·Sanitizing·Hash를 거쳐 보고서 근거가 되는지 검증했다."
+  },
+  "metrics": [
+    {
+      "value": "60",
+      "label": "WEB-01 인증 실패 Event",
+      "detail": "before·count·block 각 20건",
+      "tone": "blue"
+    },
+    {
+      "value": "4 / 4",
+      "label": "Athena Query 성공",
+      "detail": "모두 SUCCEEDED",
+      "tone": "purple"
+    },
+    {
+      "value": "3 → 0",
+      "label": "IAM-01 S3 Object 작업",
+      "detail": "Put/Get/Delete 성공 후 조치 뒤 0건",
+      "tone": "orange"
+    },
+    {
+      "value": "0 / 536",
+      "label": "Evidence Hash 불일치",
+      "detail": "9개 Bundle SHA-256 재검증",
+      "tone": "green"
+    }
+  ],
+  "problem": {
+    "eyebrow": "Coverage Boundary",
+    "title": "보이는 행위와 보이지 않는 내용을 먼저 구분했다",
+    "description": "현재 Pipeline은 일반적인 HTTP·Edge·Application·Kubernetes API·AWS API 행위를 상당 부분 연결할 수 있다. 그러나 로그가 존재한다는 사실을 모든 공격 내용의 수집으로 확대하지 않는다.",
+    "before": [
+      "Request·Response Body와 입력값 원문",
+      "Password·Cookie·Session·Authorization",
+      "RDS 내부에서 실행된 SQL과 DB 변경 내용",
+      "Container syscall·process·RCE 행위 자체",
+      "S3 Object·업로드 파일의 실제 내용",
+      "구조화 Audit Event가 없는 Route의 업무 의미"
+    ],
+    "after": [
+      "CloudFront·ALB의 시각·Method·Path·응답",
+      "WAF COUNT/BLOCK 조건부 Event",
+      "BANK DVWA stdout/stderr와 구조화 Audit Event",
+      "EKS api·audit·authenticator의 API 행위",
+      "CloudTrail Management·프로젝트 S3 Data Event",
+      "CloudWatch Logs Insights·Athena Query와 Local Evidence"
+    ]
+  },
+  "architecture": {
+    "title": "요청에서 Local Evidence까지 이어지는 관측 경로",
+    "caption": "실선은 서비스 요청 흐름, 점선은 로그·증거 흐름이다. 주황 노드는 조건부 또는 부분 관측이며 회색 Box는 현재 Blind Spot이다.",
+    "mermaid": "flowchart TB\n  classDef path fill:#eaf2ff,stroke:#206bc4,color:#153153,stroke-width:2px;\n  classDef verified fill:#e8f7ee,stroke:#2fb344,color:#16351f,stroke-width:2px;\n  classDef partial fill:#fff4e6,stroke:#f59f00,color:#5f3700,stroke-width:2px;\n  classDef evidence fill:#f3efff,stroke:#7950f2,color:#2f1b69,stroke-width:2px;\n  classDef blind fill:#f1f3f5,stroke:#868e96,color:#343a40,stroke-width:1.5px,stroke-dasharray:5 4;\n\n  CLIENT[\"정상·통제 실험 요청\"]:::path --> CF[\"CloudFront\"]:::path --> WAF[\"WAF\"]:::partial --> ALB[\"ALB\"]:::path --> EKS[\"EKS Service / Pod\"]:::path --> APP[\"BANK DVWA\"]:::path --> RDS[\"RDS\"]:::path\n\n  CF -. \"Standard Access\" .-> S3[\"Foundation S3 · 30일\"]:::verified\n  WAF -. \"COUNT / BLOCK 조건부\" .-> CW[\"CloudWatch Logs · 30일\"]:::verified\n  ALB -. \"Access Log\" .-> S3\n  EKS -. \"api / audit / authenticator\" .-> CW\n  APP -. \"stdout / stderr · BANK JSON Audit\" .-> CW\n  VPC[\"Primary VPC REJECT\"]:::path -.-> S3\n  AWSAPI[\"AWS API · S3 Object API\"]:::path --> CT[\"CloudTrail Management + Data Event\"]:::verified\n  CT -.-> CW\n  CT -.-> S3\n\n  CW --> QUERY[\"CloudWatch Logs Insights\"]:::evidence\n  S3 --> ATHENA[\"Athena Query Pack\"]:::evidence\n  QUERY --> BUNDLE[\"Local Evidence Bundle\nManifest · Sanitized · SHA-256\"]:::evidence\n  ATHENA --> BUNDLE\n  BUNDLE --> REPORT[\"조치 전·후 비교 · 보고서\"]:::evidence\n\n  BLIND[\"현재 Blind Spot\nBody · Secret · DB SQL · syscall / RCE · 파일 내용\"]:::blind\n  APP -. \"현재 기본 로그만으로는 설명 불가\" .-> BLIND"
+  },
+  "delivery_flow": {
+    "title": "로그 원본을 보고서 근거로 바꾸는 6단계",
+    "caption": "단순 Screenshot이 아니라 실험 시각·Query·Sanitized 결과·Hash를 같은 Bundle에 묶었다.",
+    "steps": [
+      {
+        "index": "01",
+        "title": "통제 실행",
+        "value": "Scenario + Phase",
+        "detail": "같은 Source·요청 수·간격·Manifest를 고정"
+      },
+      {
+        "index": "02",
+        "title": "30일 보존",
+        "value": "CloudWatch / S3",
+        "detail": "Runtime과 분리된 Foundation 로그 계층"
+      },
+      {
+        "index": "03",
+        "title": "상관 Query",
+        "value": "CWLI / Athena",
+        "detail": "시각·Actor·Path·Request ID·API Event로 조회"
+      },
+      {
+        "index": "04",
+        "title": "Sanitizing",
+        "value": "Sensitive Data 제외",
+        "detail": "Password·Cookie·Session·Authorization을 보존하지 않음"
+      },
+      {
+        "index": "05",
+        "title": "무결성",
+        "value": "manifest + SHA-256",
+        "detail": "9개 Bundle 536개 항목 불일치 0"
+      },
+      {
+        "index": "06",
+        "title": "판정",
+        "value": "Verified / Partial / Pending",
+        "detail": "성공·부분 검증·미검증을 보고서에서 분리"
+      }
+    ]
+  },
+  "decisions": [
+    {
+      "title": "IAM-01 · 불필요한 Workload 권한 제거",
+      "problem": "BANK 업무 필요가 확인되지 않은 Pod Identity Association이 S3 web/ Prefix의 Put·Get·Delete를 허용했다.",
+      "decision": "Canary로 사용 가능성을 먼저 증명한 뒤 Association·Role·Policy 6개를 제거하고 기본값을 disabled로 유지했다.",
+      "effect": "같은 Pod Manifest·명령에서 AWS Credential이 제공되지 않았고 조치 후 S3 Object API Event가 0건이었다.",
+      "status": "verified"
+    },
+    {
+      "title": "WEB-01 · 관측 성공과 차단 성공을 분리",
+      "problem": "Rate-based Rule을 block으로 전환했어도 before·count·block 20회가 모두 HTTP 200이었다.",
+      "decision": "Application Event와 Alarm은 성공으로, WAF BLOCK·HTTP 403은 미검증으로 따로 판정했다.",
+      "effect": "BANK auth.login.failed는 단계별 20건, WAF COUNT는 2건이지만 BLOCK Event와 403은 0건으로 남겼다.",
+      "status": "partial"
+    },
+    {
+      "title": "WAF 정상 ALLOW 전체를 저장하지 않음",
+      "problem": "모든 정상 요청을 WAF Log로 저장하면 Lab 규모에서 비용과 Noise가 빠르게 늘어난다.",
+      "decision": "COUNT/BLOCK 조건부 Event만 30일 보존하고 정상 흐름은 CloudFront·ALB·Application Log로 보완했다.",
+      "effect": "비용을 제한했지만 WAF 계층의 모든 정상 ALLOW를 직접 재구성할 수 없다는 경계를 공개한다.",
+      "status": "partial"
+    },
+    {
+      "title": "후보 시나리오와 팀 본편을 분리",
+      "problem": "관측 Pipeline 시험을 위해 만든 시나리오가 팀의 최종 공격 주제로 오해될 수 있다.",
+      "decision": "IAM-01·WEB-01을 관측 검증 후보로 명시하고 팀·멘토 결정 전에는 본편이라고 부르지 않는다.",
+      "effect": "검증된 Runtime은 재사용하되 최종 프로젝트 목적과 시나리오 선택은 별도 결정으로 남는다.",
+      "status": "pending"
+    }
+  ],
+  "automation": {
+    "title": "두 후보 시나리오의 실제 판정 흐름",
+    "up": {
+      "command": "IAM-01 · Pod Identity S3 권한 오용과 제거",
+      "steps": [
+        "Canary Pod에 BANK와 같은 **ServiceAccount 적용**",
+        "EKS Pod Identity로 **임시 AWS Credential 제공**",
+        "프로젝트 S3 Canary **Put / Get / Delete 성공**",
+        "EKS Audit와 CloudTrail S3 Data Event **동시 수집**",
+        "Association·Role·Policy **6개 제거**",
+        "같은 Manifest·명령에서 **Credential 없음 확인**",
+        "조치 후 S3 Object API Event **0건 확인**",
+        "다음 Cold Up에서도 기본 비활성과 **Association 부재 재확인**"
+      ]
+    },
+    "down": {
+      "command": "WEB-01 · 반복 로그인 실패 관측과 제한 시도",
+      "steps": [
+        "before / count / block 단계별 **20회 동일 요청**",
+        "세 단계 모두 HTTP 200, BANK 실패 Event **각 20건**",
+        "WAF COUNT Event **2건 관측**",
+        "WAF BLOCK Event 0건·HTTP 403 0건으로 **차단 미검증**",
+        "Metric Filter와 Alarm **OK → ALARM → OK 확인**",
+        "SNS Subscription 0건으로 **외부 알림 미검증**",
+        "실험 뒤 WAF Mode **disabled 복구**"
+      ]
+    }
+  },
+  "troubleshooting": [
+    {
+      "symptom": "WAF block 단계에서도 20회 모두 HTTP 200",
+      "cause": "90초 전파 대기와 약 57초 요청 뒤에도 COUNT 2건·BLOCK 0건. 대기시간 하나로 원인을 확정할 수 없음",
+      "action": "Rate 집계·평가 지연, Rule 설정, 실제 WAF Event를 분리해 후속 진단 대상으로 유지",
+      "proof": "차단 성공으로 표시하지 않고 WEB-01을 부분 검증으로 판정"
+    },
+    {
+      "symptom": "IAM Canary의 기술 오류가 권한 거부처럼 보임",
+      "cause": "AWS CLI Body에 /dev/null을 사용하고 stderr를 억제해 원인이 가려짐",
+      "action": "일반 Temp Payload를 사용하고 Credential 없음·AccessDenied·기술 오류를 분리",
+      "proof": "허용 단계 Put/Get/Delete 성공과 제거 뒤 Credential 없음 재검증"
+    },
+    {
+      "symptom": "실험 단계별 Event가 같은 조회 창에 섞임",
+      "cause": "Client 종료 뒤 5분 S3 전달 대기를 Event 조회 Window에도 사용",
+      "action": "Event Tail 2초와 S3 Delivery Grace 5분을 분리하고 실제 Event Time으로 재필터링",
+      "proof": "IAM-01 허용·거부 Bundle을 별도 Experiment ID와 Time Window로 생성"
+    },
+    {
+      "symptom": "Athena·Logs Insights 0행 결과가 수집 실패로 처리됨",
+      "cause": "PowerShell의 null과 빈 배열 처리 차이",
+      "action": "Query 결과를 배열로 정규화하고 0행도 유효한 결과 Bundle로 보존",
+      "proof": "ALB errors 0행 Query도 SUCCEEDED, Bundle Hash 불일치 0"
+    }
+  ],
+  "verification": [
+    {
+      "item": "IAM-01 조치 전 S3 Canary Put/Get/Delete",
+      "result": "성공",
+      "evidence": "iam01-allowed Bundle · EKS Audit · CloudTrail S3 Data Event",
+      "status": "verified"
+    },
+    {
+      "item": "IAM-01 권한 제거 후 동일 조건 재실행",
+      "result": "실패 확인",
+      "evidence": "AWS Credential 없음 · 조치 후 S3 Object API Event 0건",
+      "status": "verified"
+    },
+    {
+      "item": "IAM-01 조치의 다음 Cold Up 지속성",
+      "result": "유지",
+      "evidence": "enable_web_s3_pod_identity=false · BANK Association 부재",
+      "status": "verified"
+    },
+    {
+      "item": "WEB-01 Application 인증 실패 관측",
+      "result": "60건",
+      "evidence": "before·count·block BANK auth.login.failed 각 20건",
+      "status": "verified"
+    },
+    {
+      "item": "WEB-01 최소 탐지 Alarm 상태 전이",
+      "result": "동작",
+      "evidence": "CloudWatch Alarm OK → ALARM → OK",
+      "status": "verified"
+    },
+    {
+      "item": "WEB-01 WAF Rate-based 차단",
+      "result": "미검증",
+      "evidence": "WAF BLOCK 0건 · HTTP 403 0건 · 모든 요청 HTTP 200",
+      "status": "pending"
+    },
+    {
+      "item": "WEB-01 외부 알림 수신",
+      "result": "미검증",
+      "evidence": "SNS Topic Subscription 0건",
+      "status": "pending"
+    },
+    {
+      "item": "Athena Query Runtime",
+      "result": "4 / 4",
+      "evidence": "ALB errors 0행 · VPC REJECT 534행 · CloudFront 180행 · ALB trace 1행",
+      "status": "verified"
+    },
+    {
+      "item": "ALB Trace와 BANK Request 상관",
+      "result": "연결",
+      "evidence": "Sanitized BANK request_id와 ALB trace 1행 직접 연결",
+      "status": "verified"
+    },
+    {
+      "item": "지정된 9개 Evidence Bundle 무결성",
+      "result": "536 / 536",
+      "evidence": "SHA-256 mismatch 0 · missing 0, 2026-08-03 재검증",
+      "status": "verified"
+    },
+    {
+      "item": "모든 웹 취약점·RCE·DB 행위의 완전 수집",
+      "result": "범위 밖",
+      "evidence": "Body·Secret·DB SQL·syscall·파일 내용은 현재 Source가 아님",
+      "status": "partial"
+    }
+  ],
+  "contribution": {
+    "title": "판정과 범위 경계",
+    "team_base": [
+      "CloudFront → WAF → ALB → EKS → BANK DVWA → RDS 요청 경로",
+      "Foundation S3·CloudWatch 30일 보존 계층",
+      "CloudWatch Logs Insights·Athena Query Pack"
+    ],
+    "user_led": [
+      "IAM-01 조치 전·후 동일 조건 실행과 최소 권한 검증",
+      "WEB-01 Application·WAF·Alarm 결과의 성공·실패 분리",
+      "Evidence Bundle·Sanitized 결과·Manifest·SHA-256 판정",
+      "확인된 Runtime과 Blind Spot·미검증 범위의 문서화"
+    ],
+    "ai_assisted": [
+      "시나리오 실행·수집 Script와 Query의 작성·검토 보조",
+      "Runtime 오류 가설과 회귀 Test 작성 보조",
+      "실행 결과를 시각화 구조로 정리하는 작업 보조"
+    ],
+    "boundary": "IAM-01과 WEB-01은 현재 관측 Pipeline의 후보 검증이며 팀이 확정한 본편 시나리오가 아니다. 실제 AWS 실행 승인·관찰·판정은 사람이 수행했고, 확인되지 않은 WAF 차단·SNS 수신·Blind Spot 수집을 성공으로 표시하지 않는다."
+  },
+  "open_items": [
+    {
+      "title": "팀 본편 시나리오 선택",
+      "detail": "IAM-01·WEB-01을 채택할지, 실제 사고 사례에 맞춘 다른 시나리오로 교체할지 결정"
+    },
+    {
+      "title": "WAF Rate Rule 원인 분리",
+      "detail": "집계·평가 지연, Scope-down 조건, Managed Key와 실제 Event를 분리해 BLOCK 0건 원인 확인"
+    },
+    {
+      "title": "외부 알림 전달",
+      "detail": "SNS Subscription과 실제 수신자를 구성하기 전에는 Alarm 상태 전이만 검증된 상태"
+    },
+    {
+      "title": "Application Audit Coverage",
+      "detail": "확정 시나리오 Route에 구조화 Audit Event가 있는지 확인하고 업무 의미가 비는 경로 보강"
+    },
+    {
+      "title": "Runtime 행위 관측 확장 여부",
+      "detail": "Container process·syscall·RCE가 본편에 필요하면 별도 Runtime Security Source 도입 여부 판단"
+    }
+  ],
+  "sources": [
+    {
+      "type": "runtime",
+      "label": "IAM-01 허용·거부 Evidence",
+      "value": "iam01-allowed-20260802T091020Z · iam01-denied-20260802T091253Z"
+    },
+    {
+      "type": "runtime",
+      "label": "WEB-01 Evidence",
+      "value": "observability-20260802T131345Z-web-before · web-count · web-block"
+    },
+    {
+      "type": "runtime",
+      "label": "Athena Evidence",
+      "value": "athena-alb-errors · athena-vpc-reject · athena-cloudfront-trace · athena-alb-trace"
+    },
+    {
+      "type": "record",
+      "label": "Canonical As-built",
+      "value": "관측성_As-built_및_Runtime_검증.md"
+    },
+    {
+      "type": "record",
+      "label": "시나리오 실행 계약",
+      "value": "보안_실험_시나리오_계약.md"
+    },
+    {
+      "type": "record",
+      "label": "멘토 진행 보고",
+      "value": "멘토 상담용 관측성 진행 보고 초안.md"
+    },
+    {
+      "type": "source",
+      "label": "시나리오 Source",
+      "value": "observability/scenarios/Invoke-IAM01.ps1 · Invoke-WEB01.ps1"
+    },
+    {
+      "type": "source",
+      "label": "수집·Query Source",
+      "value": "observability.tf · foundation/observability.tf · detection.tf · Evidence.Collection.psm1 · observability/queries/"
+    }
+  ]
+}

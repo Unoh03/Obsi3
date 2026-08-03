@@ -174,3 +174,131 @@
 - 결과: `0 added / 0 changed / 256 destroyed`, 약 27.4분. Daily State 0, 추적 대상 Daily AWS 잔존 0, `Project=aws-topology` 태그 기반 Daily Runtime 잔존 0으로 종료.
 - Evidence: `daily-20260802T000320Z-e37547dd-pre-destroy`와 `-post-destroy` Bundle 생성. 각각 105·104개 파일의 SHA-256 불일치 0. 사후 수집에서 CloudTrail 57·VPC REJECT 20·EKS Control Plane 41,545·DVWA 816건을 보존했으며 CloudFront·ALB·WAF·DR DVWA는 해당 사후 Window 0건.
 - Foundation 재확인: State 24개, ECR Repository와 Image 24개, GitHub OIDC Provider·Actions IAM Role·Security Log S3가 실재. CloudTrail·Primary/DR DVWA·EKS·WAF Log Group과 S3 보존 설정은 30일 유지.
+
+### 14:19
+
+- Daily Session 안전장치 구현: 시작 후 5시간 Soft Deadline, 6시간 Hard Deadline, 이후 2시간·15분 간격의 제한 재시도와 독립 Windows Scheduled Task Watchdog을 `daily-up.ps1`·`daily-down.ps1`에 연결. AWS 변경 없음.
+- 안전 경계: Terraform Process·State Lock이 있으면 Kill·강제 해제·동시 Destroy를 하지 않으며, 성공한 Down에서만 예약 작업과 활성 상태를 제거한다. 상태에는 비민감 Routing·Deadline·동작 상태만 기록한다.
+- 시행착오: 첫 Watchdog Entry Point Probe에서 Windows PowerShell이 상위 PowerShell 7 Module Path를 물려받아 `Import-PowerShellDataFile`을 찾지 못했다. Scheduled Task가 등록 시점의 실제 PowerShell Executable을 고정하고 설정 cmdlet을 Module-qualified 호출하도록 보정했다.
+- 재검증: PowerShell Parser 8파일, Watchdog 등록·조기 실행·해제·Deadline·Lock Test, 기존 Daily Automation Test, Windows PowerShell 5.1 설정 Import, Daily·Foundation `terraform validate`, Targeted Secret Scan 통과.
+- 종료 상태: Terraform Process 0, State Lock 없음, Daily State 0, Foundation State 24, Watchdog Task 0, 활성 Session State 없음. 실제 Hard Deadline Down은 다음 승인된 Daily Session에서 Runtime 검증한다.
+
+### 16:09
+
+- Daily Session Baseline: `daily-up.ps1 -ConfirmApply 'APPLY DAILY'`로 `256 added / 0 changed / 0 destroyed`, 33.1분. Argo CD `Synced / Healthy`, DVWA Pod Ready, Image `sha-8a0099aa5fe8dda94ef15ac803bdd6ee73cfd413`, CloudFront 정상 요청 5건의 `302/200` 응답을 확인했다.
+- 최종 Evidence `baseline-20260802-1527-final`: CloudTrail 13개 Object, CloudFront 1개, ALB 2개, VPC REJECT 6개, EKS Control Plane 11,336건, DVWA 129건 수집. Git Commit·Image SHA·Argo Revision을 동일 배포로 연결했다.
+- WAF는 `BLOCK/COUNT KEEP`, `ALLOW DROP` Filter라 정상 요청 Window 0건이 예상 결과였으며 실제 WAF Event 전달은 아직 미검증이다. DR DVWA도 Workload 미배포로 0건이다.
+- 시행착오: Evidence의 Argo Revision 조회가 새 Bastion Host Key를 비대화식으로 등록하지 못해 실패. `StrictHostKeyChecking=accept-new`를 추가해 실제 Revision 조회와 Automation Self-test를 통과했다.
+- 종료: `daily-down.ps1 -ConfirmDestroy 'DESTROY DAILY'`로 25.2분에 256개 Daily Resource를 제거했다. 빈 CloudFront Log Object가 post-destroy Collector를 실패시키는 결함은 Empty String 저장 허용과 회귀 Test로 보정했고 재수집 성공. Daily State·잔존 Runtime·Terraform Process·Watchdog 0, Foundation State 24와 ECR·OIDC/IAM·Security Log 30일 보존을 확인했다.
+
+### 16:43
+
+- 한 일: `WEB-01` 전용 `/login.php` Rate-based WAF Rule을 `disabled/count/block`로 선언하고 기본값은 `disabled`로 고정. 요청 생성 Script는 현재 Terraform의 Application URL만 사용하며 `10~60`회와 정확한 승인 문구로 제한.
+- 한 일: `IAM-01` Pod Identity S3 Canary Script와 비민감 Bucket·Data Event 상태 Output 추가. SHA-256 고정 Image, 단일 `web/experiment-<id>/canary.txt`, 임시 Pod·ServiceAccount·Object 정리를 강제.
+- 검증: Daily·Foundation `terraform fmt -check`·`validate`, PowerShell Parser, 신규 Scenario 안전 계약 Test 통과. AWS Apply·공격·WAF 전환은 수행하지 않음.
+- 남음: 다음 승인된 Daily Session에서 S3 Data Event Apply 여부와 immutable AWS CLI Image를 확정한 뒤 `WEB-01`·`IAM-01` 조치 전·후 Runtime을 실행·수집해야 함.
+
+### 16:55
+
+- Foundation S3 Data Event Plan: `aws_cloudtrail.security` 1개 in-place update, `0 add / 1 change / 0 destroy`. Management Event와 프로젝트 Primary·DR Bucket Prefix의 `GetObject`·`PutObject`·`DeleteObject`만 선택하며 임시 Plan은 검토 후 삭제.
+- IAM-01 준비: `enable_web_s3_pod_identity` Toggle을 현재 동작과 같은 기본값 `true`로 추가. Canary의 `allowed/denied` 기대 결과가 실제 Terraform Output과 다르면 실행 전 중단하도록 보정.
+- 검증: Daily Terraform `fmt -check`·`validate`, IAM-01 Parser와 Scenario 안전 계약 Test 통과. AWS Apply는 수행하지 않음.
+- 남음: IAM-01 조치 후 Toggle을 `false`로 유지할지, 증거 수집 뒤 `true`로 복구할지 사용자 결정 필요.
+
+### 19:35
+
+- Foundation·Up: CloudTrail에 프로젝트 Primary·DR S3의 `GetObject`·`PutObject`·`DeleteObject` Data Event를 1개 in-place Update로 적용. Daily Up은 `256 added / 0 changed / 0 destroyed`, 32.2분이며 Argo `Synced / Healthy`, DVWA Ready·HTTP 200을 확인.
+- WEB-01: `before/count/block`에서 로그인 실패 요청을 각 20회 실행했고 모두 HTTP 200. BANK Application은 단계별 20건을 정확히 기록했지만 WAF Match는 모두 0건이어서 관측은 성공, Rate 제한·차단 효과는 미검증으로 유지.
+- IAM-01: Canary의 `/dev/null` Body 처리와 stderr 억제로 기술 오류를 권한 거부처럼 판정하던 결함을 보정. 조치 전 Pod Identity Assume과 S3 Put/Get/Delete·정리를 확인하고 관련 6개 Resource 제거 뒤에는 Credential 없음·S3 Object API 0건을 확인. 다음 Up에서 되살아나지 않도록 Source 기본값을 `false`로 보정했으며 Runtime 재확인은 남음.
+- Evidence: Client 종료 뒤 5분을 Event Window로 사용해 다음 단계 Log가 섞이던 결함을 `정확한 종료 시각 + Application Tail 2초 + S3 전달 유예 5분`으로 분리. WEB 3개·IAM 2개 Bundle, 총 212파일의 SHA-256 불일치 0.
+- Daily Down: IAM 조치 후 남은 `250 destroyed`, 32.7분. 독립 재확인에서 Daily State·태그 기반 Runtime·Terraform Process·Watchdog·활성 Session은 모두 0, Foundation State 24·ECR Image 24개·CI IAM Role·Security Log Bucket·S3 Data Event·30일 보존은 유지.
+- 남음: WAF Rate Rule의 실제 Match·Block, Metric Filter·Alarm·SNS, Athena Runtime Query, DR BANK Workload Event 검증. Goal은 Active 유지.
+
+### 20:02
+
+- WEB-01 재진단: CloudFront Evidence상 Count·Block POST는 각각 단일 Client IP 20건이었고 실행시간은 22.8초·22.6초. URI·Method·IP 분산 문제는 확인되지 않음.
+- 공식 경계: AWS WAF Rate 제한은 근사 제어이며 완화 지연은 보통 30~50초, Web ACL 변경 전파는 수초~수분이고 Rate 설정 변경은 Count를 Reset해 최대 1분 중단될 수 있음.
+- 판정: 이전 20회 실험은 WAF가 Rate를 판정하기 전에 종료됐을 가능성이 가장 높음. WAF 0건·HTTP 200을 구현 실패나 차단 성공으로 확대하지 않음.
+- Source 보정: Rule·Metric 이름을 `bank-login-rate`로 고정하고 Count·Block에서 Web ACL 전파 대기 90초와 최소 50초 요청 관찰을 강제. Query도 안정 Rule ID로 제한.
+- 검증: Daily Terraform `fmt -check`·`validate`, PowerShell Parser, Observability Scenario Test 통과. AWS 변경·추가 요청 없음; 다음 Runtime 재승인 필요.
+
+### 20:18
+
+- Foundation에 `auth.login.failed` 전용 Metric Filter, 5분·5건 CloudWatch Alarm, SNS Topic의 정적 Source와 회귀 Test를 추가. Source IP별 분석은 기존 Logs Insights Query가 담당하고 고카디널리티 Metric Dimension은 만들지 않음.
+- AWS `TestMetricFilter`에서 실패 Event만 1건 Match하고 성공 Event는 제외됨을 확인. Foundation `fmt -check`·`validate`, 신규 Detection Test와 기존 Scenario Test 통과.
+- 첫 Plan은 `3 add / 1 change / 0 destroy`로 S3 Data Events를 제거하려 했음. 적용 때 사용한 승인값이 local input에 남지 않은 원인이므로 `foundation/terraform.tfvars`에 `enable_project_s3_data_events = true`를 고정했고 최종 Plan은 `3 add / 0 change / 0 destroy`로 수렴.
+- AWS Apply는 수행하지 않음. Email 구독은 기본 비활성이고 수신자 확인이 필요하며, DR Alert은 DR BANK Audit Event의 Runtime 검증 뒤 추가하는 경계로 유지.
+
+### 20:28
+
+- WEB-01에 선택형 Alarm Probe를 추가. 실행 전 Alarm이 이미 `ALARM`이면 중단하고, 현재 실행 시작 이후의 새 상태 전환만 최대 8분 동안 확인해 Client Evidence에 기록한다.
+- SNS는 확정 구독 수와 Protocol만 기록하며 Email Endpoint는 출력·Evidence에 남기지 않는다. 실제 수신 여부는 수신자의 별도 확인 증거로 남기는 경계를 유지.
+- PowerShell Parser, Observability Detection·Scenario Test, Daily Automation Self-test, Foundation `fmt -check`·`validate`, Credential·Endpoint 비노출 검사 통과. AWS 변경·요청 생성 없음.
+
+### 21:00
+
+- Athena Query Pack 실행기를 추가. `alb-errors`, `vpc-reject`, `cloudfront-trace`, `alb-trace` 네 Query만 허용하고 시간창은 최대 6시간으로 제한한다.
+- 안전 경계: Foundation Bucket·Expected Owner·SSE-S3·`primary` Workgroup을 검증하고, 제한된 Polling과 동일 `ExperimentId` 재실행 Token을 사용한다. SQL·상태·Scan Byte·최대 1,000행 결과는 Local Evidence에 기록한다.
+- 실제 Account·Foundation Bucket·Workgroup을 읽는 Preview는 정확한 승인 문구 전 Gate에서 중단했다. Glue Catalog 생성·Athena Query·비용 발생 작업은 수행하지 않았다.
+- PowerShell Parser, Athena Query Pack Test, DDL 4문장 Renderer 계약과 기존 Daily Automation Test를 통과했다. Athena Runtime은 미검증이며 Goal은 Active 유지.
+
+### 21:05
+
+- 검증 중 Windows PowerShell 5.1에서 ISO-8601 `Z` 시각을 `[datetime]`으로 변환하면 Local Time으로 바뀌어, 정상 Event를 회귀 Test 실패로 오판하는 문제를 확인했다.
+- Test가 `DateTimeOffset`과 `AssumeUniversal + AdjustToUniversal`로 UTC를 명시하도록 보정했다. 수집기 Runtime Logic은 변경하지 않았다.
+- Windows PowerShell 5.1·PowerShell 7 Daily Automation Test, Athena·Detection·Scenario Test와 Parser가 모두 통과했다.
+
+### 21:17
+
+- Foundation Fresh Plan을 다시 실행해 `Metric Filter + CloudWatch Alarm + SNS Topic`만 `3 add / 0 change / 0 destroy`임을 확인했다.
+- Login 실패 Filter는 `/aws/eks/aws-topology-primary/dvwa`의 `auth.login.failed`를 집계하고, Alarm은 5분 동안 5건 이상을 기준으로 한다.
+- Email Subscription은 비활성 상태다. Apply는 수행하지 않았으며 정확한 승인 Gate에서 대기한다.
+
+### 22:03
+
+- 승인된 저장 Plan을 적용해 Foundation에 Login 실패 Metric Filter, 5분·5건 Alarm, SNS Topic을 `3 added / 0 changed / 0 destroyed`로 생성했다.
+- AWS API 검증: Filter는 `auth.login.failed`만 `aws-topology/Security/DVWALoginFailures` Count로 변환하고, Alarm은 300초·5건·`treat_missing_data=notBreaching`·SNS Action 1개다.
+- 생성 직후 Alarm은 `INSUFFICIENT_DATA`, SNS Subscription은 0건이다. 실제 `OK → ALARM → OK` 전이와 알림 수신은 아직 미검증이다.
+- Apply 후 Foundation Plan은 `No changes`로 수렴했고 임시 Plan 파일은 삭제했다.
+
+### 22:05
+
+- Alarm이 생성 직후 `INSUFFICIENT_DATA`에서 `OK`로 전환됨을 확인했다. Data가 없는 1개 Period를 `notBreaching`으로 처리한 결과다.
+- Foundation State는 27개이며 신규 탐지 리소스 3개가 추적된다. `OK → ALARM → OK` 전체 전이와 실제 알림 수신은 다음 Runtime 검증으로 남긴다.
+
+### 22:07
+
+- Windows PowerShell에서 `terraform plan -out=$planPath`가 변수값이 아닌 `$planPath`라는 파일명으로 전달됐고, 숨김형 파일명 인수도 `Too many command line arguments`로 실패했다.
+- AWS Apply 전에 발생한 Local Plan 경로 문제였으며, `terraform plan -out codex-foundation-detection.tfplan`처럼 Option과 파일명을 분리해 해결했다. 잘못 생성된 임시 파일과 적용 완료 Plan은 모두 삭제했다.
+
+### 22:54
+
+- Daily Session `observability-20260802T131345Z`에서 `daily-up.ps1`을 실행해 `250 added / 0 changed / 0 destroyed`, 34.1분으로 Runtime을 복원했다. Argo CD `Synced / Healthy`, BANK DVWA Ready, immutable Image `sha-8a0099aa5fe8dda94ef15ac803bdd6ee73cfd413`을 확인했다.
+- `web_s3_pod_identity_enabled = false`이고 Primary EKS Pod Identity Association에는 Fluent Bit·Karpenter·AWS Load Balancer Controller·EFS CSI만 존재해 BANK Web Application용 Association이 다시 생성되지 않았음을 확인했다.
+- Primary 2개 Node와 DR 1개 Node에서 Fluent Bit Pod가 모두 Running이었다.
+- DR `dvwa` Namespace의 임시 Probe Pod가 비민감 구조화 Event `observability.pipeline.test` 1건을 출력했고, Tokyo `/aws/eks/aws-topology-dr/dvwa` Log Group에 `request_id: dr-probe-20260802T135333Z`로 전달됨을 확인했다. Probe Pod는 확인 직후 삭제했다.
+- 남음: WEB-01 20회×3단계, Alarm `OK → ALARM → OK`, Athena 4개 Query, Evidence 최종화와 Daily Down.
+
+### 23:31
+
+- WEB-01 조치 전·COUNT·BLOCK에서 로그인 실패를 각 20회 실행했다. 세 단계 모두 HTTP 200·Application `auth.login.failed` 20건이었고, COUNT는 마지막 2건만 `bank-login-rate` Match, BLOCK Match와 HTTP 403은 0건이었다.
+- 판정: Application·WAF 관측은 성공했지만 승인된 `20회 × 3단계` 범위에서 WAF 차단 효과는 입증되지 않았다. 추가 요청으로 범위를 늘리지 않고 임시 Rule을 기본 `disabled`로 복구했다.
+- Login 실패 Alarm은 조치 전 실행으로 `OK → ALARM`, 이후 Data가 1건으로 내려가며 `ALARM → OK`로 복귀했다. SNS 확정 Subscription은 0건이므로 실제 외부 알림 수신은 검증 범위 밖이다.
+- Athena 4개 Query가 모두 `SUCCEEDED`: ALB 오류 0행·37,091B, VPC REJECT 534행·584,542B, CloudFront Trace 180행·26,537B, ALB Trace 1행·37,091B. ALB Trace는 Sanitized BANK `request_id`와 일치하는 ID를 사용했다.
+- WEB-01 3개, Athena 4개, DR Event 1개 등 8개 Local Evidence Bundle에서 SHA-256 490개를 대조해 불일치 0을 확인했다. DR Bundle에는 Tokyo `/aws/eks/aws-topology-dr/dvwa` Event 1건이 포함됐다.
+- 남음: 안전한 Daily Down, Daily Runtime 잔존 0·Foundation 27개·30일 Log 보존·Watchdog 제거 확인, 문서와 Goal 완료조건 감사.
+
+### 00:14
+
+- Daily Down: 승인된 `daily-down.ps1 -ConfirmDestroy 'DESTROY DAILY'`로 `250 destroyed`, 31.6분. 독립 확인에서 Daily State·태그 기반 Daily Runtime·Terraform Process·Watchdog·활성 Session은 모두 0이었다.
+- Foundation: State 27개, ECR Repository, GitHub Actions IAM Role, Security Log S3와 30일 CloudWatch Log Group이 유지됐다. Primary·DR EKS, 프로젝트 EC2·NAT/EIP·RDS·Load Balancer·CloudFront 잔존은 0이었다.
+- Evidence: Final Pre/Post-Down Bundle의 SHA-256 155개·180개가 모두 일치했다. Post-Down 수집은 CloudTrail 106·CloudFront 5·ALB 7·VPC REJECT 35개 Object, EKS 67,688·WAF 3·Primary DVWA 940·DR DVWA 1건이었다.
+- 결함·보정: AWS JSON이 PowerShell 직렬화 깊이 30을 넘으면 Evidence가 경고와 함께 잘리는 문제를 발견했다. Depth 100으로 통일하고 40단계 Nested JSON의 최하위 값 보존·민감값 Redaction을 PowerShell 5.1·7에서 검증했다. Foundation-only 회귀 Bundle SHA-256 57개도 불일치 0이다.
+- 남음: WEB-01은 90초 전파 대기·약 57초 실행 뒤에도 `COUNT` 2건·`BLOCK` 0건으로 차단 미검증. SNS Subscription 0으로 실제 알림 수신 미검증. 팀 본편 시나리오 확정·조치 전후 재검증과 보고서 보완이 남아 Goal은 Active 유지.
+
+### 00:30
+
+- WAF 재진단: Client Evidence에서 `count`·`block`은 각각 20회·약 60초였고, `COUNT` 2건은 실행 시작 약 58초 뒤 마지막 구간에서만 발생했다. `BLOCK`은 같은 길이의 실행 종료 전 Rate 제한이 활성화됐다는 증거가 없었다.
+- 공식 동작 경계: AWS WAF Rate Rule은 정확한 횟수 제한이 아니라 최근 요청률 추정이며 완화가 보통 30~50초, 경우에 따라 수분 지연될 수 있다. `COUNT`도 Scope에 맞는 전체 요청이 아니라 실제 Rate 제한 상태에서 Rule Action이 적용된 요청만 기록한다.
+- 판정: Terraform 전체 결함이 아니라 승인된 20회 실행이 WAF의 근사 완화 시작을 안정적으로 관찰하기에 짧았던 것이 현재 가장 강한 설명이다. 확정 원인은 다음 Runtime에서 더 긴 bounded 요청과 WAF Event로 재검증해야 한다.
+- Source 문서 보정: Scenario·Query README와 CWLI Runtime 주석을 최신 `COUNT 2 / BLOCK 0`, Athena 완료 상태로 갱신하고 WEB-01 PowerShell Parser·Scenario 회귀 Test를 통과했다. AWS Resource 변경은 수행하지 않았다.
