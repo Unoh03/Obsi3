@@ -302,3 +302,10 @@
 - 공식 동작 경계: AWS WAF Rate Rule은 정확한 횟수 제한이 아니라 최근 요청률 추정이며 완화가 보통 30~50초, 경우에 따라 수분 지연될 수 있다. `COUNT`도 Scope에 맞는 전체 요청이 아니라 실제 Rate 제한 상태에서 Rule Action이 적용된 요청만 기록한다.
 - 판정: Terraform 전체 결함이 아니라 승인된 20회 실행이 WAF의 근사 완화 시작을 안정적으로 관찰하기에 짧았던 것이 현재 가장 강한 설명이다. 확정 원인은 다음 Runtime에서 더 긴 bounded 요청과 WAF Event로 재검증해야 한다.
 - Source 문서 보정: Scenario·Query README와 CWLI Runtime 주석을 최신 `COUNT 2 / BLOCK 0`, Athena 완료 상태로 갱신하고 WEB-01 PowerShell Parser·Scenario 회귀 Test를 통과했다. AWS Resource 변경은 수행하지 않았다.
+
+### 10:24
+
+- 비용 최적화는 현재 Daily Runtime을 Down한 뒤 Terraform Plan을 검토하고 반영하기로 했다. 현재 Up·Runtime은 변경하지 않는다.
+- Valkey는 통째 주석 처리 대신 `enable_valkey` 선택화를 우선 검토한다. 현재 BANK DVWA Source에서 Valkey Endpoint 사용은 발견되지 않았다.
+- Cross-Region DR은 조치 전·후 및 DR 증거 수집에 필요하므로 유지한다. Primary RDS Multi-AZ는 서울 내부 AZ 장애조치용으로 Cross-Region DR과 별개이므로, 시나리오 필요성을 보고 Single-AZ 전환을 따로 판단한다.
+- 후보: Primary EKS Worker `t3.medium` 2대→1대 Runtime 검증, Karpenter의 Spot→On-Demand Fallback 허용. DR을 유지하므로 지역별 NAT Gateway 1개는 당장 변경하지 않는다.
