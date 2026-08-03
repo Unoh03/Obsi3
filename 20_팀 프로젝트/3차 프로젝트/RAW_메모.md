@@ -54,3 +54,10 @@
 - Watchdog 한계: 단일 실패 Destroy가 2시간 Retry Window를 소진했고 상세 stdout/stderr를 보존하지 않아 다음 날에는 Exit Code만 남았다.
 - 복구: 승인 후 고아 Instance `i-0aabd261ead9ef563`를 종료하고 `daily-down.ps1 -ConfirmDestroy 'DESTROY DAILY'`를 재실행했다. 4.1분 만에 잔여 3개를 제거했다.
 - 최종 검증: Daily State·EKS·RDS·EC2·NAT·ELBv2 모두 0. Foundation ECR·GitHub OIDC/IAM·Security Log와 30일 Retention은 보존됐다.
+
+### 08:43
+
+- Daily Down 보정: Terraform Destroy 전에 Primary·DR Karpenter NodePool·NodeClaim을 삭제하고 관련 EC2가 완전히 종료될 때까지 제한 시간만 대기하도록 구현했다.
+- 고아 복구 경계: Cluster가 이미 없을 때는 `Project`, Cluster ownership, `karpenter.sh/*`, `ManagedBy=Karpenter` Tag가 모두 일치하는 EC2만 승인된 `DESTROY DAILY` 범위에서 종료한다.
+- Watchdog 진단: Down 시도별 Sanitized stdout/stderr, 남은 Terraform State와 Tag 기반 AWS Runtime을 로컬 Log에 보존하고, Retry 만료 뒤에는 자동 재시도를 종료하도록 보강했다.
+- 정적 검증: PowerShell Parser, Karpenter·Watchdog·Daily Automation·Runtime Profile Test, Terraform fmt/validate, Helm lint/template, Diff·Secret Scan을 통과했다. AWS Apply·Destroy는 실행하지 않았다.
