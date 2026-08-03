@@ -46,3 +46,11 @@
 - 최소 Runtime: DR·Valkey·EFS는 0. Managed Node 1대에 Application용 Karpenter Node 1대가 추가되어 실제 안정 실행은 Node 2대였다.
 - 검증: Argo CD `Synced / Healthy`, DVWA Pod `Running 1/1`, immutable Image SHA 사용, Fluent Bit `2/2`, 최근 DVWA 18건·EKS 20건을 확인했다.
 - WAF: 정상 요청은 현재 Filter가 `BLOCK`·`COUNT`만 보존하므로 0건이 정상이다. Logging Destination·Cookie/Authorization Redaction·30일 Retention을 확인했으며 실제 Rule Match Event는 아직 미검증이다.
+
+### 07:18
+
+- Watchdog: 02:57 KST Daily Down을 시작했지만 약 2시간 8분 뒤 `exit code 1`로 종료됐다. EKS·RDS·NAT·Load Balancer는 제거됐으나 Karpenter `t3a.small` Node 1대와 VPC·Subnet·Security Group State 3개가 남았다.
+- 원인: Karpenter가 Runtime에 만든 NodeClaim·EC2는 Terraform State 밖에 있다. Destroy 전에 NodePool·NodeClaim을 종료하는 단계가 없어 EKS와 Karpenter Controller가 먼저 사라졌고, 고아 EC2가 Network 의존성 삭제를 막았다.
+- Watchdog 한계: 단일 실패 Destroy가 2시간 Retry Window를 소진했고 상세 stdout/stderr를 보존하지 않아 다음 날에는 Exit Code만 남았다.
+- 복구: 승인 후 고아 Instance `i-0aabd261ead9ef563`를 종료하고 `daily-down.ps1 -ConfirmDestroy 'DESTROY DAILY'`를 재실행했다. 4.1분 만에 잔여 3개를 제거했다.
+- 최종 검증: Daily State·EKS·RDS·EC2·NAT·ELBv2 모두 0. Foundation ECR·GitHub OIDC/IAM·Security Log와 30일 Retention은 보존됐다.
