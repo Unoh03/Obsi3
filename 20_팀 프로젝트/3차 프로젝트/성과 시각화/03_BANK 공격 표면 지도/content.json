@@ -1,0 +1,287 @@
+{
+  "meta": {
+    "title": "BANK는 어디서 공격받을 수 있는가",
+    "subtitle": "DVWA의 취약점 모듈을 은행 업무 화면으로 재구성하고, 각 기능의 정상 목적·공격 표면·관측 지점·현재 검증 상태를 한 장에 연결했다.",
+    "author": "장운호",
+    "project": "보안 위협 대응을 위한 보안 엔지니어 양성 과정 · 3차 프로젝트",
+    "as_of": "2026-08-03 Application·Runtime 기록 기준",
+    "status": "Application 구현 완료 · 보안 검증 진행 중",
+    "one_liner": "취약한 기능을 나열하는 대신, 사용자가 보는 BANK 업무가 어떤 취약점 Engine과 연결되고 현재 어디까지 증명됐는지 공개한다."
+  },
+  "metrics": [
+    {
+      "value": "10",
+      "label": "BANK 업무 Route",
+      "detail": "로그인 후 실제 화면에서 접근 확인",
+      "tone": "blue"
+    },
+    {
+      "value": "3",
+      "label": "Runtime 증거가 있는 행위군",
+      "detail": "SQLi · XSS · 반복 로그인 실패",
+      "tone": "green"
+    },
+    {
+      "value": "7",
+      "label": "연결 가능한 Log Source",
+      "detail": "Edge부터 Application·AWS API까지",
+      "tone": "purple"
+    },
+    {
+      "value": "1",
+      "label": "Cloud 확장 경로 후보",
+      "detail": "Web RCE → Pod Identity → S3",
+      "tone": "orange"
+    }
+  ],
+  "transformation": {
+    "eyebrow": "Application Reassembly",
+    "title": "DVWA 취약점 모듈을 BANK 업무의 내부 부품으로 재조립했다",
+    "description": "로그인·회원가입·홈·업무 Navigation은 BANK 사용자 경험으로 통합했다. 기존 DVWA Module은 계좌조회, 회원검색, 고객의 소리, 보안 설정 같은 업무 기능의 보안 실습 Engine으로 배치했다.",
+    "before": [
+      "취약점 이름이 메뉴에 직접 노출되는 실습형 구조",
+      "각 Module이 서로 분리돼 업무 흐름을 설명하기 어려움",
+      "공격 성공 화면만으로 프로젝트 결과를 판단하기 쉬움"
+    ],
+    "after": [
+      "은행 사용자가 이해할 수 있는 업무 이름과 화면",
+      "정상 업무와 악용 입력이 같은 Route에서 갈라지는 구조",
+      "공격 표면을 Edge·Application·Kubernetes·AWS Log와 연결"
+    ]
+  },
+  "atlas": {
+    "title": "BANK 업무 중심 공격 표면 지도",
+    "caption": "파랑은 화면·Route 구현 확인, 초록은 Runtime 관측 근거 보유, 주황은 부분 검증, 점선은 계획 단계다.",
+    "mermaid": "flowchart TB\n  classDef bank fill:#13213c,stroke:#13213c,color:#fff,stroke-width:3px;\n  classDef group fill:#dff6f7,stroke:#15828a,color:#0e5258,stroke-width:2px;\n  classDef route fill:#eaf2ff,stroke:#206bc4,color:#153153,stroke-width:2px;\n  classDef runtime fill:#e8f7ee,stroke:#2fb344,color:#16351f,stroke-width:2px;\n  classDef partial fill:#fff4e6,stroke:#f59f00,color:#5f3700,stroke-width:2px;\n  classDef planned fill:#f1f3f5,stroke:#868e96,color:#343a40,stroke-width:1.5px,stroke-dasharray:6 4;\n\n  BANK[\"BANK Application\\n은행 업무 Shell + DVWA Engine\"]:::bank\n  DATA[\"조회 · 데이터\"]:::group\n  INPUT[\"검색 · 고객지원\"]:::group\n  ACCOUNTSEC[\"계정 · 세션\"]:::group\n\n  BANK --> DATA\n  BANK --> INPUT\n  BANK --> ACCOUNTSEC\n\n  DATA --> ACCOUNT[\"계좌조회\\nBlind SQL Injection\"]:::route\n  DATA --> MEMBER[\"회원검색\\nSQL Injection\"]:::partial\n  DATA --> DOCS[\"자료실\\nFile Inclusion\"]:::route\n\n  INPUT --> SEARCH[\"통합 검색\\nReflected XSS\"]:::runtime\n  INPUT --> VOICE[\"고객의 소리\\nStored XSS\"]:::route\n  INPUT --> NET[\"네트워크 진단\\nCommand Injection\"]:::route\n\n  ACCOUNTSEC --> PASSWORD[\"비밀번호 변경\\nCSRF\"]:::route\n  ACCOUNTSEC --> PROFILE[\"프로필 사진\\nFile Upload\"]:::route\n  ACCOUNTSEC --> DEVICE[\"로그인 기기\\nWeak Session ID\"]:::route\n  ACCOUNTSEC --> LOGIN[\"로그인 보안 점검\\nBrute Force\"]:::partial\n\n  NET -. \"End-to-End 후보\" .-> POD[\"EKS Pod 내부 코드 실행\"]:::planned\n  POD -.-> ID[\"EKS Pod Identity 임시 권한\"]:::planned\n  ID -.-> S3[\"과도한 S3 GetObject\\n이력서 접근\"]:::planned\n  S3 -.-> CT[\"CloudTrail S3 Data Event\"]:::planned"
+  },
+  "surfaces": [
+    {
+      "group": "조회·데이터",
+      "business": "계좌조회",
+      "engine": "Blind SQL Injection",
+      "route": "/vulnerabilities/sqli_blind/",
+      "normal": "등록된 계좌 정보와 조회 결과 확인",
+      "abuse": "참·거짓 조건의 응답 차이로 DB 정보를 추론",
+      "logs": ["CloudFront", "ALB", "Application"],
+      "runtime": "Route·화면 확인. 개별 공격·탐지 증거는 아직 미수집",
+      "status": "implemented"
+    },
+    {
+      "group": "조회·데이터",
+      "business": "회원검색",
+      "engine": "SQL Injection",
+      "route": "/vulnerabilities/sqli/",
+      "normal": "고객번호로 회원 정보 조회",
+      "abuse": "Boolean·ORDER BY·UNION·Time 기반 Payload 주입",
+      "logs": ["CloudFront", "ALB", "Application", "WAF"],
+      "runtime": "SQLi 요청이 Application까지 도달. WAF Match는 미관측 후보이며 데이터 추출 성공은 별도 증거 필요",
+      "status": "partial"
+    },
+    {
+      "group": "조회·데이터",
+      "business": "자료실",
+      "engine": "File Inclusion",
+      "route": "/vulnerabilities/fi/",
+      "normal": "금융 문서와 안내 자료 확인",
+      "abuse": "의도하지 않은 Local·Remote File 포함 시도",
+      "logs": ["CloudFront", "ALB", "Application"],
+      "runtime": "Route·화면 확인. 공격·조치 전후는 미검증",
+      "status": "implemented"
+    },
+    {
+      "group": "검색·고객지원",
+      "business": "통합 검색",
+      "engine": "Reflected XSS",
+      "route": "/vulnerabilities/xss_r/",
+      "normal": "BANK 서비스와 안내 검색",
+      "abuse": "검색어에 Script Payload를 삽입해 응답에 반사",
+      "logs": ["CloudFront", "WAF", "ALB", "Application"],
+      "runtime": "XSS 요청이 Application에 도달하고 WAF Managed Rule이 Match. COUNT라 HTTP 200으로 허용됐으며 Browser 실행은 별도 증거 필요",
+      "status": "runtime"
+    },
+    {
+      "group": "검색·고객지원",
+      "business": "고객의 소리",
+      "engine": "Stored XSS",
+      "route": "/vulnerabilities/xss_s/",
+      "normal": "칭찬·불만·제안과 고객 의견 접수",
+      "abuse": "저장되는 입력에 Script를 삽입해 후속 조회자에게 실행",
+      "logs": ["CloudFront", "ALB", "Application"],
+      "runtime": "Route·입력 Form 확인. 저장·재조회·조치 증거는 미수집",
+      "status": "implemented"
+    },
+    {
+      "group": "검색·고객지원",
+      "business": "네트워크 진단",
+      "engine": "Command Injection",
+      "route": "/vulnerabilities/exec/",
+      "normal": "입력한 대상의 연결 상태 확인",
+      "abuse": "입력값을 Shell 명령으로 해석시켜 Pod 내부 코드 실행",
+      "logs": ["CloudFront", "ALB", "Application", "EKS"],
+      "runtime": "Route·입력 Form 확인. RCE와 Pod Identity·S3 연결은 계획 단계",
+      "status": "implemented"
+    },
+    {
+      "group": "계정·세션",
+      "business": "비밀번호 변경",
+      "engine": "CSRF",
+      "route": "/vulnerabilities/csrf/",
+      "normal": "로그인 사용자의 비밀번호 변경",
+      "abuse": "사용자 의도 없이 인증된 상태 변경 요청 전송",
+      "logs": ["CloudFront", "ALB", "Application Audit"],
+      "runtime": "Route 확인. security.csrf.failed Event는 Source에 있으나 본편 Runtime은 미검증",
+      "status": "implemented"
+    },
+    {
+      "group": "계정·세션",
+      "business": "프로필 사진",
+      "engine": "File Upload",
+      "route": "/vulnerabilities/upload/",
+      "normal": "사용자 프로필 이미지 등록",
+      "abuse": "허용되지 않은 형식·실행 가능한 파일 업로드",
+      "logs": ["CloudFront", "ALB", "Application"],
+      "runtime": "Route 확인. 파일 내용·Container syscall은 현행 관측 범위 밖",
+      "status": "implemented"
+    },
+    {
+      "group": "계정·세션",
+      "business": "로그인 기기",
+      "engine": "Weak Session ID",
+      "route": "/vulnerabilities/weak_id/",
+      "normal": "로그인 기기와 세션 상태 확인",
+      "abuse": "예측 가능한 Session ID를 추측하거나 재사용",
+      "logs": ["CloudFront", "ALB", "Application"],
+      "runtime": "Route 확인. Cookie·Session 값은 Evidence에 보존하지 않음",
+      "status": "implemented"
+    },
+    {
+      "group": "계정·세션",
+      "business": "로그인 보안 점검",
+      "engine": "Brute Force",
+      "route": "/vulnerabilities/brute/",
+      "normal": "비정상 로그인 여부와 인증 상태 확인",
+      "abuse": "동일 계정에 반복 인증 요청",
+      "logs": ["CloudFront", "WAF", "ALB", "Application Audit", "Alarm"],
+      "runtime": "별도 login.php 반복 실패에서 Audit Event와 Alarm을 확인. 이 Module 자체의 WAF 차단은 미검증",
+      "status": "partial"
+    }
+  ],
+  "journeys": {
+    "title": "같은 BANK 기능에서 정상 업무와 공격 입력이 갈라진다",
+    "normal": {
+      "label": "정상 사용자",
+      "steps": [
+        "BANK 업무 선택",
+        "정상 형식의 입력",
+        "CloudFront·WAF·ALB 통과",
+        "Application 업무 처리",
+        "정상 결과와 Access Log"
+      ]
+    },
+    "abuse": {
+      "label": "통제된 보안 실험",
+      "steps": [
+        "동일 BANK 업무 선택",
+        "공격성 입력 또는 반복 행위",
+        "WAF Match·COUNT·BLOCK 판정",
+        "Application 도달·실행 여부 확인",
+        "Query·Evidence·조치 후 동일 조건 재실행"
+      ]
+    }
+  },
+  "coverage": [
+    {
+      "scenario": "회원검색 · SQLi",
+      "route": "verified",
+      "execution": "partial",
+      "edge": "pending",
+      "application": "verified",
+      "remediation": "pending",
+      "note": "Payload 도달 확인. 실제 DB 데이터 추출과 조치 전후는 별도"
+    },
+    {
+      "scenario": "통합 검색 · Reflected XSS",
+      "route": "verified",
+      "execution": "partial",
+      "edge": "verified",
+      "application": "verified",
+      "remediation": "pending",
+      "note": "WAF Match·COUNT와 Application 200 확인. Browser Script 실행은 미검증"
+    },
+    {
+      "scenario": "반복 로그인 실패",
+      "route": "verified",
+      "execution": "verified",
+      "edge": "partial",
+      "application": "verified",
+      "remediation": "pending",
+      "note": "Application Event·Alarm 확인. WAF BLOCK·HTTP 403은 0건"
+    },
+    {
+      "scenario": "Command Injection → S3",
+      "route": "verified",
+      "execution": "pending",
+      "edge": "pending",
+      "application": "pending",
+      "remediation": "pending",
+      "note": "TalentHook 문제를 EKS Workload Identity 환경으로 확장한 End-to-End 후보"
+    }
+  ],
+  "cloud_extension": {
+    "title": "Application 공격 표면에서 Cloud 권한 오용으로 확장하는 후보",
+    "description": "TalentHook의 공개 Storage 설정 오류를 그대로 복제하지 않는다. BANK의 서버 측 코드 실행 취약점을 진입점으로 삼아, 침해된 Pod가 과도한 Workload IAM 권한으로 S3 이력서에 접근하는 경로로 확장한다.",
+    "steps": [
+      "네트워크 진단의 실습용 Command Injection",
+      "EKS Pod 내부 코드 실행",
+      "EKS Pod Identity 임시 자격증명 사용",
+      "허용 Prefix 밖의 S3 이력서 조회 시도",
+      "CloudTrail S3 Data Event 확인",
+      "IAM·Application 권한 조치 후 동일 조건 재검증"
+    ],
+    "boundary": "현재 Command Injection부터 S3까지의 End-to-End 실행은 미검증이다. 기존 IAM-01 Canary 검증은 권한 경로가 존재할 수 있음을 보여 준 별도 관측 실험이다."
+  },
+  "boundaries": {
+    "verified": [
+      "로그인·회원가입·BANK 홈과 10개 업무 Route의 실제 접근",
+      "SQLi·XSS 요청의 Application 도달",
+      "Reflected XSS의 WAF Managed Rule Match와 COUNT 허용",
+      "반복 로그인 실패의 구조화 Audit Event와 Alarm 상태 전이",
+      "CloudFront·WAF·ALB·EKS·Application·CloudTrail·VPC Log Pipeline"
+    ],
+    "unverified": [
+      "SQLi를 통한 실제 DB 데이터 추출",
+      "XSS의 실제 Browser Script 실행과 사용자 영향",
+      "Command Injection부터 Pod Identity·S3까지의 End-to-End 공격",
+      "대부분 Module의 조치 전·후 동일 조건 재검증",
+      "WAF Rate-based BLOCK과 자동 조치",
+      "Request·Response Body, DB SQL, Container syscall, 파일 내용의 수집"
+    ]
+  },
+  "sources": [
+    {
+      "type": "live",
+      "label": "BANK Application",
+      "value": "https://d6fx0t9p8dmwp.cloudfront.net/ · 2026-08-03 로그인 후 주요 Route 확인"
+    },
+    {
+      "type": "record",
+      "label": "최신 일일 로그",
+      "value": "일일 로그/2026-08-03_일일_로그.md"
+    },
+    {
+      "type": "record",
+      "label": "관측성 As-built",
+      "value": "관측성_As-built_및_Runtime_검증.md"
+    },
+    {
+      "type": "record",
+      "label": "시나리오 계약",
+      "value": "보안_실험_시나리오_계약.md"
+    },
+    {
+      "type": "boundary",
+      "label": "탐색 범위",
+      "value": "화면·Route를 읽기 전용으로 확인했으며 이번 시각화 작업 중 공격성 입력은 전송하지 않음"
+    }
+  ]
+}
