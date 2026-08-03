@@ -24,3 +24,10 @@
 - 수명주기: 기존 Route 53 Hosted Zone은 Foundation에서 조회하고 CloudFront ACM·DNS 검증을 Foundation이 소유하도록 분리했다. Foundation v2 출력이 없으면 Daily Up이 중단되도록 보강했다.
 - 검증: `minimal` Plan 117개 생성에서 DR·Valkey·EFS·복제 0건, `dr-test` Plan 232개 생성에서 Valkey·EFS 0건을 확인했다. Foundation `unoh.click` Plan은 ACM·검증 Record 3개 생성, 변경·삭제 0이며 아직 Apply하지 않았다.
 - 회귀 검사: Daily/Foundation `terraform validate`, Runtime·Watchdog·Daily 자동화·관측성 관련 Test와 `git diff --check`를 통과했다.
+
+### 20:06
+
+- 독립 검토: Terra Max 검토자 2명이 Terraform 수명주기와 PowerShell Wrapper를 분리 검토했고 각각 `보정 후 승인`, `승인`으로 판정했다.
+- 추가 보정: Foundation 선택 Output을 빈 문자열로 보존해 계약 Key가 누락되지 않게 했고, `setup-foundation.ps1`의 Domain 입력을 필수화해 인자 누락으로 인증서 제거 Plan이 생기는 경로를 차단했다.
+- 이식 경계: `count` 주소 전환은 현재 Daily State 0에서만 안전하다고 Runbook에 명시했다. PowerShell Parser 9/9, 핵심 Test 3종, Diff와 신규 파일 Secret 서명 검사를 통과했다.
+- 다음 Gate: AWS 변경은 추가하지 않았다. Foundation v2·`unoh.click` Plan을 먼저 승인·Apply한 뒤에만 `minimal` Cold Start Preview와 Runtime 검증으로 진행한다.
