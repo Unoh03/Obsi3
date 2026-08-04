@@ -9,6 +9,12 @@ project_moc: "[[20_팀 프로젝트/3차 프로젝트/00_3차프로젝트_목차
 
 # Amazon EKS
 
+> [!abstract]- 프로젝트 로그 인프라 전체 흐름
+> ![[00_로그 인프라 전체 흐름#전체 흐름]]
+
+> [!info] 이 노트의 위치
+> Kubernetes API의 Control Plane Log와 DVWA Pod의 Container Log가 발생하는 실행·관리 계층이다.
+
 ## 한 줄 정의
 
 Amazon EKS는 **AWS가 Kubernetes Control Plane을 운영하고, 사용자가 AWS 위에 Kubernetes 워크로드를 배포·관리하도록 제공하는 관리형 Kubernetes 서비스**다.
