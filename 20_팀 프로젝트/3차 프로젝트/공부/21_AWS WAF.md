@@ -9,6 +9,12 @@ project_moc: "[[20_팀 프로젝트/3차 프로젝트/00_3차프로젝트_목차
 
 # AWS WAF
 
+> [!abstract]- 프로젝트 로그 인프라 전체 흐름
+> ![[00_로그 인프라 전체 흐름#전체 흐름]]
+
+> [!info] 이 노트의 위치
+> CloudFront Edge에서 Rule Match와 `COUNT`·`BLOCK` 결과를 CloudWatch Logs에 남기는 보안 관측 계층이다.
+
 ## 한 줄 정의
 
 ## 보편적·일반적인 역할
