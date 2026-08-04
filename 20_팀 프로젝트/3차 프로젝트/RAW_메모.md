@@ -61,3 +61,10 @@
 - 고아 복구 경계: Cluster가 이미 없을 때는 `Project`, Cluster ownership, `karpenter.sh/*`, `ManagedBy=Karpenter` Tag가 모두 일치하는 EC2만 승인된 `DESTROY DAILY` 범위에서 종료한다.
 - Watchdog 진단: Down 시도별 Sanitized stdout/stderr, 남은 Terraform State와 Tag 기반 AWS Runtime을 로컬 Log에 보존하고, Retry 만료 뒤에는 자동 재시도를 종료하도록 보강했다.
 - 정적 검증: PowerShell Parser, Karpenter·Watchdog·Daily Automation·Runtime Profile Test, Terraform fmt/validate, Helm lint/template, Diff·Secret Scan을 통과했다. AWS Apply·Destroy는 실행하지 않았다.
+
+### 09:33
+
+- T1 정적 구현: 승인된 Session에서만 CloudFront HTTP를 임시 허용하고 `finally`에서 HTTPS Redirect를 복원하는 Scenario, WAF·Application Query, CloudFront `cs-protocol` Athena 조회를 추가했다.
+- 안전 경계: 대상 URL은 Terraform `application_url`로 고정하고, Saved Plan이 `aws_cloudfront_distribution.this` 1개 Update 외의 변경을 포함하면 중단한다. HTTP Probe는 Body를 읽지 않고 Status·Path·CloudFront Request ID만 기록한다.
+- 검증: PowerShell Parser, Scenario·Athena·Daily Automation·Runtime Profile Test, Terraform fmt/validate, Diff·추가 줄 Secret Scan을 통과했다. Query metadata와 Test 정규식 결함 2건은 보정했다.
+- 상태: T1 Source는 `80dbd48`로 Push됐고 보정 4파일은 미커밋이다. AWS Apply·HTTP 허용·공격은 실행하지 않았으며 Karpenter와 T1 실제 Runtime 검증은 승인 Gate에 남아 있다.
