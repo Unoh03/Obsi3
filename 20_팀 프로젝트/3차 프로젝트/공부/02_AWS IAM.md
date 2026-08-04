@@ -434,94 +434,52 @@ EventBridge
 
 ## 다른 서비스와의 연결
 
-### 사람과 Terraform
+### 사람과 자동화
 
-```text
-조원 또는 운영자
-→ IAM User·Federated Identity
-→ AWS CLI Profile
-→ Terraform·AWS CLI
-→ AWS Resource
+```mermaid
+flowchart LR
+    Human["조원·운영자"] --> Identity["IAM User·Federated Identity"]
+    Identity --> Console["AWS Console"]
+    Identity --> CLI["AWS CLI·Terraform"]
+    CLI --> AWS["AWS Resource"]
+
+    GitHub["GitHub Actions"] --> OIDC["GitHub OIDC"]
+    OIDC --> CICDRole["GitHub Actions IAM Role"]
+    CICDRole --> ECR["Amazon ECR"]
 ```
 
-자세한 내용: [[01_Terraform과 State]]
+관련 노트: [[01_Terraform과 State]], [[03_GitHub OIDC]], [[14_Amazon ECR]]
 
-### GitHub Actions
+### EKS 관리와 Workload의 AWS 접근
 
-```text
-GitHub Actions
-→ GitHub OIDC
-→ IAM Role
-→ Temporary Credential
-→ Amazon ECR
+```mermaid
+flowchart LR
+    Bastion["EC2 Bastion"] --> BastionRole["Bastion IAM Role"]
+    BastionRole --> AccessEntry["EKS Access Entry"]
+    AccessEntry --> K8sAPI["Kubernetes API"]
+
+    SA["Kubernetes ServiceAccount"] --> PodIdentity["EKS Pod Identity"]
+    PodIdentity --> PodRole["Pod별 IAM Role"]
+
+    PodRole -->|"ELB API"| ELB["Elastic Load Balancing"]
+    PodRole -->|"Route 53 API"| Route53["Amazon Route 53"]
+    PodRole -->|"PutLogEvents"| CloudWatch["CloudWatch Logs"]
+    PodRole -->|"S3 API"| S3["Amazon S3"]
 ```
 
-자세한 내용: [[03_GitHub OIDC]], [[14_Amazon ECR]]
-
-### EKS 관리
-
-```text
-Bastion IAM Role
-→ EKS Access Entry
-→ Kubernetes API
-```
-
-자세한 내용: [[09_Amazon EKS]], [[29_AWS Systems Manager]]
-
-### Pod의 AWS 접근
-
-```text
-Kubernetes ServiceAccount
-→ EKS Pod Identity
-→ IAM Role
-→ AWS Service
-```
-
-자세한 내용: [[11_EKS Pod Identity]]
-
-### AWS Load Balancer Controller
-
-```text
-AWS Load Balancer Controller Pod
-→ Pod Identity Role
-→ ELB API
-→ ALB·Target Group 관리
-```
-
-자세한 내용: [[12_AWS Load Balancer Controller]], [[08_Elastic Load Balancing ALB]]
-
-### ExternalDNS
-
-```text
-ExternalDNS Pod
-→ Pod Identity Role
-→ Route 53 API
-→ DNS Record 관리
-```
-
-자세한 내용: [[13_ExternalDNS]], [[22_Amazon Route 53]]
-
-### Fluent Bit
-
-```text
-Fluent Bit Pod
-→ Pod Identity Role
-→ CloudWatch Logs API
-→ Application Log 전송
-```
-
-자세한 내용: [[32_Fluent Bit]], [[24_Amazon CloudWatch]]
+관련 노트: [[08_Elastic Load Balancing ALB]], [[09_Amazon EKS]], [[11_EKS Pod Identity]], [[12_AWS Load Balancer Controller]], [[13_ExternalDNS]], [[18_Amazon S3]], [[22_Amazon Route 53]], [[24_Amazon CloudWatch]], [[29_AWS Systems Manager]], [[32_Fluent Bit]]
 
 ### 감사 Log
 
-```text
-IAM·STS·AWS API 요청
-→ AWS CloudTrail
-→ CloudWatch Logs·S3
-→ Identity와 Permission 변경 조사
+```mermaid
+flowchart LR
+    Principal["IAM User·Role Session·AWS Service"] --> API["AWS API 요청"]
+    API --> CloudTrail["AWS CloudTrail"]
+    CloudTrail --> Logs["CloudWatch Logs"]
+    CloudTrail --> Archive["Amazon S3"]
 ```
 
-자세한 내용: [[25_AWS CloudTrail]]
+관련 노트: [[18_Amazon S3]], [[24_Amazon CloudWatch]], [[25_AWS CloudTrail]]
 
 ## 비용과 수명주기
 
