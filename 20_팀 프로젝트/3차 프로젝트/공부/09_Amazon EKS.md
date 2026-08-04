@@ -229,91 +229,81 @@ Control Plane Log는 CloudWatch Logs로 전달된다. Kubernetes API 호출, 사
 
 ## 다른 서비스와의 연결
 
-### Cluster 생성과 접근
+### Cluster 생성과 관리 접근
 
-```text
-Terraform
-→ Amazon VPC·Private Subnet
-→ Amazon EKS
-→ Private API Endpoint
-→ AWS Systems Manager Bastion
-→ kubectl·Helm
+```mermaid
+flowchart LR
+    Terraform["Terraform"] --> VPC["Amazon VPC·Private Subnet"]
+    VPC --> EKS["Amazon EKS"]
+
+    Operator["운영자"] --> SSM["AWS Systems Manager"]
+    SSM --> Bastion["EC2 Bastion"]
+    Bastion --> Tools["kubectl·Helm"]
+    Tools --> PrivateAPI["EKS Private API Endpoint"]
+    PrivateAPI --> EKS
+
+    BastionRole["Bastion IAM Role"] --> AccessEntry["EKS Access Entry"]
+    AccessEntry --> EKS
 ```
 
-### Application 배포
+관련 노트: [[01_Terraform과 State]], [[02_AWS IAM]], [[04_Amazon VPC]], [[06_Amazon EC2와 Bastion]], [[29_AWS Systems Manager]]
 
-```text
-GitHub Actions
-→ Amazon ECR
-→ Argo CD
-→ EKS Deployment
-→ Pod
+### Application 배포와 외부 요청
+
+```mermaid
+flowchart LR
+    Actions["GitHub Actions"] --> ECR["Amazon ECR"]
+    Repo["Git Repository·Manifest"] --> Argo["Argo CD"]
+    Argo --> Deployment["EKS Deployment"]
+    Deployment --> Pod["DVWA Pod"]
+    ECR -->|"Image Pull"| Pod
+
+    Client["Client"] --> CloudFront["Amazon CloudFront"]
+    CloudFront --> WAF["AWS WAF"]
+    WAF --> ALB["Application Load Balancer"]
+    ALB --> TGB["TargetGroupBinding"]
+    TGB --> Service["Kubernetes Service"]
+    Service --> Pod
 ```
 
-자세한 내용: [[14_Amazon ECR]], [[31_Argo CD]]
+관련 노트: [[08_Elastic Load Balancing ALB]], [[12_AWS Load Balancer Controller]], [[14_Amazon ECR]], [[20_Amazon CloudFront]], [[21_AWS WAF]], [[31_Argo CD]]
 
-### 외부 요청
+### Compute 확장과 AWS Service 연동
 
-```text
-Amazon CloudFront
-→ AWS WAF
-→ ALB
-→ TargetGroupBinding
-→ Kubernetes Service
-→ DVWA Pod
+```mermaid
+flowchart LR
+    Pending["Scheduling 불가·확장 필요"] --> Karpenter["Karpenter"]
+    Karpenter --> Node["EC2 Application Node 생성 시도"]
+    Node --> Join["EKS Cluster Join"]
+    Join --> Schedule["Scheduler가 Pod 배치"]
+
+    SA["Kubernetes ServiceAccount"] --> PodIdentity["EKS Pod Identity"]
+    PodIdentity --> IAMRole["IAM Role"]
+    IAMRole --> AWSAPI["AWS API"]
+
+    Pod["Pod"] --> CSI["EFS CSI Driver"]
+    CSI --> EFS["Amazon EFS"]
 ```
 
-자세한 내용: [[20_Amazon CloudFront]], [[21_AWS WAF]], [[08_Elastic Load Balancing ALB]], [[12_AWS Load Balancer Controller]]
+관련 노트: [[10_Karpenter]], [[11_EKS Pod Identity]], [[17_Amazon EFS]]
 
-### Node 확장
+### Log와 감사
 
-```text
-Scheduling 불가 또는 확장 필요
-→ Karpenter
-→ EC2 Node 생성 시도
-→ EKS Cluster Join
-→ Scheduler가 Pod 배치
+```mermaid
+flowchart LR
+    Container["DVWA Container stdout·stderr"] --> FluentBit["Fluent Bit DaemonSet"]
+    FluentBit --> CWL["CloudWatch Logs"]
+
+    K8sRequest["Kubernetes API 요청"] --> ControlPlane["EKS Control Plane"]
+    ControlPlane --> CPLogs["api·audit·authenticator Log"]
+    CPLogs --> CWL
+
+    AWSRequest["Controller·IAM Role의 AWS API 요청"] --> CloudTrail["AWS CloudTrail"]
+    CloudTrail --> CWL
+    CloudTrail --> S3["Amazon S3"]
 ```
 
-자세한 내용: [[10_Karpenter]]
-
-### Pod의 AWS API 접근
-
-```text
-Kubernetes ServiceAccount
-→ EKS Pod Identity
-→ IAM Role
-→ AWS API
-```
-
-자세한 내용: [[11_EKS Pod Identity]]
-
-### Storage
-
-```text
-Pod
-→ EFS CSI Driver
-→ Amazon EFS
-```
-
-자세한 내용: [[17_Amazon EFS]]
-
-### Log
-
-```text
-DVWA Container stdout·stderr
-→ Fluent Bit DaemonSet
-→ CloudWatch Logs
-```
-
-```text
-Kubernetes API 요청
-→ EKS Control Plane
-→ api·audit·authenticator Log
-→ CloudWatch Logs
-```
-
-자세한 내용: [[24_Amazon CloudWatch]], [[25_AWS CloudTrail]], [[32_Fluent Bit]]
+관련 노트: [[18_Amazon S3]], [[24_Amazon CloudWatch]], [[25_AWS CloudTrail]], [[32_Fluent Bit]]
 
 ## 비용과 수명주기
 
