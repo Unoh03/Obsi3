@@ -15,7 +15,7 @@ AWS Identity and Access Management(IAM)는 **AWS에서 누가 어떤 자격으�
 
 > [!summary] 이 노트의 범위
 > 이 문서는 IAM User, User Group, Role, Policy, Credential, 정책 평가의 기본 원리와 현재 프로젝트에서 확인된 IAM 연결을 다룬다.  
-> 조원별 IAM User의 실제 권한 정책은 역할 분담과 필요한 작업이 확정된 뒤 별도로 설계한다.
+> 조원용 IAM User·Group·Policy의 현재 Runtime 구성과 검증 결과도 함께 기록한다.
 
 ## 보편적·일반적인 역할
 
@@ -309,7 +309,7 @@ Role, Federation, GitHub OIDC, EKS Pod Identity 등은 AWS STS 기반 Temporary 
 
 저장소에서 확인되는 것은 **Profile 이름과 호출 방식**이다. 해당 Profile이 현재 IAM User Access Key를 사용하는지, SSO·AssumeRole 등 다른 Credential Source를 사용하는지는 현재 Runtime에서 다시 확인해야 한다.
 
-이전 CloudTrail 검토에서는 `terra-user` Identity의 AWS API 활동이 관찰됐지만, 현재 Credential 상태와 Permission은 아직 재조회하지 않았다.
+2026-08-05 Runtime 조회에서는 현재 AWS CLI Principal이 `arn:aws:iam::433048100798:user/terra-user`인 것을 확인했다. Credential Source와 연결된 전체 Permission은 별도로 확인해야 한다.
 
 ### GitHub Actions OIDC Role
 
@@ -403,50 +403,53 @@ EventBridge
 → 지정 Log Group에 PutLogEvents
 ```
 
-### 조원별 IAM User 계획
+### 조원별 IAM User 운영
 
-현재 확정된 사실:
+2026-08-05 Runtime에서 다음 구성을 확인했다.
 
-- 조원마다 구분 가능한 개별 AWS Identity가 필요하다.
-- 실제 User Name, Group, Console Access, CLI Access, Permission 범위는 아직 확정하지 않았다.
+| User | Console Login | 첫 로그인 Password 변경 | MFA | Access Key | 직접 연결 Managed Policy | Inline Policy |
+|---|---:|---:|---:|---:|---|---|
+| `gkstjs4478` | 활성 | 요구하지 않음 | 미등록 | 없음 | 없음 | 없음 |
+| `taejo_123` | 활성 | 요구하지 않음 | 미등록 | 없음 | 없음 | 없음 |
+| `hyun_0415` | 활성 | 요구하지 않음 | 미등록 | 없음 | 없음 | 없음 |
 
-권장 생성 순서:
+세 User 모두 `3rd_Project` Group에 속하며, User에 Policy를 직접 연결하지 않고 Group의 `ProjectSecurityAnalysts` Policy를 상속한다.
 
-```text
-조원별 필요한 작업 정리
-→ Permission Matrix 작성
-→ 공통 IAM Group·Policy 설계
-→ IAM User 개별 생성
-→ User를 Group에 추가
-→ Console Access 필요 시 초기 Password 발급
-→ MFA 등록
-→ CLI가 필요한 사람에게만 Access Key 생성
-→ 허용 작업과 거부 작업 모두 검증
-```
+`PasswordResetRequired=False`는 의도된 설정이다. 계정 생성 전에 각 조원에게 사용할 비밀번호를 직접 정하도록 했고, 그 값을 최종 비밀번호로 설정했기 때문에 첫 로그인 시 다시 변경하도록 강제하지 않았다. 비밀번호 값 자체는 이 노트와 Git Repository에 기록하지 않는다.
 
-> [!warning] 아직 AdministratorAccess를 붙이지 않음
-> 현재는 조원들이 실제로 수행할 작업이 정리되지 않았다.  
-> 이 상태에서 각 User에게 `AdministratorAccess` 또는 광범위한 `iam:*`를 부여하면 최소 권한 설계와 행위 분리가 무너진다.
+현재 조원에게는 Console Login만 제공한다. Access Key가 없으므로 조원 계정으로 AWS CLI·SDK·Terraform을 직접 실행하는 경로는 구성하지 않았다.
 
-> [!important] 사람용 접근의 공식 권장 방향
-> AWS는 사람 사용자의 장기 IAM User Credential보다 IAM Identity Center·외부 Identity Provider를 통한 Federation과 Temporary Credential을 권장한다.  
-> 다만 이번 단일 Account 교육 프로젝트에서 IAM User를 사용한다면 개별 User, MFA, Group 기반 Permission, Access Key 최소화 원칙을 적용한다.
+> [!warning] MFA 현재 상태
+> 세 User 모두 MFA Device가 아직 등록되지 않았다. 이는 현재 Runtime 상태의 기록이며, MFA 적용 여부와 등록 절차는 별도로 결정한다.
+
+> [!danger] 조원 계정에 부여하지 않은 권한
+> User 직접 Policy, `AdministratorAccess`, `iam:*`, `iam:PassRole`, Terraform Apply·Destroy 권한, EKS Kubernetes 관리 권한은 부여하지 않았다.
+
 ### 조원용 IAM Group
 
 - Group name: `3rd_Project`
-- 목적: 조원들의 보안 로그 조회·분석 권한을 공통 관리
+- 목적: 조원들의 보안 로그 조회·분석과 인프라 Metadata 조회 권한을 공통 관리
 - 연결된 Policy: `ProjectSecurityAnalysts`
 - Policy 유형: Customer managed policy
+- Policy ARN: `arn:aws:iam::433048100798:policy/ProjectSecurityAnalysts`
 - Default Version: `v3`
-- 소속 User: 없음
-- Inline Policy: 없음
+- Default Version 확인 시각: 2026-08-05 10:55:15 KST (`UpdateDate: 2026-08-05T01:55:15+00:00`)
+- 소속 User: `gkstjs4478`, `taejo_123`, `hyun_0415`
+- Group Inline Policy: 없음
 - Console에서 생성: 확인
 - Runtime 검증:
-  - `list-attached-group-policies`: 연결 확인
-  - Policy ARN 일치: `True`
+  - AWS Account: `433048100798`
+  - 조회 Principal: `arn:aws:iam::433048100798:user/terra-user`
+  - `list-attached-group-policies`: `ProjectSecurityAnalysts` 연결 확인
+  - Policy ARN 비교: `True`
   - `list-group-policies`: `[]`
-  - `get-group`: User 없음 확인
+  - `get-group`: User 3명 확인
+  - `get-policy`: Default Version `v3` 확인
+  - `list-policy-versions`: `v3=True`, `v2=False`, `v1=False`
   - 허용·거부 Simulation: 진행 예정
+
+#### `ProjectSecurityAnalysts` v3 정책 문서
+
 ```json
 {
     "Version": "2012-10-17",
@@ -579,6 +582,7 @@ EventBridge
     ]
 }
 ```
+
 ## 다른 서비스와의 연결
 
 ### 사람과 자동화
@@ -787,6 +791,14 @@ aws iam list-attached-group-policies --group-name '<GROUP_NAME>'
 aws iam list-group-policies --group-name '<GROUP_NAME>'
 ```
 
+### AWS CLI — IAM Managed Policy Version
+
+```powershell
+aws iam get-policy --policy-arn '<POLICY_ARN>'
+aws iam list-policy-versions --policy-arn '<POLICY_ARN>'
+aws iam get-policy-version --policy-arn '<POLICY_ARN>' --version-id '<VERSION_ID>'
+```
+
 ### AWS CLI — IAM Role
 
 ```powershell
@@ -839,6 +851,44 @@ CloudTrail Event가 존재한다고 Permission 설계가 안전하다는 뜻은 
 
 ## 직접 확인한 결과
 
+### 2026-08-05 조원 IAM Runtime 검증
+
+- AWS Account: `433048100798`
+- 조회 Principal: `arn:aws:iam::433048100798:user/terra-user`
+- Group: `3rd_Project`
+- Group 소속 User 수: 3
+- 연결된 Group Managed Policy: `ProjectSecurityAnalysts`
+- Group Inline Policy: 없음
+- Policy Default Version: `v3`
+
+| User | Group | Console Login | PasswordResetRequired | MFA Device | Access Key | User 직접 Managed Policy | User Inline Policy |
+|---|---|---:|---:|---:|---|---|---|
+| `gkstjs4478` | `3rd_Project` | `True` | `False` | 0 | 없음 | 없음 | 없음 |
+| `taejo_123` | `3rd_Project` | `True` | `False` | 0 | 없음 | 없음 | 없음 |
+| `hyun_0415` | `3rd_Project` | `True` | `False` | 0 | 없음 | 없음 | 없음 |
+
+`hyun_0415`에 일시적으로 직접 연결돼 있던 `IAMUserChangePassword`는 제거하여 세 User의 직접 Policy 상태를 동일하게 맞췄다.
+
+확인에 사용한 API:
+
+```text
+sts:GetCallerIdentity
+iam:GetGroup
+iam:ListAttachedGroupPolicies
+iam:ListGroupPolicies
+iam:GetPolicy
+iam:ListPolicyVersions
+iam:GetLoginProfile
+iam:ListMFADevices
+iam:ListAccessKeys
+iam:ListAttachedUserPolicies
+iam:ListUserPolicies
+```
+
+> [!note] 확인된 범위
+> 위 조회는 IAM Resource의 존재, Group Membership, Login Profile, MFA 등록 수, Access Key, 직접 연결 Policy 상태를 확인한다.  
+> 조원이 실제로 Console Login에 성공했는지, 각 AWS Service 조회가 허용되는지, 변경·삭제 요청이 거부되는지는 별도 Runtime Test가 필요하다.
+
 ### 저장소에서 확인
 
 - `terra-user` AWS CLI Profile을 기본값으로 사용하는 자동화가 존재한다.
@@ -856,13 +906,13 @@ CloudTrail Event가 존재한다고 Permission 설계가 안전하다는 뜻은 
 - IAM-01 실험 기록에는 Pod Identity를 통한 S3 Put/Get/Delete와 조치 후 Credential 부재를 확인한 내용이 기록돼 있다.
 - GitHub Actions OIDC와 Foundation Resource는 일일 Runtime 제거 후 유지되는 경계로 문서화돼 있다.
 
-> [!warning] 현재 상태 재검증 필요
-> 위 내용 중 일부는 이전 Runtime Evidence와 저장소 기록이다.  
-> 현재 AWS Account의 User, Role, Policy, Access Key, MFA, Pod Identity Association 상태를 이번 학습 시점에 다시 조회한 것은 아니다.
+> [!warning] 남은 현재 상태 재검증
+> 조원용 User·Group·Policy 상태는 2026-08-05 Runtime에서 다시 조회했다.  
+> 나머지 IAM Role, Trust Policy, Pod Identity Association과 일부 이전 Runtime Evidence는 현재 상태를 별도로 재검증해야 한다.
 
 ### 아직 확인하지 못함
 
-- 현재 `terra-user`의 정확한 Principal ARN과 Credential Source
+- 현재 `terra-user`의 Credential Source
 - 현재 `terra-user`에 연결된 Managed·Inline Policy
 - Root User MFA와 Root Access Key 상태
 - Account Password Policy
@@ -870,9 +920,9 @@ CloudTrail Event가 존재한다고 Permission 설계가 안전하다는 뜻은 
 - AWS Organizations와 SCP·RCP 적용 여부
 - GitHub Actions Role의 현재 Trust Policy와 실제 ECR Permission 범위
 - 각 Pod Identity Role의 현재 Association 상태
-- 조원별 IAM User Name과 필요한 Permission
-- 조원에게 Console, CLI, Terraform Apply·Destroy 중 무엇이 필요한지
-- 조원별 MFA와 Access Key 운영 방식
+- 조원 3명의 실제 Console Login 성공 여부
+- `ProjectSecurityAnalysts`의 허용 Action과 파괴적 Action 거부 결과
+- 조원 MFA 적용 여부와 등록 절차
 
 ## 이 구성요소가 알려주는 것과 한계
 
@@ -918,8 +968,9 @@ IAM 구성
 - [ ] GitHub OIDC Role의 Trust Condition 구조
 - [ ] EKS Pod Identity의 Assume 흐름
 - [ ] KMS Key Policy가 일반 Resource Policy와 다르게 중요한 이유
-- [ ] 조원별 최소 권한 Group·Policy 설계
-- [ ] 조원 퇴장·역할 변경·Key 노출 시 회수 절차
+- [x] 조원별 최소 권한 Group·Policy 1차 설계 및 연결
+- [ ] `ProjectSecurityAnalysts`의 실제 허용·거부 결과에 따른 정책 보정
+- [ ] 조원 퇴장·역할 변경·Credential 노출 시 회수 절차
 
 ## 학습 완료 기준
 
@@ -930,9 +981,10 @@ IAM 구성
 - [ ] 기본 Deny, 명시적 Allow, Explicit Deny 우선 규칙을 설명할 수 있다.
 - [ ] 현재 프로젝트의 주요 IAM Role 위치를 찾을 수 있다.
 - [ ] GitHub OIDC와 EKS Pod Identity가 장기 Access Key를 줄이는 이유를 설명할 수 있다.
-- [ ] 현재 Principal을 `sts get-caller-identity`로 확인할 수 있다.
-- [ ] User·Group·Role의 연결 Policy를 CLI로 조회할 수 있다.
-- [ ] 조원별 Permission Matrix를 먼저 작성한 뒤 User를 생성할 수 있다.
+- [x] 현재 Principal을 `sts get-caller-identity`로 확인할 수 있다.
+- [x] 조원 User·Group과 연결 Policy를 CLI로 조회할 수 있다.
+- [x] 조원별 IAM User를 생성하고 공통 Group Policy 상속 상태를 검증할 수 있다.
+- [ ] IAM Role의 Trust·Permission Policy를 CLI로 조회할 수 있다.
 - [ ] 허용 작업과 거부 작업을 모두 검증할 수 있다.
 
 ## 근거
@@ -974,6 +1026,10 @@ IAM 구성
 
 ### Runtime Evidence
 
+- 2026-08-05 `sts get-caller-identity` 결과
+- 2026-08-05 `get-group`, Group Managed·Inline Policy 조회 결과
+- 2026-08-05 `get-policy`, `list-policy-versions`, `get-policy-version` 결과
+- 2026-08-05 조원 3명의 Login Profile, MFA, Access Key, 직접 Policy 조회 결과
 - CloudTrail Security Change Query 결과
 - IAM-01 Pod Identity·S3 Runtime Evidence
 - Foundation과 Daily Runtime 수명주기 확인 기록
