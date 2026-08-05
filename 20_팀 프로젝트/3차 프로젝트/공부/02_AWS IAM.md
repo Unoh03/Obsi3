@@ -439,6 +439,139 @@ EventBridge
 - 소속 User: 없음
 - Console에서 생성: 확인
 - Runtime 검증: 정책 연결 후 수행 예정
+```json
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "DiscoverCloudWatchLogsAndReadQueryResults",
+			"Effect": "Allow",
+			"Action": [
+				"logs:DescribeLogGroups",
+				"logs:DescribeQueries",
+				"logs:GetQueryResults",
+				"logs:StopQuery"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "ReadAndQueryProjectLogGroups",
+			"Effect": "Allow",
+			"Action": [
+				"logs:DescribeLogStreams",
+				"logs:GetLogEvents",
+				"logs:FilterLogEvents",
+				"logs:GetLogGroupFields",
+				"logs:GetLogRecord",
+				"logs:StartQuery"
+			],
+			"Resource": [
+				"arn:aws:logs:ap-northeast-2:433048100798:log-group:/aws/cloudtrail/aws-topology-security*",
+				"arn:aws:logs:ap-northeast-2:433048100798:log-group:/aws/eks/aws-topology-primary/*",
+				"arn:aws:logs:ap-northeast-2:433048100798:log-group:/aws/events/aws-topology-guardduty-findings*",
+				"arn:aws:logs:ap-northeast-1:433048100798:log-group:/aws/eks/aws-topology-dr/dvwa*",
+				"arn:aws:logs:us-east-1:433048100798:log-group:aws-waf-logs-aws-topology-edge*"
+			]
+		},
+		{
+			"Sid": "ReadCloudWatchMetricsAndAlarms",
+			"Effect": "Allow",
+			"Action": [
+				"cloudwatch:DescribeAlarms",
+				"cloudwatch:DescribeAlarmHistory",
+				"cloudwatch:GetMetricData",
+				"cloudwatch:GetMetricStatistics",
+				"cloudwatch:ListMetrics"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "ReadCloudTrailEvents",
+			"Effect": "Allow",
+			"Action": [
+				"cloudtrail:DescribeTrails",
+				"cloudtrail:GetTrail",
+				"cloudtrail:GetTrailStatus",
+				"cloudtrail:ListTrails",
+				"cloudtrail:LookupEvents"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "DiscoverGuardDutyDetector",
+			"Effect": "Allow",
+			"Action": [
+				"guardduty:ListDetectors"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "ReadProjectGuardDutyFindings",
+			"Effect": "Allow",
+			"Action": [
+				"guardduty:GetDetector",
+				"guardduty:ListFindings",
+				"guardduty:GetFindings",
+				"guardduty:GetFindingsStatistics"
+			],
+			"Resource": "arn:aws:guardduty:ap-northeast-2:433048100798:detector/41a4b1e231654e8bba289594e7cb1c2a"
+		},
+		{
+			"Sid": "ReadEdgeAndInfrastructureMetadata",
+			"Effect": "Allow",
+			"Action": [
+				"wafv2:ListWebACLs",
+				"wafv2:GetWebACL",
+				"wafv2:GetLoggingConfiguration",
+				"wafv2:ListLoggingConfigurations",
+				"wafv2:GetSampledRequests",
+				"cloudfront:ListDistributions",
+				"cloudfront:GetDistribution",
+				"cloudfront:GetDistributionConfig",
+				"cloudfront:ListTagsForResource",
+				"elasticloadbalancing:DescribeLoadBalancers",
+				"elasticloadbalancing:DescribeTargetGroups",
+				"elasticloadbalancing:DescribeTargetHealth",
+				"elasticloadbalancing:DescribeListeners",
+				"elasticloadbalancing:DescribeRules",
+				"elasticloadbalancing:DescribeTags",
+				"eks:ListClusters",
+				"eks:DescribeCluster",
+				"eks:ListNodegroups",
+				"eks:DescribeNodegroup",
+				"eks:ListAddons",
+				"eks:DescribeAddon",
+				"ec2:DescribeInstances",
+				"ec2:DescribeNetworkInterfaces",
+				"ec2:DescribeSecurityGroups",
+				"ec2:DescribeSubnets",
+				"ec2:DescribeVpcs",
+				"ec2:DescribeRouteTables",
+				"ec2:DescribeNatGateways"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "ReadSecurityLogBucketMetadata",
+			"Effect": "Allow",
+			"Action": [
+				"s3:GetBucketLocation",
+				"s3:ListBucket"
+			],
+			"Resource": "arn:aws:s3:::aws-topology-security-logs-e10b7e4f152e9420159dba755d"
+		},
+		{
+			"Sid": "ReadSecurityLogObjects",
+			"Effect": "Allow",
+			"Action": [
+				"s3:GetObject",
+				"s3:GetObjectVersion"
+			],
+			"Resource": "arn:aws:s3:::aws-topology-security-logs-e10b7e4f152e9420159dba755d/*"
+		}
+	]
+}
+```
 ## 다른 서비스와의 연결
 
 ### 사람과 자동화
