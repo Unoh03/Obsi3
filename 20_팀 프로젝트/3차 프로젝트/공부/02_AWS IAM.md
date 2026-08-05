@@ -435,10 +435,18 @@ EventBridge
 
 - Group name: `3rd_Project`
 - 목적: 조원들의 보안 로그 조회·분석 권한을 공통 관리
-- 연결된 Policy: 없음
+- 연결된 Policy: `ProjectSecurityAnalysts`
+- Policy 유형: Customer managed policy
+- Default Version: `v3`
 - 소속 User: 없음
+- Inline Policy: 없음
 - Console에서 생성: 확인
-- Runtime 검증: 정책 연결 후 수행 예정
+- Runtime 검증:
+  - `list-attached-group-policies`: 연결 확인
+  - Policy ARN 일치: `True`
+  - `list-group-policies`: `[]`
+  - `get-group`: User 없음 확인
+  - 허용·거부 Simulation: 진행 예정
 ```json
 {
 	"Version": "2012-10-17",
