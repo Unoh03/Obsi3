@@ -431,7 +431,14 @@ EventBridge
 > [!important] 사람용 접근의 공식 권장 방향
 > AWS는 사람 사용자의 장기 IAM User Credential보다 IAM Identity Center·외부 Identity Provider를 통한 Federation과 Temporary Credential을 권장한다.  
 > 다만 이번 단일 Account 교육 프로젝트에서 IAM User를 사용한다면 개별 User, MFA, Group 기반 Permission, Access Key 최소화 원칙을 적용한다.
+### 조원용 IAM Group
 
+- Group name: `3rd_Project`
+- 목적: 조원들의 보안 로그 조회·분석 권한을 공통 관리
+- 연결된 Policy: 없음
+- 소속 User: 없음
+- Console에서 생성: 확인
+- Runtime 검증: 정책 연결 후 수행 예정
 ## 다른 서비스와의 연결
 
 ### 사람과 자동화
