@@ -5,7 +5,7 @@ import base64
 import html
 import math
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -185,8 +185,8 @@ def build_boxes() -> None:
     add(Box("edge-area", "Request Entry", 335, 215, 1300, 245, "subgroup", parent="global-foundation", stroke=C["daily"], fill=C["daily_fill"], font_size=23, z=3))
     add(Box("platform-area", "Identity · Operations · Registry · Prerequisites", 1660, 215, 1845, 245, "subgroup", parent="global-foundation", stroke=C["foundation"], fill=C["white"], font_size=23, z=3))
 
-    add(Box("route53", "Route 53\nDNS", 365, 260, 235, 175, "service", parent="edge-area", icon="route53", stroke=C["daily"], font_size=24, z=20))
-    add(Box("acm", "ACM\nViewer TLS", 625, 260, 235, 175, "service", parent="edge-area", icon="acm", stroke=C["foundation"], font_size=24, z=20))
+    add(Box("route53", "Route 53\nCustom DNS", 365, 260, 235, 175, "service", parent="edge-area", icon="route53", stroke=C["opt"], dashed=True, badge="OPT", font_size=24, z=20))
+    add(Box("acm", "ACM\nCustom TLS", 625, 260, 235, 175, "service", parent="edge-area", icon="acm", stroke=C["opt"], dashed=True, badge="OPT", font_size=24, z=20))
     add(Box("cloudfront", "CloudFront\nPrimary origin", 885, 260, 235, 175, "service", parent="edge-area", icon="cloudfront", stroke=C["daily"], font_size=24, z=20))
     add(Box("waf", "AWS WAF\nCOUNT", 1145, 260, 235, 175, "service", parent="edge-area", icon="waf", stroke=C["daily"], font_size=24, z=20))
 
@@ -201,7 +201,7 @@ def build_boxes() -> None:
     add(Box("primary-region", "Primary · Seoul · ap-northeast-2", 310, 520, 1580, 980, "group", parent="aws-cloud", icon="region_group", stroke=C["network"], fill="#F9FDFD", font_size=30, z=2))
     add(Box("dr-region", "DR · Tokyo · ap-northeast-1", 1920, 520, 1580, 980, "group", parent="aws-cloud", icon="region_group", stroke=C["dr"], fill=C["dr_fill"], dashed=True, badge="DR profile", font_size=30, z=2))
 
-    add(Box("p-app-s3", "Application S3\nPod access off", 1585, 550, 255, 135, "service-small", parent="primary-region", icon="s3", stroke=C["opt"], fill=C["white"], dashed=True, badge="OPT", font_size=20, z=20))
+    add(Box("p-app-s3", "Application S3\nPod Identity off", 1585, 550, 255, 135, "service-small", parent="primary-region", icon="s3", stroke=C["daily"], fill=C["white"], font_size=20, z=20))
     add(Box("dr-app-s3", "Application S3\nCRR target", 3195, 550, 255, 135, "service-small", parent="dr-region", icon="s3", stroke=C["dr"], fill=C["white"], dashed=True, badge="DR", font_size=20, z=20))
     add(Box("dr-log-group", "DR DVWA Log Group", 2915, 570, 250, 95, "chip", parent="dr-region", stroke=C["foundation"], fill=C["foundation_fill"], font_size=19, z=20))
 
@@ -232,12 +232,12 @@ def build_boxes() -> None:
 
     # Public services.
     add(Box("p-bastion", "Bastion\nSSM + SSH", 445, 865, 190, 105, "resource", parent="p-az-a", icon="ec2", stroke=C["daily"], font_size=18, z=25))
-    add(Box("p-nat", "NAT Gateway", 675, 865, 185, 105, "resource", parent="p-az-a", icon="nat", stroke=C["daily"], font_size=18, z=25))
+    add(Box("p-nat", "NAT Gateway · single", 675, 865, 185, 105, "resource", parent="p-az-a", icon="nat", stroke=C["daily"], font_size=17, z=25))
     add(Box("p-alb", "ALB\n2 public subnets", 990, 850, 220, 125, "service-small", parent="p-vpc", icon="alb", stroke=C["daily"], font_size=19, z=25))
     add(Box("p-flow", "VPC REJECT Flow Logs", 1510, 875, 260, 80, "chip", parent="p-vpc", stroke=C["obs"], fill=C["obs_fill"], font_size=18, z=25))
 
     add(Box("dr-bastion", "Bastion\nSSM + SSH", 2055, 865, 190, 105, "resource", parent="dr-az-a", icon="ec2", stroke=C["dr"], dashed=True, badge="DR", font_size=18, z=25))
-    add(Box("dr-nat", "NAT Gateway", 2285, 865, 185, 105, "resource", parent="dr-az-a", icon="nat", stroke=C["dr"], dashed=True, font_size=18, z=25))
+    add(Box("dr-nat", "NAT Gateway · single", 2285, 865, 185, 105, "resource", parent="dr-az-a", icon="nat", stroke=C["dr"], dashed=True, font_size=17, z=25))
     add(Box("dr-alb", "ALB\n2 public subnets", 2600, 850, 220, 125, "service-small", parent="dr-vpc", icon="alb", stroke=C["dr"], dashed=True, badge="DR", font_size=19, z=25))
 
     # EKS containers and internal components.
@@ -289,72 +289,72 @@ def build_boxes() -> None:
     add(Box("security-review", "Security Window\nReview", 3075, 1635, 370, 120, "chip", parent="query-area", stroke=C["operations"], fill=C["private_fill"], font_size=19, z=25))
 
     # Local response tools are intentionally outside the AWS Cloud boundary.
-    add(Box("local-tools", "AWS 외부 · Local Response & Evidence", 610, 1880, 2590, 250, "group", stroke=C["line"], fill=C["white"], dashed=True, font_size=27, z=2))
-    add(Box("grafana", "Local Grafana\nAthena / S3", 820, 1940, 440, 145, "external", icon="server", parent="local-tools", stroke=C["operations"], font_size=21, z=25))
-    add(Box("waf-viewer", "WAF Live Viewer\nCloudWatch Live Tail", 1335, 1940, 440, 145, "external", icon="toolkit", parent="local-tools", stroke=C["obs"], font_size=21, z=25))
-    add(Box("evidence", "Evidence Bundle\nSanitized · SHA-256", 1850, 1940, 440, 145, "external", icon="source", parent="local-tools", stroke=C["foundation"], font_size=21, z=25))
-    add(Box("runtime-note", "Source topology · 실제 Runtime 활성 상태는 별도 검증", 2365, 1955, 620, 115, "chip", parent="local-tools", stroke=C["line"], fill=C["bg"], font_size=20, z=25))
+    add(Box("local-tools", "AWS 외부 · Local Response & Evidence", 610, 1900, 2590, 250, "group", stroke=C["line"], fill=C["white"], dashed=True, font_size=27, z=2))
+    add(Box("grafana", "Local Grafana\nAthena / S3", 820, 1960, 440, 145, "external", icon="server", parent="local-tools", stroke=C["operations"], font_size=21, z=25))
+    add(Box("waf-viewer", "WAF Live Viewer\nCloudWatch Live Tail", 1335, 1960, 440, 145, "external", icon="toolkit", parent="local-tools", stroke=C["obs"], font_size=21, z=25))
+    add(Box("evidence", "Evidence Bundle\nSanitized · SHA-256", 1850, 1960, 440, 145, "external", icon="source", parent="local-tools", stroke=C["foundation"], font_size=21, z=25))
+    add(Box("runtime-note", "Source topology · 실제 Runtime 활성 상태는 별도 검증", 2365, 1975, 620, 115, "chip", parent="local-tools", stroke=C["line"], fill=C["bg"], font_size=20, z=25))
 
 
 def build_edges() -> None:
     # Request flow: visible by default.
     edge("req-1", "user", "route53", "layer-request", C["request"], label="DNS", width=5)
-    edge("req-2", "route53", "cloudfront", "layer-request", C["request"], label="Alias", width=5)
-    edge("req-3", "acm", "cloudfront", "layer-request", C["request"], label="TLS", dashed=True, width=3, exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0))
+    edge("req-2", "route53", "cloudfront", "layer-request", C["request"], label="Alias", width=5, exit_xy=(0.5, 1.0), entry_xy=(0.5, 1.0), points=[(482, 450), (1002, 450)])
+    edge("req-3", "acm", "cloudfront", "layer-request", C["request"], label="TLS", dashed=True, width=3, exit_xy=(0.5, 0.0), entry_xy=(0.5, 0.0), points=[(742, 245), (1002, 245)])
     edge("req-4", "waf", "cloudfront", "layer-request", C["request"], label="Web ACL", dashed=True, width=3, exit_xy=(0.0, 0.5), entry_xy=(1.0, 0.5))
-    edge("req-5", "cloudfront", "p-alb", "layer-request", C["request"], label="HTTP :80", width=5, exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(1000, 505), (1100, 505), (1100, 830)])
-    edge("req-6", "p-alb", "p-dvwa", "layer-request", C["request"], label="Pod IP :80", width=5, exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0))
+    edge("req-5", "cloudfront", "p-alb", "layer-request", C["request"], label="HTTP :80", width=5, exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(1002, 505), (1240, 505), (1240, 830), (1100, 830)])
+    edge("req-6", "p-alb", "p-dvwa", "layer-request", C["request"], label="Pod IP :80", width=5, exit_xy=(0.5, 1.0), entry_xy=(1.0, 0.5), points=[(1100, 990), (1760, 990), (1760, 1186)])
     edge("req-7", "p-dvwa", "p-rds", "layer-request", C["request"], label="MariaDB", width=5, exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(1510, 1275), (640, 1275)])
 
     # GitOps delivery.
-    edge("dep-1", "github-repo", "github-actions", "layer-deployment", C["deploy"], label="Push")
-    edge("dep-2", "github-actions", "iam", "layer-deployment", C["deploy"], label="OIDC")
-    edge("dep-3", "iam", "ecr", "layer-deployment", C["deploy"], label="Push role")
-    edge("dep-4", "github-actions", "ecr", "layer-deployment", C["deploy"], label="sha image")
+    edge("dep-1", "github-repo", "github-actions", "layer-deployment", C["deploy"], label="Push", exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0))
+    edge("dep-2", "github-actions", "iam", "layer-deployment", C["deploy"], label="OIDC", exit_xy=(1.0, 0.5), entry_xy=(0.5, 0.0), points=[(265, 767), (265, 145), (1802, 145), (1802, 245)])
+    edge("dep-3", "iam", "ecr", "layer-deployment", C["deploy"], label="Push role", exit_xy=(0.5, 1.0), entry_xy=(0.5, 1.0), points=[(1802, 475), (2312, 475)])
+    edge("dep-4", "github-actions", "ecr", "layer-deployment", C["deploy"], label="sha image", exit_xy=(1.0, 0.5), entry_xy=(0.5, 0.0), points=[(275, 767), (275, 158), (2312, 158), (2312, 245)])
     edge("dep-5", "github-actions", "github-repo", "layer-deployment", C["deploy"], label="values.yaml", dashed=True, exit_xy=(0.0, 0.4), entry_xy=(0.0, 0.6), points=[(5, 760), (5, 620)])
-    edge("dep-6", "github-repo", "p-argo", "layer-deployment", C["deploy"], label="Git desired state")
+    edge("dep-6", "github-repo", "p-argo", "layer-deployment", C["deploy"], label="Git desired state", exit_xy=(1.0, 0.5), entry_xy=(0.5, 1.0), points=[(270, 622), (270, 1240), (1105, 1240)])
     edge("dep-7", "p-argo", "p-dvwa", "layer-deployment", C["deploy"], label="Sync")
-    edge("dep-8", "ecr", "p-dvwa", "layer-deployment", C["deploy"], label="Image pull", dashed=True)
+    edge("dep-8", "ecr", "p-dvwa", "layer-deployment", C["deploy"], label="Image pull", dashed=True, exit_xy=(0.5, 1.0), entry_xy=(1.0, 0.5), points=[(2312, 505), (1905, 505), (1905, 1186), (1765, 1186)])
 
     # Operations and bootstrap.
-    edge("ops-1", "operator", "ssm", "layer-operations", C["operations"], label="Association", dashed=True)
-    edge("ops-2", "ssm", "p-bastion", "layer-operations", C["operations"], label="Run Command", dashed=True)
-    edge("ops-3", "operator", "p-bastion", "layer-operations", C["operations"], label="SSH / SCP")
-    edge("ops-4", "key-pair", "p-bastion", "layer-operations", C["operations"], label="Key", dashed=True)
-    edge("ops-5", "p-bastion", "p-eks-api", "layer-operations", C["operations"], label="kubectl / Helm")
-    edge("ops-6", "p-bastion", "p-rds", "layer-operations", C["operations"], label="DB bootstrap", dashed=True)
-    edge("ops-7", "ssm", "dr-bastion", "layer-operations", C["operations"], label="Run Command", dashed=True)
-    edge("ops-8", "operator", "dr-bastion", "layer-operations", C["operations"], label="DR ops", dashed=True)
-    edge("ops-9", "key-pair", "dr-bastion", "layer-operations", C["operations"], label="Key", dashed=True)
-    edge("ops-10", "dr-bastion", "dr-eks-api", "layer-operations", C["operations"], label="kubectl / Helm")
+    edge("ops-1", "operator", "ssm", "layer-operations", C["operations"], label="Association", dashed=True, exit_xy=(1.0, 0.5), entry_xy=(0.5, 0.0), points=[(265, 1087), (265, 145), (2057, 145), (2057, 245)])
+    edge("ops-2", "ssm", "p-bastion", "layer-operations", C["operations"], label="Run Command", dashed=True, exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(2057, 500), (540, 500), (540, 845)])
+    edge("ops-3", "operator", "p-bastion", "layer-operations", C["operations"], label="SSH / SCP", exit_xy=(1.0, 0.5), entry_xy=(0.0, 0.5), points=[(270, 1087), (270, 917), (425, 917)])
+    edge("ops-4", "key-pair", "p-bastion", "layer-operations", C["operations"], label="Key", dashed=True, exit_xy=(0.5, 1.0), entry_xy=(1.0, 0.5), points=[(2822, 510), (660, 510), (660, 917)])
+    edge("ops-5", "p-bastion", "p-eks-api", "layer-operations", C["operations"], label="kubectl / Helm", exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0))
+    edge("ops-6", "p-bastion", "p-rds", "layer-operations", C["operations"], label="DB bootstrap", dashed=True, exit_xy=(0.0, 0.5), entry_xy=(0.0, 0.5), points=[(380, 917), (380, 1357), (480, 1357)])
+    edge("ops-7", "ssm", "dr-bastion", "layer-operations", C["operations"], label="Run Command", dashed=True, exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(2057, 495), (2150, 495), (2150, 845)])
+    edge("ops-8", "operator", "dr-bastion", "layer-operations", C["operations"], label="DR ops", dashed=True, exit_xy=(1.0, 0.5), entry_xy=(0.0, 0.5), points=[(255, 1087), (255, 515), (2035, 515), (2035, 917)])
+    edge("ops-9", "key-pair", "dr-bastion", "layer-operations", C["operations"], label="Key", dashed=True, exit_xy=(0.5, 1.0), entry_xy=(1.0, 0.5), points=[(2822, 505), (2255, 505), (2255, 917)])
+    edge("ops-10", "dr-bastion", "dr-eks-api", "layer-operations", C["operations"], label="kubectl / Helm", exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0))
 
     # DR relationships.
-    edge("dr-1", "p-rds", "dr-rds", "layer-dr", C["replication"], label="Cross-Region replica", dashed=True, width=5)
-    edge("dr-2", "p-app-s3", "dr-app-s3", "layer-dr", C["replication"], label="S3 CRR", dashed=True, width=5)
-    edge("dr-3", "dr-alb", "dr-dvwa", "layer-dr", C["dr"], label="Conditional :80", dashed=True)
+    edge("dr-1", "p-rds", "dr-rds", "layer-dr", C["replication"], label="Cross-Region replica", dashed=True, width=5, exit_xy=(0.5, 1.0), entry_xy=(0.5, 1.0), points=[(640, 1515), (2250, 1515)])
+    edge("dr-2", "p-app-s3", "dr-app-s3", "layer-dr", C["replication"], label="S3 CRR", dashed=True, width=5, exit_xy=(0.5, 0.0), entry_xy=(0.5, 0.0), points=[(1712, 505), (3322, 505)])
+    edge("dr-3", "dr-alb", "dr-dvwa", "layer-dr", C["dr"], label="Conditional :80", dashed=True, exit_xy=(0.5, 1.0), entry_xy=(1.0, 0.5), points=[(2710, 990), (3370, 990), (3370, 1186)])
 
     # Observability, detection, query and response.
-    edge("obs-1", "waf", "cloudwatch", "layer-observability", C["telemetry"], label="WAF logs", dashed=True)
-    edge("obs-2", "cloudfront", "security-s3", "layer-observability", C["telemetry"], label="Access logs", dashed=True)
-    edge("obs-3", "p-alb", "security-s3", "layer-observability", C["telemetry"], label="ALB logs", dashed=True)
-    edge("obs-4", "p-flow", "security-s3", "layer-observability", C["telemetry"], label="REJECT logs", dashed=True)
-    edge("obs-5", "p-eks-api", "cloudwatch", "layer-observability", C["telemetry"], label="Control plane", dashed=True)
-    edge("obs-6", "p-dvwa", "cloudwatch", "layer-observability", C["telemetry"], label="Fluent Bit", dashed=True)
-    edge("obs-7", "dr-log-group", "cloudwatch", "layer-observability", C["telemetry"], label="DR logs", dashed=True)
+    edge("obs-1", "waf", "cloudwatch", "layer-observability", C["telemetry"], label="WAF logs", dashed=True, exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(1262, 500), (1905, 500), (1905, 1520), (770, 1520)])
+    edge("obs-2", "cloudfront", "security-s3", "layer-observability", C["telemetry"], label="Access logs", dashed=True, exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(1002, 492), (1898, 492), (1898, 1510), (1055, 1510)])
+    edge("obs-3", "p-alb", "security-s3", "layer-observability", C["telemetry"], label="ALB logs", dashed=True, exit_xy=(1.0, 0.5), entry_xy=(0.35, 0.0), points=[(1880, 912), (1880, 1498), (1019, 1498)])
+    edge("obs-4", "p-flow", "security-s3", "layer-observability", C["telemetry"], label="REJECT logs", dashed=True, exit_xy=(1.0, 0.5), entry_xy=(0.65, 0.0), points=[(1888, 915), (1888, 1488), (1091, 1488)])
+    edge("obs-5", "p-eks-api", "cloudwatch", "layer-observability", C["telemetry"], label="Control plane", dashed=True, exit_xy=(0.0, 0.5), entry_xy=(0.35, 0.0), points=[(325, 1137), (325, 1495), (734, 1495)])
+    edge("obs-6", "p-dvwa", "cloudwatch", "layer-observability", C["telemetry"], label="Fluent Bit", dashed=True, exit_xy=(1.0, 0.5), entry_xy=(0.65, 0.0), points=[(1885, 1186), (1885, 1478), (806, 1478)])
+    edge("obs-7", "dr-log-group", "cloudwatch", "layer-observability", C["telemetry"], label="DR logs", dashed=True, exit_xy=(1.0, 0.5), entry_xy=(0.8, 0.0), points=[(3510, 617), (3510, 1525), (842, 1525)])
     edge("obs-8", "cloudtrail", "cloudwatch", "layer-observability", C["telemetry"], label="Events")
-    edge("obs-9", "cloudtrail", "security-s3", "layer-observability", C["telemetry"], label="Archive")
+    edge("obs-9", "cloudtrail", "security-s3", "layer-observability", C["telemetry"], label="Archive", exit_xy=(0.5, 0.0), entry_xy=(0.5, 0.0), points=[(485, 1605), (1055, 1605)])
     edge("obs-10", "guardduty", "eventbridge", "layer-observability", C["telemetry"], label="Finding")
-    edge("obs-11", "eventbridge", "cloudwatch", "layer-observability", C["telemetry"], label="Original")
-    edge("obs-12", "eventbridge", "sns", "layer-observability", C["telemetry"], label="Alert")
-    edge("obs-13", "cloudwatch", "alarm", "layer-observability", C["telemetry"], label="Metric")
+    edge("obs-11", "eventbridge", "cloudwatch", "layer-observability", C["telemetry"], label="Original", exit_xy=(0.5, 1.0), entry_xy=(0.5, 1.0), points=[(1685, 1782), (770, 1782)])
+    edge("obs-12", "eventbridge", "sns", "layer-observability", C["telemetry"], label="Alert", exit_xy=(0.5, 0.0), entry_xy=(0.5, 0.0), points=[(1685, 1605), (2225, 1605)])
+    edge("obs-13", "cloudwatch", "alarm", "layer-observability", C["telemetry"], label="Metric", exit_xy=(0.5, 1.0), entry_xy=(0.5, 1.0), points=[(770, 1792), (1955, 1792)])
     edge("obs-14", "alarm", "sns", "layer-observability", C["telemetry"], label="Notify")
-    edge("obs-15", "cloudwatch", "logs-insights", "layer-observability", C["operations"], label="Query")
-    edge("obs-16", "security-s3", "athena", "layer-observability", C["operations"], label="SQL")
-    edge("obs-17", "athena", "grafana", "layer-observability", C["operations"], label="Dashboard")
-    edge("obs-18", "cloudwatch", "waf-viewer", "layer-observability", C["operations"], label="Live Tail")
-    edge("obs-19", "logs-insights", "security-review", "layer-observability", C["operations"], label="Review")
+    edge("obs-15", "cloudwatch", "logs-insights", "layer-observability", C["operations"], label="Query", exit_xy=(0.5, 1.0), entry_xy=(0.5, 1.0), points=[(770, 1804), (2625, 1804)])
+    edge("obs-16", "security-s3", "athena", "layer-observability", C["operations"], label="SQL", exit_xy=(0.5, 1.0), entry_xy=(0.5, 1.0), points=[(1055, 1798), (2920, 1798)])
+    edge("obs-17", "athena", "grafana", "layer-observability", C["operations"], label="Dashboard", exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(2920, 1862), (1040, 1862), (1040, 1940)])
+    edge("obs-18", "cloudwatch", "waf-viewer", "layer-observability", C["operations"], label="Live Tail", exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(770, 1875), (1555, 1875), (1555, 1940)])
+    edge("obs-19", "logs-insights", "security-review", "layer-observability", C["operations"], label="Review", exit_xy=(0.5, 0.0), entry_xy=(0.5, 0.0), points=[(2625, 1605), (3260, 1605)])
     edge("obs-20", "athena", "security-review", "layer-observability", C["operations"], label="Review")
-    edge("obs-21", "security-review", "evidence", "layer-observability", C["operations"], label="Sanitized evidence")
+    edge("obs-21", "security-review", "evidence", "layer-observability", C["operations"], label="Sanitized evidence", exit_xy=(0.5, 1.0), entry_xy=(0.5, 0.0), points=[(3260, 1887), (2070, 1887), (2070, 1940)])
 
 
 def verify_assets() -> None:
@@ -487,7 +487,8 @@ def edge_points(item: Edge, by_id: dict[str, Box]) -> list[tuple[int, int]]:
 def render_preview(path: Path, visible_layers: set[str]) -> None:
     canvas = Image.new("RGBA", (PAGE_W, PAGE_H), rgb(C["bg"]) + (255,))
     by_id = {box.box_id: box for box in BOXES}
-    for box in sorted(BOXES, key=lambda value: value.z):
+    ordered = sorted(BOXES, key=lambda value: value.z)
+    for box in (value for value in ordered if value.z <= 10):
         render_box(canvas, box)
 
     draw = ImageDraw.Draw(canvas)
@@ -507,6 +508,16 @@ def render_preview(path: Path, visible_layers: set[str]) -> None:
             th = bounds[3] - bounds[1]
             draw.rounded_rectangle((mid[0] - tw / 2 - 6, mid[1] - th / 2 - 4, mid[0] + tw / 2 + 6, mid[1] + th / 2 + 4), radius=5, fill=C["white"])
             draw.text((mid[0] - tw / 2, mid[1] - th / 2), item.label, font=font(16, True), fill=item.color)
+
+    flow_name = {
+        "layer-request": "Request",
+        "layer-deployment": "Deployment",
+        "layer-operations": "Operations",
+        "layer-dr": "DR",
+        "layer-observability": "Observability",
+    }.get(next(iter(visible_layers), ""), "Topology")
+    for box in (value for value in ordered if value.z > 10):
+        render_box(canvas, replace(box, label=f"Layer: {flow_name} ON") if box.box_id == "legend-layer" else box)
 
     path.parent.mkdir(parents=True, exist_ok=True)
     canvas.convert("RGB").save(path, quality=96)
@@ -600,6 +611,37 @@ def add_vertex(root: ET.Element, box: Box, by_id: dict[str, Box]) -> None:
     ET.SubElement(cell, "mxGeometry", {"x": str(x), "y": str(y), "width": str(box.w), "height": str(box.h), "as": "geometry"})
 
 
+def add_badge_vertex(root: ET.Element, box: Box, by_id: dict[str, Box]) -> None:
+    if not box.badge:
+        return
+    width = 116 if len(box.badge) > 3 else 62
+    fill = C["opt"] if box.badge == "OPT" else C["dr"]
+    x = box.x + box.w - width - 10
+    y = box.y + 10
+    if box.parent in by_id:
+        parent = by_id[box.parent]
+        x -= parent.x
+        y -= parent.y
+    cell = ET.SubElement(
+        root,
+        "mxCell",
+        {
+            "id": f"{box.box_id}-badge",
+            "value": html.escape(box.badge),
+            "style": (
+                "rounded=1;arcSize=50;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;"
+                f"fillColor={fill};strokeColor={fill};fontColor=#FFFFFF;"
+                "fontFamily=Malgun Gothic;fontSize=14;fontStyle=1;shadow=0;pointerEvents=0;"
+            ),
+            "vertex": "1",
+            "parent": box.parent,
+            "dataFor": box.box_id,
+            "dataKind": "badge",
+        },
+    )
+    ET.SubElement(cell, "mxGeometry", {"x": str(x), "y": str(y), "width": str(width), "height": "30", "as": "geometry"})
+
+
 def add_drawio_edge(root: ET.Element, item: Edge) -> None:
     style = (
         "edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;"
@@ -666,13 +708,14 @@ def write_drawio(path: Path) -> None:
     )
     root = ET.SubElement(model, "root")
     ET.SubElement(root, "mxCell", {"id": "0"})
+    # Flow layers stay below the topology layer so connectors never cover AWS icons.
     layers = [
-        ("layer-topology", "00 · Full Topology", True),
         ("layer-request", "01 · Request", True),
         ("layer-deployment", "02 · Deployment", False),
         ("layer-operations", "03 · Operations", False),
         ("layer-dr", "04 · DR", False),
         ("layer-observability", "05 · Observability", False),
+        ("layer-topology", "00 · Full Topology", True),
     ]
     for layer_id, name, visible in layers:
         attrs = {"id": layer_id, "value": name, "parent": "0"}
@@ -681,10 +724,11 @@ def write_drawio(path: Path) -> None:
         ET.SubElement(root, "mxCell", attrs)
 
     by_id = {box.box_id: box for box in BOXES}
-    for box in BOXES:
-        add_vertex(root, box, by_id)
     for item in EDGES:
         add_drawio_edge(root, item)
+    for box in BOXES:
+        add_vertex(root, box, by_id)
+        add_badge_vertex(root, box, by_id)
 
     ET.indent(mxfile, space="  ")
     path.write_text('<?xml version="1.0" encoding="UTF-8"?>\n' + ET.tostring(mxfile, encoding="unicode"), encoding="utf-8", newline="\n")
@@ -713,6 +757,19 @@ def validate_model() -> None:
     for box in BOXES:
         if box.x < 0 or box.y < 0 or box.x + box.w > PAGE_W or box.y + box.h > PAGE_H:
             raise ValueError(f"Out-of-page box: {box.box_id}")
+        if box.parent in id_set:
+            parent = next(value for value in BOXES if value.box_id == box.parent)
+            if not (
+                parent.x <= box.x
+                and parent.y <= box.y
+                and box.x + box.w <= parent.x + parent.w
+                and box.y + box.h <= parent.y + parent.h
+            ):
+                raise ValueError(f"Child outside parent: {box.box_id} -> {box.parent}")
+    for item in EDGES:
+        for x, y in item.points:
+            if not (0 <= x <= PAGE_W and 0 <= y <= PAGE_H):
+                raise ValueError(f"Out-of-page edge waypoint: {item.edge_id} ({x}, {y})")
 
 
 def main() -> None:
