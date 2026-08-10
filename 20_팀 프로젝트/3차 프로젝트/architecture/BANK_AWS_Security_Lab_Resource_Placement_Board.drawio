@@ -1,0 +1,531 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" modified="2026-08-10T00:00:00.000Z" agent="OpenAI Codex" version="24.7.17" type="device" compressed="false" pages="1">
+  <diagram id="resource-placement-board" name="00_Terraform 배치 보드">
+    <mxGraphModel dx="2900" dy="2200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2900" pageHeight="2200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="&lt;b&gt;BANK AWS Security Lab — Terraform Resource Placement Board&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=30;fontColor=#232F3E;" vertex="1" parent="1">
+          <mxGeometry x="36" y="20" width="2100" height="54" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Source inventory first · 124 direct resources + 10 modules + 16 data sources · no relationship lines yet" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=16;fontColor=#5F6B7A;" vertex="1" parent="1">
+          <mxGeometry x="40" y="74" width="2200" height="34" as="geometry" />
+        </mxCell>
+        <mxCell id="BND-01" value="&lt;b&gt;BND-01 · External Actors / Tools&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#232F3E;fillColor=#F7F8F8;fillOpacity=20;strokeColor=#7D8998;strokeWidth=2.4;" vertex="1" parent="1">
+          <mxGeometry x="30" y="135" width="280" height="1970" as="geometry" />
+        </mxCell>
+        <mxCell id="aws-cloud" value="&lt;b&gt;aws-cloud · AWS Cloud&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=20;strokeColor=#232F3E;strokeWidth=2.4;" vertex="1" parent="1">
+          <mxGeometry x="335" y="135" width="2470" height="1970" as="geometry" />
+        </mxCell>
+        <mxCell id="BND-02" value="&lt;b&gt;BND-02 · Persistent Foundation&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#232F3E;fillColor=#EAF5FB;fillOpacity=20;strokeColor=#147EBA;strokeWidth=2.4;" vertex="1" parent="1">
+          <mxGeometry x="365" y="190" width="2410" height="465" as="geometry" />
+        </mxCell>
+        <mxCell id="BND-03" value="&lt;b&gt;BND-03 · Daily Runtime&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#232F3E;fillColor=#FFF4E5;fillOpacity=20;strokeColor=#FF9900;strokeWidth=2.4;" vertex="1" parent="1">
+          <mxGeometry x="365" y="700" width="2410" height="1350" as="geometry" />
+        </mxCell>
+        <mxCell id="EXT-01" value="&lt;b&gt;EXT-01 · User / Security Tester&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Approved request and experiment traffic&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="55" y="220" width="230" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF-01" value="&lt;b&gt;NTF-01 · GitHub + Actions&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Source · build · image push · GitOps commit&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="55" y="340" width="230" height="104" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF-05" value="&lt;b&gt;NTF-05 · Operator Lifecycle&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;setup-foundation · daily-up/down · evidence&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="55" y="472" width="230" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF-04" value="&lt;b&gt;NTF-04 · Local Observability&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Start-WafLiveViewer.ps1 · Local Docker Grafana&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="55" y="612" width="230" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="source-note" value="&lt;b&gt;source-note · Source boundary&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;NTF elements require scripts/YAML reads after Terraform placement&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#F7F8F8;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1780" width="230" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="fnd-delivery" value="Identity / Delivery / Domain" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=17;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=28;strokeColor=#147EBA;strokeWidth=1.6;" vertex="1" parent="1">
+          <mxGeometry x="390" y="250" width="650" height="350" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-01-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="415" y="315" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-01-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.route_53;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="427" y="339" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-01-label" value="&lt;b&gt;FND-01 · Existing Route 53 Zone&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;External ownership · discovered only&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="487" y="323" width="110" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-02-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="625" y="315" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-02-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.certificate_manager;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="637" y="339" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-02-label" value="&lt;b&gt;FND-02 · ACM Certificate&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;us-east-1 · DNS validation&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="697" y="323" width="110" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-03-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="415" y="445" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-03-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="427" y="469" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-03-label" value="&lt;b&gt;FND-03 · GitHub OIDC + IAM&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Exact repository subject trust&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="487" y="453" width="110" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-04-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="625" y="445" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-04-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_container_registry;fillColor=#ED7100;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="637" y="469" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-04-label" value="&lt;b&gt;FND-04 · Amazon ECR&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Immutable · scan on push · retain 20&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="697" y="453" width="110" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-12" value="&lt;b&gt;FND-12 · Foundation Contract&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Remote-state output contract v2&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="835" y="380" width="180" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="fnd-logs" value="Persistent Logs / Evidence" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=17;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=28;strokeColor=#147EBA;strokeWidth=1.6;" vertex="1" parent="1">
+          <mxGeometry x="1070" y="250" width="770" height="350" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-05-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="315" width="215" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-05-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.simple_storage_service_s3;fillColor=#3F8624;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1107" y="339" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-05-label" value="&lt;b&gt;FND-05 · Security Log S3&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Versioned · AES256 · 30-day lifecycle&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1167" y="323" width="135" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-06-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="315" width="215" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-06-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1342" y="339" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-06-label" value="&lt;b&gt;FND-06 · CloudWatch Logs&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Trail · EKS · DVWA · WAF · GuardDuty&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1402" y="323" width="135" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-07-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1565" y="315" width="215" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-07-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudtrail;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1577" y="339" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-07-label" value="&lt;b&gt;FND-07 · CloudTrail&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Multi-region management events&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1637" y="323" width="135" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-08-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1095" y="445" width="215" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-08-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1107" y="469" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-08-label" value="&lt;b&gt;FND-08 · Login Failure Alarm&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Metric filter → CloudWatch Alarm&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1167" y="453" width="135" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-09-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1330" y="445" width="215" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-09-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.simple_notification_service_sns;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1342" y="469" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-09-label" value="&lt;b&gt;FND-09 · SNS Security Alerts&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Topic active · email endpoint off&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1402" y="453" width="135" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="fnd-log-note" value="&lt;b&gt;fnd-log-note · Delivery policies&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Bucket policy · IAM role/policy · log destination&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1565" y="445" width="215" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="fnd-detection" value="Detection / Response" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=17;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=28;strokeColor=#147EBA;strokeWidth=1.6;" vertex="1" parent="1">
+          <mxGeometry x="1870" y="250" width="875" height="350" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-10-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1900" y="365" width="235" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-10-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.guardduty;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1912" y="394" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-10-label" value="&lt;b&gt;FND-10 · Amazon GuardDuty&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Foundational detector · optional plans disabled&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1972" y="373" width="155" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-11-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="2160" y="365" width="250" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-11-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.eventbridge;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2172" y="394" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="FND-11-label" value="&lt;b&gt;FND-11 · EventBridge Routing&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Finding → Logs + sanitized SNS alert&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2232" y="373" width="170" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="fnd-state-proof" value="&lt;b&gt;fnd-state-proof · State boundary&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Foundation state: 48 addresses&lt;br&gt;Runtime activity requires separate evidence&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="2435" y="365" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="BND-04" value="&lt;b&gt;BND-04 · Global Edge / us-east-1&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#232F3E;fillColor=#F5F1FA;fillOpacity=20;strokeColor=#8C4FFF;strokeWidth=2.4;" vertex="1" parent="1">
+          <mxGeometry x="395" y="760" width="350" height="1200" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-01-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="420" y="850" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-01-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.route_53;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="432" y="874" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-01-label" value="&lt;b&gt;GLB-01 · Route 53 App Alias&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Domain condition · points to CloudFront&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="492" y="858" width="220" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-02-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="420" y="980" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-02-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudfront;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="432" y="1004" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-02-label" value="&lt;b&gt;GLB-02 · Amazon CloudFront&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Primary ALB origin · HTTPS redirect&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="492" y="988" width="220" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-03-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1110" width="300" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-03-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.waf;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="432" y="1140" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-03-label" value="&lt;b&gt;GLB-03 · AWS WAF&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Common + SQLi COUNT · rate rule off&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="492" y="1118" width="220" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-04-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1252" width="300" height="112" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-04-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="432" y="1282" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="GLB-04-label" value="&lt;b&gt;GLB-04 · Access Log Delivery&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;CloudFront standard logging v2 → FND S3&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="492" y="1260" width="220" height="96" as="geometry" />
+        </mxCell>
+        <mxCell id="global-proof" value="&lt;b&gt;global-proof · Current state&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Route53 alias · CloudFront · WAF · logging addresses present&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1410" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="global-line-gate" value="&lt;b&gt;global-line-gate · Line gate&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Request/log arrows are intentionally deferred until placement approval&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#F7F8F8;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1570" width="300" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="BND-05" value="&lt;b&gt;BND-05 · Primary Region · ap-northeast-2&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#232F3E;fillColor=#EEF6FC;fillOpacity=20;strokeColor=#00A4A6;strokeWidth=2.4;" vertex="1" parent="1">
+          <mxGeometry x="775" y="760" width="1540" height="1200" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-03-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="820" y="825" width="280" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-03-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_kubernetes_service;fillColor=#ED7100;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="832" y="852" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-03-label" value="&lt;b&gt;RUN-03 · Amazon EKS Control Plane&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Private endpoint only · managed outside customer VPC&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="892" y="833" width="200" height="89" as="geometry" />
+        </mxCell>
+        <mxCell id="DATA-02-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="825" width="250" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="DATA-02-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.simple_storage_service_s3;fillColor=#3F8624;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1132" y="852" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="DATA-02-label" value="&lt;b&gt;DATA-02 · Application S3&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Daily bucket · versioned · private&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1192" y="833" width="170" height="89" as="geometry" />
+        </mxCell>
+        <mxCell id="primary-profile" value="&lt;b&gt;primary-profile · runtime_profile=minimal&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;DR off · node desired 1 · RDS Single-AZ&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="825" width="260" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="primary-state" value="&lt;b&gt;primary-state · State snapshot&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Daily state: 163 addresses · not Runtime proof&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1670" y="825" width="260" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-01" value="&lt;b&gt;BND-06 · NET-01 · Primary VPC · 10.0.0.0/16&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#232F3E;fillColor=#F5F1FA;fillOpacity=20;strokeColor=#8C4FFF;strokeWidth=2.4;" vertex="1" parent="1">
+          <mxGeometry x="810" y="960" width="1180" height="930" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-02-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="835" y="1015" width="190" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-02-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.internet_gateway;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="847" y="1037" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-02-label" value="&lt;b&gt;NET-02 · Internet Gateway&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Public internet route boundary&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="907" y="1023" width="110" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-07-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1040" y="1015" width="210" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-07-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.vpc;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1052" y="1037" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-07-label" value="&lt;b&gt;NET-07 · Routes / Tables&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Public + private · 6 subnet associations&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1112" y="1023" width="130" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-08-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1265" y="1015" width="210" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-08-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1277" y="1037" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-08-label" value="&lt;b&gt;NET-08 · Security Groups&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;ALB · EKS · Bastion · Data&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1337" y="1023" width="130" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-02-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1490" y="1015" width="210" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-02-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1502" y="1037" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-02-label" value="&lt;b&gt;RUN-02 · Target Group&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;target_type=ip · health /login.php&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1562" y="1023" width="130" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="vpc-defaults" value="&lt;b&gt;vpc-defaults · Module-managed defaults&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Default NACL · route table · security group&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="1015" width="245" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="az-a" value="Availability Zone · ap-northeast-2a" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=17;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=28;strokeColor=#00A4A6;strokeWidth=1.6;" vertex="1" parent="1">
+          <mxGeometry x="840" y="1140" width="535" height="690" as="geometry" />
+        </mxCell>
+        <mxCell id="az-c" value="Availability Zone · ap-northeast-2c" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=17;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=28;strokeColor=#00A4A6;strokeWidth=1.6;" vertex="1" parent="1">
+          <mxGeometry x="1410" y="1140" width="535" height="690" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-03-A" value="&lt;b&gt;NET-03-A · Public Subnet A&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-style:normal;color:#5F6B7A;&quot;&gt;10.0.0.0/24&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontSize=15;fontStyle=1;fontColor=#232F3E;fillColor=#EAF7E6;fillOpacity=34;strokeColor=#1D8102;strokeWidth=1.4;dashed=1;dashPattern=5 4;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1200" width="495" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-03-C" value="&lt;b&gt;NET-03-C · Public Subnet C&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-style:normal;color:#5F6B7A;&quot;&gt;10.0.1.0/24&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontSize=15;fontStyle=1;fontColor=#232F3E;fillColor=#EAF7E6;fillOpacity=34;strokeColor=#1D8102;strokeWidth=1.4;dashed=1;dashPattern=5 4;" vertex="1" parent="1">
+          <mxGeometry x="1430" y="1200" width="495" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-04-A" value="&lt;b&gt;NET-04-A · Private Subnet A&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-style:normal;color:#5F6B7A;&quot;&gt;10.0.10.0/24&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontSize=15;fontStyle=1;fontColor=#232F3E;fillColor=#EAF5FB;fillOpacity=34;strokeColor=#147EBA;strokeWidth=1.4;dashed=1;dashPattern=5 4;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1400" width="495" height="245" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-04-C" value="&lt;b&gt;NET-04-C · Private Subnet C&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-style:normal;color:#5F6B7A;&quot;&gt;10.0.11.0/24&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontSize=15;fontStyle=1;fontColor=#232F3E;fillColor=#EAF5FB;fillOpacity=34;strokeColor=#147EBA;strokeWidth=1.4;dashed=1;dashPattern=5 4;" vertex="1" parent="1">
+          <mxGeometry x="1430" y="1400" width="495" height="245" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-05-A" value="&lt;b&gt;NET-05-A · Database Subnet A&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-style:normal;color:#5F6B7A;&quot;&gt;10.0.20.0/24&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontSize=15;fontStyle=1;fontColor=#232F3E;fillColor=#F5F1FA;fillOpacity=34;strokeColor=#8C4FFF;strokeWidth=1.4;dashed=1;dashPattern=5 4;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1665" width="495" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-05-C" value="&lt;b&gt;NET-05-C · Database Subnet C&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;font-style:normal;color:#5F6B7A;&quot;&gt;10.0.21.0/24&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;fontSize=15;fontStyle=1;fontColor=#232F3E;fillColor=#F5F1FA;fillOpacity=34;strokeColor=#8C4FFF;strokeWidth=1.4;dashed=1;dashPattern=5 4;" vertex="1" parent="1">
+          <mxGeometry x="1430" y="1665" width="495" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-10-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="880" y="1260" width="210" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-10-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2;fillColor=#ED7100;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="892" y="1282" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-10-label" value="&lt;b&gt;RUN-10 · SSM Bastion&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;AL2023 · public IP · Key Pair&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="952" y="1268" width="130" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-06-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1110" y="1260" width="220" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-06-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.nat_gateway;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1122" y="1282" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="NET-06-label" value="&lt;b&gt;NET-06 · NAT Gateway&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Single NAT + EIP · default&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1182" y="1268" width="140" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-01-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1515" y="1260" width="300" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-01-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1527" y="1282" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-01-label" value="&lt;b&gt;RUN-01 · Application Load Balancer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Internet-facing · spans Public A/C&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1587" y="1268" width="220" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="eks-worker-plane" value="EKS Worker / Workload Plane · Private Subnets A/C" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=17;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=28;strokeColor=#8C4FFF;strokeWidth=1.6;" vertex="1" parent="1">
+          <mxGeometry x="885" y="1435" width="1015" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-05-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="905" y="1490" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-05-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2;fillColor=#ED7100;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="917" y="1514" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-05-label" value="&lt;b&gt;RUN-05 · System Node Group&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Managed · desired 1 / max 2&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="977" y="1498" width="140" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-07-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="1490" width="230" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-07-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_kubernetes_service;fillColor=#ED7100;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1152" y="1514" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-07-label" value="&lt;b&gt;RUN-07 · Karpenter Infra&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;IAM · SQS · EventBridge · access&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="1212" y="1498" width="150" height="84" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF-03" value="&lt;b&gt;NTF-03 · BANK Workload&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Deployment · Pod · Service · TGB&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#F7F8F8;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="1385" y="1490" width="230" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="NTF-02" value="&lt;b&gt;NTF-02 · SSM-installed Add-ons&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Argo · LBC · ExternalDNS · Fluent Bit&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#F7F8F8;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="1630" y="1490" width="245" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="DATA-01-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="895" y="1700" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="DATA-01-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.rds;fillColor=#3F8624;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="907" y="1719" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="DATA-01-label" value="&lt;b&gt;DATA-01 · RDS MariaDB&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Encrypted · private · minimal Single-AZ&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="967" y="1708" width="200" height="74" as="geometry" />
+        </mxCell>
+        <mxCell id="db-c-note" value="&lt;b&gt;db-c-note · No standby in minimal&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Subnet C exists; Multi-AZ only in full profile&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#F7F8F8;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="1485" y="1700" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="primary-managed-rail" value="Regional / Managed Service Rail" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=17;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=28;strokeColor=#00A4A6;strokeWidth=1.6;" vertex="1" parent="1">
+          <mxGeometry x="2015" y="960" width="270" height="930" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-04-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="2035" y="1015" width="230" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-04-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.key_management_service;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2047" y="1035" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-04-label" value="&lt;b&gt;RUN-04 · Cluster IAM/KMS&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;OIDC · access · SG rules&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2107" y="1023" width="150" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-06-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="2035" y="1120" width="230" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-06-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_kubernetes_service;fillColor=#ED7100;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2047" y="1140" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-06-label" value="&lt;b&gt;RUN-06 · Core Add-ons&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;CoreDNS · kube-proxy · VPC CNI · PI agent&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2107" y="1128" width="150" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-08-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="2035" y="1225" width="230" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-08-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2047" y="1245" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-08-label" value="&lt;b&gt;RUN-08 · LBC Pod Identity&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;IAM role/policy/association&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2107" y="1233" width="150" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-09-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="2035" y="1330" width="230" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-09-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2047" y="1350" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-09-label" value="&lt;b&gt;RUN-09 · ExternalDNS Identity&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Domain condition · Route 53 policy&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2107" y="1338" width="150" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-11-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="2035" y="1435" width="230" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-11-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.systems_manager;fillColor=#E7157B;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2047" y="1455" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-11-label" value="&lt;b&gt;RUN-11 · SSM Add-on Path&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Document + Association → Bastion&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2107" y="1443" width="150" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="OBS-01-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="2035" y="1540" width="230" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="OBS-01-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.vpc;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2047" y="1560" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="OBS-01-label" value="&lt;b&gt;OBS-01 · VPC REJECT Flow Log&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Primary VPC → Foundation S3&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2107" y="1548" width="150" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="OBS-02-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#AAB7B8;strokeWidth=1.4;" vertex="1" parent="1">
+          <mxGeometry x="2035" y="1645" width="230" height="92" as="geometry" />
+        </mxCell>
+        <mxCell id="OBS-02-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.cloudwatch;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2047" y="1665" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="OBS-02-label" value="&lt;b&gt;OBS-02 · DVWA Log Forwarder&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Fluent Bit Pod Identity → CloudWatch&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2107" y="1653" width="150" height="76" as="geometry" />
+        </mxCell>
+        <mxCell id="RUN-12" value="&lt;b&gt;RUN-12 · Local Helm Alternative&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Default off · SSM path is active design&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#F7F8F8;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2035" y="1750" width="230" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="BND-07" value="&lt;b&gt;BND-07 · Conditional DR / Optional&lt;/b&gt;" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=14;spacingTop=10;fontSize=20;fontStyle=1;fontColor=#232F3E;fillColor=#F7F8F8;fillOpacity=20;strokeColor=#7D8998;strokeWidth=2.4;dashed=1;dashPattern=8 5;" vertex="1" parent="1">
+          <mxGeometry x="2340" y="760" width="420" height="1200" as="geometry" />
+        </mxCell>
+        <mxCell id="dr-region" value="DR Region · ap-northeast-1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=17;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=28;strokeColor=#00A4A6;strokeWidth=1.6;dashed=1;dashPattern=7 5;" vertex="1" parent="1">
+          <mxGeometry x="2365" y="830" width="370" height="800" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-01-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="885" width="320" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-01-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.vpc;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2402" y="907" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-01-label" value="&lt;b&gt;DR-01 · DR VPC / Network&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;runtime_profile dr-test/full&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2462" y="893" width="240" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-02-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="995" width="320" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-02-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_kubernetes_service;fillColor=#ED7100;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2402" y="1017" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-02-label" value="&lt;b&gt;DR-02 · DR EKS / Karpenter&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Private API · system nodes&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2462" y="1003" width="240" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-03-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="1105" width="320" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-03-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.application_load_balancer;fillColor=#8C4FFF;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2402" y="1127" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-03-label" value="&lt;b&gt;DR-03 · DR ALB / TGB&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Direct DR edge path&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2462" y="1113" width="240" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-04-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="1215" width="320" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-04-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.rds;fillColor=#3F8624;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2402" y="1237" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-04-label" value="&lt;b&gt;DR-04 · RDS Replica + KMS&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Cross-region encrypted replica&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2462" y="1223" width="240" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-05-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="1325" width="320" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-05-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.simple_storage_service_s3;fillColor=#3F8624;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2402" y="1347" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-05-label" value="&lt;b&gt;DR-05 · DR S3 + Replication&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Primary application objects → Tokyo&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2462" y="1333" width="240" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-06-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="1435" width="320" height="95" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-06-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.ec2;fillColor=#ED7100;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2402" y="1457" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-06-label" value="&lt;b&gt;DR-06 · DR Bastion / SSM&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Add-on management path&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2462" y="1443" width="240" height="79" as="geometry" />
+        </mxCell>
+        <mxCell id="DR-07" value="&lt;b&gt;DR-07 · Additional DR Gates&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Argo · ExternalDNS · logs · EFS · Valkey&lt;/font&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;spacingRight=10;fontSize=15;fontColor=#232F3E;fillColor=#F7F8F8;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="1545" width="320" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="primary-options" value="Primary Optional · default off" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacingLeft=12;spacingTop=8;fontSize=17;fontStyle=1;fontColor=#232F3E;fillColor=#FFFFFF;fillOpacity=28;strokeColor=#7D8998;strokeWidth=1.6;dashed=1;dashPattern=7 5;" vertex="1" parent="1">
+          <mxGeometry x="2365" y="1650" width="370" height="275" as="geometry" />
+        </mxCell>
+        <mxCell id="OPT-01-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="1690" width="320" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="OPT-01-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.identity_and_access_management;fillColor=#DD344C;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2402" y="1697" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="OPT-01-label" value="&lt;b&gt;OPT-01 · Web S3 Pod Identity&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;BANK ServiceAccount access&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2462" y="1698" width="240" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="OPT-02-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="1765" width="320" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="OPT-02-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elastic_file_system_efs;fillColor=#3F8624;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2402" y="1772" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="OPT-02-label" value="&lt;b&gt;OPT-02 · Amazon EFS&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Mount targets + CSI IAM&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2462" y="1773" width="240" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="OPT-03-card" value="" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;" vertex="1" parent="1">
+          <mxGeometry x="2390" y="1840" width="320" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="OPT-03-icon" value="" style="shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.elasticache;fillColor=#3F8624;strokeColor=#FFFFFF;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2402" y="1847" width="52" height="52" as="geometry" />
+        </mxCell>
+        <mxCell id="OPT-03-label" value="&lt;b&gt;OPT-03 · Amazon Valkey&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;Multi-AZ replication group&lt;/font&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#232F3E;spacingLeft=4;" vertex="1" parent="1">
+          <mxGeometry x="2462" y="1848" width="240" height="49" as="geometry" />
+        </mxCell>
+        <mxCell id="footer" value="Placement only: no request/deploy/log lines yet · Solid = source default/state-listed · Dashed = conditional or non-Terraform pending" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=none;align=left;verticalAlign=middle;fontSize=15;fontColor=#5F6B7A;" vertex="1" parent="1">
+          <mxGeometry x="365" y="2070" width="2200" height="28" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
+
