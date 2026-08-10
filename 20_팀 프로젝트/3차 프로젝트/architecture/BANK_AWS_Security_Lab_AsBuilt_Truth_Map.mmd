@@ -1,0 +1,216 @@
+flowchart LR
+    %% 이 파일은 발표용 완성도가 아니라 draw.io 제작 전 관계 검증용 Truth Map이다.
+    %% 기준: current Source / minimal / Primary(ap-northeast-2). 현재 Runtime 활성 여부는 별도 검증 대상이다.
+
+    subgraph EXTERNAL["외부 사용자 · GitHub · 운영자 PC"]
+        direction TB
+        USER["사용자 · 승인된 실험자"]
+        DEV["개발자"]
+        GH["GitHub Repository<br/>Application · Helm · GitOps"]
+        GHA["GitHub Actions<br/>Build · Push · values.yaml 갱신"]
+        LOCAL["운영자 PC<br/>Terraform · PowerShell · AWS CLI"]
+        GRAFANA["Local Docker Grafana<br/>Amazon Managed Grafana 아님"]
+        LIVE["Local WAF Live Viewer<br/>CloudWatch Live Tail"]
+        EVIDENCE["Local Evidence Bundle<br/>Sanitized 결과 · Manifest · SHA-256"]
+    end
+
+    subgraph PERSISTENT["지속 영역 · Daily Down 뒤에도 유지"]
+        direction TB
+
+        subgraph EXTERNAL_PERSISTENT["외부 선행 자원"]
+            HOSTED_ZONE["기존 Public Route 53 Hosted Zone<br/>Terraform이 생성하지 않음"]
+            KEYPAIR["기존 EC2 Key Pair"]
+        end
+
+        subgraph FOUNDATION["Foundation Terraform · 별도 State · prevent_destroy"]
+            direction TB
+            FSTATE["Foundation State / Output Contract v2"]
+            ACM["ACM Certificate<br/>CloudFront용 · us-east-1"]
+            OIDC["GitHub OIDC Provider + IAM Role<br/>Repository · Branch Subject 제한"]
+            ECR["Amazon ECR<br/>Immutable Tag · Scan on Push · 최근 20개"]
+            CWLOGS["CloudWatch Log Groups<br/>30일 보존"]
+            SECURITY_S3["Security Log S3<br/>Versioning · AES256 · Public Block · 30일"]
+            CLOUDTRAIL["CloudTrail<br/>Multi-Region Management Events"]
+            GUARDDUTY["GuardDuty<br/>Foundational Detector"]
+            EVENTBRIDGE["EventBridge<br/>GuardDuty Finding 전달"]
+            SNS["SNS Security Alert Topic<br/>외부 수신자는 Runtime 별도 확인"]
+            ALARM["BANK 로그인 실패<br/>Metric Filter + Alarm"]
+        end
+    end
+
+    subgraph DAILY["Daily Runtime Terraform · daily-up / daily-down 대상"]
+        direction TB
+
+        subgraph DAILY_GLOBAL["Global · Edge"]
+            DNS_ALIAS["Route 53 App Alias Record"]
+            CLOUDFRONT["Amazon CloudFront<br/>Viewer HTTPS Redirect"]
+            WAF["AWS WAF Web ACL<br/>Managed Rules COUNT + 선택적 Rate Rule"]
+        end
+
+        subgraph PRIMARY["Primary Region · Seoul · ap-northeast-2"]
+            direction TB
+
+            subgraph VPC["Primary VPC · 2 AZ · 기본 NAT Gateway 1개"]
+                direction TB
+                PUBLIC["Public Subnets<br/>ALB · SSM Bastion · NAT Gateway"]
+                PRIVATE["Private Subnets<br/>EKS Nodes · Pods"]
+                DATABASE["Database Subnets<br/>RDS MariaDB"]
+
+                ALB["Internet-facing ALB<br/>Ingress: CloudFront Prefix List만"]
+                BASTION["SSM Bastion<br/>EKS Private API 관리 경로"]
+                NAT["NAT Gateway<br/>Private Outbound"]
+
+                subgraph EKS["Amazon EKS · Private API Endpoint"]
+                    direction TB
+                    EKS_API["EKS Control Plane<br/>api · audit · authenticator logs"]
+                    SYSTEM_NODE["Managed System Node Group"]
+                    KARPENTER["Karpenter<br/>기본 On-Demand Workload Nodes"]
+                    ADDONS["Cluster Add-ons<br/>LBC · ExternalDNS · Argo CD"]
+                    POD_IDENTITY["EKS Pod Identity<br/>Controllers · Fluent Bit · Karpenter"]
+                    LBC["AWS Load Balancer Controller"]
+                    TGB["TargetGroupBinding<br/>Service ↔ ALB Target Group"]
+                    SERVICE["Kubernetes Service<br/>ClusterIP :80"]
+                    POD["BANK DVWA Pod<br/>Deployment · automount SA token false"]
+                    FLUENT_BIT["Fluent Bit<br/>DVWA Namespace Log Forwarding"]
+                end
+
+                RDS["RDS MariaDB<br/>Encrypted · Private · minimal은 Single-AZ"]
+                APP_S3["Daily Application S3<br/>Force Destroy · Web Pod 권한은 기본 Off"]
+                VPC_FLOW["VPC Flow Logs<br/>REJECT only"]
+            end
+        end
+    end
+
+    subgraph AWS_ANALYSIS["AWS Query · Detection"]
+        direction TB
+        CWLI["CloudWatch Logs Insights<br/>승인된 Query Pack"]
+        ATHENA["Amazon Athena + Glue Tables<br/>CloudFront · ALB · VPC REJECT"]
+        REVIEW["Security Window Review<br/>정확 상관 · 강한 추정 · 시간창 연계 구분"]
+    end
+
+    subgraph LIFECYCLE["재현·검증·폐기 Lifecycle"]
+        direction LR
+        SETUP["setup-foundation.ps1<br/>최초 또는 Foundation 변경 시"]
+        UP["daily-up.ps1<br/>Preflight → Plan/Apply"]
+        BOOTSTRAP["Add-ons · CI Freshness · DB Bootstrap<br/>Argo Revision · Pod Ready · URL 확인"]
+        COLLECT["Evidence 수집<br/>Pre/Post · Query · Hash"]
+        DOWN["daily-down.ps1<br/>Karpenter 정리 → Destroy"]
+        ZERO["Daily State Empty<br/>잔존 Runtime 없음 · Foundation 유지"]
+    end
+
+    OPTIONAL["기본 비활성 · 본편이 아닌 선택 기능<br/>dr-test/full: Tokyo VPC · EKS · DR ALB · RDS Replica · S3 CRR<br/>enable_valkey=false · enable_efs=false · enable_web_s3_pod_identity=false"]
+
+    %% Request Flow — Route 53은 Proxy가 아니라 DNS 응답 경로다.
+    USER -. "DNS 조회" .-> DNS_ALIAS
+    HOSTED_ZONE -. "Hosted Zone" .-> DNS_ALIAS
+    DNS_ALIAS -. "Alias 응답" .-> CLOUDFRONT
+    USER -->|"HTTPS Request"| CLOUDFRONT
+    ACM -. "Viewer TLS Certificate" .-> CLOUDFRONT
+    WAF -. "Web ACL에서 검사" .-> CLOUDFRONT
+    CLOUDFRONT -->|"HTTP Origin"| ALB
+    ALB -->|"Target type: IP · 실제 Data Path"| POD
+    POD -->|"MariaDB Connection"| RDS
+
+    %% Kubernetes Service/TGB/LBC는 Pod IP 등록을 위한 Control Plane 관계다.
+    SERVICE -. "Selector" .-> POD
+    TGB -. "Service Reference" .-> SERVICE
+    LBC -. "Reconcile" .-> TGB
+    TGB -. "Pod IP를 Target Group에 등록" .-> ALB
+
+    %% Network placement and administration.
+    PUBLIC -. "배치" .-> ALB
+    PUBLIC -. "배치" .-> BASTION
+    PUBLIC -. "배치" .-> NAT
+    PRIVATE -. "배치" .-> SYSTEM_NODE
+    PRIVATE -. "배치" .-> KARPENTER
+    DATABASE -. "배치" .-> RDS
+    KARPENTER --> POD
+    SYSTEM_NODE --> ADDONS
+    ADDONS --> LBC
+    ADDONS --> FLUENT_BIT
+    ADDONS --> SERVICE
+    POD_IDENTITY -. "임시 AWS Credentials" .-> LBC
+    POD_IDENTITY -. "임시 AWS Credentials" .-> FLUENT_BIT
+    POD_IDENTITY -. "임시 AWS Credentials" .-> KARPENTER
+    PRIVATE -. "Outbound" .-> NAT
+    LOCAL -->|"SSM / SSH"| BASTION
+    KEYPAIR -. "Bastion Key Pair" .-> BASTION
+    BASTION -->|"Private kubectl"| EKS_API
+
+    %% Deployment Flow.
+    DEV -->|"Git Push"| GH
+    GH -->|"Workflow Trigger"| GHA
+    GHA -->|"OIDC AssumeRole"| OIDC
+    OIDC -->|"Temporary AWS Credentials"| ECR
+    GHA -->|"sha-<Git commit> Image Push"| ECR
+    GHA -->|"values.yaml의 Image Tag Commit"| GH
+    GH -->|"main / deploy/dvwa 감시"| ADDONS
+    ADDONS -->|"Argo CD Sync · Helm Apply"| POD
+    ECR -->|"Immutable Image Pull"| POD
+
+    %% Observability and Evidence Flow.
+    WAF -. "COUNT / BLOCK Logs" .-> CWLOGS
+    CLOUDFRONT -. "Standard Logging v2" .-> SECURITY_S3
+    ALB -. "Access Logs" .-> SECURITY_S3
+    VPC_FLOW -. "REJECT Logs" .-> SECURITY_S3
+    EKS_API -. "Control Plane Logs" .-> CWLOGS
+    POD -. "Container + BANK JSON Audit" .-> FLUENT_BIT
+    FLUENT_BIT -. "PutLogEvents" .-> CWLOGS
+    CLOUDTRAIL -. "AWS API Events" .-> CWLOGS
+    CLOUDTRAIL -. "Archive" .-> SECURITY_S3
+    GUARDDUTY --> EVENTBRIDGE
+    EVENTBRIDGE -->|"원본 Finding 보존"| CWLOGS
+    EVENTBRIDGE -->|"Sanitized Alert"| SNS
+    CWLOGS --> ALARM
+    ALARM --> SNS
+
+    CWLOGS --> CWLI
+    SECURITY_S3 --> ATHENA
+    CWLOGS --> GRAFANA
+    ATHENA --> GRAFANA
+    CWLOGS --> LIVE
+    CWLI --> REVIEW
+    ATHENA --> REVIEW
+    REVIEW --> EVIDENCE
+    CWLI --> EVIDENCE
+    ATHENA --> EVIDENCE
+
+    %% Lifecycle Flow.
+    LOCAL ==> SETUP
+    SETUP ==> FSTATE
+    FSTATE -. "Remote State Output Contract" .-> UP
+    LOCAL ==> UP
+    UP ==> BOOTSTRAP
+    BOOTSTRAP ==> COLLECT
+    COLLECT ==> DOWN
+    DOWN ==> ZERO
+    ZERO -. "Persistent Resources Retained" .-> FSTATE
+    UP -. "Create / Reconcile" .-> CLOUDFRONT
+    UP -. "Create / Reconcile" .-> VPC
+    DOWN -. "Destroy Daily Scope" .-> CLOUDFRONT
+    DOWN -. "Destroy Daily Scope" .-> VPC
+
+    classDef external fill:#F7F8F8,stroke:#7D8998,color:#232F3E,stroke-width:1px;
+    classDef foundation fill:#EAF5FB,stroke:#147EBA,color:#232F3E,stroke-width:2px;
+    classDef daily fill:#FFF4E5,stroke:#FF9900,color:#232F3E,stroke-width:2px;
+    classDef local fill:#F4F0FF,stroke:#8C4FFF,color:#232F3E,stroke-width:2px;
+    classDef analysis fill:#EAF9F7,stroke:#00A4A6,color:#232F3E,stroke-width:2px;
+    classDef lifecycle fill:#ECF7E8,stroke:#1D8102,color:#232F3E,stroke-width:2px;
+    classDef optional fill:#F7F8F8,stroke:#7D8998,color:#5F6B7A,stroke-dasharray: 6 4;
+
+    class USER,DEV,GH,GHA,LOCAL external;
+    class GRAFANA,LIVE,EVIDENCE local;
+    class HOSTED_ZONE,KEYPAIR external;
+    class FSTATE,ACM,OIDC,ECR,CWLOGS,SECURITY_S3,CLOUDTRAIL,GUARDDUTY,EVENTBRIDGE,SNS,ALARM foundation;
+    class DNS_ALIAS,CLOUDFRONT,WAF,PUBLIC,PRIVATE,DATABASE,ALB,BASTION,NAT,EKS_API,SYSTEM_NODE,KARPENTER,ADDONS,POD_IDENTITY,LBC,TGB,SERVICE,POD,FLUENT_BIT,RDS,APP_S3,VPC_FLOW daily;
+    class CWLI,ATHENA,REVIEW analysis;
+    class SETUP,UP,BOOTSTRAP,COLLECT,DOWN,ZERO lifecycle;
+    class OPTIONAL optional;
+
+    style PERSISTENT fill:#F8FCFF,stroke:#147EBA,stroke-width:2px
+    style FOUNDATION fill:#FFFFFF,stroke:#147EBA,stroke-width:1px
+    style DAILY fill:#FFFCF7,stroke:#FF9900,stroke-width:2px
+    style VPC fill:#FFFFFF,stroke:#00A4A6,stroke-width:2px
+    style EKS fill:#FAFCFF,stroke:#8C4FFF,stroke-width:2px
+    style AWS_ANALYSIS fill:#F7FFFE,stroke:#00A4A6,stroke-width:2px
+    style LIFECYCLE fill:#F9FFF7,stroke:#1D8102,stroke-width:2px
