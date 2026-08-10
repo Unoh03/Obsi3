@@ -58,6 +58,7 @@ flowchart LR
 
                 ALB["Internet-facing ALB<br/>Ingress: CloudFront Prefix List만"]
                 BASTION["SSM Bastion<br/>EKS Private API 관리 경로"]
+                SSM_ASSOC["SSM Association<br/>기본 Add-on 설치 경로"]
                 NAT["NAT Gateway<br/>Private Outbound"]
 
                 subgraph EKS["Amazon EKS · Private API Endpoint"]
@@ -65,7 +66,8 @@ flowchart LR
                     EKS_API["EKS Control Plane<br/>api · audit · authenticator logs"]
                     SYSTEM_NODE["Managed System Node Group"]
                     KARPENTER["Karpenter<br/>기본 On-Demand Workload Nodes"]
-                    ADDONS["Cluster Add-ons<br/>LBC · ExternalDNS · Argo CD"]
+                    ADDONS["Cluster Add-ons<br/>LBC · ExternalDNS · Fluent Bit"]
+                    ARGO["Argo CD<br/>Git desired state 조정"]
                     POD_IDENTITY["EKS Pod Identity<br/>Controllers · Fluent Bit · Karpenter"]
                     LBC["AWS Load Balancer Controller"]
                     TGB["TargetGroupBinding<br/>Service ↔ ALB Target Group"]
@@ -126,9 +128,13 @@ flowchart LR
     DATABASE -. "배치" .-> RDS
     KARPENTER --> POD
     SYSTEM_NODE --> ADDONS
+    SYSTEM_NODE --> ARGO
+    SSM_ASSOC -->|"Run Command"| BASTION
+    BASTION -. "Helm / kubectl 설치" .-> ADDONS
+    BASTION -. "Argo CD 설치" .-> ARGO
     ADDONS --> LBC
     ADDONS --> FLUENT_BIT
-    ADDONS --> SERVICE
+    ADDONS --> TGB
     POD_IDENTITY -. "임시 AWS Credentials" .-> LBC
     POD_IDENTITY -. "임시 AWS Credentials" .-> FLUENT_BIT
     POD_IDENTITY -. "임시 AWS Credentials" .-> KARPENTER
@@ -144,8 +150,9 @@ flowchart LR
     OIDC -->|"Temporary AWS Credentials"| ECR
     GHA -->|"sha-<Git commit> Image Push"| ECR
     GHA -->|"values.yaml의 Image Tag Commit"| GH
-    GH -->|"main / deploy/dvwa 감시"| ADDONS
-    ADDONS -->|"Argo CD Sync · Helm Apply"| POD
+    GH -->|"main / deploy/dvwa 감시"| ARGO
+    ARGO -->|"Helm Service Sync"| SERVICE
+    ARGO -->|"Helm Deployment Sync"| POD
     ECR -->|"Immutable Image Pull"| POD
 
     %% Observability and Evidence Flow.
@@ -166,6 +173,8 @@ flowchart LR
 
     CWLOGS --> CWLI
     SECURITY_S3 --> ATHENA
+    CWLOGS -. "Source Capture" .-> EVIDENCE
+    SECURITY_S3 -. "Source Object Capture" .-> EVIDENCE
     CWLOGS --> GRAFANA
     ATHENA --> GRAFANA
     CWLOGS --> LIVE
@@ -182,13 +191,19 @@ flowchart LR
     LOCAL ==> UP
     UP ==> BOOTSTRAP
     BOOTSTRAP ==> COLLECT
+    COLLECT --> EVIDENCE
     COLLECT ==> DOWN
     DOWN ==> ZERO
     ZERO -. "Persistent Resources Retained" .-> FSTATE
     UP -. "Create / Reconcile" .-> CLOUDFRONT
-    UP -. "Create / Reconcile" .-> VPC
+    UP -. "Create / Reconcile" .-> ALB
+    UP -. "Create / Reconcile" .-> EKS_API
+    UP -. "Create / Reconcile" .-> RDS
+    UP -. "Add-on Association" .-> SSM_ASSOC
     DOWN -. "Destroy Daily Scope" .-> CLOUDFRONT
-    DOWN -. "Destroy Daily Scope" .-> VPC
+    DOWN -. "Destroy Daily Scope" .-> ALB
+    DOWN -. "Destroy Daily Scope" .-> EKS_API
+    DOWN -. "Destroy Daily Scope" .-> RDS
 
     classDef external fill:#F7F8F8,stroke:#7D8998,color:#232F3E,stroke-width:1px;
     classDef foundation fill:#EAF5FB,stroke:#147EBA,color:#232F3E,stroke-width:2px;
@@ -202,7 +217,7 @@ flowchart LR
     class GRAFANA,LIVE,EVIDENCE local;
     class HOSTED_ZONE,KEYPAIR external;
     class FSTATE,ACM,OIDC,ECR,CWLOGS,SECURITY_S3,CLOUDTRAIL,GUARDDUTY,EVENTBRIDGE,SNS,ALARM foundation;
-    class DNS_ALIAS,CLOUDFRONT,WAF,PUBLIC,PRIVATE,DATABASE,ALB,BASTION,NAT,EKS_API,SYSTEM_NODE,KARPENTER,ADDONS,POD_IDENTITY,LBC,TGB,SERVICE,POD,FLUENT_BIT,RDS,APP_S3,VPC_FLOW daily;
+    class DNS_ALIAS,CLOUDFRONT,WAF,PUBLIC,PRIVATE,DATABASE,ALB,BASTION,SSM_ASSOC,NAT,EKS_API,SYSTEM_NODE,KARPENTER,ADDONS,ARGO,POD_IDENTITY,LBC,TGB,SERVICE,POD,FLUENT_BIT,RDS,APP_S3,VPC_FLOW daily;
     class CWLI,ATHENA,REVIEW analysis;
     class SETUP,UP,BOOTSTRAP,COLLECT,DOWN,ZERO lifecycle;
     class OPTIONAL optional;
