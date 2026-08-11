@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<mxfile host="app.diagrams.net" agent="OpenAI Codex" compressed="false" pages="2" modified="2026-08-11T00:00:00.000Z">
+<mxfile host="app.diagrams.net" agent="OpenAI Codex" compressed="false">
   <diagram id="bank-log-response" name="02_로그와 대응">
     <mxGraphModel dx="2054" dy="1155" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="900" math="0" shadow="0">
       <root>
@@ -201,7 +200,7 @@
         <mxCell id="p2-query" parent="1" style="rounded=0;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;fontColor=#232F3E;fontSize=10;fontStyle=1;align=center;verticalAlign=middle;spacing=5;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;Query / Evidence tools&lt;br&gt;Logs Insights · Athena&lt;br&gt;조사 / 증거 수집&lt;/font&gt;" vertex="1">
           <mxGeometry height="62" width="240" x="960" y="715" as="geometry" />
         </mxCell>
-        <mxCell id="p2-alert-recipient" parent="1" style="rounded=0;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF6F4;strokeColor=#D13212;strokeWidth=1.4;fontColor=#232F3E;fontSize=10;fontStyle=1;align=center;verticalAlign=middle;spacing=5;" value="Operator / SNS&#10;경보 수신" vertex="1">
+        <mxCell id="p2-alert-recipient" parent="1" style="rounded=0;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF6F4;strokeColor=#D13212;strokeWidth=1.4;fontColor=#232F3E;fontSize=10;fontStyle=1;align=center;verticalAlign=middle;spacing=5;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;Operator / SNS&lt;br&gt;경보 수신&lt;/font&gt;" vertex="1">
           <mxGeometry height="62" width="180" x="1270" y="715" as="geometry" />
         </mxCell>
         <mxCell id="p2-review" parent="1" style="rounded=0;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#232F3E;strokeWidth=2;fontColor=#232F3E;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;spacing=5;" value="&lt;font style=&quot;font-size: 20px;&quot;&gt;Security Review / Evidence / Response&lt;br&gt;이벤트 확인 → 로그 해석 → 영향 범위 판단 → 대응·재현&lt;/font&gt;" vertex="1">
@@ -252,10 +251,10 @@
         <mxCell id="p2-eks-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=10;" value="&lt;font style=&quot;font-size: 13px;&quot;&gt;EKS control logs&lt;/font&gt;" vertex="1">
           <mxGeometry height="28" width="105" x="939.5" y="256" as="geometry" />
         </mxCell>
-        <mxCell id="p2-s3-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=10;" value="Security S3&#10;장기 보존" vertex="1">
+        <mxCell id="p2-s3-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=10;" value="Security S3&#xa;장기 보존" vertex="1">
           <mxGeometry height="34" width="130" x="330" y="492" as="geometry" />
         </mxCell>
-        <mxCell id="p2-cw-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=10;" value="CloudWatch Logs&#10;실시간·운영 로그" vertex="1">
+        <mxCell id="p2-cw-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=10;" value="CloudWatch Logs&#xa;실시간·운영 로그" vertex="1">
           <mxGeometry height="34" width="155" x="752.5" y="492" as="geometry" />
         </mxCell>
         <mxCell id="p2-stage-1-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="발생" vertex="1">
@@ -282,8 +281,8 @@
         <mxCell id="p2-storage-note" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=9;" value="두 저장 허브" vertex="1">
           <mxGeometry height="20" width="110" x="655" y="468" as="geometry" />
         </mxCell>
-        <mxCell id="p2-role-note" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=9;" value="Viewer = 즉시 이벤트   ·   Grafana = 추세/대시보드   ·   Query tools = 조사/증거" vertex="1">
-          <mxGeometry height="20" width="470" x="1085" y="853" as="geometry" />
+        <mxCell id="p2-role-note" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=9;" value="&lt;font style=&quot;font-size: 16px;&quot;&gt;Viewer = 즉시 이벤트   ·   Grafana = 추세/대시보드   ·   Query tools = 조사/증거&lt;/font&gt;" vertex="1">
+          <mxGeometry height="20" width="515" x="1085" y="853" as="geometry" />
         </mxCell>
         <mxCell id="p2-leg-data-line" parent="1" style="shape=line;strokeColor=#0073BB;strokeWidth=2;dashed=0;dashPattern=6 4;" value="" vertex="1">
           <mxGeometry height="1" width="44" x="1170" y="35" as="geometry" />
