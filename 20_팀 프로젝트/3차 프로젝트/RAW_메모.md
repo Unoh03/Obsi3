@@ -76,3 +76,7 @@
 - Foundation Apply: 승인된 F2 Resource 14개만 생성했고 변경·삭제는 0이다. GuardDuty, EventBridge Rule, 원본 Finding 30일 Log Group, 기존 SNS 연결이 실제 AWS에서 존재함을 확인했다.
 - Drift 보정: AWS가 반환한 `AI_PROTECTION`과 Runtime Agent 관리 3개를 Terraform이 명시적으로 `DISABLED`로 관리하게 보정했다. 후속 Plan은 `No changes`로 수렴했다.
 - 검증: `terraform fmt -check`, `terraform validate`, F2 Offline·Detection Test, Diff·추가 줄 Secret Scan을 통과했고 `75c0874`, `fa8c179`로 Push했다. AWS Sample Finding 발생과 실제 SNS·Log 전달 검증은 아직 실행하지 않았다.
+
+
+
+# 8. 11 멘토님과 상담.
