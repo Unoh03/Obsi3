@@ -80,47 +80,15 @@ EXTERNAL_IDS = {"actor", "github", "git-repo", "operator-pc", "argocd", "grafana
 
 
 GEOMETRY = {
-    # V6 skeleton retained; horizontal space is rebalanced so DR is no longer cramped.
-    "primary-region": (190, 540, 1650, 1240),
-    "dr-region": (1870, 540, 1140, 1240),
-    "primary-regional-services": (230, 610, 1570, 190),
-    "dr-regional-services": (1910, 610, 1060, 190),
-    "primary-vpc": (230, 850, 1570, 900),
-    "dr-vpc": (1910, 850, 1060, 900),
-    "p-az-a": (270, 950, 515, 520),
-    "p-multi-az-lane": (805, 950, 390, 520),
-    "p-az-c": (1215, 950, 545, 520),
-    "dr-az-a": (1940, 950, 320, 520),
-    "dr-multi-az-lane": (2280, 950, 320, 520),
-    "dr-az-c": (2620, 950, 320, 520),
-    "p-2a-public": (290, 1010, 475, 130),
-    "p-2a-private": (290, 1150, 475, 150),
-    "p-2a-database": (290, 1310, 475, 130),
-    "p-2c-public": (1235, 1010, 505, 130),
-    "p-2c-private": (1235, 1150, 505, 150),
-    "p-2c-database": (1235, 1310, 505, 130),
-    "dr-1a-public": (1955, 1010, 290, 130),
-    "dr-1a-private": (1955, 1150, 290, 150),
-    "dr-1a-database": (1955, 1310, 290, 130),
-    "dr-1c-public": (2635, 1010, 290, 130),
-    "dr-1c-private": (2635, 1150, 290, 150),
-    "dr-1c-database": (2635, 1310, 290, 130),
-    "dr-data": (1960, 1475, 950, 225),
-    "dr-s3": (1930, 650, 190, 145),
-    "dr-note": (2160, 655, 780, 130),
-    "p-alb": (815, 1005, 180, 150),
-    "p-eks": (815, 1180, 180, 150),
-    "pod-identity": (1005, 1180, 180, 150),
-    "argocd": (1005, 1340, 180, 115),
-    "p-bastion": (595, 1015, 160, 120),
-    "dr-alb": (2340, 1005, 200, 150),
-    "dr-eks": (2340, 1180, 200, 150),
-    "dr-bastion": (2085, 1015, 150, 120),
-    "dr-rds": (2010, 1530, 190, 165),
-    "dr-valkey": (2320, 1530, 190, 165),
-    "dr-efs": (2630, 1530, 190, 165),
-    "ecr": (270, 650, 190, 145),
-    "p-s3": (500, 650, 190, 145),
+    # V6 geometry stays fixed. Only small baseline and height corrections are allowed.
+    "dr-s3": (2080, 650, 190, 150),
+    "ecr": (270, 650, 190, 150),
+    "p-s3": (500, 650, 190, 150),
+    "p-alb": (910, 1005, 180, 155),
+    "p-eks": (910, 1180, 180, 150),
+    "pod-identity": (1100, 1180, 180, 150),
+    "dr-alb": (2420, 1005, 180, 155),
+    "dr-eks": (2420, 1180, 180, 150),
     "p-rds": (550, 1530, 200, 165),
     "p-valkey": (990, 1530, 200, 165),
     "p-efs": (1430, 1530, 200, 165),
@@ -137,19 +105,19 @@ GEOMETRY = {
 
 
 EDGE_POINTS = {
-    "e-cf-alb": [(550, 505), (905, 505), (905, 940)],
-    "e-argo-peks": [(1000, 1398), (1000, 1255)],
-    "e-ssm-pbastion": [(1190, 500), (220, 500), (220, 930), (675, 930)],
-    "e-ssm-drbastion": [(1190, 500), (1855, 500), (1855, 930), (2160, 930)],
-    "e-iam-pod": [(970, 520), (1095, 520), (1095, 1170)],
-    "e-pbastion-peks": [(790, 1075), (790, 1277), (805, 1277)],
-    "e-drbastion-dreks": [(2268, 1075), (2268, 1253), (2330, 1253)],
-    "e-peks-data": [(905, 1515), (650, 1515)],
-    "e-rds-replication": [(650, 1720), (2105, 1720)],
-    "e-s3-replication": [(595, 815), (2025, 815)],
-    "e-repo-argo": [(1205, 860), (1205, 1398), (1195, 1398)],
-    "e-operator-bastion": [(400, 995), (400, 930), (675, 930)],
-    "e-ecr-peks": [(365, 825), (790, 825), (790, 1221), (805, 1221)],
+    "e-cf-alb": [(550, 505), (1000, 505), (1000, 940)],
+    "e-argo-peks": [(1095, 1398), (1095, 1255)],
+    "e-ssm-pbastion": [(1190, 500), (220, 500), (220, 930), (730, 930)],
+    "e-ssm-drbastion": [(1190, 500), (2005, 500), (2005, 930), (2250, 930)],
+    "e-iam-pod": [(970, 520), (1190, 520), (1190, 1170)],
+    "e-pbastion-peks": [(850, 1075), (895, 1075), (895, 1277)],
+    "e-drbastion-dreks": [(2360, 1075), (2380, 1075), (2380, 1253), (2400, 1253)],
+    "e-peks-data": [(991, 1515), (650, 1515)],
+    "e-rds-replication": [(650, 1720), (2240, 1720)],
+    "e-s3-replication": [(595, 815), (2175, 815)],
+    "e-repo-argo": [(1310, 860), (1310, 1398), (1290, 1398)],
+    "e-operator-bastion": [(400, 995), (400, 930), (730, 930)],
+    "e-ecr-peks": [(365, 825), (875, 825), (875, 1221), (900, 1221)],
 }
 
 
@@ -235,34 +203,49 @@ def main() -> None:
 
     for cell_id in SERVICE_IDS:
         cell = cell_map[cell_id]
-        update_style(cell, fontSize=26, imageWidth=88, imageHeight=88)
-        cell.set("value", bump_html_sizes(cell.get("value", ""), {23: 26, 22: 25, 18: 20, 17: 19}))
+        update_style(cell, fontSize=25, imageWidth=82, imageHeight=82)
+        cell.set("value", bump_html_sizes(cell.get("value", ""), {23: 25, 22: 24, 18: 19, 17: 18}))
 
-    # The two Bastion cells are intentionally narrower than other service cells.
-    for cell_id in {"p-bastion", "dr-bastion"}:
-        update_style(cell_map[cell_id], imageWidth=82, imageHeight=82, fontSize=24)
+    # Compact cells need extra headroom for their captions.
+    for cell_id in {"acm", "waf", "p-bastion", "dr-bastion"}:
+        update_style(cell_map[cell_id], imageWidth=70, imageHeight=70, fontSize=24)
 
     for cell_id in SUBNET_IDS:
         cell = cell_map[cell_id]
-        update_style(cell, fontSize=27, imageWidth=36, imageHeight=36, spacingLeft=54)
-        cell.set("value", bump_html_sizes(cell.get("value", ""), {23: 25, 22: 24, 18: 20, 17: 19}))
+        update_style(cell, fontSize=26, imageWidth=34, imageHeight=34, spacingLeft=52)
+        mapping = {22: 23, 18: 18, 17: 18} if cell_id.startswith("dr-") else {23: 24, 18: 19}
+        cell.set("value", bump_html_sizes(cell.get("value", ""), mapping))
 
     # Reserve the right side of the 2a / 1a public subnet labels for Bastion icons.
     update_style(cell_map["p-2a-public"], spacingRight=175)
-    update_style(cell_map["dr-1a-public"], spacingRight=120)
 
     for cell_id in REGION_VPC_IDS:
         cell = cell_map[cell_id]
         update_style(cell, fontSize=28, imageWidth=36, imageHeight=36, spacingLeft=54)
-        cell.set("value", bump_html_sizes(cell.get("value", ""), {32: 35, 20: 22}))
+        cell.set("value", bump_html_sizes(cell.get("value", ""), {32: 34, 20: 21}))
 
-    for cell_id in SECTION_IDS:
+    for cell_id in {"edge-zone", "primary-regional-services", "dr-regional-services", "observability", "local-tools"}:
         cell = cell_map[cell_id]
         update_style(cell, fontSize=26)
         cell.set(
             "value",
-            bump_html_sizes(cell.get("value", ""), {29: 31, 26: 29, 24: 26, 22: 24, 20: 22, 19: 21, 18: 20}),
+            bump_html_sizes(cell.get("value", ""), {29: 31, 26: 28, 24: 26, 19: 20, 18: 19}),
         )
+
+    for cell_id in {"p-az-a", "p-az-c", "dr-az-a", "dr-az-c"}:
+        cell = cell_map[cell_id]
+        update_style(cell, fontSize=25)
+        cell.set("value", bump_html_sizes(cell.get("value", ""), {24: 25}))
+
+    for cell_id in {"p-multi-az-lane", "dr-multi-az-lane"}:
+        cell = cell_map[cell_id]
+        update_style(cell, fontSize=23)
+        cell.set("value", bump_html_sizes(cell.get("value", ""), {22: 23, 18: 19}))
+
+    for cell_id in {"primary-data", "dr-data"}:
+        cell = cell_map[cell_id]
+        update_style(cell, fontSize=22)
+        cell.set("value", bump_html_sizes(cell.get("value", ""), {20: 22, 18: 19}))
 
     for cell_id in NOTE_IDS:
         cell = cell_map[cell_id]
@@ -279,7 +262,7 @@ def main() -> None:
     lifecycle.set("value", bump_html_sizes(lifecycle.get("value", ""), {30: 32, 22: 23}))
 
     for edge in root.findall(".//mxCell[@edge='1']"):
-        update_style(edge, fontSize=21, labelBackgroundColor="#FFFFFF")
+        update_style(edge, fontSize=20, labelBackgroundColor="#FFFFFF")
 
     for edge_id, points in EDGE_POINTS.items():
         set_edge_points(cell_map[edge_id], points)
@@ -307,7 +290,9 @@ def main() -> None:
             raise AssertionError(f"dangling edge: {edge.get('id')}")
 
     ET.indent(tree, space="  ")
-    tree.write(TARGET, encoding="utf-8", xml_declaration=True)
+    # Binary output keeps LF line endings so Git does not flag Windows CR as trailing whitespace.
+    with TARGET.open("wb") as stream:
+        tree.write(stream, encoding="utf-8", xml_declaration=True)
     print(f"WROTE {TARGET}")
     print(f"VALIDATED {len(after_vertices)} vertices / {len(after_edges)} edges")
 
