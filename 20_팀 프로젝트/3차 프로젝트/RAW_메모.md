@@ -97,3 +97,13 @@ PPT 발표함.
 시큐리티 오케스트레이션 SOAR?
 셔플, 와주? SIEM? 
 클라우드 네이ㅂ티브? CNAPP? 클러스터 관리/계정,권한/???? 이 3개를 관리. 이 개념은 나온지 좀 됨. 이걸 젣로 다루는 기업은 별로 없다고 함. 관련된 솔루션중 가장 쓰이는건 트렌드 마이크로. 여기서 CNAPP 개념을 도입. 근데 잘 쓰진 않는다고 함. 클라우드에서 가장 중요한게 IAM이다보니깐 쓰기 시작했다 함. 시간이 남으면 생각 해봐라.
+
+# 8.12
+
+### 13:19
+
+- Gate 2: 공격 Coverage와 Evidence 문서화를 완료하고 `5570752`로 `origin/main`에 Push했다.
+- Gate 3 Negative Control: `capital-one-negative-20260812T034935Z`에서 `terra-user`의 정상 S3 `GetObject` 1건과 CloudTrail 1건을 확인했다. Karpenter Role은 제외됐고 Alarm은 `OK`, 상태 갱신 시각은 변하지 않았다.
+- 문제·보정: CWLI Query의 Windows 한글 주석 Encoding과 CloudWatch 전달 지연을 고려하지 않은 조회 시간창 문제를 수정했다. Resume 경로로 검증해 S3 요청은 중복 실행하지 않았다.
+- 미적용 상태: Capital One Alarm Description의 `severity/action/actor/object/verdict` 보강 Source와 Fresh Plan이 있다. Plan 범위는 Alarm Description 1개 In-place Update이며 Terraform Apply는 하지 않았다.
+- 중단 지점: 이번 변경 14개 파일이 미커밋이며 전체 회귀 Test·최종 Diff 검토·Commit은 남아 있다. `capital-one-lab` Session은 Active, Watchdog Scheduled Task는 `Ready`, Hard Deadline은 22:00 KST다.
