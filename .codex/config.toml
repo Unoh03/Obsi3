@@ -1,3 +1,3 @@
-model_reasoning_summary = "detailed"
+model_reasoning_summary = "none"
 [sandbox_workspace_write]
 network_access = true
