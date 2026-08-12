@@ -107,3 +107,10 @@ PPT 발표함.
 - 문제·보정: CWLI Query의 Windows 한글 주석 Encoding과 CloudWatch 전달 지연을 고려하지 않은 조회 시간창 문제를 수정했다. Resume 경로로 검증해 S3 요청은 중복 실행하지 않았다.
 - 미적용 상태: Capital One Alarm Description의 `severity/action/actor/object/verdict` 보강 Source와 Fresh Plan이 있다. Plan 범위는 Alarm Description 1개 In-place Update이며 Terraform Apply는 하지 않았다.
 - 중단 지점: 이번 변경 14개 파일이 미커밋이며 전체 회귀 Test·최종 Diff 검토·Commit은 남아 있다. `capital-one-lab` Session은 Active, Watchdog Scheduled Task는 `Ready`, Hard Deadline은 22:00 KST다.
+
+### 16:31
+
+- 확인: 보고서용 `report-assets\observability`는 문서에 권장 경로만 있었고 실제 폴더는 없었다. 실험별 JSON·Log Bundle은 남아 있으며 기존 화면 캡처는 `C:\Users\Unoh\Pictures\Screenshots`에 날짜형 파일명으로 섞여 있다.
+- 결정: WAF Live Viewer와 Local Grafana는 SIEM·SOAR 중심 관제를 알기 전에 개별 조회·시각화로 관제를 구현하려 한 초기 프로토타입으로 기록한다. 삭제하지 않고 시행착오·발전 과정 Evidence로 보존하되, Wazuh 검증 뒤 최종 관제의 핵심 경로에서는 제외한다.
+- 이미지 관리: 앞으로 보고서용 자산의 실제 저장 위치를 Evidence Index에 기록한다. 사용자 제공 이미지는 먼저 `00_inbox`에 원본으로 보존하고, 필요한 파일만 내용을 확인해 항목별 폴더로 선별한다.
+- 다음: Wazuh는 Docker·WSL 2·`vm.max_map_count` Preflight와 Local single-node 기동·재시작 보존 검증부터 시작한다. 이 검증 전에는 AWS IAM과 Terraform Apply를 진행하지 않는다.
