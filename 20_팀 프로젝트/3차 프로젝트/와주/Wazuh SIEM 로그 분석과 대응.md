@@ -253,16 +253,98 @@ Wazuh 공식 문서도 Raw Archive가 Rule 발생 여부와 관계없이 Wazuh�
 - S3 원본의 Lifecycle은 이번 Local Wazuh 변경과 섞지 않고 별도로 검토한다.
 - `docker compose down -v`, Volume 삭제, 과거 전체 `reparse`는 실행하지 않는다.
 
-7일 삭제 정책부터 먼저 만들지 않는다. 아직 Archive Index가 없으므로 다음 순서로 실제 문서 구조와 하루 증가량을 확인한 뒤 적용한다.
+### 영구 설정 구성
+
+Raw Archive를 Dashboard에서 검색하려면 서로 다른 두 스위치가 모두 필요하다.
+
+| 설정 | 역할 |
+|---|---|
+| Manager `<logall_json>yes</logall_json>` | Wazuh가 받은 모든 Event를 `archives.json`으로 기록 |
+| Filebeat `archives.enabled: true` | `archives.json`을 Local Wazuh Indexer의 `wazuh-archives-*`로 전달 |
+
+Manager 설정은 기존 파일의 다른 내용을 유지하고 `<logall_json>` 값만 `no`에서 `yes`로 변경했다. 일반 텍스트 중복 저장을 피하기 위해 `<logall>`은 `no`로 유지했다.
+
+![[Pasted image 20260813145759.png]]
+
+Filebeat는 Docker 내부 파일을 직접 고치지 않았다. 컨테이너를 다시 만들 때 설정이 초기값으로 돌아가는 것을 막기 위해 Wazuh 4.14.7 기본 파일을 Host의 `single-node/config/filebeat.yml`로 복사하고 Archive만 활성화했다.
+
+![[Pasted image 20260813150146.png]]
+
+Compose에는 두 Host 설정을 시작 시 사용하는 Bind Mount를 구성했다.
 
 ```text
-1. logall_json과 Filebeat Archive를 영구 설정
-2. Manager만 재생성
-3. 새 통제 Event 1회 수집
-4. Raw Event와 Custom Alert 동시 확인
-5. Archive Index 크기와 하루 증가량 기록
-6. 7일 Retention 적용 및 검증
+config/wazuh_cluster/wazuh_manager.conf
+→ /wazuh-config-mount/etc/ossec.conf
+→ 시작 과정에서 /var/ossec/etc/ossec.conf에 반영
+
+config/filebeat.yml
+→ /var/ossec/data_tmp/exclusion/etc/filebeat/filebeat.yml
+→ 시작 과정에서 /etc/filebeat/filebeat.yml에 반영
 ```
 
-이 순서는 원문 보관을 무제한으로 방치하지 않으면서, 잘못된 Retention 조건으로 실습 Evidence를 먼저 삭제하는 것도 막는다.
-![[Pasted image 20260813145759.png]]![[Pasted image 20260813150146.png]]
+AWS Credential Mount, `wazuh_etc`, `wazuh_logs`, `filebeat_etc`, Indexer Data Volume은 그대로 유지했다. Compose 문법 검사와 최종 Mount 해석을 통과한 뒤 다음 명령으로 Manager만 재생성했다.
+
+```powershell
+docker compose up -d --no-deps --force-recreate wazuh.manager
+```
+
+`--no-deps`는 Indexer와 Dashboard를 재생성하지 않고, `--force-recreate`는 변경한 Bind Mount를 Manager Container에 적용한다. 이 작업은 Named Volume을 삭제하지 않는다.
+
+### 첫 적용 실패와 원인
+
+첫 번째 재생성 명령은 `Started`로 끝났지만 Runtime을 확인하자 완전한 성공이 아니었다.
+
+```text
+Host wazuh_manager.conf: logall_json=yes
+Runtime ossec.conf:      logall_json=no
+Runtime Filebeat:        archives.enabled=true
+archives.json:           없음
+```
+
+`Started`는 Container Process가 시작됐다는 뜻일 뿐, 의도한 두 설정이 모두 반영됐다는 증거는 아니었다. `docker inspect`와 Compose를 대조한 결과, 편집 과정에서 기존 Manager 설정 Bind 한 줄이 빠져 있었다.
+
+```yaml
+- ./config/wazuh_cluster/wazuh_manager.conf:/wazuh-config-mount/etc/ossec.conf
+```
+
+그 결과 Filebeat 설정만 연결되고 Manager는 `wazuh_etc` Volume에 남아 있던 이전 `logall_json=no` 설정으로 시작했다. 누락된 Bind를 복구하고 Compose 문법과 두 Mount를 다시 확인한 뒤 Manager를 한 번 더 재생성했다.
+
+### 복구 후 Runtime 검증
+
+두 번째 재생성 뒤 Host 파일이 아니라 **실행 중 Container와 Local Indexer**를 직접 확인했다.
+
+| 검증 항목 | 실제 결과 |
+|---|---|
+| `wazuh.manager` 상태 | `Up` |
+| Runtime `<logall_json>` | `yes` |
+| Runtime `archives.enabled` | `true` |
+| 전체 Ruleset 정적 검사 | `analysisd_exit=0` |
+| Filebeat → Local Indexer 연결 | TLS·Connection·Server 응답 `OK`, `filebeat_exit=0` |
+| Local Raw 파일 | `archives.json` 생성, 적용 직후 `732,248 bytes` |
+| 일반 텍스트 Raw 파일 | `archives.log`는 `0 bytes` — 의도한 중복 방지 결과 |
+| Local Archive Index | `wazuh-archives-4.x-2026.08.13` 생성 |
+| 적용 직후 Index 상태 | `195 documents`, `673 KB` |
+
+따라서 다음 경로는 Runtime으로 확인됐다.
+
+```text
+Wazuh가 받은 Event
+→ archives.json 기록
+→ Filebeat 전달
+→ Local wazuh-archives-* 색인
+```
+
+> [!important] 증명 범위
+> 이 결과는 Raw Archive 저장·색인 경로가 실제로 열렸다는 증거다. 현재 195건이 Capital One 대표 공격 Event이거나 Rule `100100` Alert라는 뜻은 아니다. 대표 시나리오의 Runtime 증명은 새 통제 Event를 한 번 발생시켜 Raw Event와 Custom Alert를 함께 확인해야 완성된다.
+
+### 다음 작업
+
+```text
+1. Dashboard에 wazuh-archives-* Index Pattern 생성 — 시간 필드는 timestamp
+2. 새 통제 Event 1회 실행
+3. 같은 Event의 Raw 문서와 Rule 100100 Alert 동시 확인
+4. Archive Index의 하루 증가량 기록
+5. 7일 Retention 적용 및 검증
+```
+
+Retention부터 먼저 만들지 않는다. 실제 문서와 증가량을 확인한 뒤 적용해, 잘못된 조건으로 실습 Evidence를 먼저 삭제하는 일을 막는다.
