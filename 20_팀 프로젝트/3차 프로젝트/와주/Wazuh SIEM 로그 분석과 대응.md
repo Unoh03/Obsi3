@@ -337,15 +337,51 @@ Wazuh가 받은 Event
 > [!important] 증명 범위
 > 이 결과는 Raw Archive 저장·색인 경로가 실제로 열렸다는 증거다. 현재 195건이 Capital One 대표 공격 Event이거나 Rule `100100` Alert라는 뜻은 아니다. 대표 시나리오의 Runtime 증명은 새 통제 Event를 한 번 발생시켜 Raw Event와 Custom Alert를 함께 확인해야 완성된다.
 
-### 다음 작업
+### Archive Index Pattern 생성·조회 검증
 
-```text
-1. Dashboard에 wazuh-archives-* Index Pattern 생성 — 시간 필드는 timestamp
-2. 새 통제 Event 1회 실행
-3. 같은 Event의 Raw 문서와 Rule 100100 Alert 동시 확인
-4. Archive Index의 하루 증가량 기록
-5. 7일 Retention 적용 및 검증
-```
+Raw Archive가 Local Indexer에 생성된 뒤, Dashboard에서 직접 검색할 수 있도록
+`Dashboard management → Index patterns`로 이동했다.
 
-Retention부터 먼저 만들지 않는다. 실제 문서와 증가량을 확인한 뒤 적용해, 잘못된 조건으로 실습 Evidence를 먼저 삭제하는 일을 막는다.
-![[Pasted image 20260813153941.png]]![[Pasted image 20260813154017.png]]![[Pasted image 20260813154057.png]]![[Pasted image 20260813154205.png]]![[Pasted image 20260813154234.png]]
+![[Pasted image 20260813153941.png]]
+
+Index Pattern 목록에서 `wazuh-archives-*`가 생성된 것을 확인했다.
+
+![[Pasted image 20260813154017.png]]
+
+Pattern의 시간 필드는 `timestamp`로 설정됐다. 생성 직후 791개 Field가 인식됐으므로,
+Archive 문서를 시간 범위와 구조화 Field로 검색할 준비가 됐다.
+
+![[Pasted image 20260813154057.png]]
+
+`Explore → Discover`에서 `wazuh-archives-*`를 선택한 뒤 실제 Archive 문서가 조회되는지
+확인했다.
+
+![[Pasted image 20260813154205.png]]
+
+![[Pasted image 20260813154234.png]]
+
+| 검증 항목 | 실제 결과 |
+|---|---|
+| Index Pattern | `wazuh-archives-*` 생성 |
+| 시간 필드 | `timestamp` |
+| Discover Source | `wazuh-archives-*` 선택 |
+| 캡처 당시 조회 결과 | 최근 24시간 `950 hits` |
+
+> [!important] 증명 범위
+> 이 결과는 Wazuh가 받은 Raw Event를 Dashboard에서 검색할 수 있다는 증거다. `950 hits`가 Capital One 대표 공격 Event이거나 Rule `100100` Alert라는 뜻은 아니다. 공격과 탐지의 연결은 새 통제 Event의 동일한 CloudTrail `eventID`를 Raw Index와 Alert Index에서 함께 확인해야 증명된다.
+
+### 현재 위치와 다음 작업
+
+- [x] Dashboard에 `wazuh-archives-*` Index Pattern 생성
+- [x] `timestamp` 시간 필드와 Discover 조회 확인
+- [ ] `minimal + capital-one-lab` Runtime에서 새 통제 Event 1회 실행
+- [ ] 같은 CloudTrail `eventID`의 Raw 문서와 Rule `100100`·Level 12 Alert 동시 확인
+- [ ] Archive Index의 하루 증가량 기록
+- [ ] 7일 Retention 적용 및 검증
+
+기존 `minimal + hardened` Session에서는 Capital One Runner의 사전 검사가 실행을
+거부했으므로 공격 Event가 생성되지 않았다. 해당 Runtime의 Daily Down은 완료했고,
+현재는 `minimal + capital-one-lab` Fresh Plan을 검토하는 단계다.
+
+Retention부터 먼저 만들지 않는다. 실제 통제 Event와 하루 증가량을 확인한 뒤 적용해,
+잘못된 조건으로 실습 Evidence를 먼저 삭제하는 일을 막는다.
