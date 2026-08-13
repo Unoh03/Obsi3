@@ -456,27 +456,117 @@ DVWA Cookie, 명령 응답은 출력하거나 Evidence에 저장하지 않으며
 > [!warning] 시나리오의 정확한 표현
 > DVWA에는 별도의 SSRF 실습 Module이 없으므로, 이 스크립트는 **Command Injection을 진입점으로 서버에서 IMDS 요청을 실행**한다. 따라서 Capital One 사고를 그대로 재현한 SSRF 공격이 아니라, `웹 취약점 → IMDS Credential 탈취 → S3 접근` 경로를 프로젝트 환경에 맞게 각색한 **Capital One 기반 검증 시나리오**라고 설명한다.
 
-> [!tip] 앞으로 남길 핵심 화면
-> 준비 성공 화면 자체보다 `공격 성공`, `Alarm 전환`, `같은 eventID의 Raw Event`, `Rule 100100·Level 12 Alert`가 핵심 증거다. 이 네 장면이 “공격이 기록되고 SIEM이 해석해 경보로 만들었다”는 주장을 연결한다.
+> [!tip] 핵심 증거 구성
+> `공격 성공`, `Alarm 전환`, `같은 eventID의 Raw Event`, `Rule 100100·Level 12 Alert`를 차례로 연결한다. 한 화면만으로 모든 단계를 증명했다고 표현하지 않는다.
 
-### 4.5 현재 위치와 다음 작업
+### 4.5 Runtime 실행 및 Alarm 확인
+
+2026-08-13에 새 TAKE `capital-one-20260813T082735Z`를 실행했다. Preview에서 Runtime,
+가짜 Object, Hash, Alarm의 시작 상태가 모두 계약과 일치한 뒤 정확한 승인 문구로 통제
+공격을 실행했다.
+
+![[Pasted image 20260813174238.png]]
+
+| 검증 항목 | 실제 결과 |
+|---|---|
+| Runtime | `minimal + capital-one-lab` |
+| IMDS Role 발견 | `aws-topology-primary-karpenter-node` 일치 |
+| 임시 Credential 획득 | 성공, 값은 출력·저장하지 않음 |
+| 고정 가짜 S3 Object 읽기 | 성공 |
+| Marker / Row | `FAKE_TRAINING_DATA` / 5 |
+| Content SHA-256 | 준비 단계의 고정 Hash와 일치 |
+| CloudWatch Alarm | `OK`에서 새 `ALARM`으로 전환 |
+| Alarm 전환 시각 | `2026-08-13 17:34:53 KST` |
+| Sanitized Record | `C:\Users\Unoh\Documents\aws-topology-evidence\capital-one-20260813T082735Z\source\client\capital-one-baseline.json` |
+
+> [!important] 이 화면이 증명하는 것
+> Runner가 의도한 공격 경로로 가짜 S3 데이터를 읽고 CloudWatch Alarm 전환까지 확인했다. Wazuh가 같은 Event를 수집·판정했다는 증거는 다음 Alert 결과로 별도 확인한다.
+
+### 4.6 Wazuh Custom Alert 확인
+
+CloudTrail 파일 전달 뒤 Wazuh가 같은 `GetObject` Event를 수집했고, Custom Rule
+`100100`이 Level 12 Alert로 판정했다. 첨부한 Alert JSON의 안전한 핵심 Field만 대조한
+결과는 다음과 같다.
+
+| Field | 확인값 |
+|---|---|
+| Alert Index | `wazuh-alerts-4.x-2026.08.13` |
+| Wazuh Alert 시각 | `2026-08-13 17:37:28 KST` |
+| Rule | `100100` |
+| Level | 12 |
+| Description | `CAPITAL-ONE: Karpenter node role successfully read the protected validation object.` |
+| Event | `GetObject` |
+| CloudTrail `eventID` | `ca03bf0a-35bb-46b8-a587-21626c8ada4e` |
+| Actor Role | `aws-topology-primary-karpenter-node` |
+| Object Key | `validation/capital-one-demo.csv` |
+| HTTP Status | 200 |
+| Location | `Wazuh-AWS` |
+
+Manager의 `archives.json`과 `alerts.json`에서도 동일한 `eventID`가 각각 확인됐다. 즉
+다음 연결은 실제 Runtime에서 닫혔다.
+
+```text
+DVWA 통제 공격
+→ IMDS Credential 획득
+→ S3 GetObject 성공
+→ CloudTrail 기록
+→ Wazuh Raw Archive 수집
+→ Rule 100100·Level 12 Alert 생성
+```
+
+다만 보고서용 화면 증거는 아직 `wazuh-archives-*`에서 동일한 `eventID`의 Raw 문서를
+직접 연 화면과 `wazuh-alerts-*`의 Alert 화면을 각각 캡처해야 한다. 전체 JSON에는 Account,
+Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으므로 원문을 그대로
+보고서에 붙이지 않는다.
+
+### 4.7 찾기 어려웠던 이유와 영구 개선
+
+이번 Alert가 없었던 것이 아니라 기본 화면과 Custom Rule의 분류가 맞지 않았다.
+
+1. `TakeId`는 프로젝트 실행 기록에만 존재하며 CloudTrail과 Wazuh Event에는 자동으로
+   들어가지 않으므로 Wazuh에서 `TakeId`로 검색할 수 없다.
+2. `Amazon Web Services → Events` 화면은 `rule.groups: amazon`을 고정 적용한다.
+3. 현재 Rule `100100`의 Group에는 `aws`, `aws_cloudtrail`, `capital_one` 등이 있지만
+   `amazon`은 없어 AWS 전용 화면에서 숨겨진다.
+4. 일반 사용자는 Field 이름과 검색 문법을 알아야 해서 기본 UI만으로 사건을 찾기 어렵다.
+
+따라서 다음 두 개선을 Wazuh 사용성 작업으로 진행한다.
+
+- [ ] Rule `100100`에 `amazon` Group을 추가해 향후 Alert가 AWS 전용 화면에도 나타나는지 검증
+- [ ] `Capital One 탐지 현황` Saved View 또는 Dashboard를 만들어 검색식 없이 사건을 확인
+
+초보자용 화면에는 최소한 다음 정보만 한글로 먼저 보여준다.
+
+```text
+무슨 일?    보호된 S3 실습 파일을 Node Role이 읽음
+위험도      높음
+공격 경로   웹 취약점 → IMDS → Node Role → S3
+탐지 상태   Rule 100100 경보 생성
+다음 조치   승인된 대응 Playbook 실행
+```
+
+> [!note] Rule 파일의 지속성
+> 현재 `capital_one_rules.xml`은 Docker Named Volume `wazuh_etc`에 저장된다. 일반적인 Container 중지·재시작·재생성에서는 유지되지만 `docker compose down -v`처럼 Volume을 삭제하면 사라진다. 최종 재현성을 위해서는 Host 관리 파일 또는 설치 절차로 별도 보존해야 한다.
+
+### 4.8 현재 위치와 다음 작업
 
 - [x] Dashboard에 `wazuh-archives-*` Index Pattern 생성
 - [x] `timestamp` 시간 필드와 Discover 조회 확인
 - [x] `minimal + capital-one-lab` Runtime Apply 및 사전 조건 확인
 - [x] 고정된 가짜 S3 Object 준비 및 검증
-- [ ] `Invoke-CapitalOneBaseline.ps1` Preview 확인
-- [ ] 새 통제 공격 Event 1회 실행
-- [ ] 같은 CloudTrail `eventID`의 Raw 문서와 Rule `100100`·Level 12 Alert 동시 확인
+- [x] `Invoke-CapitalOneBaseline.ps1` Preview 확인
+- [x] 새 통제 공격 Event 1회 실행
+- [x] Rule `100100`·Level 12 Alert 확인
+- [x] Manager Local Raw·Alert에서 동일한 CloudTrail `eventID` 확인
+- [ ] Dashboard에서 같은 `eventID`의 Raw 문서 화면 캡처
 - [ ] 정상적인 S3 조회가 같은 Rule에 걸리지 않는지 오탐 확인
+- [ ] Rule의 `amazon` Group 및 초보자용 Saved View·Dashboard 구현
 - [ ] Archive Index의 하루 증가량 기록
 - [ ] 7일 Retention 적용 및 검증
 
-기존 `minimal + hardened` Session에서는 Capital One Runner의 사전 검사가 실행을
-거부했으므로 공격 Event가 생성되지 않았다. 해당 Runtime의 Daily Down을 완료한 뒤,
-현재는 `minimal + capital-one-lab` Runtime을 새로 Apply하고 가짜 실습 데이터까지
-준비했다. 다음 단계는 Baseline Preview로 최종 조건을 확인하는 것이다.
+기존 `minimal + hardened` Session에서는 Capital One Runner의 사전 검사가 공격 전에
+실행을 거부했다. 이후 `minimal + capital-one-lab` Runtime에서 새 TAKE를 수행해 공격,
+AWS Alarm, Wazuh 수집과 Custom Alert까지 확인했다.
 
-Retention부터 먼저 만들지 않는다. 실제 통제 Event와 하루 증가량을 확인한 뒤 적용해,
-잘못된 조건으로 실습 Evidence를 먼저 삭제하는 일을 막는다.
-![[Pasted image 20260813174238.png]]
+Retention부터 먼저 만들지 않는다. 실제 하루 증가량을 확인한 뒤 적용해, 잘못된 조건으로
+실습 Evidence를 먼저 삭제하는 일을 막는다.
