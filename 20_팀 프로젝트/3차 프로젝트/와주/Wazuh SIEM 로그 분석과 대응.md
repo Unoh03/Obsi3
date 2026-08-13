@@ -370,18 +370,112 @@ Archive 문서를 시간 범위와 구조화 Field로 검색할 준비가 됐다
 > [!important] 증명 범위
 > 이 결과는 Wazuh가 받은 Raw Event를 Dashboard에서 검색할 수 있다는 증거다. `950 hits`가 Capital One 대표 공격 Event이거나 Rule `100100` Alert라는 뜻은 아니다. 공격과 탐지의 연결은 새 통제 Event의 동일한 CloudTrail `eventID`를 Raw Index와 Alert Index에서 함께 확인해야 증명된다.
 
-### 현재 위치와 다음 작업
+## 4. 새 통제 Event 실행 준비
+
+### 4.1 왜 새 Event가 필요한가
+
+기존 대표 공격은 Wazuh Archive 수집을 활성화하기 전에 실행했다. CloudTrail 원본이 S3에
+남아 있더라도, 지금 만들려는 증거는 **같은 한 번의 공격이 Wazuh에서 Raw Event와
+Alert로 함께 보이는지**를 확인하는 것이다. 따라서 현재 구성에서 새 통제 Event를 한 번
+실행하고, 실제 CloudTrail `eventID`를 기준으로 두 결과를 연결한다.
+
+```text
+통제 공격 1회
+→ CloudTrail이 S3 GetObject 기록
+→ Wazuh가 CloudTrail 원본 수집
+→ Raw Event를 Archive Index에 보존
+→ Custom Rule 100100이 같은 Event를 Level 12 Alert로 판정
+→ 동일한 eventID로 원본과 경보를 대조
+```
+
+`ExperimentId`와 `TakeId`는 실행 기록을 구분하기 위한 프로젝트용 이름이다. 이 값이
+CloudTrail Event에 자동으로 들어가는 것은 아니므로, 먼저 실행 시각으로 범위를 좁힌 뒤
+CloudTrail의 실제 `eventID`를 찾아야 한다.
+
+### 4.2 두 스크립트의 역할
+
+| 스크립트 | 역할 | 실제 공격 여부 |
+|---|---|---|
+| `Prepare-CapitalOneDemoData.ps1` | 탈취 대상으로 사용할 고정된 가짜 CSV를 S3에 준비하고 내용·메타데이터를 검증 | 공격 아님 |
+| `Invoke-CapitalOneBaseline.ps1` | DVWA에서 시작해 IMDS 자격 증명을 얻고 고정된 S3 객체를 읽는 통제 공격을 실행 | 정확한 승인 문구를 넣었을 때만 실행 |
+
+첫 번째 스크립트는 **안전한 실습용 데이터 준비**, 두 번째 스크립트는 **탐지 경로를
+검증할 공격 Event 생성**을 담당한다. 둘을 나눈 이유는 공격을 다시 촬영하더라도 매번
+같은 가짜 데이터와 같은 판정 기준을 사용할 수 있게 하기 위해서다.
+
+### 4.3 `Prepare-CapitalOneDemoData.ps1`
+
+이 스크립트는 다음 조건을 먼저 확인한다.
+
+- 현재 AWS Account와 `capital-one-lab` Security Profile이 맞는지
+- Foundation의 S3 Data Event 기록이 활성화됐는지
+- Terraform이 만든 대상 S3 Bucket을 찾을 수 있는지
+- 외부에서 주입된 임시 AWS Credential 환경 변수가 없는지
+
+조건이 맞으면 `validation/capital-one-demo.csv`에 `FAKE_TRAINING_DATA` Marker가 포함된
+5행짜리 가짜 CSV를 올린다. 업로드 후에는 Row 수와 SHA-256, S3 Object Metadata를 다시
+읽어 예상한 파일이 맞는지 검증한다. 실제 Bucket 이름과 Credential은 기록 파일에
+남기지 않는다.
+
+처음 실행은 Preview만 보여주고 중단된다. 출력 내용을 확인한 뒤 정확한
+`-ConfirmRun 'PREPARE CAPITAL ONE DATA'`를 넣어야 실제 업로드가 수행된다.
+
+#### 이번 실행 결과
+
+| 항목 | 결과 |
+|---|---|
+| 고정 Object Key | `validation/capital-one-demo.csv` |
+| Training Marker | `FAKE_TRAINING_DATA` |
+| Row 수 | 5 |
+| Content SHA-256 | `625dad237e31a1ba4c6de1b0bf0153c2f62e56f5b6a18d97242d4c41665a4d9e` |
+| Sanitized Record | `C:\Users\Unoh\Documents\aws-topology-evidence\preparation\capital-one-demo-data.json` |
+
+### 4.4 `Invoke-CapitalOneBaseline.ps1`
+
+이 스크립트가 만드는 통제 공격 흐름은 다음과 같다.
+
+```text
+DVWA Command Injection
+→ DVWA Server가 IMDS에 요청
+→ Node Role 이름과 임시 Credential 획득
+→ 획득한 Role로 호출자 확인
+→ 고정된 가짜 S3 Object GetObject
+→ CloudWatch Alarm 전환 대기
+→ 민감정보를 제외한 실행 결과 저장
+```
+
+실행 전에는 Active Daily Session, `minimal + capital-one-lab`, 남은 실습 시간, IMDS Hop
+Limit, Node Role 경로, Pod Identity 비활성 상태, S3 Data Event, 탐지기와 Alarm 상태,
+가짜 Object의 Marker·Hash를 검사한다. 하나라도 실습 계약과 다르면 공격 전에 중단한다.
+
+첫 실행은 대상과 조건을 보여주는 Preview다. 실제 통제 공격은 정확한
+`-ConfirmRun 'RUN CAPITAL ONE BASELINE'`을 넣어야 시작된다. 획득한 임시 Credential과
+DVWA Cookie, 명령 응답은 출력하거나 Evidence에 저장하지 않으며, 종료 시 임시 파일과
+환경 변수를 정리한다.
+
+> [!warning] 시나리오의 정확한 표현
+> DVWA에는 별도의 SSRF 실습 Module이 없으므로, 이 스크립트는 **Command Injection을 진입점으로 서버에서 IMDS 요청을 실행**한다. 따라서 Capital One 사고를 그대로 재현한 SSRF 공격이 아니라, `웹 취약점 → IMDS Credential 탈취 → S3 접근` 경로를 프로젝트 환경에 맞게 각색한 **Capital One 기반 검증 시나리오**라고 설명한다.
+
+> [!tip] 앞으로 남길 핵심 화면
+> 준비 성공 화면 자체보다 `공격 성공`, `Alarm 전환`, `같은 eventID의 Raw Event`, `Rule 100100·Level 12 Alert`가 핵심 증거다. 이 네 장면이 “공격이 기록되고 SIEM이 해석해 경보로 만들었다”는 주장을 연결한다.
+
+### 4.5 현재 위치와 다음 작업
 
 - [x] Dashboard에 `wazuh-archives-*` Index Pattern 생성
 - [x] `timestamp` 시간 필드와 Discover 조회 확인
-- [ ] `minimal + capital-one-lab` Runtime에서 새 통제 Event 1회 실행
+- [x] `minimal + capital-one-lab` Runtime Apply 및 사전 조건 확인
+- [x] 고정된 가짜 S3 Object 준비 및 검증
+- [ ] `Invoke-CapitalOneBaseline.ps1` Preview 확인
+- [ ] 새 통제 공격 Event 1회 실행
 - [ ] 같은 CloudTrail `eventID`의 Raw 문서와 Rule `100100`·Level 12 Alert 동시 확인
+- [ ] 정상적인 S3 조회가 같은 Rule에 걸리지 않는지 오탐 확인
 - [ ] Archive Index의 하루 증가량 기록
 - [ ] 7일 Retention 적용 및 검증
 
 기존 `minimal + hardened` Session에서는 Capital One Runner의 사전 검사가 실행을
-거부했으므로 공격 Event가 생성되지 않았다. 해당 Runtime의 Daily Down은 완료했고,
-현재는 `minimal + capital-one-lab` Fresh Plan을 검토하는 단계다.
+거부했으므로 공격 Event가 생성되지 않았다. 해당 Runtime의 Daily Down을 완료한 뒤,
+현재는 `minimal + capital-one-lab` Runtime을 새로 Apply하고 가짜 실습 데이터까지
+준비했다. 다음 단계는 Baseline Preview로 최종 조건을 확인하는 것이다.
 
 Retention부터 먼저 만들지 않는다. 실제 통제 Event와 하루 증가량을 확인한 뒤 적용해,
 잘못된 조건으로 실습 Evidence를 먼저 삭제하는 일을 막는다.
