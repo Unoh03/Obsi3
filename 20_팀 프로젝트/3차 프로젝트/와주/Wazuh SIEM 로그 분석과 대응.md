@@ -54,6 +54,28 @@ CloudTrail
 
 Dashboard의 Geolocation Map은 CloudTrail Event에 포함된 Source IP 위치 집계다. 이를 공격 발생 지역이나 공격자 위치로 단정하지 않는다.
 
+### 과거 공격 Event를 먼저 찾는 이유
+
+Wazuh는 공격 시점에 실행 중이어야만 Event를 받는 실시간 Push 전용 구조가 아니다. 현재 구성은 Wazuh Manager가 Security Log S3의 CloudTrail Object를 Polling하며, 실제 수집 경계도 다음처럼 적용돼 있다.
+
+```text
+only_logs_after = 2026-AUG-12
+account = 프로젝트 AWS Account
+region = ap-northeast-2
+```
+
+따라서 Wazuh를 설치하기 전에 실행한 `capital-one-20260812T025054Z` Baseline도 해당 날짜의 CloudTrail Object가 보존돼 있다면 최초 Polling 때 수집 대상이었다. Dashboard의 시간 범위를 넓혀 이미 Indexer에 저장된 Event를 검색하는 작업은 로컬 Docker의 Wazuh Indexer를 조회하므로 AWS Logs Insights·Athena Query 비용을 발생시키지 않는다.
+
+반대로 `reparse` 또는 수집 DB 초기화 후 S3 Object를 다시 읽으면 S3 LIST·GET 요청과 중복 Alert가 발생할 수 있으므로 현재 단계에서는 실행하지 않는다. 다음 순서를 지킨다.
+
+```text
+기존 Wazuh Index에서 Baseline GetObject를 정확한 조건으로 검색
+→ 없으면 해당 시간대 CloudTrail Object가 Wazuh에 수집됐는지 확인
+→ 수집 누락이 확인된 경우에만 재수집 또는 새 TAKE 결정
+```
+
+처음 열어본 Karpenter `RunInstances` Dry Run Event는 Wazuh Field를 읽는 연습에는 유용하지만 대표 공격 Event가 아니다. Karpenter 비용 Guardrail은 별도 보강 목록으로 보내고, 이 문서에서는 Capital One Baseline의 S3 `GetObject`를 우선한다.
+
 > [!todo]
 > 보고서용으로 브라우저의 개인 탭이 보이지 않게 Dashboard 영역만 다시 캡처해 이곳에 추가한다.
 
@@ -80,3 +102,18 @@ Dashboard의 Geolocation Map은 CloudTrail Event에 포함된 Source IP 위치 �
 | 원본은 어디에 있는가? | `aws.log_info.log_file`, `aws.log_info.s3bucket` |
 
 모든 필드를 외우지 않고, 첫 Event 한 건을 위 질문에 맞춰 한국어로 해석하는 것부터 시작한다.
+
+### 첫 검색 대상
+
+새 공격을 실행하기 전에 기존 Baseline에서 다음 의미 조건을 모두 만족하는 Event를 찾는다. 실제 Dashboard Field Path는 검색 결과 JSON에서 확정한다.
+
+```text
+eventSource = s3.amazonaws.com
+eventName = GetObject
+actor = Primary Karpenter Node Role
+object key = validation/capital-one-demo.csv
+result = success
+time window = capital-one-20260812T025054Z
+```
+
+이 Event가 확인되면 새 공격 없이 Custom Rule 작성으로 진행한다. 확인되지 않을 때만 수집 범위와 Marker를 먼저 조사하고, 그 뒤 새 `TAKE_ID`로 통제된 재실행 여부를 결정한다.
