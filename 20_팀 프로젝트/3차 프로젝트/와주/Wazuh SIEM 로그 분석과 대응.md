@@ -502,8 +502,18 @@ CloudTrail 파일 전달 뒤 Wazuh가 같은 `GetObject` Event를 수집했고, 
 | HTTP Status | 200 |
 | Location | `Wazuh-AWS` |
 
-Manager의 `archives.json`과 `alerts.json`에서도 동일한 `eventID`가 각각 확인됐다. 즉
-다음 연결은 실제 Runtime에서 닫혔다.
+`wazuh-alerts-*`에서 `rule.id: 100100`으로 좁힌 결과는 정확히 1건이었고, 펼친 문서에서
+Rule과 원본 AWS Field를 함께 확인했다.
+
+![[Pasted image 20260813175953.png]]
+
+Manager의 `archives.json`과 `alerts.json`에서도 동일한 `eventID`가 각각 확인됐다.
+Dashboard의 `wazuh-archives-*`에서도 같은 시각·Rule·`eventID`의 Raw Event 1건을 직접
+열었다.
+
+![[Pasted image 20260813180904.png]]
+
+따라서 다음 연결은 실제 Runtime과 Dashboard 화면에서 닫혔다.
 
 ```text
 DVWA 통제 공격
@@ -514,10 +524,9 @@ DVWA 통제 공격
 → Rule 100100·Level 12 Alert 생성
 ```
 
-다만 보고서용 화면 증거는 아직 `wazuh-archives-*`에서 동일한 `eventID`의 Raw 문서를
-직접 연 화면과 `wazuh-alerts-*`의 Alert 화면을 각각 캡처해야 한다. 전체 JSON에는 Account,
-Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으므로 원문을 그대로
-보고서에 붙이지 않는다.
+Alert 화면과 Raw Event 화면은 각각 캡처했다. 다만 전체 JSON과 펼친 문서에는 Account,
+Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으므로 외부 보고서에는
+원문 전체가 아니라 Rule·Level·Actor·Object·시각 등 필요한 Field만 선별한다.
 
 ### 4.7 찾기 어려웠던 이유와 영구 개선
 
@@ -532,8 +541,26 @@ Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으
 
 따라서 다음 두 개선을 Wazuh 사용성 작업으로 진행한다.
 
-- [ ] Rule `100100`에 `amazon` Group을 추가해 향후 Alert가 AWS 전용 화면에도 나타나는지 검증
+- [x] Rule `100100`에 `amazon` Group 추가 및 적용
+- [ ] 향후 새 Alert가 AWS 전용 화면에도 나타나는지 검증
 - [ ] `Capital One 탐지 현황` Saved View 또는 Dashboard를 만들어 검색식 없이 사건을 확인
+
+![[Pasted image 20260813181144.png]]
+
+#### `amazon` Group 적용 결과
+
+| 항목 | 결과 |
+|---|---|
+| 수정 파일 | `/var/ossec/etc/rules/capital_one_rules.xml` |
+| 변경 | Rule `100100` Group에 `amazon` 추가 |
+| Rule 문법 검사 | `wazuh-analysisd -t` 성공, Exit Code 0 |
+| 적용 | Wazuh Manager 재시작 완료 |
+| 재시작 후 상태 | Manager·Dashboard 모두 `Up` |
+| 탐지 조건 변경 | 없음. Event·Role·Object·HTTP Status 조건 유지 |
+
+기존 Alert 문서는 이미 Index에 저장됐으므로 `amazon` Group이 소급 추가되지 않는다.
+따라서 AWS 전용 화면 노출 여부는 **다음에 생성되는 새 Alert**로 검증하며, 이 확인만을
+위해 오늘 공격을 다시 실행하지 않는다.
 
 초보자용 화면에는 최소한 다음 정보만 한글로 먼저 보여준다.
 
@@ -558,9 +585,11 @@ Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으
 - [x] 새 통제 공격 Event 1회 실행
 - [x] Rule `100100`·Level 12 Alert 확인
 - [x] Manager Local Raw·Alert에서 동일한 CloudTrail `eventID` 확인
-- [ ] Dashboard에서 같은 `eventID`의 Raw 문서 화면 캡처
+- [x] Dashboard에서 Alert와 같은 `eventID`의 Raw 문서 화면 캡처
 - [ ] 정상적인 S3 조회가 같은 Rule에 걸리지 않는지 오탐 확인
-- [ ] Rule의 `amazon` Group 및 초보자용 Saved View·Dashboard 구현
+- [x] Rule `100100`에 `amazon` Group 추가·문법 검사·재시작
+- [ ] 새 Alert의 AWS 전용 화면 노출 검증
+- [ ] 초보자용 Saved View·Dashboard 구현
 - [ ] Archive Index의 하루 증가량 기록
 - [ ] 7일 Retention 적용 및 검증
 
@@ -570,4 +599,3 @@ AWS Alarm, Wazuh 수집과 Custom Alert까지 확인했다.
 
 Retention부터 먼저 만들지 않는다. 실제 하루 증가량을 확인한 뒤 적용해, 잘못된 조건으로
 실습 Evidence를 먼저 삭제하는 일을 막는다.
-![[Pasted image 20260813175953.png]]
