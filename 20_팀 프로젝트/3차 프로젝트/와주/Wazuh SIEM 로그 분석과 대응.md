@@ -348,3 +348,4 @@ Wazuh가 받은 Event
 ```
 
 Retention부터 먼저 만들지 않는다. 실제 문서와 증가량을 확인한 뒤 적용해, 잘못된 조건으로 실습 Evidence를 먼저 삭제하는 일을 막는다.
+![[Pasted image 20260813153941.png]]![[Pasted image 20260813154017.png]]![[Pasted image 20260813154057.png]]![[Pasted image 20260813154205.png]]![[Pasted image 20260813154234.png]]
