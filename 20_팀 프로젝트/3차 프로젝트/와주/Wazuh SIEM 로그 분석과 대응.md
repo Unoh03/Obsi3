@@ -570,3 +570,4 @@ AWS Alarm, Wazuh 수집과 Custom Alert까지 확인했다.
 
 Retention부터 먼저 만들지 않는다. 실제 하루 증가량을 확인한 뒤 적용해, 잘못된 조건으로
 실습 Evidence를 먼저 삭제하는 일을 막는다.
+![[Pasted image 20260813175953.png]]
