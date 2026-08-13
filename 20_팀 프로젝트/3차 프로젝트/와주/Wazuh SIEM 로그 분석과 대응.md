@@ -117,3 +117,52 @@ time window = capital-one-20260812T025054Z
 ```
 
 이 Event가 확인되면 새 공격 없이 Custom Rule 작성으로 진행한다. 확인되지 않을 때만 수집 범위와 Marker를 먼저 조사하고, 그 뒤 새 `TAKE_ID`로 통제된 재실행 여부를 결정한다.
+
+### 0건 조사 결과
+
+`Last 7 days`에서 대표 Key·`GetObject` 조건으로 검색했지만 결과는 0건이었다. 이를 과거 CloudTrail 수집 실패로 바로 판정하지 않고 Manager의 로컬 저장 파일과 설치된 Ruleset을 대조했다.
+
+확인 결과:
+
+- 8월 12일·13일 Wazuh Alert JSON은 실제로 보존돼 있다.
+- 두 날짜 Alert에서 `GetObject`는 0건이다.
+- 다른 S3 관리 Event는 Rule `80202` Alert로 저장돼 있어 CloudTrail 수집 자체는 동작했다.
+- 기본 CloudTrail Rule `80202`는 `etc/lists/amazon/aws-eventnames` 목록에 있는 API만 Alert로 만든다.
+- 해당 목록에는 `CreateBucket`은 있지만 `GetObject`는 없다.
+- Manager의 `<logall_json>`은 `no`, Filebeat의 `archives.enabled`도 `false`여서 기본 Rule에 걸리지 않은 원본 Event는 Archive Index에 남지 않았다.
+
+따라서 이번 0건의 원인은 다음과 같다.
+
+```text
+CloudTrail Object 수집
+→ GetObject는 Wazuh 기본 Event 목록 밖
+→ 기본 Alert 미생성
+→ Raw Archive도 비활성
+→ Dashboard 검색 결과 0건
+```
+
+이는 검색 비용이나 날짜 범위 문제가 아니다. **프로젝트가 원하는 Event를 보존·탐지하려면 원본 Archive와 Custom Rule을 직접 구성해야 한다는 확인 결과**다.
+
+다행히 Gate 3 Evidence Bundle에는 다음 자료가 남아 있다.
+
+```text
+results/cloudwatch/capital-one-validation-getobject.json
+→ 실제 GetObject 1행의 시간·Role·IP·Bucket·Key·Request ID
+
+sanitized/cloudtrail/...20260812T0255Z....json
+→ 대표 Key를 포함한 Sanitized CloudTrail 원본 Event 1건
+```
+
+Sanitized Event에서는 `sessionContext`가 마스킹됐으므로 Role 중첩 구조는 Gate 3 Query 결과와 Terraform의 예상 Role 이름을 함께 사용한다. 이를 실제 Runtime Event라고 다시 주장하지 않고, Custom Rule의 오프라인 입력을 만드는 근거로 사용한다.
+
+다음 순서:
+
+```text
+Sanitized Event + Gate 3 Role Evidence로 Custom Rule 작성
+→ wazuh-logtest 오프라인 검증
+→ logall_json과 Archive Index 활성화
+→ 새 통제 Event 1회
+→ 실제 Custom Alert와 Raw Event 동시 확인
+```
+
+과거 전체 `reparse`와 새 공격 반복은 위 준비가 끝나기 전에는 실행하지 않는다.
