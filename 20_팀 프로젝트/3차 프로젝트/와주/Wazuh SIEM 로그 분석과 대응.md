@@ -122,6 +122,10 @@ time window = capital-one-20260812T025054Z
 
 `Last 7 days`에서 대표 Key·`GetObject` 조건으로 검색했지만 결과는 0건이었다. 이를 과거 CloudTrail 수집 실패로 바로 판정하지 않고 Manager의 로컬 저장 파일과 설치된 Ruleset을 대조했다.
 
+![[Pasted image 20260813141350.png]]
+
+검색식과 `Last 7 days` 범위를 적용했지만 `No results match your search criteria`가 표시됐다. 이 화면만으로 과거 CloudTrail 미수집을 결론내리지 않고 아래의 기본 Rule·Archive 설정을 추가로 조사했다.
+
 확인 결과:
 
 - 8월 12일·13일 Wazuh Alert JSON은 실제로 보존돼 있다.
@@ -166,3 +170,52 @@ Sanitized Event + Gate 3 Role Evidence로 Custom Rule 작성
 ```
 
 과거 전체 `reparse`와 새 공격 반복은 위 준비가 끝나기 전에는 실행하지 않는다.
+
+## 2. Capital One Custom Rule 작성
+
+Wazuh 기본 목록에서 빠진 대표 `GetObject`를 프로젝트 문맥으로 판정하기 위해 별도 `capital_one_rules.xml`을 만들었다. 기존 예제 `local_rules.xml`과 섞지 않아 프로젝트 Rule의 목적과 변경 범위를 분리했다.
+
+![[Pasted image 20260813141811.png]]
+
+Rule `100100`은 CloudTrail의 S3 `GetObject` 중 Primary Karpenter Node Role이 지정된 Primary Bucket의 `validation/capital-one-demo.csv`를 HTTP 200으로 읽은 경우만 Level 12 Alert 후보로 만든다. 일반적인 S3 읽기 전체를 공격으로 판정하지 않는다.
+
+### Ruleset 정적 검사
+
+저장 뒤 Manager를 재시작하기 전에 다음 명령으로 전체 Ruleset의 XML 문법과 Rule 참조를 검사했다.
+
+```powershell
+docker compose exec wazuh.manager /var/ossec/bin/wazuh-analysisd -t
+$LASTEXITCODE
+```
+
+![[Pasted image 20260813141824.png]]
+
+종료 코드 `0`을 확인했으므로 `capital_one_rules.xml`을 포함한 Ruleset의 정적 로드는 성공했다. 이는 실제 Event 정탐·정상 대조군과 Runtime Alert까지 증명하는 결과는 아니다.
+
+### `wazuh-logtest` 오프라인 검증
+
+저장한 Rule을 합성 CloudTrail JSON으로 검사했다. `wazuh-logtest`는 현재 Rules 파일을 별도로 읽어 판정하므로 이 단계에서는 실행 중인 Manager를 재시작하지 않았다.
+
+| 입력 | Rule `100100` |
+|---|---|
+| Karpenter Node Role·대상 Bucket·대상 Key·HTTP 200 | **발생 — Level 12** |
+| 정상 IAM User의 같은 Object 읽기 | 발생하지 않음 |
+| 같은 Role·대상 Key지만 HTTP 403 | 발생하지 않음 |
+| 같은 Role·HTTP 200이지만 다른 Object | 발생하지 않음 |
+
+양성 입력의 Phase 3 결과:
+
+```text
+id: 100100
+level: 12
+description: CAPITAL-ONE: Karpenter node role successfully read the protected validation object.
+Alert to be generated.
+```
+
+처음 `-q` 옵션으로 출력을 숨긴 뒤 문자열을 찾은 자동 검사에서는 네 입력 모두 `NOT_FIRED`로 잘못 판정했다. 상세 출력으로 다시 실행하자 양성은 Rule `100100`, 세 음성 대조군은 부모 Rule `80200` Level 0에서 끝났다. 따라서 최초 결과는 Rule 결함이 아니라 **검사 출력 수집 방식의 오류**로 폐기한다.
+
+> [!todo]
+> Dashboard의 `Ruleset Test`에서 동일 양성 JSON을 실행하고 Phase 3의 Rule `100100`·Level 12가 보이는 화면을 캡처한다.
+
+> [!warning] 공개본 스크린샷
+> 현재 Dashboard 캡처에는 AWS Account ID가 보인다. 내부 학습 Evidence로는 보존하되 보고서·발표·영상 공개본에서는 해당 영역을 Crop 또는 Mask한다. Account ID 자체가 Credential은 아니지만 프로젝트의 공개 범위를 최소화한다.
