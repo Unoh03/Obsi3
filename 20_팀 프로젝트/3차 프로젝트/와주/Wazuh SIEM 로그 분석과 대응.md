@@ -219,3 +219,50 @@ Alert to be generated.
 
 > [!warning] 공개본 스크린샷
 > 현재 Dashboard 캡처에는 AWS Account ID가 보인다. 내부 학습 Evidence로는 보존하되 보고서·발표·영상 공개본에서는 해당 영역을 Crop 또는 Mask한다. Account ID 자체가 Credential은 아니지만 프로젝트의 공개 범위를 최소화한다.
+
+## 3. Raw Archive 활성화 전 비용·보존 경계
+
+여기서 말하는 **모든 Event**는 AWS 계정에서 생성되는 모든 로그가 아니라, 현재 설정된 수집 경로를 거쳐 **Wazuh Server까지 들어온 Event 전체**를 뜻한다.
+
+```text
+CloudTrail → S3 → Wazuh AWS Module
+                        ↓
+              이미 수집된 Event만 대상
+                        ↓
+        archives.json → Local Filebeat → Local Indexer
+```
+
+`logall_json`과 Filebeat Archive를 켜도 Wazuh의 S3 Polling 주기나 다운로드 범위가 자동으로 확대되지는 않는다. 따라서 이 변경 자체가 S3에서 새로운 대량 다운로드를 만드는 것은 아니다.
+
+비용과 저장공간은 다음처럼 구분한다.
+
+| 구분 | 이번 변경의 영향 |
+|---|---|
+| CloudTrail Data Event 기록 | 기존 AWS 비용 경로이며 이번 Archive 설정과 별개 |
+| S3 저장·LIST·GET·인터넷 전송 | 기존 Wazuh Polling에서 발생하며 이번 설정으로 호출 범위가 자동 확대되지 않음 |
+| `archives.json` | Local Docker의 `wazuh_logs` 사용량 증가 |
+| `wazuh-archives-*` | Local Docker의 Indexer 저장공간과 CPU·메모리 사용량 증가 |
+
+Wazuh 공식 문서도 Raw Archive가 Rule 발생 여부와 관계없이 Wazuh가 받은 Event를 저장하므로 디스크 사용량이 커질 수 있다고 경고한다. AWS 측 비용은 [CloudTrail Pricing](https://aws.amazon.com/cloudtrail/pricing/)과 [Amazon S3 Pricing](https://aws.amazon.com/s3/pricing/)을 별도로 본다.
+
+### 프로젝트 보존 원칙
+
+- Wazuh 입력은 프로젝트의 분석·탐지에 필요한 보안 로그로 제한한다.
+- `wazuh-archives-*`의 목표 보존 기간은 **7일**로 둔다.
+- Alert는 Raw Event보다 오래 보관하되, 실제 증가량을 확인한 뒤 기간을 확정한다.
+- S3 원본의 Lifecycle은 이번 Local Wazuh 변경과 섞지 않고 별도로 검토한다.
+- `docker compose down -v`, Volume 삭제, 과거 전체 `reparse`는 실행하지 않는다.
+
+7일 삭제 정책부터 먼저 만들지 않는다. 아직 Archive Index가 없으므로 다음 순서로 실제 문서 구조와 하루 증가량을 확인한 뒤 적용한다.
+
+```text
+1. logall_json과 Filebeat Archive를 영구 설정
+2. Manager만 재생성
+3. 새 통제 Event 1회 수집
+4. Raw Event와 Custom Alert 동시 확인
+5. Archive Index 크기와 하루 증가량 기록
+6. 7일 Retention 적용 및 검증
+```
+
+이 순서는 원문 보관을 무제한으로 방치하지 않으면서, 잘못된 Retention 조건으로 실습 Evidence를 먼저 삭제하는 것도 막는다.
+![[Pasted image 20260813145759.png]]![[Pasted image 20260813150146.png]]
