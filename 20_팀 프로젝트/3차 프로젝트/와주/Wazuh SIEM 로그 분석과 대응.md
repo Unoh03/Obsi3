@@ -573,7 +573,7 @@ Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으
 ```
 
 > [!note] Rule 파일의 지속성
-> 현재 `capital_one_rules.xml`은 Docker Named Volume `wazuh_etc`에 저장된다. 일반적인 Container 중지·재시작·재생성에서는 유지되지만 `docker compose down -v`처럼 Volume을 삭제하면 사라진다. 최종 재현성을 위해서는 Host 관리 파일 또는 설치 절차로 별도 보존해야 한다.
+> 2026-08-15에 `capital_one_rules.xml`을 Host의 `config/wazuh_cluster/rules/`로 복사하고 `docker-compose.yml`에서 Container Rule 경로에 Bind Mount했다. Manager 재생성 뒤 Mount Type `bind`, Host·Container SHA-256 일치, `wazuh-analysisd -t` Exit Code 0을 확인했다. 이제 `down -v`로 Named Volume을 지워도 Host Rule은 남지만, Host 장애까지 대비하려면 별도 Git 버전 관리가 필요하다.
 
 ### 4.8 현재 위치와 다음 작업
 
@@ -588,6 +588,10 @@ Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으
 - [x] Dashboard에서 Alert와 같은 `eventID`의 Raw 문서 화면 캡처
 - [ ] 정상적인 S3 조회가 같은 Rule에 걸리지 않는지 오탐 확인
 - [x] Rule `100100`에 `amazon` Group 추가·문법 검사·재시작
+- [x] Rule `100100` Host 원본·Bind Mount·Hash 일치 검증
+- [x] DVWA Command Injection 안전 감사 Event 구현·정적 테스트
+- [ ] 새 DVWA Image 배포 뒤 CloudWatch Logs·Wazuh Runtime Event 확인
+- [ ] WAF·DVWA CloudWatch Logs를 Wazuh 입력으로 연결
 - [ ] 새 Alert의 AWS 전용 화면 노출 검증
 - [ ] 초보자용 Saved View·Dashboard 구현
 - [ ] Archive Index의 하루 증가량 기록
@@ -599,3 +603,28 @@ AWS Alarm, Wazuh 수집과 Custom Alert까지 확인했다.
 
 Retention부터 먼저 만들지 않는다. 실제 하루 증가량을 확인한 뒤 적용해, 잘못된 조건으로
 실습 Evidence를 먼저 삭제하는 일을 막는다.
+
+### 4.9 Command Injection·IMDS 관측 공백 보강
+
+WAF·Apache Access Log만으로는 Command Injection의 실행 결과와 IMDS 접근을 직접
+설명할 수 없다. VPC Flow Logs도 IMDS `169.254.169.254` 트래픽을 수집하지 않는다.
+우선 기존 DVWA JSON Audit 함수를 `low` Command Injection 경로에 연결해 다음 고정
+정보만 `stderr`에 기록하도록 구현했다.
+
+```text
+event_type    security.command_injection.execution
+result        succeeded 또는 failed
+resource      ec2_imds 또는 other
+action        shell_command
+status        output_returned 또는 no_output_returned
+validation    request_target_classification
+```
+
+Request Body, 실제 Command, Command 출력, Cookie, Session, Credential은 기록하지 않는다.
+`resource=ec2_imds`는 입력 문자열의 대상 분류이며 독립된 네트워크 접속 증거가 아니다.
+독립 관측이 필요하면 Amazon VPC CNI Network Policy Event Log 같은 Runtime Sensor를
+별도로 검증한다.
+
+현재 판정은 **DVWA Working Tree 구현·PHP 문법·비밀정보 차단 단위 테스트 완료**다.
+Image Build·GitHub Push·Argo CD 배포와 `Container stderr → Fluent Bit → CloudWatch Logs
+→ Wazuh` Runtime 확인은 아직 수행하지 않았다.
