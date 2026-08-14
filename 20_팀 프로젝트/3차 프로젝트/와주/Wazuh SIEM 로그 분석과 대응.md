@@ -591,7 +591,12 @@ Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으
 - [x] Rule `100100` Host 원본·Bind Mount·Hash 일치 검증
 - [x] DVWA Command Injection 안전 감사 Event 구현·정적 테스트
 - [ ] 새 DVWA Image 배포 뒤 CloudWatch Logs·Wazuh Runtime Event 확인
-- [ ] WAF·DVWA CloudWatch Logs를 Wazuh 입력으로 연결
+- [x] WAF·DVWA CloudWatch Logs를 Wazuh 입력으로 연결
+- [x] WAF 실제 요청 Record와 DVWA 실제 Pod Record를 Raw Archive에서 확인
+- [ ] WAF·DVWA Event를 사건으로 좁히는 Custom Rule·Filter 구현
+- [ ] ALB S3 Access Log를 Wazuh 입력으로 연결·검증
+- [ ] CloudFront 병렬 CloudWatch Logs Destination의 비용·Retention 결정
+- [ ] CloudFront Log를 Wazuh 입력으로 연결·검증
 - [ ] 새 Alert의 AWS 전용 화면 노출 검증
 - [ ] 초보자용 Saved View·Dashboard 구현
 - [ ] Archive Index의 하루 증가량 기록
@@ -628,3 +633,53 @@ Request Body, 실제 Command, Command 출력, Cookie, Session, Credential은 기
 현재 판정은 **DVWA Working Tree 구현·PHP 문법·비밀정보 차단 단위 테스트 완료**다.
 Image Build·GitHub Push·Argo CD 배포와 `Container stderr → Fluent Bit → CloudWatch Logs
 → Wazuh` Runtime 확인은 아직 수행하지 않았다.
+
+### 4.10 분산 Source 수집 확장 결과
+
+2026-08-15 기준 Wazuh에 들어오는 로그 Source는 CloudTrail 하나에서 세 개로 늘었다.
+
+| 사건 단계 | Source | Wazuh 도착 상태 | 지금 알 수 있는 것 |
+|---|---|---|---|
+| AWS API 사용 | CloudTrail S3 | 수집·Custom Alert 검증 완료 | 어떤 Role이 보호된 S3 Object를 읽었는가 |
+| 외부 HTTP 요청 | WAF CloudWatch Logs | Raw Archive 수집 완료 | Edge에서 어떤 요청을 허용·차단했는가 |
+| 애플리케이션 실행 | DVWA CloudWatch Logs | Raw Archive 수집 완료 | 어떤 Pod에서 어떤 stdout·Warning이 발생했는가 |
+| Load Balancer 요청 | ALB S3 Access Log | 연결 전 | 어떤 경로·상태 코드로 ALB를 통과했는가 |
+| CDN 요청 | CloudFront S3 Log | Wazuh 연결 전 | 사용자 요청이 Edge에서 어떻게 처리됐는가 |
+
+최초 연결 직후 Archive에서 실제 WAF 요청 4건과 `dvwa-*` Pod Record 13,817건을
+확인했다. 특히 DVWA의 큰 수치는 공격 횟수가 아니라 과거 시점부터 Backfill된 일반
+stdout·PHP Warning까지 포함한 Raw Event 양이다.
+
+```text
+로그가 여러 곳에 흩어짐
+→ Wazuh가 한 Archive로 수집
+→ 아직 Event가 너무 많고 의미가 섞여 있음
+→ 프로젝트 Rule·Filter로 사건 후보를 좁힘
+→ 초보자용 Dashboard에서 원인과 다음 조치를 보여줌
+→ Shuffle Playbook으로 승인된 대응 실행
+```
+
+즉 현재는 프로젝트의 첫 번째 문제인 **분산 로그 수집**을 일부 해결했다. 하지만
+WAF·DVWA는 아직 `수집`까지만 확인했고, `탐지·해석·대응`까지 닫히지 않았다. 수집된
+13,817건을 그대로 사람이 읽는 것이 아니라 다음 단계에서 Capital One 시나리오와 관련된
+Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
+
+#### 현재 보이는 범위와 공백
+
+- CloudTrail의 `GetObject`는 Rule `100100`으로 탐지·경보까지 확인했다.
+- WAF 요청과 DVWA Pod Log는 한곳에서 검색할 수 있지만 아직 전용 탐지 규칙이 없다.
+- DVWA에 새로 구현한 안전 감사 Event는 Image를 Build·Push·배포하지 않아 Runtime에는 없다.
+- ALB가 연결되면 WAF와 애플리케이션 사이의 요청 경로·상태 코드를 보강할 수 있다.
+- CloudFront는 현재 S3 JSON과 Wazuh Custom Parser 형식이 맞지 않아, 비용을 제한한 병렬
+  CloudWatch Logs Destination을 후보로 둔다.
+- `resource=ec2_imds` 감사 값은 요청 대상 분류이지, Pod에서 IMDS까지의 독립 네트워크
+  증거는 아니다.
+
+#### 다음 작업 순서
+
+1. AWS에서 ALB Prefix Reader Policy가 실제 저장됐는지 재조회한다.
+2. Wazuh에 공식 `alb` Bucket 입력을 추가하고 실제 ALB Record를 확인한다.
+3. CloudFront 병렬 CloudWatch Logs의 예상 비용·Retention·On/Off 방식을 먼저 정한다.
+4. 새 DVWA Image를 배포해 안전 감사 Event가 CloudWatch Logs와 Wazuh까지 오는지 확인한다.
+5. Capital One 사건용 WAF·ALB·DVWA·CloudTrail Filter와 한글 Dashboard를 만든다.
+6. 탐지 결과를 Shuffle의 승인형 대응 Playbook으로 넘긴다.
