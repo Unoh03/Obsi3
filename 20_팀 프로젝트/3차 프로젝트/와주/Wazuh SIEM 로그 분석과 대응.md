@@ -617,7 +617,7 @@ WAF·Apache Access Log만으로는 Command Injection의 실행 결과와 IMDS �
 정보만 `stderr`에 기록하도록 구현했다.
 
 ```text
-event_type    security.command_injection.execution
+event_type    command.execution
 result        succeeded 또는 failed
 resource      ec2_imds 또는 other
 action        shell_command
@@ -630,9 +630,59 @@ Request Body, 실제 Command, Command 출력, Cookie, Session, Credential은 기
 독립 관측이 필요하면 Amazon VPC CNI Network Policy Event Log 같은 Runtime Sensor를
 별도로 검증한다.
 
+`command.execution`은 의도적으로 중립적인 이름이다. 이 `low` 화면은 정상적인 Ping을
+실행해도 같은 감사 Event를 만들기 때문에, 원본 Event 이름부터 Command Injection
+탐지라고 부르면 정상 요청까지 공격으로 단정하게 된다. Wazuh에서는
+`event_type=command.execution`, `context.resource=ec2_imds`, `route`, 시간대와 다른 Source를
+조합해 대표 공격을 판정한다.
+
+또한 `result=succeeded`와 `status=output_returned`는 PHP `shell_exec`가 비어 있지 않은
+출력을 돌려줬다는 뜻이다. IMDS가 실제 Credential을 반환했다거나 S3 `GetObject`가
+성공했다는 뜻은 아니다. 전자는 고정 Marker 검증, 후자는 CloudTrail Event로 따로
+증명한다.
+
 현재 판정은 **DVWA Working Tree 구현·PHP 문법·비밀정보 차단 단위 테스트 완료**다.
 Image Build·GitHub Push·Argo CD 배포와 `Container stderr → Fluent Bit → CloudWatch Logs
 → Wazuh` Runtime 확인은 아직 수행하지 않았다.
+
+#### 2026-08-16 배포 전 코드 검토 Evidence
+
+수정 범위와 각 파일의 역할을 다음처럼 대조했다.
+
+| 파일 | 변경 내용 | 현재 증명 범위 |
+|---|---|---|
+| `dvwa/includes/dvwaAudit.inc.php` | Command 대상에 고정 IMDS IPv4 URL이 있는지 `ec2_imds\|other`로 분류 | 원본 입력을 저장하지 않는 안전 분류 함수 |
+| `vulnerabilities/exec/source/low.php` | Command 실행 뒤 `command.execution` JSON Audit Event 생성 | Source 연결 완료, 실제 Pod 출력은 미검증 |
+| `tests/test_audit_log.php` | 정상 대상·IMDS Root·Credential 경로 분류, 원본 Body·주소·비밀 표식 제외 검증 | Helper와 Event 계약의 정적 단위 테스트 |
+
+테스트는 기존 로컬 Image `uns-dvwa:local`의 PHP를 사용하되 현재 Working Tree를 읽기
+전용으로 Mount했다. `--network none`, `--read-only`, 임시 `/tmp` 조건으로 외부 통신과
+Repository 쓰기를 막았다.
+
+```text
+PHP 8.5.9
+dvwaAudit.inc.php: No syntax errors
+low.php: No syntax errors
+test_audit_log.php: No syntax errors
+Audit log self-test passed.
+```
+
+`low.php`는 원래 CRLF 줄바꿈을 사용하므로 불필요한 전체 파일 변경을 피하기 위해 이를
+보존했다. `git -c core.whitespace=cr-at-eol diff --check`로 실제 줄끝 공백 오류가 없음을
+확인했다.
+
+> [!info]- 재현·무결성 식별값
+> - 검증 시각: `2026-08-16T13:50:55.7037878Z`
+> - 기준 Commit: `f04458ef32c67d6fc495d73c3773ef0b95204d34`
+> - Working Tree Diff Hash: `a7a4764594b68a2405c77a0da00ccfda54ee207f`
+> - 테스트 Runtime Image ID: `sha256:6534ba1a2b23ebd4cfca9ad896ac42722621e6dddf331d29540bfb75890cae22`
+> - `dvwaAudit.inc.php`: `8F97B364C4849BBF056CE2025EDC1C07FC049DEA9C0972DFEEE4B0C151EE4DF8`
+> - `low.php`: `895024D15154CA3C0378A39436E04BE2F0A6470223D199B8AB253776A5B95131`
+> - `test_audit_log.php`: `C47E5DB727F0880C6AB9B5AE8400AFF8363198DA3CF08E3AAA626A14BFCFD982`
+
+이 Evidence는 **Source와 정적 테스트 완료**를 증명한다. 새 Image Build·ECR Push·Argo CD
+배포, 실제 Pod `stderr`, CloudWatch Logs와 Wazuh 도착은 다음 Runtime 단계에서 별도로
+기록한다.
 
 ### 4.10 분산 Source 수집 확장 결과
 
