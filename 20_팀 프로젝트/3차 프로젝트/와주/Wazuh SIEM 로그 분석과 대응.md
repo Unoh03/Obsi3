@@ -816,36 +816,88 @@ Dashboard는 Raw JSON을 나열하는 화면이 아니라 다음 질문에 답�
 ### 4.12 GUI에서 직접 확인할 출발점
 
 2026-08-16 Runtime 검증으로 `wazuh-archives-4.x-2026.08.16`에 아래 Probe가 두 건
-Index된 것을 확인했다. 이제부터는 Wazuh GUI에서 원본을 직접 읽고 Screenshot을 남길 수
-있다.
+Index된 것을 확인했다.
 
 ```text
 /wazuh-cloudfront-probe-20260816T094015835Z.txt
 ```
 
-1. `https://localhost`의 Wazuh Dashboard에 접속한다.
-2. `Explore → Discover`에서 Data View를 `wazuh-archives-*`로 선택한다.
-3. 시간 범위를 `Last 24 hours`로 둔다.
-4. CloudFront 원본은 아래 검색식을 그대로 붙여 넣는다.
+공통 조회 조건은 Wazuh Dashboard의 `Explore → Discover`, Data View
+`wazuh-archives-*`, 시간 범위 `Last 24 hours`다.
+
+#### CloudFront Edge 원본
 
 ```text
 data.cs-uri-stem: "/wazuh-cloudfront-probe-20260816T094015835Z.txt"
 ```
 
-5. 검색식을 지우고 DVWA Pod 원본은 아래처럼 찾는다.
+**캡처 1 — CloudFront Edge JSON 1건**
+
+![[Pasted image 20260816185628.png]]
+
+`data.cs-method=GET`, `data.cs-uri-stem=<Probe 경로>`, `data.sc-status=404`,
+`data.x-edge-response-result-type=Error`를 확인했다. 이는 요청이 CloudFront Edge에
+도착해 Origin으로 전달됐고 최종 `404` 응답을 반환했다는 원본 Evidence다.
+
+화면의 Rule `1002`·Level 2 `Unknown problem somewhere in the system`은 CloudFront의
+`Error` 값을 Wazuh 기본 Rule이 일반 오류로 분류한 결과다. 프로젝트가 의도한 전용
+탐지 Rule은 아니므로 **수집 성공을 탐지 완료로 해석하지 않는다.**
+
+#### DVWA Pod 원본
 
 ```text
-data.log: "*wazuh-cloudfront-probe-20260816T094015835Z.txt*"
+data.log: *wazuh-cloudfront-probe-20260816T094015835Z.txt*
 ```
 
-CloudFront 화면에서는 `timestamp`, `data.cs-method`, `data.cs-uri-stem`,
-`data.sc-status`, `data.x-edge-response-result-type`을 확인한다. DVWA 화면에서는
-`timestamp`, `data.log`, `data.kubernetes.pod_name`을 확인한다. 두 Event의 요청 시각·Method·
-Path·Status가 같다는 것이 핵심 Evidence다.
+`data.log`는 `keyword` Field다. 와일드카드 `*`를 따옴표 안에 넣으면 문자 그대로
+해석되어 0건이 되므로, 부분 일치 검색에서는 위처럼 따옴표 밖에 둔다. 실제 Archives
+Index에서 기존 검색식은 0건, 수정한 검색식은 1건으로 대조했다.
+
+**캡처 2 — DVWA Pod Access Log 1건**
+
+![[Pasted image 20260816185928.png]]
+
+`data.log`에서 같은 Probe 경로의 `GET`, HTTP `404`, User-Agent `Amazon CloudFront`를
+확인했다. `data.kubernetes.namespace_name=dvwa`와 `data.kubernetes.pod_name`은 이 요청이
+서울 EKS의 DVWA Pod까지 도달했음을 보여준다.
+
+#### 두 화면을 함께 읽는 법
+
+| 비교 항목 | CloudFront 원본 | DVWA Pod 원본 | 판정 |
+|---|---|---|---|
+| 원본 요청 시각 | `09:40:39 UTC` | `09:40:39 UTC` | 일치 |
+| Method | `GET` | `GET` | 일치 |
+| Path | 동일 Probe 경로 | 동일 Probe 경로 | 일치 |
+| HTTP Status | `404` | `404` | 일치 |
+| 관측 위치 | CDN Edge | EKS의 DVWA Pod | 서로 다른 계층 |
+
+Wazuh의 Archive 시각은 DVWA가 `18:42:00 KST`, CloudFront가 `18:42:09 KST`로 약 9초
+차이 난다. 이는 서로 다른 요청이라는 뜻이 아니라, DVWA CloudWatch Logs와 CloudFront
+CloudWatch Logs를 Wazuh가 읽어 들인 시점이 달랐기 때문이다.
+
+따라서 이번 Probe는 다음 범위를 Runtime으로 증명한다.
+
+```text
+사용자 요청
+→ CloudFront Edge에서 관측
+→ Origin·ALB를 거쳐 DVWA Pod에서 관측
+→ 서로 다른 두 로그가 Wazuh Archives Index에서 중앙 조회됨
+```
 
 > [!warning] 공개 Screenshot 주의
-> `data.c-ip`, Account ID, 전체 ARN, Edge Request ID는 보고서·발표용 Screenshot에서
-> 숨기거나 마스킹한다. Credential·Cookie·Command 응답은 화면에 포함하지 않는다.
+> 현재 캡처에는 Client IP, Edge Request ID, 내부 Host·Pod IP, Image·Container Hash처럼
+> 공개본에서 불필요한 값이 보인다. 보고서·발표용으로 사용할 때는 해당 값을 가리거나
+> 필요한 Field만 Column으로 선택해 다시 캡처한다. Credential·Cookie·Command 응답은
+> 화면에 포함하지 않는다.
+
+#### 현재 판정
+
+- **완료:** CloudFront·WAF·ALB·DVWA·CloudTrail 5개 Source의 실제 Wazuh 수집
+- **완료:** 같은 무해 Probe의 CloudFront Edge·DVWA Pod 원본을 GUI에서 비교
+- **미완료:** 새 DVWA 안전 Audit Image의 Build·Push·Argo CD 배포와 Runtime Event
+- **미완료:** 대표 공격 5-Source Timeline과 Source별 전용 Filter·탐지 의미 정리
+- **미완료:** 검색식 없이 읽는 한글 Saved View·Dashboard와 다른 조원의 3분 사용성 Test
+- **이후:** Wazuh Alert를 Shuffle Gate 5로 전달
 
 이 검색식은 **현재 수집 성공을 배우고 증명하기 위한 임시 출발점**이다. 최종 Gate 4는
 검색식을 사용자가 직접 입력하지 않아도 되는 Saved View·한글 Dashboard와 3분 사용성
