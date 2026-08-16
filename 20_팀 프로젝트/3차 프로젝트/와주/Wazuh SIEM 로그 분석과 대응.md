@@ -681,5 +681,95 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 2. Wazuh에 공식 `alb` Bucket 입력을 추가하고 실제 ALB Record를 확인한다.
 3. CloudFront 병렬 CloudWatch Logs의 예상 비용·Retention·On/Off 방식을 먼저 정한다.
 4. 새 DVWA Image를 배포해 안전 감사 Event가 CloudWatch Logs와 Wazuh까지 오는지 확인한다.
-5. Capital One 사건용 WAF·ALB·DVWA·CloudTrail Filter와 한글 Dashboard를 만든다.
+5. Capital One 사건용 CloudFront·WAF·ALB·DVWA·CloudTrail Filter와 한글 Dashboard를 만든다.
 6. 탐지 결과를 Shuffle의 승인형 대응 Playbook으로 넘긴다.
+
+### 4.11 중간정리 — 시연 로그의 범위와 Gate 4 완료 기준
+
+2026-08-16에 “모든 로그를 모은다”는 표현의 범위를 다시 정리했다. 목표는 AWS 계정의
+모든 로그를 무작정 Wazuh에 넣는 것이 아니다.
+
+> **서울 Primary에서 수행하는 Capital One 기반 대표 시나리오가 만드는 공격·탐지
+> Evidence를 빠짐없이 수집하고, 초보자도 검색식 없이 사건을 이해하게 만드는 것**이
+> Gate 4의 목표다.
+
+#### Gate 4 필수 Source 다섯 개
+
+| 순서 | Source | 시연에서 답하는 질문 | 현재 Wazuh 상태 |
+|---:|---|---|---|
+| 1 | CloudFront Access Log | 공격 요청이 CDN Edge에 도착했는가 | S3 Evidence 존재, Wazuh 연결 전 |
+| 2 | WAF Log | 어떤 Rule로 검사했고 허용·차단했는가 | Raw Archive 실제 요청 확인 |
+| 3 | Primary ALB Access Log | 요청이 Load Balancer를 거쳐 DVWA에 도달했는가 | S3 Evidence 존재, Wazuh 연결 전 |
+| 4 | DVWA·Apache·안전 Audit Log | 애플리케이션에서 무엇이 실행됐는가 | 기존 Pod Log 수집 완료, 새 Audit 배포 전 |
+| 5 | CloudTrail STS·S3 Event | 탈취 Role로 어떤 AWS API를 성공시켰는가 | Raw·Rule `100100` Alert 확인 |
+
+따라서 현재는 **3/5 Source의 Wazuh Runtime 수집을 확인한 상태**다. WAF와 DVWA의 Raw
+Event 도착은 수집 성공이지, 다섯 Source Timeline이나 탐지·해석 완료를 뜻하지 않는다.
+
+#### EKS는 왜 여섯 번째 공격 Source가 아닌가
+
+DVWA Pod·Apache Log가 이미 EKS 위에서 실행되는 **워크로드 로그**다. 별도로 활성화된
+EKS Control Plane의 `api`·`audit`·`authenticator` Log는 Command Injection이나
+Pod→IMDS 요청을 직접 기록하지 않는다.
+
+```text
+공격 단계
+CloudFront → WAF → ALB → DVWA → CloudTrail
+                         └─ Pod→IMDS는 직접 네트워크 Evidence 없음
+
+대응·배포 단계
+Shuffle → GitHub → Argo CD → EKS API Audit → Deployment → 새 Pod
+```
+
+따라서 EKS Control Plane Log는 Gate 4의 공격 Source가 아니라 **Gate 7의 Argo CD
+배포·대응 Evidence**로 검증한다. VPC Flow Logs도 IMDS `169.254.169.254` Traffic을
+수집하지 않으므로 이 공백을 메우지 못한다. GuardDuty Finding은 이번 공격에서 0건이며,
+DR DVWA는 서울 Primary 시나리오 밖이다.
+
+#### 수집 완료와 관제 완료의 차이
+
+각 Source는 다음 단계를 따로 판정한다.
+
+```text
+설정 존재
+→ IAM 접근 성공
+→ 실제 Raw Event 수집
+→ 필요한 Field 파싱
+→ 같은 사건 Timeline에서 사용
+→ 탐지 Rule·오탐 검증
+```
+
+현재 CloudTrail은 Custom Alert까지 닫혔고, WAF·DVWA는 Raw Event 수집 단계다. ALB와
+CloudFront는 Wazuh 입력 전이다. 새 DVWA 안전 Audit Event도 코드와 정적 테스트만
+완료됐으며 Image Build·Push·Argo CD 배포·Runtime 수집은 남아 있다.
+
+#### 초보자용 Dashboard의 합격 기준
+
+Dashboard는 Raw JSON을 나열하는 화면이 아니라 다음 질문에 답하는 사건 화면이어야 한다.
+
+```text
+무슨 일이 발생했는가
+언제 발생했고 위험도는 무엇인가
+어떤 요청·Role·Resource가 관련됐는가
+어느 계층에서 보였고 어디는 보이지 않는가
+왜 Alert가 됐는가
+현재 대응 상태와 다음 조치는 무엇인가
+```
+
+다른 조원이 WQL·DQL 검색식을 입력하지 않고 3분 안에 사건 내용, 영향 대상, 탐지 근거,
+관측 공백, 다음 조치를 설명할 수 있어야 Gate 4를 통과한다. 화면에는 사건 요약, 공격
+경로, 시간순 Timeline, 탐지 근거, 대응 상태, 다음 조치와 원본 Drill-down을 둔다.
+
+#### 현재 Checkpoint와 다음 순서
+
+```text
+[완료] CloudTrail Raw·Rule 100100 Alert
+[완료] WAF Raw 요청 Record
+[완료] DVWA Raw Pod Record
+[다음] ALB Reader Policy 재조회·Wazuh alb 입력
+[대기] CloudFront 병렬 CloudWatch Logs 비용·On/Off·Retention 결정
+[대기] 새 DVWA 안전 Audit Image 배포·Runtime 확인
+[대기] 필수 5-Source Timeline·한글 Dashboard
+[대기] 다른 조원의 3분 무검색 사용성 Test
+[이후] Wazuh Alert → Shuffle Gate 5
+```
