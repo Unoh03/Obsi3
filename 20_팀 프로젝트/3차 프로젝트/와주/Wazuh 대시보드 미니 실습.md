@@ -52,6 +52,32 @@ C:\Users\Unoh\Documents\aws-topology-evidence\wazuh\saved-objects\aws-soc-202608
 SHA-256: d36aaf73e133374cfa5da0fe523bf7f3457553e6893b3d9ab20dee7647a081df
 ```
 
+### AWS 종료 상태
+
+준비를 마친 뒤 2026-08-17에 표준 `daily-down.ps1`을 실행했다.
+
+| 항목 | 결과 |
+|---|---|
+| Terraform Destroy | 124개 삭제 완료 |
+| Daily Terraform State | 0개·Empty |
+| Tracked Daily AWS Residue | 없음 |
+| Tagged Daily AWS Runtime | 없음 |
+| Active Daily Session | 없음 |
+| Foundation | ECR·GitHub Actions Role·Security Log Bucket 보존 |
+| 소요 시간 | 23.5분 |
+
+```text
+Pre-destroy manifest
+C:\Users\Unoh\Documents\aws-topology-evidence\daily-20260816T174015Z-9913c9d3-pre-destroy\manifest.json
+
+Post-destroy manifest
+C:\Users\Unoh\Documents\aws-topology-evidence\daily-20260816T174015Z-9913c9d3-post-destroy\manifest.json
+```
+
+Daily Down 뒤에도 Local Wazuh Preflight와 Backup SHA-256을 다시 확인했다. 따라서 내일
+미니 실습을 위해 `daily-up.ps1`을 실행하지 않는다. 필요한 것은 Docker Desktop과 Local
+Wazuh뿐이다.
+
 ## 내일 시작 절차
 
 Docker Desktop을 먼저 실행한 뒤 PowerShell 7에서 다음 명령을 실행한다.
