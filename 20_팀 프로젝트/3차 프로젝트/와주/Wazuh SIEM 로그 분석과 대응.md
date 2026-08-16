@@ -590,7 +590,7 @@ Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으
 - [x] Rule `100100`에 `amazon` Group 추가·문법 검사·재시작
 - [x] Rule `100100` Host 원본·Bind Mount·Hash 일치 검증
 - [x] DVWA Command Injection 안전 감사 Event 구현·정적 테스트
-- [x] 새 DVWA Image 배포 뒤 CloudWatch Logs·Wazuh Raw Archive Runtime Event 확인
+- [x] 새 DVWA Image 배포 뒤 CloudWatch Logs·Wazuh Raw Archive·Index Runtime Event 확인
 - [x] WAF·DVWA CloudWatch Logs를 Wazuh 입력으로 연결
 - [x] WAF 실제 요청 Record와 DVWA 실제 Pod Record를 Raw Archive에서 확인
 - [ ] WAF·DVWA Event를 사건으로 좁히는 Custom Rule·Filter 구현
@@ -642,8 +642,8 @@ Request Body, 실제 Command, Command 출력, Cookie, Session, Credential은 기
 증명한다.
 
 배포 전 판정은 **DVWA Working Tree 구현·PHP 문법·비밀정보 차단 단위 테스트 완료**였다.
-아래 Runtime 검증을 추가로 수행해 `Container stderr → Fluent Bit → CloudWatch Logs →
-Wazuh Raw Archive`까지 닫았다. Wazuh Index GUI의 최종 건수와 화면 캡처는 남아 있다.
+아래 Runtime 검증과 후속 Mapping 보정을 수행해 `Container stderr → Fluent Bit →
+CloudWatch Logs → Wazuh Raw Archive → Index`까지 닫았다. Wazuh GUI 화면 캡처는 남아 있다.
 
 #### 2026-08-16 배포 전 코드 검토 Evidence
 
@@ -728,7 +728,7 @@ CloudWatch Log Group `/aws/eks/aws-topology-primary/dvwa`에는 새 Pod가 만�
 `validation=request_target_classification`이며 원본 Command·Request Body·Credential은 없다.
 정제된 DVWA Evidence에도 IMDS 주소 문자열, `SecretAccessKey`, `SessionToken` Label이 없다.
 
-##### Wazuh 도착과 정확한 검색 조건
+##### Wazuh Raw 도착과 첫 Index 실패
 
 Wazuh는 10분 주기로 AWS Source를 Poll한다. 공격 Event가 마지막 Poll 직후 생성돼 다음
 Poll `14:11:49Z`에서 수집됐고 Raw Archive에는 `14:11:57.227Z`에 들어왔다. 수집 지연은
@@ -736,16 +736,69 @@ Poll `14:11:49Z`에서 수집됐고 Raw Archive에는 `14:11:57.227Z`에 들어�
 
 단순히 `command.execution` 문자열을 Grep하면 4건이 나왔다. 이 중 2건은 CloudWatch를
 검증하려고 실행한 `FilterLogEvents` API의 `filterPattern`이 CloudTrail에 다시 기록된
-**관측 행위 자체의 Log**였다. 다음 구조화 조건으로 좁혀야 실제 DVWA Audit Event 2건만
-남는다.
+**관측 행위 자체의 Log**였다. Raw Archive에서는 다음 구조로 좁히면 실제 DVWA Audit
+Event 2건만 남았다.
 
 ```text
 data.data.event_type: "command.execution"
 data.data.context.resource: "ec2_imds"
 ```
 
-현재 **Wazuh Manager Raw Archive 2건은 검증 완료**다. 두 행의 Wazuh 내부 `id`가 같게
-보였으므로 Index에서 실제 2건이 유지되는지는 위 조건으로 GUI 확인·캡처해야 한다.
+하지만 이 조건으로 GUI에서 검색되지 않았다. 검색식이나 시간 범위 문제가 아니라 Filebeat가
+두 문서를 Index에 넣으려다 다음 오류로 거부된 것이 직접 원인이었다.
+
+```text
+status=400
+mapper_parsing_exception
+failed to parse field [data.data] of type [keyword]
+actual value: object
+```
+
+Fluent Bit은 Container의 JSON Log를 `mergeLogKey: "data"` 아래에 넣었다. Wazuh는
+CloudWatch Record 전체를 다시 자신의 `data` 아래에 넣었고 최종 경로가 `data.data`가 됐다.
+그런데 Wazuh 4.14.7 기본 Filebeat Template은 `data.data`를 `keyword`로 고정한다. 실제 값은
+`event_type`, `result`, `context`를 가진 Object라서 문서 전체가 거부됐다. 같은 Raw `id`가
+관측된 것은 사실이지만, 이번 GUI 미노출의 원인은 ID 충돌이 아니라 그보다 앞선 Mapping
+거부였다. `auth.login.succeeded`, `authorization.access.denied`도 같은 구조라 함께 거부됐다.
+
+##### `data.data` 충돌 보정과 Index Runtime 재검증
+
+기존 Index를 삭제하거나 Mapping을 억지로 바꾸지 않았다. 애플리케이션 JSON을 넣는 Fluent
+Bit Key만 다음처럼 구분했다.
+
+```text
+변경 전  Fluent Bit mergeLogKey=data      → Wazuh data.data      → keyword/Object 충돌
+변경 후  Fluent Bit mergeLogKey=app_event → Wazuh data.app_event → 새 Object로 동적 Mapping
+```
+
+영구 원본 `templates/install-cluster-addons.sh.tpl`을 `app_event`로 수정하고
+`tests/test-daily-automation.ps1`에 `data` 회귀 방지 계약을 추가했다. Test는 통과했다. 현재
+서울 Cluster에도 Helm Release Revision `2`로 같은 값을 반영했고, Fluent Bit DaemonSet
+2개 Pod의 Rollout과 실제 `/fluent-bit/etc/fluent-bit.conf`의
+`Merge_Log_Key app_event`를 확인했다. CloudTrail·WAF·ALB·CloudFront 입력과 DVWA Pod는
+변경하지 않았다.
+
+새 Take `capital-one-indexfix-20260816T143645Z`를 실행해 가짜 S3 5행 읽기와 새 Alarm
+전이를 다시 검증했다. Wazuh Poll `14:41:49Z~14:42:09Z` 뒤 다음 결과를 얻었다.
+
+| 검증 지점 | 결과 |
+|---|---|
+| Raw Archive `app_event + command.execution + ec2_imds` | 2건 |
+| 같은 Poll 구간 `mapper_parsing_exception` | 0건 |
+| `wazuh-archives-4.x-2026.08.16` Index 직접 조회 | 2건, 서로 다른 Document ID |
+| 두 문서의 Result·Resource | `succeeded`·`ec2_imds` |
+
+따라서 **Raw Archive뿐 아니라 Wazuh Index 등록까지 Runtime 검증 완료**다. GUI에서는 기존
+`data.data`가 아니라 다음 조건을 사용한다.
+
+```text
+data.app_event.event_type: "command.execution"
+AND data.app_event.context.resource: "ec2_imds"
+```
+
+Data View는 `wazuh-archives-*`, 시간 범위는 `Last 24 hours`로 둔다. GUI의 2건 화면과
+공개용 Field 정리·캡처는 사용자 화면에서 남길 작업이다. 이 단계는 **수집·구조화·중앙
+검색 성공**이지 전용 Wazuh 탐지 Rule이나 Alert 완료를 뜻하지 않는다.
 
 ##### Evidence Bundle
 
@@ -780,7 +833,7 @@ Working Tree 수정은 아직 Commit 전이다.
 |---|---|---|---|
 | AWS API 사용 | CloudTrail S3 | 수집·Custom Alert 검증 완료 | 어떤 Role이 보호된 S3 Object를 읽었는가 |
 | 외부 HTTP 요청 | WAF CloudWatch Logs | Raw Archive 수집 완료 | Edge에서 어떤 요청을 허용·차단했는가 |
-| 애플리케이션 실행 | DVWA CloudWatch Logs | Raw Archive 수집 완료 | 어떤 Pod에서 어떤 stdout·Warning이 발생했는가 |
+| 애플리케이션 실행 | DVWA CloudWatch Logs | Raw Archive·안전 Audit Index 등록 검증 | 어떤 Pod에서 어떤 구조화 Event가 발생했는가 |
 | Load Balancer 요청 | ALB S3 Access Log | Raw Archive·Field Parsing 확인 | 어떤 경로·상태 코드로 ALB를 통과했는가 |
 | CDN 요청 | CloudFront S3 + 병렬 CloudWatch Logs | Raw Archive·JSON Field·Indexer 검색 확인 | 사용자 요청이 Edge에서 어떻게 처리됐는가 |
 
@@ -853,7 +906,7 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 1. **완료:** AWS에서 ALB Prefix Reader Policy가 실제 저장됐는지 재조회한다.
 2. **완료:** Wazuh에 공식 `alb` Bucket 입력을 추가하고 실제 ALB Record를 확인한다.
 3. **완료:** CloudFront 병렬 CloudWatch Logs를 Apply하고 실제 요청의 Wazuh Raw Archive·Indexer 도착을 확인한다.
-4. 새 DVWA Image를 배포해 안전 감사 Event가 CloudWatch Logs와 Wazuh까지 오는지 확인한다.
+4. **완료:** 새 DVWA Image를 배포해 안전 감사 Event의 CloudWatch Logs·Wazuh Raw·Index 도착을 확인한다.
 5. Capital One 사건용 CloudFront·WAF·ALB·DVWA·CloudTrail Filter와 한글 Dashboard를 만든다.
 6. 다른 조원이 검색식 없이 3분 안에 사건을 설명하는지 사용성 Test를 한다.
 7. 탐지 결과를 Shuffle의 승인형 대응 Playbook으로 넘긴다.
@@ -945,8 +998,8 @@ Dashboard는 Raw JSON을 나열하는 화면이 아니라 다음 질문에 답�
 [완료] ALB Raw 요청 Record·주요 Field Parsing
 [완료] DVWA Raw Pod Record
 [완료] CloudFront 3일 Hot Copy Foundation·Daily Apply·Wazuh 실제 Record 확인
-[완료] 새 DVWA 안전 Audit Image Build·Argo 배포·CloudWatch·Wazuh Raw Runtime 확인
-[다음] Wazuh Index GUI 2건 확인·필수 5-Source Timeline·한글 Dashboard
+[완료] 새 DVWA 안전 Audit Image Build·Argo 배포·CloudWatch·Wazuh Raw·Index Runtime 확인
+[다음] Wazuh GUI 2건 캡처·필수 5-Source Timeline·한글 Dashboard
 [대기] 다른 조원의 3분 무검색 사용성 Test
 [이후] Wazuh Alert → Shuffle Gate 5
 ```
@@ -1033,7 +1086,8 @@ CloudWatch Logs를 Wazuh가 읽어 들인 시점이 달랐기 때문이다.
 - **완료:** CloudFront·WAF·ALB·DVWA·CloudTrail 5개 Source의 실제 Wazuh 수집
 - **완료:** 같은 무해 Probe의 CloudFront Edge·DVWA Pod 원본을 GUI에서 비교
 - **완료:** 새 DVWA 안전 Audit Image의 Build·Push·Argo CD 배포와 CloudWatch·Wazuh Raw Runtime Event
-- **미완료:** `command.execution` 2건의 Wazuh Index GUI 확인·공개용 캡처
+- **완료:** `data.data` Mapping 충돌 보정과 새 `command.execution` 2건의 Wazuh Index 등록
+- **미완료:** `command.execution` 2건의 Wazuh GUI 화면 확인·공개용 캡처
 - **미완료:** 대표 공격 5-Source Timeline과 Source별 전용 Filter·탐지 의미 정리
 - **미완료:** 검색식 없이 읽는 한글 Saved View·Dashboard와 다른 조원의 3분 사용성 Test
 - **이후:** Wazuh Alert를 Shuffle Gate 5로 전달
