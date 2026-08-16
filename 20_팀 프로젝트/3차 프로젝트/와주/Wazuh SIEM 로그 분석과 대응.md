@@ -595,7 +595,7 @@ Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으
 - [x] WAF 실제 요청 Record와 DVWA 실제 Pod Record를 Raw Archive에서 확인
 - [ ] WAF·DVWA Event를 사건으로 좁히는 Custom Rule·Filter 구현
 - [x] ALB S3 Access Log를 Wazuh 입력으로 연결하고 실제 Record·주요 Field 검증
-- [ ] CloudFront 병렬 CloudWatch Logs Destination의 비용·Retention 결정
+- [x] CloudFront 병렬 CloudWatch Logs를 3일 보존·`capital-one-lab` 전용으로 결정하고 Terraform Plan 검증
 - [ ] CloudFront Log를 Wazuh 입력으로 연결·검증
 - [ ] 새 Alert의 AWS 전용 화면 노출 검증
 - [ ] 초보자용 Saved View·Dashboard 구현
@@ -644,7 +644,7 @@ Image Build·GitHub Push·Argo CD 배포와 `Container stderr → Fluent Bit →
 | 외부 HTTP 요청 | WAF CloudWatch Logs | Raw Archive 수집 완료 | Edge에서 어떤 요청을 허용·차단했는가 |
 | 애플리케이션 실행 | DVWA CloudWatch Logs | Raw Archive 수집 완료 | 어떤 Pod에서 어떤 stdout·Warning이 발생했는가 |
 | Load Balancer 요청 | ALB S3 Access Log | Raw Archive·Field Parsing 확인 | 어떤 경로·상태 코드로 ALB를 통과했는가 |
-| CDN 요청 | CloudFront S3 Log | Wazuh 연결 전 | 사용자 요청이 Edge에서 어떻게 처리됐는가 |
+| CDN 요청 | CloudFront S3 + 병렬 CloudWatch Logs | Source·Foundation Plan 완료, Runtime 전 | 사용자 요청이 Edge에서 어떻게 처리됐는가 |
 
 최초 연결 직후 Archive에서 실제 WAF 요청 4건과 `dvwa-*` Pod Record 13,817건을
 확인했다. 특히 DVWA의 큰 수치는 공격 횟수가 아니라 과거 시점부터 Backfill된 일반
@@ -679,8 +679,14 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 - 이번 확인 Record는 `user_agent=Amazon CloudFront`였고 `client_ip`도 CloudFront 측
   주소였다. 따라서 CloudFront를 거친 요청의 실제 요청자 IP는 CloudFront·WAF 로그와
   함께 해석해야 한다.
-- CloudFront는 현재 S3 JSON과 Wazuh Custom Parser 형식이 맞지 않아, 비용을 제한한 병렬
-  CloudWatch Logs Destination을 후보로 둔다.
+- CloudFront S3 JSON은 Wazuh `custom` Loader 형식과 맞지 않고 Wazuh 4.14.7에 전용
+  CloudFront Bucket Type도 없다. 기존 S3·Athena 경로는 유지하고, 같은 Delivery Source에
+  `us-east-1` JSON CloudWatch Logs Destination을 추가하는 방식으로 확정했다.
+- CloudFront Wazuh Log Group은 3일 보존하고 `capital-one-lab`에서만 Delivery한다.
+  2026-08-16 Source·정적 Test와 Foundation Plan의 Create 2·Update 1·Delete 0을 확인했으며,
+  AWS Apply와 Wazuh Record 도착은 아직 검증하지 않았다.
+- CloudFront Standard Log는 지연되거나 누락될 수 있으므로 실시간 탐지 Trigger가 아니라
+  Edge 보조 Evidence로 사용한다. 주 탐지는 CloudTrail Custom Alert를 유지한다.
 - `resource=ec2_imds` 감사 값은 요청 대상 분류이지, Pod에서 IMDS까지의 독립 네트워크
   증거는 아니다.
 
@@ -688,7 +694,7 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 
 1. **완료:** AWS에서 ALB Prefix Reader Policy가 실제 저장됐는지 재조회한다.
 2. **완료:** Wazuh에 공식 `alb` Bucket 입력을 추가하고 실제 ALB Record를 확인한다.
-3. CloudFront 병렬 CloudWatch Logs의 예상 비용·Retention·On/Off 방식을 먼저 정한다.
+3. **완료:** CloudFront 병렬 CloudWatch Logs를 3일·`capital-one-lab` 전용으로 설계하고 비파괴 Foundation Plan을 확인한다.
 4. 새 DVWA Image를 배포해 안전 감사 Event가 CloudWatch Logs와 Wazuh까지 오는지 확인한다.
 5. Capital One 사건용 CloudFront·WAF·ALB·DVWA·CloudTrail Filter와 한글 Dashboard를 만든다.
 6. 탐지 결과를 Shuffle의 승인형 대응 Playbook으로 넘긴다.
@@ -706,7 +712,7 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 
 | 순서 | Source | 시연에서 답하는 질문 | 현재 Wazuh 상태 |
 |---:|---|---|---|
-| 1 | CloudFront Access Log | 공격 요청이 CDN Edge에 도착했는가 | S3 Evidence 존재, Wazuh 연결 전 |
+| 1 | CloudFront Access Log | 공격 요청이 CDN Edge에 도착했는가 | S3 Evidence·Terraform Source/Plan 존재, AWS·Wazuh Runtime 전 |
 | 2 | WAF Log | 어떤 Rule로 검사했고 허용·차단했는가 | Raw Archive 실제 요청 확인 |
 | 3 | Primary ALB Access Log | 요청이 Load Balancer를 거쳐 DVWA에 도달했는가 | Raw Archive·주요 Field Parsing 확인 |
 | 4 | DVWA·Apache·안전 Audit Log | 애플리케이션에서 무엇이 실행됐는가 | 기존 Pod Log 수집 완료, 새 Audit 배포 전 |
@@ -778,7 +784,8 @@ Dashboard는 Raw JSON을 나열하는 화면이 아니라 다음 질문에 답�
 [완료] WAF Raw 요청 Record
 [완료] ALB Raw 요청 Record·주요 Field Parsing
 [완료] DVWA Raw Pod Record
-[다음] CloudFront 병렬 CloudWatch Logs 비용·On/Off·Retention 결정
+[완료] CloudFront 병렬 CloudWatch Logs 3일·Lab 전용 Source·비파괴 Foundation Plan
+[다음] Foundation Apply → Daily Lab Delivery → Wazuh CloudFront Record 확인
 [대기] 새 DVWA 안전 Audit Image 배포·Runtime 확인
 [대기] 필수 5-Source Timeline·한글 Dashboard
 [대기] 다른 조원의 3분 무검색 사용성 Test
