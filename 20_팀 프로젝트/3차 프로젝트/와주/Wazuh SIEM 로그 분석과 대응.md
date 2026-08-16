@@ -590,13 +590,13 @@ Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으
 - [x] Rule `100100`에 `amazon` Group 추가·문법 검사·재시작
 - [x] Rule `100100` Host 원본·Bind Mount·Hash 일치 검증
 - [x] DVWA Command Injection 안전 감사 Event 구현·정적 테스트
-- [ ] 새 DVWA Image 배포 뒤 CloudWatch Logs·Wazuh Runtime Event 확인
+- [x] 새 DVWA Image 배포 뒤 CloudWatch Logs·Wazuh Raw Archive Runtime Event 확인
 - [x] WAF·DVWA CloudWatch Logs를 Wazuh 입력으로 연결
 - [x] WAF 실제 요청 Record와 DVWA 실제 Pod Record를 Raw Archive에서 확인
 - [ ] WAF·DVWA Event를 사건으로 좁히는 Custom Rule·Filter 구현
 - [x] ALB S3 Access Log를 Wazuh 입력으로 연결하고 실제 Record·주요 Field 검증
 - [x] CloudFront 병렬 CloudWatch Logs를 3일 보존·`capital-one-lab` 전용으로 결정하고 Terraform Plan 검증
-- [ ] CloudFront Log를 Wazuh 입력으로 연결·검증
+- [x] CloudFront Log를 Wazuh 입력으로 연결·검증
 - [ ] 새 Alert의 AWS 전용 화면 노출 검증
 - [ ] 초보자용 Saved View·Dashboard 구현
 - [ ] Archive Index의 하루 증가량 기록
@@ -641,18 +641,18 @@ Request Body, 실제 Command, Command 출력, Cookie, Session, Credential은 기
 성공했다는 뜻은 아니다. 전자는 고정 Marker 검증, 후자는 CloudTrail Event로 따로
 증명한다.
 
-현재 판정은 **DVWA Working Tree 구현·PHP 문법·비밀정보 차단 단위 테스트 완료**다.
-Image Build·GitHub Push·Argo CD 배포와 `Container stderr → Fluent Bit → CloudWatch Logs
-→ Wazuh` Runtime 확인은 아직 수행하지 않았다.
+배포 전 판정은 **DVWA Working Tree 구현·PHP 문법·비밀정보 차단 단위 테스트 완료**였다.
+아래 Runtime 검증을 추가로 수행해 `Container stderr → Fluent Bit → CloudWatch Logs →
+Wazuh Raw Archive`까지 닫았다. Wazuh Index GUI의 최종 건수와 화면 캡처는 남아 있다.
 
 #### 2026-08-16 배포 전 코드 검토 Evidence
 
 수정 범위와 각 파일의 역할을 다음처럼 대조했다.
 
-| 파일 | 변경 내용 | 현재 증명 범위 |
+| 파일 | 변경 내용 | 배포 전 증명 범위 |
 |---|---|---|
 | `dvwa/includes/dvwaAudit.inc.php` | Command 대상에 고정 IMDS IPv4 URL이 있는지 `ec2_imds\|other`로 분류 | 원본 입력을 저장하지 않는 안전 분류 함수 |
-| `vulnerabilities/exec/source/low.php` | Command 실행 뒤 `command.execution` JSON Audit Event 생성 | Source 연결 완료, 실제 Pod 출력은 미검증 |
+| `vulnerabilities/exec/source/low.php` | Command 실행 뒤 `command.execution` JSON Audit Event 생성 | Source 연결 완료, 실제 Pod 출력은 당시 미검증 |
 | `tests/test_audit_log.php` | 정상 대상·IMDS Root·Credential 경로 분류, 원본 Body·주소·비밀 표식 제외 검증 | Helper와 Event 계약의 정적 단위 테스트 |
 
 테스트는 기존 로컬 Image `uns-dvwa:local`의 PHP를 사용하되 현재 Working Tree를 읽기
@@ -680,9 +680,97 @@ Audit log self-test passed.
 > - `low.php`: `895024D15154CA3C0378A39436E04BE2F0A6470223D199B8AB253776A5B95131`
 > - `test_audit_log.php`: `C47E5DB727F0880C6AB9B5AE8400AFF8363198DA3CF08E3AAA626A14BFCFD982`
 
-이 Evidence는 **Source와 정적 테스트 완료**를 증명한다. 새 Image Build·ECR Push·Argo CD
-배포, 실제 Pod `stderr`, CloudWatch Logs와 Wazuh 도착은 다음 Runtime 단계에서 별도로
-기록한다.
+이 Evidence는 **Source와 정적 테스트 완료**를 증명한다. 당시 미검증이던 Image
+Build·ECR Push·Argo CD 배포와 실제 Log 도착은 다음 Runtime Evidence로 분리했다.
+
+#### 2026-08-16 Build·Deploy·Runtime Evidence
+
+##### Commit에서 새 Pod까지
+
+| 단계 | 검증값 | 판정 |
+|---|---|---|
+| DVWA Source Commit | `a361cd6fb138a315c4591b87990f05048ac0a4db` | Audit 코드 3개 파일 Commit·`origin/main` Push |
+| GitHub Actions | Run `31951154040` | `build_image`, `update_gitops` 모두 Success |
+| ECR Image | `sha-a361cd6fb138a315c4591b87990f05048ac0a4db` | Immutable Tag 생성 |
+| ECR Digest | `sha256:4219a56a3b6d1a091d24d29cf210271c5a4df7fd6a5da5d051e14eebbb98c219` | ECR·실행 Pod `imageID` 일치 |
+| GitOps Commit | `8dfefe2f2e2cf0bec82e9f6077e59049b735c190` | `values.yaml` Image Tag 자동 갱신 |
+| Argo CD | `Synced`, `Healthy`, Revision `8dfefe2...` | Automated Sync·Rollout 완료 |
+| 실행 Pod | `dvwa-54d45864d4-dgwjg` | 새 Tag·Digest, Ready `true` |
+
+[GitHub Actions Run 31951154040](https://github.com/Unoh03/Uns-DVWA/actions/runs/31951154040)은
+`2026-08-16T13:54:24Z`에 시작해 `13:56:08Z`에 끝났다. Argo CD는 처음에는 새 Pod
+Init 때문에 `Synced / Progressing`이었고, Rollout 뒤 `Synced / Healthy`가 됐다. 기존 Pod는
+새 Pod가 준비될 때까지 Running 상태였으므로 검증 중 Service 중단은 관측되지 않았다.
+
+##### 통제된 대표 공격과 Audit Event
+
+Take `capital-one-20260816T140148Z`를 고정 Runner로 한 번 실행했다. Daily Runtime 재생성으로
+가짜 S3 Object가 없어서 `Prepare-CapitalOneDemoData.ps1`로 `FAKE_TRAINING_DATA` 5행을
+다시 준비했다. 이후 다음 결과를 확인했다.
+
+```text
+IMDS Role 발견                 성공
+단기 Credential 획득           성공, 값 숨김
+고정 가짜 S3 Object 읽기       성공, 5행·SHA-256 일치
+CloudWatch Alarm 전이          성공
+Credential 저장·출력           없음
+```
+
+CloudWatch Log Group `/aws/eks/aws-topology-primary/dvwa`에는 새 Pod가 만든 Audit Event가
+정확히 2건 들어왔다.
+
+| CloudWatch Event UTC | Event | Resource | Result | Image |
+|---|---|---|---|---|
+| `2026-08-16T14:03:40.042Z` | `command.execution` | `ec2_imds` | `succeeded` | `sha-a361cd6...` |
+| `2026-08-16T14:03:43.243Z` | `command.execution` | `ec2_imds` | `succeeded` | `sha-a361cd6...` |
+
+두 Event 모두 `route=/vulnerabilities/exec/`, `status=output_returned`,
+`validation=request_target_classification`이며 원본 Command·Request Body·Credential은 없다.
+정제된 DVWA Evidence에도 IMDS 주소 문자열, `SecretAccessKey`, `SessionToken` Label이 없다.
+
+##### Wazuh 도착과 정확한 검색 조건
+
+Wazuh는 10분 주기로 AWS Source를 Poll한다. 공격 Event가 마지막 Poll 직후 생성돼 다음
+Poll `14:11:49Z`에서 수집됐고 Raw Archive에는 `14:11:57.227Z`에 들어왔다. 수집 지연은
+각각 약 `497.227초`, `494.227초`다.
+
+단순히 `command.execution` 문자열을 Grep하면 4건이 나왔다. 이 중 2건은 CloudWatch를
+검증하려고 실행한 `FilterLogEvents` API의 `filterPattern`이 CloudTrail에 다시 기록된
+**관측 행위 자체의 Log**였다. 다음 구조화 조건으로 좁혀야 실제 DVWA Audit Event 2건만
+남는다.
+
+```text
+data.data.event_type: "command.execution"
+data.data.context.resource: "ec2_imds"
+```
+
+현재 **Wazuh Manager Raw Archive 2건은 검증 완료**다. 두 행의 Wazuh 내부 `id`가 같게
+보였으므로 Index에서 실제 2건이 유지되는지는 위 조건으로 GUI 확인·캡처해야 한다.
+
+##### Evidence Bundle
+
+원본 Bundle은 다음 위치에 있다.
+
+```text
+C:\Users\Unoh\Documents\aws-topology-evidence\capital-one-20260816T140148Z\
+```
+
+Manifest에는 CloudTrail 11 Object, CloudFront 1 Object, ALB 2 Object, WAF 2 Event,
+DVWA 72 Event와 성공한 `GetObject` 검증 1행이 기록됐다. DR DVWA 0건은 서울 Primary
+시나리오이므로 예상된 `Empty`다. `MissingContext=0`이며 Manifest SHA-256
+`e2246afcd89798fd9e14dee6aea18eff72c6091304807b7f9fee8d3fa5ef3fc6`은 Sidecar와 일치한다.
+
+첫 수집에서는 SSH의 정상 Host Key 안내가 `ArgoRevision` 앞에 섞였다. `daily-down.ps1`에
+`LogLevel=ERROR`와 40자리 Commit SHA 검사를 추가하고 `test-daily-automation.ps1`을
+보강한 뒤 Bundle을 다시 만들었다. 수정 후 `GitCommit=8dfefe2...`,
+`ArgoRevision=8dfefe2...`, `ImageSha=sha-a361cd6...`이 서로 일치한다. 이 Terraform
+Working Tree 수정은 아직 Commit 전이다.
+
+> [!warning] 정제본 시간 Field 주의
+> `sanitized/dvwa/events.json`의 중첩 Audit `timestamp`는 정제 과정에서 지역화된 문자열이
+> 되어 Timezone 표식이 없다. Timeline에는 원본 CloudWatch Event의 Epoch Millisecond를
+> UTC로 변환한 위 시각을 사용한다. 이는 Source Event 누락이 아니라 정제본 표현의 남은
+> 보완점이다.
 
 ### 4.10 분산 Source 수집 확장 결과
 
@@ -857,8 +945,8 @@ Dashboard는 Raw JSON을 나열하는 화면이 아니라 다음 질문에 답�
 [완료] ALB Raw 요청 Record·주요 Field Parsing
 [완료] DVWA Raw Pod Record
 [완료] CloudFront 3일 Hot Copy Foundation·Daily Apply·Wazuh 실제 Record 확인
-[다음] 새 DVWA 안전 Audit Image 배포·Runtime 확인
-[대기] 필수 5-Source Timeline·한글 Dashboard
+[완료] 새 DVWA 안전 Audit Image Build·Argo 배포·CloudWatch·Wazuh Raw Runtime 확인
+[다음] Wazuh Index GUI 2건 확인·필수 5-Source Timeline·한글 Dashboard
 [대기] 다른 조원의 3분 무검색 사용성 Test
 [이후] Wazuh Alert → Shuffle Gate 5
 ```
@@ -944,7 +1032,8 @@ CloudWatch Logs를 Wazuh가 읽어 들인 시점이 달랐기 때문이다.
 
 - **완료:** CloudFront·WAF·ALB·DVWA·CloudTrail 5개 Source의 실제 Wazuh 수집
 - **완료:** 같은 무해 Probe의 CloudFront Edge·DVWA Pod 원본을 GUI에서 비교
-- **미완료:** 새 DVWA 안전 Audit Image의 Build·Push·Argo CD 배포와 Runtime Event
+- **완료:** 새 DVWA 안전 Audit Image의 Build·Push·Argo CD 배포와 CloudWatch·Wazuh Raw Runtime Event
+- **미완료:** `command.execution` 2건의 Wazuh Index GUI 확인·공개용 캡처
 - **미완료:** 대표 공격 5-Source Timeline과 Source별 전용 Filter·탐지 의미 정리
 - **미완료:** 검색식 없이 읽는 한글 Saved View·Dashboard와 다른 조원의 3분 사용성 Test
 - **이후:** Wazuh Alert를 Shuffle Gate 5로 전달
