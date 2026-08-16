@@ -594,7 +594,7 @@ Bucket, IP, 임시 Access Key ID 같은 운영 식별자가 포함될 수 있으
 - [x] WAF·DVWA CloudWatch Logs를 Wazuh 입력으로 연결
 - [x] WAF 실제 요청 Record와 DVWA 실제 Pod Record를 Raw Archive에서 확인
 - [ ] WAF·DVWA Event를 사건으로 좁히는 Custom Rule·Filter 구현
-- [ ] ALB S3 Access Log를 Wazuh 입력으로 연결·검증
+- [x] ALB S3 Access Log를 Wazuh 입력으로 연결하고 실제 Record·주요 Field 검증
 - [ ] CloudFront 병렬 CloudWatch Logs Destination의 비용·Retention 결정
 - [ ] CloudFront Log를 Wazuh 입력으로 연결·검증
 - [ ] 새 Alert의 AWS 전용 화면 노출 검증
@@ -636,19 +636,25 @@ Image Build·GitHub Push·Argo CD 배포와 `Container stderr → Fluent Bit →
 
 ### 4.10 분산 Source 수집 확장 결과
 
-2026-08-15 기준 Wazuh에 들어오는 로그 Source는 CloudTrail 하나에서 세 개로 늘었다.
+2026-08-16 기준 Wazuh에 들어오는 로그 Source는 CloudTrail 하나에서 네 개로 늘었다.
 
 | 사건 단계 | Source | Wazuh 도착 상태 | 지금 알 수 있는 것 |
 |---|---|---|---|
 | AWS API 사용 | CloudTrail S3 | 수집·Custom Alert 검증 완료 | 어떤 Role이 보호된 S3 Object를 읽었는가 |
 | 외부 HTTP 요청 | WAF CloudWatch Logs | Raw Archive 수집 완료 | Edge에서 어떤 요청을 허용·차단했는가 |
 | 애플리케이션 실행 | DVWA CloudWatch Logs | Raw Archive 수집 완료 | 어떤 Pod에서 어떤 stdout·Warning이 발생했는가 |
-| Load Balancer 요청 | ALB S3 Access Log | 연결 전 | 어떤 경로·상태 코드로 ALB를 통과했는가 |
+| Load Balancer 요청 | ALB S3 Access Log | Raw Archive·Field Parsing 확인 | 어떤 경로·상태 코드로 ALB를 통과했는가 |
 | CDN 요청 | CloudFront S3 Log | Wazuh 연결 전 | 사용자 요청이 Edge에서 어떻게 처리됐는가 |
 
 최초 연결 직후 Archive에서 실제 WAF 요청 4건과 `dvwa-*` Pod Record 13,817건을
 확인했다. 특히 DVWA의 큰 수치는 공격 횟수가 아니라 과거 시점부터 Backfill된 일반
 stdout·PHP Warning까지 포함한 Raw Event 양이다.
+
+ALB 입력은 2026-08-16 Wazuh Manager가 `bucket type="alb"`, `path=alb/primary`를
+주기적으로 실행하고 오류 없이 종료하는 것을 먼저 확인했다. 이어 Raw Archive에서
+`source=alb` Record와 Request·ELB/Target Status·Client/Target IP·`trace_id`가 구조화된
+Field로 저장된 것을 확인했다. 이는 **ALB 로그 수집·해석 성공**이며 전용 탐지 Rule이나
+사건 Alert까지 완료됐다는 뜻은 아니다.
 
 ```text
 로그가 여러 곳에 흩어짐
@@ -669,7 +675,10 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 - CloudTrail의 `GetObject`는 Rule `100100`으로 탐지·경보까지 확인했다.
 - WAF 요청과 DVWA Pod Log는 한곳에서 검색할 수 있지만 아직 전용 탐지 규칙이 없다.
 - DVWA에 새로 구현한 안전 감사 Event는 Image를 Build·Push·배포하지 않아 Runtime에는 없다.
-- ALB가 연결되면 WAF와 애플리케이션 사이의 요청 경로·상태 코드를 보강할 수 있다.
+- ALB Record로 WAF와 애플리케이션 사이의 요청 경로·상태 코드를 보강할 수 있다.
+- 이번 확인 Record는 `user_agent=Amazon CloudFront`였고 `client_ip`도 CloudFront 측
+  주소였다. 따라서 CloudFront를 거친 요청의 실제 요청자 IP는 CloudFront·WAF 로그와
+  함께 해석해야 한다.
 - CloudFront는 현재 S3 JSON과 Wazuh Custom Parser 형식이 맞지 않아, 비용을 제한한 병렬
   CloudWatch Logs Destination을 후보로 둔다.
 - `resource=ec2_imds` 감사 값은 요청 대상 분류이지, Pod에서 IMDS까지의 독립 네트워크
@@ -677,8 +686,8 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 
 #### 다음 작업 순서
 
-1. AWS에서 ALB Prefix Reader Policy가 실제 저장됐는지 재조회한다.
-2. Wazuh에 공식 `alb` Bucket 입력을 추가하고 실제 ALB Record를 확인한다.
+1. **완료:** AWS에서 ALB Prefix Reader Policy가 실제 저장됐는지 재조회한다.
+2. **완료:** Wazuh에 공식 `alb` Bucket 입력을 추가하고 실제 ALB Record를 확인한다.
 3. CloudFront 병렬 CloudWatch Logs의 예상 비용·Retention·On/Off 방식을 먼저 정한다.
 4. 새 DVWA Image를 배포해 안전 감사 Event가 CloudWatch Logs와 Wazuh까지 오는지 확인한다.
 5. Capital One 사건용 CloudFront·WAF·ALB·DVWA·CloudTrail Filter와 한글 Dashboard를 만든다.
@@ -699,11 +708,11 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 |---:|---|---|---|
 | 1 | CloudFront Access Log | 공격 요청이 CDN Edge에 도착했는가 | S3 Evidence 존재, Wazuh 연결 전 |
 | 2 | WAF Log | 어떤 Rule로 검사했고 허용·차단했는가 | Raw Archive 실제 요청 확인 |
-| 3 | Primary ALB Access Log | 요청이 Load Balancer를 거쳐 DVWA에 도달했는가 | S3 Evidence 존재, Wazuh 연결 전 |
+| 3 | Primary ALB Access Log | 요청이 Load Balancer를 거쳐 DVWA에 도달했는가 | Raw Archive·주요 Field Parsing 확인 |
 | 4 | DVWA·Apache·안전 Audit Log | 애플리케이션에서 무엇이 실행됐는가 | 기존 Pod Log 수집 완료, 새 Audit 배포 전 |
 | 5 | CloudTrail STS·S3 Event | 탈취 Role로 어떤 AWS API를 성공시켰는가 | Raw·Rule `100100` Alert 확인 |
 
-따라서 현재는 **3/5 Source의 Wazuh Runtime 수집을 확인한 상태**다. WAF와 DVWA의 Raw
+따라서 현재는 **4/5 Source의 Wazuh Runtime 수집을 확인한 상태**다. WAF·ALB·DVWA의 Raw
 Event 도착은 수집 성공이지, 다섯 Source Timeline이나 탐지·해석 완료를 뜻하지 않는다.
 
 #### EKS는 왜 여섯 번째 공격 Source가 아닌가
@@ -739,9 +748,11 @@ DR DVWA는 서울 Primary 시나리오 밖이다.
 → 탐지 Rule·오탐 검증
 ```
 
-현재 CloudTrail은 Custom Alert까지 닫혔고, WAF·DVWA는 Raw Event 수집 단계다. ALB와
+현재 CloudTrail은 Custom Alert까지 닫혔고, WAF·ALB·DVWA는 Raw Event 수집 단계다.
 CloudFront는 Wazuh 입력 전이다. 새 DVWA 안전 Audit Event도 코드와 정적 테스트만
-완료됐으며 Image Build·Push·Argo CD 배포·Runtime 수집은 남아 있다.
+완료됐으며 Image Build·Push·Argo CD 배포·Runtime 수집은 남아 있다. 이번에 확인한
+CloudFront 경유 ALB Record의 Client는 CloudFront 측 주소였으므로, 실제 요청자와 Edge
+처리는 CloudFront·WAF Event로 보강해야 한다.
 
 #### 초보자용 Dashboard의 합격 기준
 
@@ -765,9 +776,9 @@ Dashboard는 Raw JSON을 나열하는 화면이 아니라 다음 질문에 답�
 ```text
 [완료] CloudTrail Raw·Rule 100100 Alert
 [완료] WAF Raw 요청 Record
+[완료] ALB Raw 요청 Record·주요 Field Parsing
 [완료] DVWA Raw Pod Record
-[다음] ALB Reader Policy 재조회·Wazuh alb 입력
-[대기] CloudFront 병렬 CloudWatch Logs 비용·On/Off·Retention 결정
+[다음] CloudFront 병렬 CloudWatch Logs 비용·On/Off·Retention 결정
 [대기] 새 DVWA 안전 Audit Image 배포·Runtime 확인
 [대기] 필수 5-Source Timeline·한글 Dashboard
 [대기] 다른 조원의 3분 무검색 사용성 Test
