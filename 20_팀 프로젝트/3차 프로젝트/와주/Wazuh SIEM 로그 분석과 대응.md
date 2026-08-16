@@ -796,9 +796,25 @@ data.app_event.event_type: "command.execution"
 AND data.app_event.context.resource: "ec2_imds"
 ```
 
-Data View는 `wazuh-archives-*`, 시간 범위는 `Last 24 hours`로 둔다. GUI의 2건 화면과
-공개용 Field 정리·캡처는 사용자 화면에서 남길 작업이다. 이 단계는 **수집·구조화·중앙
-검색 성공**이지 전용 Wazuh 탐지 Rule이나 Alert 완료를 뜻하지 않는다.
+Data View는 `wazuh-archives-*`, 시간 범위는 `Last 24 hours`로 뒀다.
+
+**캡처 — Mapping 보정 뒤 Wazuh Archives Index 2건**
+
+![[Pasted image 20260816235516.png]]
+
+화면 상단의 `2 hits`와 펼친 문서에서 `event_type=command.execution`,
+`context.resource=ec2_imds`, `result=succeeded`, `route=/vulnerabilities/exec/`를 확인했다.
+Wazuh `@timestamp=2026-08-16 23:41:55.898 KST`와 애플리케이션
+`data.app_event.timestamp=2026-08-16T14:37:00Z`도 함께 보여 Source Event와 Poll 뒤
+Index 도착 시각을 구분할 수 있다.
+
+> [!warning] 내부 원본 Evidence
+> 이 캡처에는 Client IP, Request ID, 내부 Pod IP, Container ID, Image Hash가 보인다.
+> 내부 원본은 그대로 보존하되 보고서·발표본에는 필요한 Field만 Column으로 선택하거나
+> 해당 값을 가린 별도 캡처를 사용한다.
+
+이 결과는 **수집·구조화·중앙 검색 성공**이지 전용 Wazuh 탐지 Rule이나 Alert 완료를
+뜻하지 않는다.
 
 ##### Evidence Bundle
 
@@ -1087,7 +1103,8 @@ CloudWatch Logs를 Wazuh가 읽어 들인 시점이 달랐기 때문이다.
 - **완료:** 같은 무해 Probe의 CloudFront Edge·DVWA Pod 원본을 GUI에서 비교
 - **완료:** 새 DVWA 안전 Audit Image의 Build·Push·Argo CD 배포와 CloudWatch·Wazuh Raw Runtime Event
 - **완료:** `data.data` Mapping 충돌 보정과 새 `command.execution` 2건의 Wazuh Index 등록
-- **미완료:** `command.execution` 2건의 Wazuh GUI 화면 확인·공개용 캡처
+- **완료:** `command.execution` 2건의 Wazuh GUI 확인·내부 원본 캡처
+- **미완료:** 보고서용 Field 선택·민감 운영 식별자 마스킹 캡처
 - **미완료:** 대표 공격 5-Source Timeline과 Source별 전용 Filter·탐지 의미 정리
 - **미완료:** 검색식 없이 읽는 한글 Saved View·Dashboard와 다른 조원의 3분 사용성 Test
 - **이후:** Wazuh Alert를 Shuffle Gate 5로 전달
