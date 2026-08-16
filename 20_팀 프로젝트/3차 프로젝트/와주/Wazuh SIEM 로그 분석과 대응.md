@@ -892,16 +892,16 @@ CloudWatch Logs에 약 9초 뒤 도착했다. Wazuh 재수집 뒤 같은 시각�
 → Shuffle Playbook으로 승인된 대응 실행
 ```
 
-즉 현재는 프로젝트의 첫 번째 문제인 **분산 로그 수집**을 일부 해결했다. 하지만
-WAF·DVWA는 아직 `수집`까지만 확인했고, `탐지·해석·대응`까지 닫히지 않았다. 수집된
-13,817건을 그대로 사람이 읽는 것이 아니라 다음 단계에서 Capital One 시나리오와 관련된
-Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
+현재는 프로젝트의 첫 번째 문제인 **분산 로그 수집**을 필수 5-Source 범위에서 해결했고,
+Capital One 관련 Event를 별도 Filter와 Dashboard로 좁혔다. 다만 전용 Custom Alert는
+CloudTrail `GetObject` 하나이며 WAF·ALB·DVWA·CloudFront의 관련 Event는 사건을 해석하는
+보조 Evidence다. Shuffle 자동 대응과 실제 사용자 검증은 아직 닫히지 않았다.
 
 #### 현재 보이는 범위와 공백
 
 - CloudTrail의 `GetObject`는 Rule `100100`으로 탐지·경보까지 확인했다.
 - WAF 요청과 DVWA Pod Log는 한곳에서 검색할 수 있지만 아직 전용 탐지 규칙이 없다.
-- DVWA에 새로 구현한 안전 감사 Event는 Image를 Build·Push·배포하지 않아 Runtime에는 없다.
+- DVWA 안전 감사 Image의 Build·Push·Argo CD 배포와 CloudWatch·Wazuh Raw·Index Runtime을 확인했다.
 - ALB Record로 WAF와 애플리케이션 사이의 요청 경로·상태 코드를 보강할 수 있다.
 - 이번 확인 Record는 `user_agent=Amazon CloudFront`였고 `client_ip`도 CloudFront 측
   주소였다. 따라서 CloudFront를 거친 요청의 실제 요청자 IP는 CloudFront·WAF 로그와
@@ -923,9 +923,10 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 2. **완료:** Wazuh에 공식 `alb` Bucket 입력을 추가하고 실제 ALB Record를 확인한다.
 3. **완료:** CloudFront 병렬 CloudWatch Logs를 Apply하고 실제 요청의 Wazuh Raw Archive·Indexer 도착을 확인한다.
 4. **완료:** 새 DVWA Image를 배포해 안전 감사 Event의 CloudWatch Logs·Wazuh Raw·Index 도착을 확인한다.
-5. Capital One 사건용 CloudFront·WAF·ALB·DVWA·CloudTrail Filter와 한글 Dashboard를 만든다.
-6. 다른 조원이 검색식 없이 3분 안에 사건을 설명하는지 사용성 Test를 한다.
-7. 탐지 결과를 Shuffle의 승인형 대응 Playbook으로 넘긴다.
+5. **완료:** Capital One 사건용 CloudFront·WAF·ALB·DVWA·CloudTrail Filter와 한글 Dashboard를 만든다.
+6. **다음:** [[Wazuh 대시보드 미니 실습]]으로 운호가 보존 Event를 조사한다.
+7. 다른 조원이 검색식 없이 3분 안에 사건을 설명하는지 사용성 Test를 한다.
+8. 탐지 결과를 Shuffle의 승인형 대응 Playbook으로 넘긴다.
 
 ### 4.11 중간정리 — 시연 로그의 범위와 Gate 4 완료 기준
 
@@ -943,7 +944,7 @@ Event만 걸러야 Wazuh를 도입한 목적이 완성된다.
 | 1 | CloudFront Access Log | 공격 요청이 CDN Edge에 도착했는가 | Raw Archive·JSON Field·Indexer 검색 확인 |
 | 2 | WAF Log | 어떤 Rule로 검사했고 허용·차단했는가 | Raw Archive 실제 요청 확인 |
 | 3 | Primary ALB Access Log | 요청이 Load Balancer를 거쳐 DVWA에 도달했는가 | Raw Archive·주요 Field Parsing 확인 |
-| 4 | DVWA·Apache·안전 Audit Log | 애플리케이션에서 무엇이 실행됐는가 | 기존 Pod Log 수집 완료, 새 Audit 배포 전 |
+| 4 | DVWA·Apache·안전 Audit Log | 애플리케이션에서 무엇이 실행됐는가 | 새 Audit Image·CloudWatch·Wazuh Raw·Index Runtime 확인 |
 | 5 | CloudTrail STS·S3 Event | 탈취 Role로 어떤 AWS API를 성공시켰는가 | Raw·Rule `100100` Alert 확인 |
 
 따라서 현재는 **5/5 Source의 Wazuh Runtime 수집을 확인한 상태**다. 다섯 Source의 Raw
@@ -982,12 +983,11 @@ DR DVWA는 서울 Primary 시나리오 밖이다.
 → 탐지 Rule·오탐 검증
 ```
 
-현재 CloudTrail은 Custom Alert까지 닫혔고, WAF·ALB·DVWA·CloudFront는 Raw Event 수집
-단계다. CloudFront JSON의 Method·Path·Status·Edge Request ID Parsing도 확인했다. 새
-DVWA 안전 Audit Event는 코드와 정적 테스트만 완료됐으며 Image Build·Push·Argo CD
-배포·Runtime 수집은 남아 있다. 이번에 확인한 CloudFront 경유 ALB Record의 Client는
-CloudFront 측 주소였으므로, 실제 요청자와 Edge 처리는 CloudFront·WAF Event로 보강해야
-한다.
+CloudTrail은 Custom Alert까지 닫혔고, WAF·ALB·DVWA·CloudFront는 관련 Raw Event와 필요한
+Filter를 Dashboard에서 사용한다. CloudFront JSON의 Method·Path·Status·Edge Request ID와
+새 DVWA 안전 Audit Event의 Runtime도 확인했다. 다만 이 네 Source에 대표 시나리오 전용
+Custom Alert가 생긴 것은 아니다. CloudFront 경유 ALB Record의 Client는 CloudFront 측
+주소였으므로 실제 요청자와 Edge 처리는 CloudFront·WAF Event로 보강해야 한다.
 
 #### 초보자용 Dashboard의 합격 기준
 
@@ -1015,8 +1015,9 @@ Dashboard는 Raw JSON을 나열하는 화면이 아니라 다음 질문에 답�
 [완료] DVWA Raw Pod Record
 [완료] CloudFront 3일 Hot Copy Foundation·Daily Apply·Wazuh 실제 Record 확인
 [완료] 새 DVWA 안전 Audit Image Build·Argo 배포·CloudWatch·Wazuh Raw·Index Runtime 확인
-[다음] Wazuh GUI 2건 캡처·필수 5-Source Timeline·한글 Dashboard
-[대기] 다른 조원의 3분 무검색 사용성 Test
+[완료] Wazuh GUI Evidence·필수 5-Source Filter·한글 Dashboard·Saved Object 읽기 검증
+[다음] 보존 Event 기반 운호 안내형 미니 실습
+[대기] 다른 조원의 3분 무검색 사용성 Test와 동일 실행 5-Source 시간창 검증
 [이후] Wazuh Alert → Shuffle Gate 5
 ```
 
@@ -1206,14 +1207,14 @@ Evidence로 둔다.
 | 순서 | Saved Object 이름 | 종류·Data View | 조건·표현 | 상태 |
 |---:|---|---|---|---|
 | 01 | `[AWS-SOC] 01 중요 경보` | Metric · `wazuh-alerts-*` | `rule.level >= 10`, Count | 완료 |
-| 02 | `[AWS-SOC] 02 WAF 검사 요청` | Metric · `wazuh-archives-*` | `data.webaclId:*`, Count | 대기 |
-| 03 | `[AWS-SOC] 03 WAF 차단 요청` | Metric · `wazuh-archives-*` | `data.action: "BLOCK"`, Count | 대기 |
-| 04 | `[AWS-SOC] 04 ALB 오류 응답` | Metric · `wazuh-archives-*` | ALB `4xx`·`5xx`, Count | 대기 |
-| 10 | `[AWS-SOC] 10 웹 요청 추이` | Line · `wazuh-archives-*` | WAF Event Count / `timestamp`, `data.action`으로 분리 | **다음** |
-| 11 | `[AWS-SOC] 11 ALB 응답 상태` | Vertical Bar · `wazuh-archives-*` | `data.aws.elb_status_code`별 Count | 대기 |
-| 12 | `[AWS-SOC] 12 AWS API 활동 추이` | Line · `wazuh-archives-*` | CloudTrail Count / `timestamp` | 대기 |
-| 13 | `[AWS-SOC] 13 주요 AWS Service` | Horizontal Bar · `wazuh-archives-*` | `data.aws.eventSource` 상위 10개 | 대기 |
-| 20 | `[AWS-SOC] 20 최근 중요 경보` | Saved Search · `wazuh-alerts-*` | `rule.level >= 10`, 안전한 Field만 표시 | 대기 |
+| 02 | `[AWS-SOC] 02 WAF 검사 요청` | Metric · `wazuh-archives-*` | `data.webaclId:*`, Count | 완료 |
+| 03 | `[AWS-SOC] 03 WAF 차단 요청` | Metric · `wazuh-archives-*` | `data.action: "BLOCK"`, Count | 완료 |
+| 04 | `[AWS-SOC] 04 ALB 오류 응답` | Metric · `wazuh-archives-*` | ALB `4xx`·`5xx`, Count | 완료 |
+| 10 | `[AWS-SOC] 10 웹 요청 추이` | Line · `wazuh-archives-*` | WAF Event Count / `timestamp`, `data.action`으로 분리 | 완료 |
+| 11 | `[AWS-SOC] 11 ALB 응답 상태` | Vertical Bar · `wazuh-archives-*` | `data.aws.elb_status_code`별 Count | 완료 |
+| 12 | `[AWS-SOC] 12 AWS API 활동 추이` | Line · `wazuh-archives-*` | CloudTrail Count / `timestamp` | 완료 |
+| 13 | `[AWS-SOC] 13 주요 AWS Service` | Horizontal Bar · `wazuh-archives-*` | `data.aws.eventSource` 상위 10개 | 완료 |
+| 20 | `[AWS-SOC] 20 최근 중요 경보` | Saved Search · `wazuh-alerts-*` | `rule.level >= 10`, 안전한 Field만 표시 | 완료 |
 
 첫 Panel은 시간 범위 `Last 7 days`, DQL `rule.level >= 10`에서 Count `1`을 확인하고
 `[AWS-SOC] 01 중요 경보`로 저장했다. 현재 이 1건은 Rule `100100`의 Level 12 Alert다.
@@ -1235,13 +1236,25 @@ Evidence로 둔다.
 | 순서 | Saved Object 이름 | 종류·Data View | 조건·표현 | 상태 |
 |---:|---|---|---|---|
 | 01 | `[AWS-SOC] 01 중요 경보` | 기존 Metric 재사용 | `rule.level >= 10` | 완료 |
-| 31 | `[AWS-SOC] 31 Workload 의심 행위` | Metric · `wazuh-archives-*` | `command.execution` + `ec2_imds` | 대기 |
-| 32 | `[AWS-SOC] 32 보호 데이터 접근` | Metric · `wazuh-alerts-*` | `rule.id: "100100"` | 대기 |
-| 33 | `[AWS-SOC] 33 대응 연결 상태` | Markdown | 현재 수동 분석, Shuffle 미연결을 명시 | 대기 |
-| 40 | `[AWS-SOC] 40 사건 단계별 Evidence` | Horizontal Bar · `wazuh-archives-*` | CloudFront·WAF·ALB·DVWA·CloudTrail 5개 Filter | 대기 |
-| 41 | `[AWS-SOC] 41 관련 Event 수집 흐름` | Line · `wazuh-archives-*` | 5개 Filter / `timestamp` | 대기 |
-| 50 | `[AWS-SOC] 50 탐지 근거` | Saved Search · `wazuh-alerts-*` | Rule `100100`, 안전한 Field만 표시 | 대기 |
-| 51 | `[AWS-SOC] 51 분석과 다음 조치` | Markdown | 발생 내용·영향·관측 공백·다음 조치 | 대기 |
+| 31 | `[AWS-SOC] 31 Workload 의심 행위` | Metric · `wazuh-archives-*` | `command.execution` + `ec2_imds` | 완료 |
+| 32 | `[AWS-SOC] 32 보호 데이터 접근` | Metric · `wazuh-alerts-*` | `rule.id: "100100"` | 완료 |
+| 33 | `[AWS-SOC] 33 대응 연결 상태` | Markdown | 현재 수동 분석, Shuffle 미연결을 명시 | 완료 |
+| 40 | `[AWS-SOC] 40 사건 단계별 Evidence` | Horizontal Bar · `wazuh-archives-*` | CloudFront·WAF·ALB·DVWA·CloudTrail 5개 Filter | 완료 |
+| 41 | `[AWS-SOC] 41 관련 Event 수집 흐름` | Line · `wazuh-archives-*` | 5개 Filter / `timestamp` | 완료 |
+| 50 | `[AWS-SOC] 50 탐지 근거` | Saved Search · `wazuh-alerts-*` | Rule `100100`, 안전한 Field만 표시 | 완료 |
+| 51 | `[AWS-SOC] 51 분석과 다음 조치` | Markdown | 발생 내용·영향·관측 공백·다음 조치 | 완료 |
+
+### 구현 완료와 사용성 실습의 분리
+
+2026-08-17에 Wazuh 내부 Saved Object를 읽기 전용으로 검사해 Dashboard 2개,
+Visualization 14개, Saved Search 2개를 확인했다. 두 Dashboard의 Panel 구성과 저장된
+`Last 15 minutes`, Saved Search의 안전한 6개 Field·최신순 정렬·불필요한 Exists Filter
+0개, ALB 응답 코드 오름차순을 확인했다.
+
+화면 구현과 사람이 실제로 읽을 수 있다는 주장은 다르다. 첫 사용 학습과 다른 조원의 3분
+무검색 Test는 [[Wazuh 대시보드 미니 실습]] 대본으로 분리한다. 현재 보존된 다섯 Source
+Record는 8월 13일의 S3 접근과 8월 14~16일의 Edge·Workload 검증을 함께 사용하므로,
+**한 번의 동일 공격을 관통한 완전한 Timeline으로 해석하지 않는다.**
 
 ### Runtime 가능성 확인
 
@@ -1288,15 +1301,12 @@ scenario.id 또는 correlation.id
 ### 구현 순서와 완료 Gate
 
 ```text
-[완료] 중요 경보 Metric 1개로 Wazuh Visualize 저장 절차 학습
-→ [다음] WAF 요청 추이 Line Chart로 Overview의 중심 시각 확정
-→ ALB 응답 분포·CloudTrail 활동 시각화
-→ 나머지 요약 Metric·최근 중요 경보 추가
-→ AWS 보안관제 현황 Dashboard 조립
-→ AWS 보안 사건 상세 Dashboard 조립
-→ 새 대표 시나리오 실행 후 Last 15 minutes로 확인
+[완료] Dashboard 2개·Visualization 14개·Saved Search 2개 구현
+→ [완료] Saved Object 구조·검색 조건·정렬과 보존 Evidence 읽기 검증
+→ [다음] 운호의 보존 Event 기반 안내형 미니 실습
 → 다른 조원의 3분 무검색 사용성 Test
-→ Saved Objects Export·보고서용 마스킹 Screenshot
+→ 새 대표 시나리오 실행 후 Last 15 minutes로 확인
+→ Wazuh UI 공식 Saved Objects Export·보고서용 마스킹 Screenshot
 ```
 
 Gate 4 통과 기준은 다음과 같다.
@@ -1315,6 +1325,9 @@ Gate 4 통과 기준은 다음과 같다.
 - Dashboard·Visualization·Saved Search는 `Dashboard management → Saved objects`에서
   `[AWS-SOC]` Prefix 전체를 `.ndjson`으로 Export한다.
 - 버전 관리 대상은 `observability/wazuh/saved-objects/`에 둔다.
+- 2026-08-17에는 내일 실습 복구를 위해 같은 Local Index용 Raw Backup과 SHA-256을
+  `C:\Users\Unoh\Documents\aws-topology-evidence\wazuh\saved-objects\`에 먼저 보존했다.
+  이는 Wazuh UI의 공식 Import용 Export가 아니므로 버전 관리본을 대신하지 않는다.
 - 보고서용 Screenshot은
   `C:\Users\Unoh\Documents\aws-topology-evidence\report-assets\observability\07_wazuh\`에
   저장하고, IP·Request ID·ARN 전체·Credential·Cookie·Command 응답은 공개본에서 제외한다.
