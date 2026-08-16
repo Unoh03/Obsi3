@@ -1118,20 +1118,32 @@ Test까지 별도로 구현해야 한다.
 
 ### 왜 별도 Dashboard를 만드는가
 
-`Discover`는 원본 Event를 조사하는 화면이라 Field와 검색식을 알아야 한다. 최종 화면은
-다른 조원이 DQL을 직접 입력하지 않아도 다음 순서로 사건을 읽게 만드는 것이 목적이다.
+`Discover`는 원본 Event를 조사하는 화면이라 Field와 검색식을 알아야 한다. 반대로
+Metric만 여러 개 놓으면 숫자는 잘 보이지만 평소 흐름과 변화가 보이지 않는다. 최종 화면은
+다른 조원이 DQL을 직접 입력하지 않아도 다음 순서로 환경과 사건을 읽게 만드는 것이
+목적이다.
 
 ```text
-중요 경보 요약
-→ 어느 계층에서 관측됐는지 확인
-→ 시간 흐름과 판정 확인
-→ 안전하게 선별된 근거 확인
+평상시: 전체 웹 요청·AWS API 활동의 추세와 분포 확인
+→ 이상 징후 또는 중요 경보 발견
+→ 사건 상세 화면에서 관련 계층과 근거 확인
 → 현재 대응 상태와 다음 조치 확인
+→ 필요할 때만 원본 Event로 Drill-down
 ```
 
-Dashboard의 겉모습과 이름은 특정 사고에 종속되지 않게 **`AWS 보안관제 현황`**으로
-정한다. 내부 Filter는 우선 현재 검증 가능한 Capital One 기반 대표 시나리오를 사용하고,
-`Capital One`이라는 이름은 보고서의 검증 시나리오·상세 Evidence에서만 밝힌다.
+이를 위해 Dashboard를 다음 두 화면으로 분리한다.
+
+1. **`AWS 보안관제 현황`**: 평상시 웹 요청·응답·AWS API 활동과 중요 경보를 함께 보는
+   Overview
+2. **`AWS 보안 사건 상세`**: 경보 발생 뒤 관련 Event·탐지 근거·대응 상태를 조사하는
+   Incident View
+
+두 화면의 겉모습과 이름은 특정 사고에 종속되지 않게 유지한다. Capital One이라는 이름은
+보고서의 검증 시나리오와 상세 Evidence에서만 밝힌다. Incident View의 내부 Filter는
+우선 현재 Runtime으로 검증 가능한 Capital One 기반 대표 시나리오를 사용한다.
+
+여기서 **전체 트래픽**은 현재 Wazuh에 연결된 Source로 볼 수 있는 웹 요청 흐름과 AWS API
+활동을 뜻한다. VPC Flow Logs를 이용한 전체 Network Flow나 Packet 관측을 뜻하지 않는다.
 
 ### 이번에 배운 Wazuh 화면 구성
 
@@ -1157,30 +1169,109 @@ Wazuh의 Rule Level 체계 자체는 제품 기능이다. 다만 Custom Rule `10
 모든 WAF·CloudFront·ALB·DVWA Event를 Level 12로 올린 것이 아니다. Dashboard에서
 `rule.level >= 10`을 **중요 경보**로 보여주는 기준도 이번 Dashboard에서 정한 표시 기준이다.
 
-### Dashboard v1 Panel 계획
+### Source별 역할과 화면 배치 원칙
 
-| 순서 | Saved Object 이름 | Data View | 핵심 조건·표현 | 상태 |
+| Source | Overview에서의 역할 | Incident View에서의 역할 |
+|---|---|---|
+| WAF | 검사한 웹 요청 수, `ALLOW`·`BLOCK` 추세 | 요청 URI·판정·Rule 근거 |
+| ALB | Origin 응답 상태 `2xx`·`3xx`·`4xx`·`5xx` 분포 | 실제 Backend 전달·응답 근거 |
+| CloudTrail | AWS API 활동량과 주요 AWS Service | Role·API·Resource 접근 근거 |
+| DVWA 안전 Audit | 일반 트래픽이 아니라 Workload의 의심 행위 | `command.execution`·`ec2_imds` 근거 |
+| CloudFront | 전달 지연이 있어 실시간 Overview의 기준으로 사용하지 않음 | 가장 바깥 Edge 요청의 보조 Evidence |
+
+같은 요청이 CloudFront·WAF·ALB·DVWA에 각각 기록되므로 이 수치를 더해 `전체 요청`으로
+표현하지 않는다. Overview의 웹 요청 기준은 WAF가 실제 검사한 Request로 통일한다.
+CloudFront는 3일 Hot Copy와 전달 지연이라는 조건이 있으므로 Incident View의 보조
+Evidence로 둔다.
+
+### Dashboard A — `AWS 보안관제 현황`
+
+#### 화면 배치
+
+```text
+1행: 요약 Metric 4개
+     WAF 검사 요청 | WAF 차단 요청 | ALB 오류 응답 | 중요 경보
+
+2행: 웹 트래픽
+     WAF 요청 추이(넓게) | ALB 응답 상태 분포
+
+3행: AWS 활동
+     CloudTrail API 활동 추이(넓게) | 주요 AWS Service
+
+4행: 최근 중요 경보 Saved Search
+```
+
+#### Saved Object 계획
+
+| 순서 | Saved Object 이름 | 종류·Data View | 조건·표현 | 상태 |
 |---:|---|---|---|---|
-| 01 | `[AWS-SOC] 01 중요 경보` | `wazuh-alerts-*` | `rule.level >= 10`, Metric Count | 완료 |
-| 02 | `[AWS-SOC] 02 워크로드 의심 행위` | `wazuh-archives-*` | `command.execution` + `ec2_imds`, Metric Count | 다음 |
-| 03 | `[AWS-SOC] 03 보호 데이터 접근` | `wazuh-alerts-*` | `rule.id: "100100"`, Metric Count | 대기 |
-| 04 | `[AWS-SOC] 04 대응 연결 상태` | Markdown | 현재 수동 분석, 이후 Shuffle 연계 | 대기 |
-| 11~15 | Edge → WAF → ALB → Workload → AWS API | `wazuh-archives-*` | 대표 요청의 계층별 Event Count | 대기 |
-| 20 | `[AWS-SOC] 20 Wazuh 수집 흐름` | `wazuh-archives-*` | `timestamp` Date Histogram + 5개 Filter | 대기 |
-| 21 | `[AWS-SOC] 21 웹 요청 판정` | `wazuh-archives-*` | WAF `data.action`의 `ALLOW`·`BLOCK` | 대기 |
-| 30 | `[AWS-SOC] 30 최근 중요 경보` | `wazuh-alerts-*` | 안전한 Field만 선택한 Saved Search | 대기 |
+| 01 | `[AWS-SOC] 01 중요 경보` | Metric · `wazuh-alerts-*` | `rule.level >= 10`, Count | 완료 |
+| 02 | `[AWS-SOC] 02 WAF 검사 요청` | Metric · `wazuh-archives-*` | `data.webaclId:*`, Count | 대기 |
+| 03 | `[AWS-SOC] 03 WAF 차단 요청` | Metric · `wazuh-archives-*` | `data.action: "BLOCK"`, Count | 대기 |
+| 04 | `[AWS-SOC] 04 ALB 오류 응답` | Metric · `wazuh-archives-*` | ALB `4xx`·`5xx`, Count | 대기 |
+| 10 | `[AWS-SOC] 10 웹 요청 추이` | Line · `wazuh-archives-*` | WAF Event Count / `timestamp`, `data.action`으로 분리 | **다음** |
+| 11 | `[AWS-SOC] 11 ALB 응답 상태` | Vertical Bar · `wazuh-archives-*` | `data.aws.elb_status_code`별 Count | 대기 |
+| 12 | `[AWS-SOC] 12 AWS API 활동 추이` | Line · `wazuh-archives-*` | CloudTrail Count / `timestamp` | 대기 |
+| 13 | `[AWS-SOC] 13 주요 AWS Service` | Horizontal Bar · `wazuh-archives-*` | `data.aws.eventSource` 상위 10개 | 대기 |
+| 20 | `[AWS-SOC] 20 최근 중요 경보` | Saved Search · `wazuh-alerts-*` | `rule.level >= 10`, 안전한 Field만 표시 | 대기 |
 
 첫 Panel은 시간 범위 `Last 7 days`, DQL `rule.level >= 10`에서 Count `1`을 확인하고
 `[AWS-SOC] 01 중요 경보`로 저장했다. 현재 이 1건은 Rule `100100`의 Level 12 Alert다.
 
-### 시각을 해석할 때의 주의점
+### Dashboard B — `AWS 보안 사건 상세`
 
-다섯 Source의 원본 발생 시각 Field는 서로 다르다. 공통 `timestamp`로 그린 그래프는
-현재 **공격 발생 순서가 아니라 Wazuh에 Index된 시각의 흐름**이다. 따라서 v1에서는
-`공격 Timeline`이라고 과장하지 않고 `Wazuh 수집 흐름`이라고 표시한다.
+#### 화면 배치
 
-다른 공격도 같은 Filter 변경 없이 자동으로 묶는 진짜 범용 Timeline은 이후 다음 공통
-Field를 정규화해야 한다.
+```text
+1행: 중요 경보 | Workload 의심 행위 | 보호 데이터 접근 | 대응 연결 상태
+2행: 사건 단계별 Evidence 수를 하나의 Horizontal Bar로 표현
+3행: 5개 Source의 Wazuh 수집 시각 흐름
+4행: 탐지 근거 Saved Search | 분석 결론·다음 조치 Markdown
+```
+
+5개 공격 단계를 Metric 5개로 늘어놓지 않는다. 하나의 `Filters` 기반 Horizontal Bar로
+묶어 서로 비교하고, 아래 시계열에서 언제 Wazuh에 도착했는지 확인한다.
+
+| 순서 | Saved Object 이름 | 종류·Data View | 조건·표현 | 상태 |
+|---:|---|---|---|---|
+| 01 | `[AWS-SOC] 01 중요 경보` | 기존 Metric 재사용 | `rule.level >= 10` | 완료 |
+| 31 | `[AWS-SOC] 31 Workload 의심 행위` | Metric · `wazuh-archives-*` | `command.execution` + `ec2_imds` | 대기 |
+| 32 | `[AWS-SOC] 32 보호 데이터 접근` | Metric · `wazuh-alerts-*` | `rule.id: "100100"` | 대기 |
+| 33 | `[AWS-SOC] 33 대응 연결 상태` | Markdown | 현재 수동 분석, Shuffle 미연결을 명시 | 대기 |
+| 40 | `[AWS-SOC] 40 사건 단계별 Evidence` | Horizontal Bar · `wazuh-archives-*` | CloudFront·WAF·ALB·DVWA·CloudTrail 5개 Filter | 대기 |
+| 41 | `[AWS-SOC] 41 관련 Event 수집 흐름` | Line · `wazuh-archives-*` | 5개 Filter / `timestamp` | 대기 |
+| 50 | `[AWS-SOC] 50 탐지 근거` | Saved Search · `wazuh-alerts-*` | Rule `100100`, 안전한 Field만 표시 | 대기 |
+| 51 | `[AWS-SOC] 51 분석과 다음 조치` | Markdown | 발생 내용·영향·관측 공백·다음 조치 | 대기 |
+
+### Runtime 가능성 확인
+
+2026-08-17에 최근 7일의 현재 Index를 읽기 전용으로 집계해 다음 값을 확인했다.
+
+| 항목 | 현재 보존 Event |
+|---|---:|
+| WAF `ALLOW` | 8 |
+| WAF `BLOCK` | 0 |
+| ALB `200` / `302` / `404` / `503` | 76 / 48 / 98 / 1 |
+| CloudTrail 주요 Service | EC2·KMS·CloudWatch Logs·STS·S3 등 |
+
+이는 계획한 추세·분포 Panel이 실제 Field로 만들어질 수 있다는 확인이다. 현재 값이
+정상 기준선이거나 공격 횟수라는 뜻은 아니다. 충분한 기간의 정상 데이터가 쌓인 뒤에야
+평소 범위와 이상 증가를 비교할 수 있다.
+
+### 과장하지 않기 위한 표시 규칙
+
+- `WAF 검사 요청`은 Network Packet 전체가 아니라 WAF가 평가한 HTTP Request다.
+- `ALB 4xx·5xx`는 오류 응답이며 그 자체로 공격 판정이 아니다.
+- `CloudTrail API 활동`은 AWS 작업량이며 그 자체로 악성 행위가 아니다.
+- Event Count `0`은 해당 시간에 Event가 없다는 뜻이지 수집기가 정상이라는 증거가 아니다.
+- 대응 상태를 저장하는 외부 데이터가 아직 없으므로 Shuffle 연결 전에는 Markdown에
+  `자동 대응 미연결`이라고 고정 표시한다.
+- 다섯 Source의 원본 발생 시각 Field는 서로 다르다. 공통 `timestamp` 그래프는
+  **공격 발생 순서가 아니라 Wazuh에 Index된 시각의 흐름**이므로 `공격 Timeline`이라고
+  부르지 않는다.
+
+다른 공격도 같은 Filter 변경 없이 자동으로 묶는 범용 Timeline은 이후 다음 공통 Field를
+정규화해야 한다.
 
 ```text
 event_time
@@ -1191,12 +1282,34 @@ service.name
 scenario.id 또는 correlation.id
 ```
 
-우선 현재 Field로 Dashboard v1과 3분 무검색 사용성 Test를 완료하고, Test에서 드러난
+우선 현재 Field로 두 Dashboard와 3분 무검색 사용성 Test를 완료하고, Test에서 드러난
 불편만 정규화 대상으로 올린다.
+
+### 구현 순서와 완료 Gate
+
+```text
+[완료] 중요 경보 Metric 1개로 Wazuh Visualize 저장 절차 학습
+→ [다음] WAF 요청 추이 Line Chart로 Overview의 중심 시각 확정
+→ ALB 응답 분포·CloudTrail 활동 시각화
+→ 나머지 요약 Metric·최근 중요 경보 추가
+→ AWS 보안관제 현황 Dashboard 조립
+→ AWS 보안 사건 상세 Dashboard 조립
+→ 새 대표 시나리오 실행 후 Last 15 minutes로 확인
+→ 다른 조원의 3분 무검색 사용성 Test
+→ Saved Objects Export·보고서용 마스킹 Screenshot
+```
+
+Gate 4 통과 기준은 다음과 같다.
+
+- Overview에서 웹 요청 추세·응답 분포·AWS API 활동·중요 경보를 검색식 없이 설명한다.
+- Incident View에서 관련 계층·탐지 근거·관측 공백·다음 조치를 검색식 없이 설명한다.
+- Source별 수치를 공격 횟수나 수집기 Health로 잘못 해석하지 않는다.
+- 민감 운영 식별자를 노출하지 않고 원본 Event로 Drill-down할 수 있다.
+- 다른 조원이 3분 안에 위 내용을 설명한다.
 
 ### 저장·증거 보존 기준
 
-- 최종 Dashboard 이름: `AWS 보안관제 현황`
+- 최종 Dashboard 이름: `AWS 보안관제 현황`, `AWS 보안 사건 상세`
 - 현재 제작 확인 시간 범위: `Last 7 days`
 - 새 시연 직후 확인 시간 범위: `Last 15 minutes`
 - Dashboard·Visualization·Saved Search는 `Dashboard management → Saved objects`에서
@@ -1211,3 +1324,5 @@ scenario.id 또는 correlation.id
 - [Wazuh Creating custom dashboards](https://documentation.wazuh.com/current/user-manual/wazuh-dashboard/creating-custom-dashboards.html)
 - [OpenSearch 2.19 DQL](https://docs.opensearch.org/2.19/dashboards/dql/)
 - [OpenSearch 2.19 Discover와 Saved Search](https://docs.opensearch.org/2.19/dashboards/discover/index-discover/)
+- [AWS CloudWatch Logs의 WAF·CloudTrail Dashboard 예시](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CloudWatchLogs-OpenSearch-Dashboards.html)
+- [Microsoft Sentinel Overview 구성 예시](https://learn.microsoft.com/en-us/azure/sentinel/get-visibility)
