@@ -1612,6 +1612,8 @@ Primary DVWA CloudWatch Log Group
 최대 6.439초, 중앙값 3.761초로 Stretch 목표 60초를 통과했다. 이 Rule은 공격 탐지가 아니라
 **전달 경로가 Wazuh까지 도착했다는 검증 Rule**이다.
 Bridge 종료 뒤 Primary Queue와 DLQ의 Visible·In-flight·Delayed 메시지는 모두 `0`이었다.
+세 Take ID는 Live JSONL과 `alerts.json`에서 각각 정확히 1건이었다. 이는 정상 실행의 중복
+0 증거이며 비정상 종료 Crash Window 검증을 대신하지 않는다.
 
 > [!warning] Plan 입력 교훈
 > Foundation의 선택 기능은 `setup-foundation.ps1`가 CLI `-var`로 넘긴다. 이를 빼고 일반
