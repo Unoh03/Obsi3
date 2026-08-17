@@ -1494,9 +1494,20 @@ Pull: Wazuh가 주기마다 각 Stream에 새 로그가 있는지 질문
 Push: 새 로그가 생기면 AWS가 Queue로 전달
 ```
 
-최종 Subscription은 승인된 Log Group에 실제 저장되는 **전체 Event**를 전달한다.
-`command.execution`이나 `GetObject`만 전송하면 AWS 전달 계층이 탐지까지 선행해 버리고,
-Wazuh가 정상·의심 Event를 비교하거나 새 Rule로 과거 Event를 재분석하기 어렵다.
+Subscription은 승인된 DVWA Log Group에 저장되는 **전체 Event**를 Lambda로 전달한다.
+`command.execution` 같은 위험 조건은 Subscription에 넣지 않으므로 AWS 전달 계층이 탐지를
+대신하지 않는다. 다만 SQS·노트북에 Credential·Cookie·Command 원문과 응답이 남지 않도록
+Lambda Payload는 다음 안전 필드 Allowlist만 보존한다.
+
+```text
+event_type·result·user_id·source_ip·route·request_id
+request_method·request_path·take_id·training_marker
+context.action·resource·security_level·status 등 안전 분류값
+```
+
+허용되지 않은 원문은 `raw_message_sha256`으로만 식별하며, 비정형 Log는
+`normalized=false`만 남긴다. 따라서 **빠른 Push는 안전 감사 Event의 즉시 탐지**, 기존
+CloudWatch·S3 원본과 10분 Poll은 **전체 원문 조사·재분석** 역할로 구분한다.
 
 따라서 조건의 위치는 다음과 같다.
 
@@ -1511,11 +1522,15 @@ Wazuh가 정상·의심 Event를 비교하거나 새 Rule로 과거 Event를 재
 원본 S3·CloudWatch Logs는 계속 보존한다. 노트북이 꺼지면 Queue가 Event를 보관하고,
 Bridge가 켜진 뒤 Catch-up한다. Host Spool 기록에 성공한 메시지만 Queue에서 삭제한다.
 
-CloudWatch Logs Subscription과 S3 Event Notification은 중복 전달될 수 있다. 따라서
-`event_id`를 만들어 로컬 Ledger에서 중복을 막고, Push와 기존 Poll을 같은 Source에 동시에
-Live Alert로 넣지 않는다. 현재 DVWA Shadow Bridge는 `event_id`의 SHA-256을 파일명으로 한
-Event별 JSON 파일을 원자적으로 생성해 같은 Event를 두 번 기록하지 않는다. Wazuh
-`localfile` Live 입력은 아직 연결하지 않았다.
+CloudWatch Logs Subscription과 SQS는 중복 전달 가능성이 있으므로 exactly-once를 가정하지
+않는다. Bridge는 단일 Writer Lock을 잡고, `event_id`의 SHA-256을 파일명으로 한 Event별
+Ledger를 임시 파일에 Flush한 뒤 원자적으로 이름을 바꾼다. Wazuh는 별도의 안정된
+`wazuh-push-live.jsonl` 한 파일을 계속 따라 읽는다.
+
+유실보다 중복을 허용하는 at-least-once 경계 때문에 JSONL Flush 직후 Ledger 확정 전에
+프로세스가 비정상 종료되면 한 Event가 재전달되어 중복될 수 있다. 정상 실행 중 동일
+`event_id` 재수신은 Ledger가 건너뛰지만, 전원 장애까지 포함한 exactly-once는 아직
+보장하지 않는다.
 
 Source마다 원래 만들어지는 속도도 다르므로 역할을 구분한다.
 
@@ -1535,11 +1550,12 @@ Wazuh가 멈춰도 남는 탐지 출력이며, Push 경로와 같은 역할을 �
 
 ### 아직 증명하지 않은 것
 
-- DVWA 1-Source Push Terraform Source와 비파괴 Plan은 완료했지만 AWS Apply는 하지 않았다.
-- DVWA Event의 `AWS 도착 → Queue → Host Spool → Wazuh Rule 100101` 실제 지연은 아직
-  측정하지 않았다.
+- 안전 검증 Event의 Push Transport와 Rule `100102` 지연은 3회 확인했지만, 실제
+  `command.execution → Rule 100103` 공격 탐지는 아직 Runtime으로 확인하지 않았다.
 - 노트북 10분 Off 뒤 Queue Catch-up과 중복 Alert 0건은 아직 검증하지 않았다.
-- Lambda·SQS의 실제 사용량과 비용은 DVWA Shadow 단계에서 측정해야 한다.
+- Lambda·SQS의 월간 실제 사용량과 비용은 운영 Event량을 더 측정해야 한다.
+- 기존 DVWA 10분 Poll을 끄는 Live Cutover는 아직 하지 않았다. 현재는 원본 조사 Poll과
+  안전 Push 검증을 함께 유지한다.
 - CloudTrail S3 전달은 빠른 최초 Trigger가 아니라 후속 확인 Evidence로 유지한다.
 - 기존 `Start-WafLiveViewer.ps1`은 주 관제 화면이 아니라 WAF 원본의 저지연 진단용 보조
   도구로 유지한다.
@@ -1550,12 +1566,12 @@ Wazuh가 멈춰도 남는 탐지 출력이며, Push 경로와 같은 역할을 �
 P0: Event Schema·IAM·Queue/DLQ·기본 Toggle Off 정적 계약 완료
 → Push OFF AWS Resource 0-change 확인 완료
 → Push ON 비파괴 Plan: 9 add / 1 in-place update / 0 destroy 확인 완료
-→ [다음] 실제 호출량·비용 경계 확인 후 명시적 Apply 승인
-→ P1: 서울 DVWA Log Group 전체 Event를 Shadow Spool로 실제 연결
-→ 실제 무해 Event 3회 누락 0·중복 처리 0
-→ 비용·AWS 도착 이후 전달 지연 측정
-→ P2: DVWA Poll만 끄고 Wazuh localfile Live Cutover
-→ Rule 100101 실제 Alert 3회·Offline Catch-up·중복 0
+→ P1: 서울 DVWA Subscription·Lambda·SQS Apply와 Local Bridge 연결 완료
+→ 안전 Allowlist 보강·Lambda 1건 In-place Update·Post-Apply 0-change 완료
+→ 안정 JSONL Wazuh localfile·Rule 100102 연결 완료
+→ 무해 Event 3회 누락 0·총 3.427~6.439초 확인 완료
+→ [다음] 실제 command.execution → Push Rule 100103 Alert 검증
+→ P2: Offline Catch-up·중복 경계 검증 뒤 DVWA Poll Cutover 결정
 → WAF → CloudTrail → ALB → CloudFront 순서로 확장
 ```
 
@@ -1569,9 +1585,10 @@ P0: Event Schema·IAM·Queue/DLQ·기본 Toggle Off 정적 계약 완료
 ```text
 Primary DVWA CloudWatch Log Group
 → 빈 Subscription Filter로 저장 Event 전체 전달
-→ 서울 Lambda에서 공통 JSON Schema 정규화
+→ 서울 Lambda에서 안전 필드만 JSON Schema로 정규화
 → 서울 SQS·DLQ
-→ Local Shadow Bridge의 Event별 JSON Spool
+→ Local Bridge의 Event별 Ledger + 안정 JSONL
+→ Wazuh localfile(JSON) → Rule 100102·100103
 ```
 
 검증 결과:
@@ -1579,10 +1596,30 @@ Primary DVWA CloudWatch Log Group
 - 기본 Toggle Off: 실제 AWS Resource 변경 `0`
 - Toggle On Saved Plan: `9 add / 1 in-place update / 0 destroy`
 - 갱신 1개: 기존 Wazuh Reader Role에 해당 Queue의 Receive/Delete 최소 권한 추가
-- Forwarder Test 3개와 Push·기존 Foundation 정적 계약 통과
+- 초기 Push Apply 뒤 보안 Allowlist Lambda 수정: `0 add / 1 update / 0 destroy`
+- 같은 활성 입력의 Post-Apply Fresh Plan: `No changes`
+- Forwarder Test 4개와 Push·기존 Foundation 정적 계약, PowerShell 5·7 Parser 통과
 - `terraform fmt -check`, `terraform validate`, `git diff --check` 통과
-- **미수행:** AWS Apply, 실제 Queue 수신, Wazuh Live 연결, 지연·사용량·비용 측정,
-  나머지 WAF·CloudTrail·ALB·CloudFront 확장
+- Wazuh `logcollector`·`analysisd`·`modulesd` 설정 검사 종료 코드 `0`
+
+| Take | Event→Lambda | Lambda→Bridge | Bridge→Alert | 총 지연 |
+|---|---:|---:|---:|---:|
+| `wazuh-push-20260817T102046747Z` | 3.134초 | 2.207초 | 1.098초 | **6.439초** |
+| `wazuh-push-20260817T102127824Z` | 2.426초 | 0.240초 | 0.761초 | **3.427초** |
+| `wazuh-push-20260817T102209527Z` | 2.381초 | 0.242초 | 1.138초 | **3.761초** |
+
+세 건 모두 Rule `100102`로 생성됐고 `payload.normalized=true`, 원문 미저장을 확인했다.
+최대 6.439초, 중앙값 3.761초로 Stretch 목표 60초를 통과했다. 이 Rule은 공격 탐지가 아니라
+**전달 경로가 Wazuh까지 도착했다는 검증 Rule**이다.
+
+> [!warning] Plan 입력 교훈
+> Foundation의 선택 기능은 `setup-foundation.ps1`가 CLI `-var`로 넘긴다. 이를 빼고 일반
+> `terraform plan`을 실행하면 활성 Resource를 끄는 삭제 Plan이 생길 수 있다. 실제로 첫
+> 후보가 9개 삭제를 제안했지만 `prevent_destroy`에서 중단됐고 Apply되지 않았다. 이후 현재
+> 활성 입력을 모두 명시한 Fresh Plan만 저장·적용했다.
+
+- **미수행:** 실제 Rule `100103` 공격 Runtime, 10분 Offline Catch-up·장애 중복 Test,
+  월간 비용 산정, 기존 DVWA Poll Cutover, 나머지 WAF·CloudTrail·ALB·CloudFront Push 확장
 
 공식 참고:
 
