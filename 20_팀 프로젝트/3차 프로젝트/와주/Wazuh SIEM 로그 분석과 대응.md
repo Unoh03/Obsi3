@@ -1339,3 +1339,124 @@ Gate 4 통과 기준은 다음과 같다.
 - [OpenSearch 2.19 Discover와 Saved Search](https://docs.opensearch.org/2.19/dashboards/discover/index-discover/)
 - [AWS CloudWatch Logs의 WAF·CloudTrail Dashboard 예시](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CloudWatchLogs-OpenSearch-Dashboards.html)
 - [Microsoft Sentinel Overview 구성 예시](https://learn.microsoft.com/en-us/azure/sentinel/get-visibility)
+
+## 6. 최초 탐지 지연 개선 — `10m` Poll에서 `1m` Poll로
+
+### 왜 Dashboard보다 탐지 속도를 먼저 고쳤는가
+
+기존 DVWA 안전 Audit Event는 애플리케이션에서 `2026-08-16T14:37:00Z`에 발생했지만
+Wazuh Index에는 `2026-08-16T14:41:55.898Z` 무렵 등록됐다. 당시 AWS Wodle의
+`interval`이 `10m`였으므로, Wazuh가 Event를 분석하는 시간보다 **AWS 로그를 다시 읽으러
+가는 Poll 대기 시간**이 더 큰 병목이었다.
+
+따라서 목표를 다음처럼 분리했다.
+
+```text
+DVWA command.execution + ec2_imds
+→ 1분 안에 Wazuh 의심 경보
+→ CloudTrail GetObject가 나중에 도착
+→ 같은 사건의 데이터 접근 확인 경보
+```
+
+여기서 빠른 경보는 침해 확정이 아니다. Workload가 IMDS를 대상으로 Shell Command를
+실행했다는 **고신호 의심 행위**이고, 실제 Node Role의 보호 Object 읽기는 기존 CloudTrail
+Rule이 별도로 확인한다.
+
+### 영구 원본 변경
+
+`single-node/config/wazuh_cluster/wazuh_manager.conf`의 AWS Wodle 주기를 다음처럼 바꿨다.
+
+```xml
+<interval>1m</interval>
+```
+
+`capital_one_rules.xml`에는 Rule `100101`, Level 10을 추가했다.
+
+| 조건 | 값 |
+|---|---|
+| Event Type | `command.execution` |
+| Action | `shell_command` |
+| Resource | `ec2_imds` |
+| DVWA Security Level | `low` |
+| Route | `/vulnerabilities/exec/` |
+
+두 Rule의 의미는 다음과 같이 구분한다.
+
+| 단계 | Rule | Level | 의미 |
+|---|---:|---:|---|
+| 최초 의심 | `100101` | 10 | Workload Command가 EC2 IMDS를 대상으로 실행됨 |
+| 침해 확인 | `100100` | 12 | 지정 Node Role로 보호된 검증 S3 Object 읽기에 성공함 |
+
+`100101`은 `result=succeeded`만 요구하지 않는다. Command가 결과를 반환하지 못했더라도
+IMDS 대상 실행 **시도 자체**를 놓치지 않기 위해서다. 반대로 일반 대상 Command와 다른
+Route는 이 Rule에서 제외한다.
+
+### 정적·대조군 검증
+
+Manager 재생성 전에 `wazuh-analysisd -t`로 전체 Ruleset 로드를 검사했다. 이어서
+`wazuh-logtest`에 합성 Event를 넣어 다음 계약을 확인했다.
+
+| 입력 | Rule `100101` |
+|---|---|
+| IMDS 대상·지정 Command 경로 | 발생 — Level 10 |
+| 같은 경로지만 Resource가 `other` | 발생하지 않음 |
+| IMDS 대상이지만 Route가 `/health` | 발생하지 않음 |
+
+양성의 Phase 3 결과는 다음과 같았다.
+
+```text
+id: 100101
+level: 10
+description: AWS-SOC: Workload command execution targeted EC2 IMDS.
+Alert to be generated.
+```
+
+### `1m` 실행 주기 사전 검증
+
+Manager를 재생성한 뒤 컨테이너 내부 `ossec.conf`에도 `<interval>1m</interval>`이 반영된
+것을 확인했다. Daily AWS Runtime이 꺼진 상태에서 연속 세 Poll을 관찰한 결과는 다음과
+같다.
+
+| Poll | 시작 | 종료 | 소요 |
+|---:|---|---|---:|
+| 1 | `07:27:05Z` | `07:27:26Z` | 21초 |
+| 2 | `07:28:05Z` | `07:28:25Z` | 20초 |
+| 3 | `07:29:05Z` | `07:29:25Z` | 20초 |
+
+세 주기 모두 새 `Interval overtaken`, AWS API Error, Wazuh Module Error 없이 끝났다.
+이는 현재 보존 데이터 범위에서 1분마다 수집기를 시작할 실행 여유가 있다는 뜻이다.
+
+### 아직 증명하지 않은 것
+
+- 실제 공격 Event 발생부터 Rule `100101` Alert까지 60초 이내인지는 아직 Runtime으로
+  증명하지 않았다.
+- Daily Runtime이 켜져 로그 Stream과 Event가 늘어난 상태에서도 20초대가 유지되는지는
+  아직 확인하지 않았다.
+- `1m` Poll은 AWS API 호출량을 기존보다 늘리므로 S3 Request와 CloudWatch Logs 호출량·비용을
+  실제 실습 구간에서 측정해야 한다.
+- CloudTrail S3 전달은 빠른 최초 Trigger가 아니라 후속 확인 Evidence로 유지한다.
+- 기존 `Start-WafLiveViewer.ps1`은 주 관제 화면이 아니라 WAF 원본의 저지연 진단용 보조
+  도구로 유지한다.
+
+### 다음 Runtime Gate
+
+```text
+minimal + capital-one-lab Daily Up
+→ Wazuh Dashboard 자동 새로고침 10초
+→ 대표 시나리오 1회 실행
+→ Source Event / CloudWatch 도착 / Wazuh Archive / Rule 100101 시각 기록
+→ 같은 방법으로 총 3회 반복
+→ 60초 이내·중복 없음·Interval overtaken 없음·API 오류 없음 판정
+→ 수집 호출량과 비용 확인
+```
+
+세 번 모두 통과하면 `1m` Poll을 실습 Profile의 기본값으로 채택한다. 실패하면 Wazuh를
+폐기하지 않고, CloudWatch Logs Subscription과 SQS/Lambda 기반 Event-driven Bridge를
+다음 대안으로 검토한다.
+
+공식 참고:
+
+- [Wazuh AWS Wodle `interval`](https://documentation.wazuh.com/current/user-manual/reference/ossec-conf/wodle-s3.html)
+- [Wazuh Log 수집과 실시간 분석](https://documentation.wazuh.com/current/user-manual/capabilities/log-data-collection/how-it-works.html)
+- [CloudWatch Logs API Quota](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html)
+- [Amazon S3 Request Pricing](https://aws.amazon.com/s3/pricing/)
