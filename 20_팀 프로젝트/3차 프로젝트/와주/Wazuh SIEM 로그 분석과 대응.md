@@ -1611,6 +1611,7 @@ Primary DVWA CloudWatch Log Group
 세 건 모두 Rule `100102`로 생성됐고 `payload.normalized=true`, 원문 미저장을 확인했다.
 최대 6.439초, 중앙값 3.761초로 Stretch 목표 60초를 통과했다. 이 Rule은 공격 탐지가 아니라
 **전달 경로가 Wazuh까지 도착했다는 검증 Rule**이다.
+Bridge 종료 뒤 Primary Queue와 DLQ의 Visible·In-flight·Delayed 메시지는 모두 `0`이었다.
 
 > [!warning] Plan 입력 교훈
 > Foundation의 선택 기능은 `setup-foundation.ps1`가 CLI `-var`로 넘긴다. 이를 빼고 일반
