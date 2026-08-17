@@ -1340,7 +1340,13 @@ Gate 4 통과 기준은 다음과 같다.
 - [AWS CloudWatch Logs의 WAF·CloudTrail Dashboard 예시](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CloudWatchLogs-OpenSearch-Dashboards.html)
 - [Microsoft Sentinel Overview 구성 예시](https://learn.microsoft.com/en-us/azure/sentinel/get-visibility)
 
-## 6. 최초 탐지 지연 개선 — `10m` Poll에서 `1m` Poll로
+## 6. 최초 탐지 지연 재설계 — `1m` Poll 실험에서 Push로
+
+> [!important] 2026-08-17 설계 보정
+> `1m` Poll은 짧은 실행 가능성 실험까지만 수행했고 영구안으로 채택하지 않았다.
+> CloudWatch Log Stream 48개를 매분 반복 조회하는 구조가 되어 호출량과 로컬 부하가
+> 불필요하게 커지기 때문이다. Host·Container 원본은 `10m`으로 복구했으며, Target은
+> `AWS Event-driven Push + 리전별 SQS + Local Bridge`로 바꿨다.
 
 ### 왜 Dashboard보다 탐지 속도를 먼저 고쳤는가
 
@@ -1353,7 +1359,7 @@ Wazuh Index에는 `2026-08-16T14:41:55.898Z` 무렵 등록됐다. 당시 AWS Wod
 
 ```text
 DVWA command.execution + ec2_imds
-→ 1분 안에 Wazuh 의심 경보
+→ 가능한 빨리 Wazuh 의심 경보
 → CloudTrail GetObject가 나중에 도착
 → 같은 사건의 데이터 접근 확인 경보
 ```
@@ -1362,9 +1368,11 @@ DVWA command.execution + ec2_imds
 실행했다는 **고신호 의심 행위**이고, 실제 Node Role의 보호 Object 읽기는 기존 CloudTrail
 Rule이 별도로 확인한다.
 
-### 영구 원본 변경
+### `1m` Poll 실험과 Rule 변경
 
-`single-node/config/wazuh_cluster/wazuh_manager.conf`의 AWS Wodle 주기를 다음처럼 바꿨다.
+지연 원인을 확인하기 위해
+`single-node/config/wazuh_cluster/wazuh_manager.conf`의 AWS Wodle 주기를 **일시적으로**
+다음처럼 바꿨다.
 
 ```xml
 <interval>1m</interval>
@@ -1391,6 +1399,9 @@ Rule이 별도로 확인한다.
 IMDS 대상 실행 **시도 자체**를 놓치지 않기 위해서다. 반대로 일반 대상 Command와 다른
 Route는 이 Rule에서 제외한다.
 
+Rule `100101`은 Polling 주기와 독립된 탐지 의미 계약이므로 그대로 보존한다. 되돌린 것은
+Rule이 아니라 모든 AWS Source를 한꺼번에 매분 읽는 수집 주기다.
+
 ### 정적·대조군 검증
 
 Manager 재생성 전에 `wazuh-analysisd -t`로 전체 Ruleset 로드를 검사했다. 이어서
@@ -1411,7 +1422,7 @@ description: AWS-SOC: Workload command execution targeted EC2 IMDS.
 Alert to be generated.
 ```
 
-### `1m` 실행 주기 사전 검증
+### `1m` 실행 주기 실험 결과
 
 Manager를 재생성한 뒤 컨테이너 내부 `ossec.conf`에도 `<interval>1m</interval>`이 반영된
 것을 확인했다. Daily AWS Runtime이 꺼진 상태에서 연속 세 Poll을 관찰한 결과는 다음과
@@ -1426,33 +1437,126 @@ Manager를 재생성한 뒤 컨테이너 내부 `ossec.conf`에도 `<interval>1m
 세 주기 모두 새 `Interval overtaken`, AWS API Error, Wazuh Module Error 없이 끝났다.
 이는 현재 보존 데이터 범위에서 1분마다 수집기를 시작할 실행 여유가 있다는 뜻이다.
 
+하지만 실행 가능하다는 사실만으로 좋은 기본 설계가 되지는 않는다. Wazuh AWS 상태 DB를
+대조했을 때 CloudWatch Logs에서 추적 중인 Stream은 48개였다. 현재 Collector 동작을
+기준으로 `1m`은 새 Event가 없어도 최소 다음 반복 조회를 만든다.
+
+```text
+48 GetLogEvents / minute
+≈ 69,120 / day
+≈ 2,073,600 / 30 days
++ CloudWatch Log Group 조회
++ CloudTrail·ALB S3 List
+```
+
+이는 청구액이 아니라 **최소 API 호출량 추정**이다. 정확한 비용은 실제 Event량·Batch·AWS
+가격표를 따로 계산해야 한다. 그래도 10분 주기보다 반복 조회가 약 10배 늘고, 48개 Stream
+전체를 빨리 읽어야만 한 개의 중요한 Event를 빨리 찾는 구조라는 문제는 확실하다.
+
+따라서 다음처럼 판정했다.
+
+| 항목 | 판정 |
+|---|---|
+| `1m`에서 Collector가 끝나는가 | 세 번 모두 약 20초로 끝남 |
+| `1m`이 Target Architecture로 적절한가 | 아니오. 전역 반복 조회가 과함 |
+| Rule `100101`이 유효한가 | 예. 빠른 의심 행위 의미 계약으로 보존 |
+| 현재 영구 설정 | `10m` 복구 완료 |
+| 다음 Target | Source Event가 생길 때 Queue로 보내는 Push 전달 |
+
+### Push Target Architecture
+
+```text
+us-east-1
+  WAF·CloudFront CloudWatch Logs
+  → Subscription → Edge Lambda → Edge SQS → DLQ
+
+ap-northeast-2
+  DVWA·CloudTrail CloudWatch Logs
+  → Subscription → Primary Lambda → Primary SQS → DLQ
+
+  ALB S3 ObjectCreated
+  → Primary SQS
+
+Local
+  Queue별 20초 Long Poll
+  → Host JSONL Spool
+  → Wazuh localfile(JSON)
+  → Custom Rule·Dashboard
+```
+
+AWS 쪽은 Event 발생 시 Queue에 넣으므로 Push이고, 로컬은 공개 Inbound Port를 열지 않고
+Queue 두 개만 Long Poll한다. 즉 인터넷이 노트북으로 직접 밀어 넣는 구조가 아니다.
+
+Push가 되기 위해 위험 조건을 붙일 필요는 없다.
+
+```text
+Pull: Wazuh가 주기마다 각 Stream에 새 로그가 있는지 질문
+Push: 새 로그가 생기면 AWS가 Queue로 전달
+```
+
+최종 Subscription은 승인된 Log Group에 실제 저장되는 **전체 Event**를 전달한다.
+`command.execution`이나 `GetObject`만 전송하면 AWS 전달 계층이 탐지까지 선행해 버리고,
+Wazuh가 정상·의심 Event를 비교하거나 새 Rule로 과거 Event를 재분석하기 어렵다.
+
+따라서 조건의 위치는 다음과 같다.
+
+| 조건 | 위치 |
+|---|---|
+| 어떤 로그를 가져오는가 | 승인 Log Group·Region·ALB Prefix·Source Toggle |
+| 어떤 Event가 위험한가 | Wazuh Rule `100100`·`100101`과 이후 Custom Rule |
+
+비용은 위험 Event만 잘라 보내는 방식이 아니라, Source를 하나씩 켜고 실제 전체 Event량을
+측정한 뒤 다음 Source를 추가하는 방식으로 통제한다.
+
+원본 S3·CloudWatch Logs는 계속 보존한다. 노트북이 꺼지면 Queue가 Event를 보관하고,
+Bridge가 켜진 뒤 Catch-up한다. Host Spool 기록에 성공한 메시지만 Queue에서 삭제한다.
+
+CloudWatch Logs Subscription과 S3 Event Notification은 중복 전달될 수 있다. 따라서
+`event_id`를 만들어 로컬 Ledger에서 중복을 막고, Push와 기존 Poll을 같은 Source에 동시에
+Live Alert로 넣지 않는다.
+
+Source마다 원래 만들어지는 속도도 다르므로 역할을 구분한다.
+
+| Source | 역할 | 속도 목표 |
+|---|---|---|
+| DVWA 안전 Audit | IMDS 대상 Command 실행 시도 | 빠른 의심 Trigger. Stretch 60초, 완료 기준 180초 |
+| WAF | Edge 검사 결과 | 빠른 보조 신호 |
+| CloudTrail | Node Role의 STS·S3 API 사용 | 침해 확인. 원본 도착과 Wazuh 전달 지연을 분리 |
+| ALB·CloudFront | 요청 경로 복원 | 보조 Evidence, 최초 Trigger 아님 |
+
+기존 `CloudTrail Metric Filter → Alarm → SNS`도 독립된 AWS Native 사람 알림으로 유지한다.
+Wazuh가 멈춰도 남는 탐지 출력이며, Push 경로와 같은 역할을 중복 구현한 것이 아니다.
+
+상세 설계 정본:
+
+`D:/terraform/aws_terraform_build_code/observability/wazuh/WAZUH-PUSH-TRANSPORT-DESIGN.md`
+
 ### 아직 증명하지 않은 것
 
-- 실제 공격 Event 발생부터 Rule `100101` Alert까지 60초 이내인지는 아직 Runtime으로
-  증명하지 않았다.
-- Daily Runtime이 켜져 로그 Stream과 Event가 늘어난 상태에서도 20초대가 유지되는지는
-  아직 확인하지 않았다.
-- `1m` Poll은 AWS API 호출량을 기존보다 늘리므로 S3 Request와 CloudWatch Logs 호출량·비용을
-  실제 실습 구간에서 측정해야 한다.
+- Push Terraform Resource는 아직 Source·Plan·Apply하지 않았다.
+- DVWA Event의 `AWS 도착 → Queue → Host Spool → Wazuh Rule 100101` 실제 지연은 아직
+  측정하지 않았다.
+- 노트북 10분 Off 뒤 Queue Catch-up과 중복 Alert 0건은 아직 검증하지 않았다.
+- Lambda·SQS의 실제 사용량과 비용은 DVWA Shadow 단계에서 측정해야 한다.
 - CloudTrail S3 전달은 빠른 최초 Trigger가 아니라 후속 확인 Evidence로 유지한다.
 - 기존 `Start-WafLiveViewer.ps1`은 주 관제 화면이 아니라 WAF 원본의 저지연 진단용 보조
   도구로 유지한다.
 
-### 다음 Runtime Gate
+### 다음 Gate
 
 ```text
-minimal + capital-one-lab Daily Up
-→ Wazuh Dashboard 자동 새로고침 10초
-→ 대표 시나리오 1회 실행
-→ Source Event / CloudWatch 도착 / Wazuh Archive / Rule 100101 시각 기록
-→ 같은 방법으로 총 3회 반복
-→ 60초 이내·중복 없음·Interval overtaken 없음·API 오류 없음 판정
-→ 수집 호출량과 비용 확인
+P0: Event Schema·IAM·Queue/DLQ·기본 Toggle Off 정적 계약
+→ AWS 변경 없는 0-change Plan 확인
+→ P1: 서울 DVWA Log Group 전체 Event를 Shadow Spool로 연결
+→ 실제 무해 Event 3회 누락 0·중복 처리 0
+→ 비용·AWS 도착 이후 전달 지연 측정
+→ P2: DVWA Poll만 끄고 Wazuh localfile Live Cutover
+→ Rule 100101 실제 Alert 3회·Offline Catch-up·중복 0
+→ WAF → CloudTrail → ALB → CloudFront 순서로 확장
 ```
 
-세 번 모두 통과하면 `1m` Poll을 실습 Profile의 기본값으로 채택한다. 실패하면 Wazuh를
-폐기하지 않고, CloudWatch Logs Subscription과 SQS/Lambda 기반 Event-driven Bridge를
-다음 대안으로 검토한다.
+각 Source는 앞 단계가 통과한 뒤 별도 Plan·승인으로 추가한다. 전 Source를 한 번에 Apply하지
+않고, 같은 Source의 Poll과 Push를 동시에 켜서 중복 Alert를 만들지 않는다.
 
 공식 참고:
 
@@ -1460,3 +1564,8 @@ minimal + capital-one-lab Daily Up
 - [Wazuh Log 수집과 실시간 분석](https://documentation.wazuh.com/current/user-manual/capabilities/log-data-collection/how-it-works.html)
 - [CloudWatch Logs API Quota](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/cloudwatch_limits_cwl.html)
 - [Amazon S3 Request Pricing](https://aws.amazon.com/s3/pricing/)
+- [CloudWatch Logs 실시간 Subscription](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Subscriptions.html)
+- [CloudWatch Logs 재귀 전송 방지](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/Subscriptions-recursion-prevention.html)
+- [S3 Event Notification과 중복 전달](https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html)
+- [SQS Long Polling](https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/best-practices-setting-up-long-polling.html)
+- [Wazuh `localfile` JSON 입력](https://documentation.wazuh.com/current/user-manual/reference/ossec-conf/localfile.html)
