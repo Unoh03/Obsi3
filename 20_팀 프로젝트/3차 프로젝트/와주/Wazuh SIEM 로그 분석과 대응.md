@@ -1479,7 +1479,7 @@ ap-northeast-2
 
 Local
   Queue별 20초 Long Poll
-  → Host JSONL Spool
+  → Host Spool
   → Wazuh localfile(JSON)
   → Custom Rule·Dashboard
 ```
@@ -1513,7 +1513,9 @@ Bridge가 켜진 뒤 Catch-up한다. Host Spool 기록에 성공한 메시지만
 
 CloudWatch Logs Subscription과 S3 Event Notification은 중복 전달될 수 있다. 따라서
 `event_id`를 만들어 로컬 Ledger에서 중복을 막고, Push와 기존 Poll을 같은 Source에 동시에
-Live Alert로 넣지 않는다.
+Live Alert로 넣지 않는다. 현재 DVWA Shadow Bridge는 `event_id`의 SHA-256을 파일명으로 한
+Event별 JSON 파일을 원자적으로 생성해 같은 Event를 두 번 기록하지 않는다. Wazuh
+`localfile` Live 입력은 아직 연결하지 않았다.
 
 Source마다 원래 만들어지는 속도도 다르므로 역할을 구분한다.
 
@@ -1533,7 +1535,7 @@ Wazuh가 멈춰도 남는 탐지 출력이며, Push 경로와 같은 역할을 �
 
 ### 아직 증명하지 않은 것
 
-- Push Terraform Resource는 아직 Source·Plan·Apply하지 않았다.
+- DVWA 1-Source Push Terraform Source와 비파괴 Plan은 완료했지만 AWS Apply는 하지 않았다.
 - DVWA Event의 `AWS 도착 → Queue → Host Spool → Wazuh Rule 100101` 실제 지연은 아직
   측정하지 않았다.
 - 노트북 10분 Off 뒤 Queue Catch-up과 중복 Alert 0건은 아직 검증하지 않았다.
@@ -1545,9 +1547,11 @@ Wazuh가 멈춰도 남는 탐지 출력이며, Push 경로와 같은 역할을 �
 ### 다음 Gate
 
 ```text
-P0: Event Schema·IAM·Queue/DLQ·기본 Toggle Off 정적 계약
-→ AWS 변경 없는 0-change Plan 확인
-→ P1: 서울 DVWA Log Group 전체 Event를 Shadow Spool로 연결
+P0: Event Schema·IAM·Queue/DLQ·기본 Toggle Off 정적 계약 완료
+→ Push OFF AWS Resource 0-change 확인 완료
+→ Push ON 비파괴 Plan: 9 add / 1 in-place update / 0 destroy 확인 완료
+→ [다음] 실제 호출량·비용 경계 확인 후 명시적 Apply 승인
+→ P1: 서울 DVWA Log Group 전체 Event를 Shadow Spool로 실제 연결
 → 실제 무해 Event 3회 누락 0·중복 처리 0
 → 비용·AWS 도착 이후 전달 지연 측정
 → P2: DVWA Poll만 끄고 Wazuh localfile Live Cutover
@@ -1557,6 +1561,28 @@ P0: Event Schema·IAM·Queue/DLQ·기본 Toggle Off 정적 계약
 
 각 Source는 앞 단계가 통과한 뒤 별도 Plan·승인으로 추가한다. 전 Source를 한 번에 Apply하지
 않고, 같은 Source의 Poll과 Push를 동시에 켜서 중복 Alert를 만들지 않는다.
+
+#### 2026-08-17 DVWA Push 구현 Checkpoint
+
+구현된 현재 경로는 다음 하나뿐이다.
+
+```text
+Primary DVWA CloudWatch Log Group
+→ 빈 Subscription Filter로 저장 Event 전체 전달
+→ 서울 Lambda에서 공통 JSON Schema 정규화
+→ 서울 SQS·DLQ
+→ Local Shadow Bridge의 Event별 JSON Spool
+```
+
+검증 결과:
+
+- 기본 Toggle Off: 실제 AWS Resource 변경 `0`
+- Toggle On Saved Plan: `9 add / 1 in-place update / 0 destroy`
+- 갱신 1개: 기존 Wazuh Reader Role에 해당 Queue의 Receive/Delete 최소 권한 추가
+- Forwarder Test 3개와 Push·기존 Foundation 정적 계약 통과
+- `terraform fmt -check`, `terraform validate`, `git diff --check` 통과
+- **미수행:** AWS Apply, 실제 Queue 수신, Wazuh Live 연결, 지연·사용량·비용 측정,
+  나머지 WAF·CloudTrail·ALB·CloudFront 확장
 
 공식 참고:
 
