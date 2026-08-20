@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "policy": "exact_prefix_append_only",
+  "repository": "Unoh03/Obsi3",
+  "baseline": {
+    "commit": "839d03a1dc632a74836bf90df4aa07353a8536b9",
+    "branch_at_capture": "master",
+    "captured_date": "2026-08-20"
+  },
+  "rules": {
+    "existing_bytes_must_remain_exact_prefix": true,
+    "append_at_eof_allowed": true,
+    "new_files_allowed": true,
+    "edit_existing_bytes_allowed": false,
+    "delete_existing_bytes_allowed": false,
+    "reorder_existing_bytes_allowed": false,
+    "rename_or_move_protected_path_allowed": false,
+    "whitespace_or_line_ending_normalization_allowed": false
+  },
+  "protected_files": [
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담.md",
+      "baseline_git_blob_sha1": "fd117ab8e807ac9163a7c3aeb20d6e17fed58cb9",
+      "baseline_size_bytes": 4634,
+      "mode": "100644"
+    },
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 최신 판정.md",
+      "baseline_git_blob_sha1": "3fd144f51cc734508adb6ac93e55f03574c6d9f2",
+      "baseline_size_bytes": 11093,
+      "mode": "100644"
+    },
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/Telemetry와 로그 지연 모델.md",
+      "baseline_git_blob_sha1": "2890114482c21e92daa5fb3f91b9921c76b6379e",
+      "baseline_size_bytes": 15071,
+      "mode": "100644"
+    },
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+      "baseline_git_blob_sha1": "77869475e55bffb2f87da5dd986c6a4f53a5be46",
+      "baseline_size_bytes": 14106,
+      "mode": "100644"
+    },
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/멘토 상담 후 보고서·발표 반영.md",
+      "baseline_git_blob_sha1": "b695b6de004f544e5242756281c3a09e4662fb2d",
+      "baseline_size_bytes": 12061,
+      "mode": "100644"
+    },
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 원본 기록 (SUPERSEDED).md",
+      "baseline_git_blob_sha1": "fe07af807de8d4e2416c0f7b3c37db67014df4bb",
+      "baseline_size_bytes": 72777,
+      "mode": "100644"
+    }
+  ],
+  "supersedes_for_this_requirement": {
+    "branch": "docs/mentor-note-audit-provenance",
+    "reason": "The earlier branch protected the pre-split source as canonical. This policy protects the current organized corpus itself and permits suffix-only additions."
+  }
+}

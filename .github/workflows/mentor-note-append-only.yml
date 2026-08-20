@@ -1,0 +1,25 @@
+name: mentor-note-append-only
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify current organized mentor-note corpus is append-only
+        run: >-
+          python3
+          "20_팀 프로젝트/3차 프로젝트/append-only-audit/verify_mentor_note_append_only.py"
