@@ -40,7 +40,7 @@ D = Wazuh 입력 → Alert / Integratord
 E = Alert → Shuffle terminal result
 ```
 
-AWS가 A와 B를 분리 공개하지 않으면 임의로 나누지 않는다.
+AWS가 A와 B를 분리 공개하지 않으면 임의로 나누지 않는다. 프로젝트가 A+B+C+D를 합쳐 측정한 경우에는 해당 값을 이 열의 공식 A+B 값처럼 쓰지 않고 **하위 경로 총지연**으로 별도 표시한다.
 
 ---
 
@@ -48,8 +48,8 @@ AWS가 A와 B를 분리 공개하지 않으면 임의로 나누지 않는다.
 
 | 서비스 / Telemetry mechanism | Telemetry 사용 가능 지연(A+B) / 공식 상태 | 현재 Route | 가장 빠른 공식 후보 | 프로젝트 판단 | 검증 상태 |
 |---|---|---|---|---|---|
-| **DVWA Custom Audit → CloudWatch Logs** | 프로젝트 관측: DVWA→Wazuh 하위 경로 3건 `6.439 / 3.427 / 3.761초`; A/B/C/D 개별 분리는 없음 | DVWA → CWL → Subscription → Lambda → SQS → Local Bridge → Wazuh | Application에서 Wazuh 직접 전송도 가능하지만 강결합·Inbound·Buffer 부재 | **현재 Route 유지 후보.** 속도·보존·보안 경계의 균형이 좋음 | Rule `100102` 무해 검증 N=3. Rule `100103` G4는 별도 미완료 |
-| **AWS WAF Web ACL Logs → CloudWatch Logs** | 공식 정량 수치 미공개 | WAF → CWL → Wazuh `GetLogEvents` 10분 Poll 계열 | WAF → CWL → Subscription → Lambda/SQS → Bridge → Wazuh | **Event-driven 전환 우선 후보.** CWL 이후 Poll 대기 제거 효과가 큼 | Target Candidate, Source latency 실측 필요 |
+| **DVWA Custom Audit → CloudWatch Logs** | 공식 A+B 수치 미공개. 프로젝트가 측정한 값은 **A+B+C+D 합계**인 DVWA→Wazuh 하위 경로 총지연 `6.439 / 3.427 / 3.761초` | DVWA → CWL → Subscription → Lambda → SQS → Local Bridge → Wazuh | Application에서 Wazuh 직접 전송도 가능하지만 강결합·Inbound·Buffer 부재 | **현재 Route 유지 후보.** 속도·보존·보안 경계의 균형이 좋음 | Rule `100102` 무해 검증 N=3. Rule `100103` G4는 별도 미완료 |
+| **AWS WAF Web ACL Logs → CloudWatch Logs** | 공식 정량 수치 미공개 | WAF → CWL → Wazuh `GetLogEvents` 10분 Poll 계열 | WAF → CWL → Subscription → Lambda/SQS → Bridge → Wazuh | **Event-driven 전환 우선 후보.** CWL 이후 Poll 대기 제거 효과가 큼 | Target Candidate, A+B 실측 필요 |
 | **ALB Legacy Access Logs → S3** | 공식: 노드별 5분마다 Log file 발행 + eventual consistency | ALB → S3 → Wazuh S3 List/Get 10분 Poll | 같은 Legacy 유지 시 S3 `ObjectCreated` → SQS → Consumer → Wazuh | Archive·Replay에는 유효. 저지연 주 탐지 Source로는 제약이 큼 | As-built 확인, Event-driven Object route는 미완료 |
 | **ALB Vended Logs → CloudWatch Logs / Firehose / S3** | 공식 정량 latency 미공개. CWL Live Tail로 실시간 관찰 가능하다고 설명 | 미사용 | ALB Vended Logs → CWL → Subscription → Lambda/SQS → Bridge → Wazuh | **저지연 SIEM 수집의 우선 평가 후보.** Legacy보다 실제 얼마나 빠른지는 Runtime 비교 전 확정 금지 | Target Candidate. latency·누락·중복·비용 검증 필요 |
 | **CloudFront Standard Logging v2** | 공식: 일반적으로 Event 후 1시간 이내, 일부 Entry 최대 24시간 지연 | Standard v2 → S3 Archive + Wazuh용 CWL Destination → Poll 계열 | 같은 Standard를 유지하면 CWL/Firehose/S3 Delivery 후 Event-driven 소비 가능하지만 앞단 지연은 남음 | 저지연 Trigger보다 Evidence·Archive·Historical analysis 역할 | 현재 Terraform 적용. 저지연 Trigger로는 비채택 |
@@ -59,7 +59,11 @@ AWS가 A와 B를 분리 공개하지 않으면 임의로 나누지 않는다.
 ## 이 표의 핵심
 
 ```text
-DVWA / WAF
+DVWA
+→ 확인된 3.427~6.439초는 A+B 공식값이 아니라
+  DVWA Event부터 Wazuh Alert까지의 A+B+C+D 하위 경로 총지연
+
+WAF
 → AWS Destination에 도착한 뒤 불필요한 Poll을 제거할 가치가 큼
 
 ALB
@@ -79,9 +83,9 @@ CloudTrail
 
 # 공통 AWS 보안 Telemetry 참고표
 
-| 서비스 / Telemetry mechanism | 공식 Telemetry 사용 가능 지연(A+B) | 저지연 SIEM Route 후보 | 중요한 제한·용도 |
+| 서비스 / Telemetry mechanism | 공식 Telemetry 사용 가능 지연(A+B) 또는 해당 mechanism 지연 | 저지연 SIEM Route 후보 | 중요한 제한·용도 |
 |---|---|---|---|
-| **CloudWatch Logs Subscription Filter** | CWL ingest 후 보통 3분 미만에 수신 Resource로 전달 | CWL → Subscription → Lambda/Kinesis/Firehose → SIEM | 원래 Source A+B를 없애지 않음. Retry 가능한 오류는 최대 24시간 재시도 후 실패분 유실 가능. Throttle·AccessDenied 모니터링 필요 |
+| **CloudWatch Logs Subscription Filter** | **원본 Source A+B와 별도:** CWL ingest 후 수신 Resource 전달은 보통 3분 미만 | CWL → Subscription → Lambda/Kinesis/Firehose → SIEM | 원래 Source A+B를 없애지 않음. Retry 가능한 오류는 최대 24시간 재시도 후 실패분 유실 가능. Throttle·AccessDenied 모니터링 필요 |
 | **Lambda Function Logs → CloudWatch Logs** | 공식: 함수 호출 후 로그가 표시되기까지 **5~10분 걸릴 수 있음** | 일반 Route: Lambda → CWL → Subscription → SIEM | `real-time`이라고 단정하지 않음. 더 저지연이 필요하면 Lambda Logs API Extension을 별도 mechanism으로 검토 |
 | **Lambda Logs API Extension** | 실행 환경에서 Telemetry stream을 Extension이 직접 구독하는 별도 mechanism | Lambda Extension → 외부/내부 Collector → SIEM | 일반 CWL 경로와 동일하지 않음. Extension 운영·실패·Backpressure 설계 필요 |
 | **S3 Event Notifications / EventBridge Object Events** | 공식: 보통 수초, 때때로 1분 이상. At-least-once | S3 Event → SQS/EventBridge → Consumer → SIEM | `ObjectCreated/Deleted` 상태 Event. `GetObject` 접근 감사 Evidence를 대체하지 않음 |
