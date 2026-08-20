@@ -1,0 +1,275 @@
+{
+  "schema_version": 1,
+  "title": "8.19 mentor note provenance contract",
+  "canonical_model": "immutable_source_plus_explicit_corrections",
+  "repository": "Unoh03/Obsi3",
+  "source": {
+    "commit": "391c8eb358c2783312c52bccce5965d953f9c122",
+    "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담.md",
+    "expected_git_blob_sha1": "fe07af807de8d4e2416c0f7b3c37db67014df4bb"
+  },
+  "preserved_copy": {
+    "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 원본 기록 (SUPERSEDED).md",
+    "expected_git_blob_sha1": "fe07af807de8d4e2416c0f7b3c37db67014df4bb",
+    "authoritative": true,
+    "mutability": "immutable"
+  },
+  "canonical_overlay": {
+    "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 감사 정본.md",
+    "correction_ledger_path": "20_팀 프로젝트/3차 프로젝트/audit/8.19 멘토 노트 - 승인 교정 원장 C01-C16.md",
+    "correction_count": 16
+  },
+  "derived_views": [
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 최신 판정.md",
+      "expected_git_blob_sha1": "3fd144f51cc734508adb6ac93e55f03574c6d9f2",
+      "role": "current operational and incident-response interpretation",
+      "authoritative": false,
+      "classification": "DERIVED_VIEW"
+    },
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/Telemetry와 로그 지연 모델.md",
+      "expected_git_blob_sha1": "2890114482c21e92daa5fb3f91b9921c76b6379e",
+      "role": "learning view for telemetry and latency model",
+      "authoritative": false,
+      "classification": "DERIVED_VIEW"
+    },
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+      "expected_git_blob_sha1": "77869475e55bffb2f87da5dd986c6a4f53a5be46",
+      "role": "AWS telemetry route comparison and target candidates",
+      "authoritative": false,
+      "classification": "DERIVED_VIEW"
+    },
+    {
+      "path": "20_팀 프로젝트/3차 프로젝트/멘토 상담 후 보고서·발표 반영.md",
+      "expected_git_blob_sha1": "b695b6de004f544e5242756281c3a09e4662fb2d",
+      "role": "report and presentation view",
+      "authoritative": false,
+      "classification": "DERIVED_VIEW"
+    }
+  ],
+  "corrections": [
+    {
+      "id": "C01",
+      "title": "G4 remains incomplete",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 최신 판정.md",
+          "contains": "G4 | **미완료**"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/멘토 상담 후 보고서·발표 반영.md",
+          "contains": "실제 Rule 100103 Alert ↔ Shuffle Execution 일대일 Evidence"
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "title": "Lambda logs may take 5 to 10 minutes",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+          "contains": "5~10분 걸릴 수 있음"
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "title": "Three-way incident outcome",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 최신 판정.md",
+          "contains": "### INCONCLUSIVE"
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "title": "Vended logs remain evaluation candidates",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+          "contains": "저지연 SIEM 수집의 우선 평가 후보"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+          "contains": "Legacy보다 빠르다고 확정하지 않음"
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "title": "DVWA to Wazuh N=3 latency scope",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/멘토 상담 후 보고서·발표 반영.md",
+          "contains": "6.439 / 3.427 / 3.761초"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+          "contains": "A+B+C+D 합계"
+        }
+      ]
+    },
+    {
+      "id": "C06",
+      "title": "Telemetry availability latency A plus B",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+          "contains": "Telemetry 사용 가능 지연 (A+B)"
+        }
+      ]
+    },
+    {
+      "id": "C07",
+      "title": "Resource versus logging mechanism",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/Telemetry와 로그 지연 모델.md",
+          "contains": "Source와 Logging mechanism을 혼동하지 않는다"
+        }
+      ]
+    },
+    {
+      "id": "C08",
+      "title": "CloudFront real-time is not a strict superset",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/Telemetry와 로그 지연 모델.md",
+          "contains": "CloudFront Standard와 Real-time은 완전한 상위·하위 관계인가?"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/Telemetry와 로그 지연 모델.md",
+          "contains": "동일한 Record 집합을 일대일로 제공한다는 뜻은 아니다"
+        }
+      ]
+    },
+    {
+      "id": "C09",
+      "title": "A B C D E latency model",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/Telemetry와 로그 지연 모델.md",
+          "contains": "A/B/C/D/E 지연 모델"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/Telemetry와 로그 지연 모델.md",
+          "contains": "전체 E2E = A + B + C + D + E"
+        }
+      ]
+    },
+    {
+      "id": "C10",
+      "title": "Separate official facts runtime and project judgment",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 최신 판정.md",
+          "contains": "## 출처 구분"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+          "contains": "Target Candidate"
+        }
+      ]
+    },
+    {
+      "id": "C11",
+      "title": "CloudWatch Logs subscription boundary",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/Telemetry와 로그 지연 모델.md",
+          "contains": "CloudWatch Logs Subscription은 어디에 해당하는가?"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+          "contains": "원래 Source A+B를 없애지 않음"
+        }
+      ]
+    },
+    {
+      "id": "C12",
+      "title": "Current manual evidence linkage versus target correlation",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 최신 판정.md",
+          "contains": "현재는 5개 Source가 자동으로 하나의 Incident Object에 합쳐지는 구조가 아니다"
+        }
+      ]
+    },
+    {
+      "id": "C13",
+      "title": "Three containment axes",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 최신 판정.md",
+          "contains": "Containment는 세 축으로 분리한다"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 최신 판정.md",
+          "contains": "Workload 격리만으로 이미 탈취된 STS Credential이 자동 폐기되는 것은 아니다"
+        }
+      ]
+    },
+    {
+      "id": "C14",
+      "title": "Separate technical optimum from project scope",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/멘토 상담 후 보고서·발표 반영.md",
+          "contains": "기술적 최적성과 일정 판단을 분리"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/AWS 보안 Telemetry Route 비교.md",
+          "contains": "프로젝트 남은 일정은 기술적 최적 Route 평가 기준에 넣지 않는다"
+        }
+      ]
+    },
+    {
+      "id": "C15",
+      "title": "Strong superseded boundary",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담.md",
+          "contains": "원본 기록 (SUPERSEDED)"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 최신 판정.md",
+          "contains": "현재 판단으로 사용하지 않는다"
+        }
+      ]
+    },
+    {
+      "id": "C16",
+      "title": "Split document roles and canonical audit overlay",
+      "anchors": [
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담.md",
+          "contains": "## 정본 노트"
+        },
+        {
+          "path": "20_팀 프로젝트/3차 프로젝트/8.19 멘토님과 상담 - 감사 정본.md",
+          "contains": "불변 원본 Git Blob"
+        }
+      ]
+    }
+  ],
+  "guarantees": {
+    "original_byte_integrity": true,
+    "original_lossless_preservation": true,
+    "approved_correction_ids_complete": true,
+    "future_derived_view_drift_detectable": true,
+    "derived_view_semantic_identity_to_source": false
+  },
+  "policy": {
+    "unapproved_silent_correction_allowed": false,
+    "new_correction_id_starts_at": "C17",
+    "derived_view_conflict_resolution": [
+      "immutable source",
+      "approved correction ledger",
+      "official evidence and runtime evidence",
+      "derived synthesis"
+    ]
+  }
+}
