@@ -60,10 +60,11 @@ Rule ID나 Alert Field를 바꾸면 두 저장소의 Dashboard Query, Shuffle Ro
 
 - 새 조원 인수인계: GitHub의 `PROJECT-WAZUH-MOC.md`부터 읽는다.
 - Wazuh 자체 설정 수정: `wazuh-docker`의 Rule·Manager 설정과 단위 테스트를 먼저 본다.
-- 전체 시연 복구: 인프라 저장소의 Operator Handoff와 현재 Git·Runtime 상태를 다시 확인한다.
+- Rule·대응 의미 확인: 인프라 저장소의 `시연_계획.md`를 읽되 하단 완료 상태는 작성 시점 Snapshot으로 취급한다.
+- 전체 시연 복구: 인프라 저장소의 `일일_수동_운영_매뉴얼.md`와 현재 Git·Runtime 상태를 다시 확인한다.
+- `observability/wazuh/README.md`와 `SOC-LAB-OPERATOR-HANDOFF.md`는 Rule `100103/100104` 중심의 레거시 참고자료이며 현행 진입점으로 사용하지 않는다.
 - Runtime 상태는 변동되므로 파일 존재만으로 수집·탐지·자동 대응 성공을 주장하지 않는다.
 
 ## 공유 금지
 
 AWS Credential, Wazuh 비밀번호, Shuffle Webhook·API Key, GitHub PAT, Kubernetes Secret과 원문 Credential 응답은 Vault·Git·Screenshot에 남기지 않는다.
-
