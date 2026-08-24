@@ -1,0 +1,146 @@
+{"kind":"deck","id":"pr/wxpurd","name":"Deck"}
+{"kind":"layout","layoutId":"4fd45f03-9d72-4555-84ec-cd82d2b47993","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"cb866a5f-860e-4c04-8172-a477f9bcbbe0","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/5erb8n","slide":1,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":8}
+{"kind":"shape","id":"sh/ytwfaxo3","slide":1,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/5wnyls7e","slide":1,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/kvexcn69","slide":1,"name":"page-title","text":"5.1.1 중앙 관제 구성 목적","textPreview":"5.1.1 중앙 관제 구성 목적","textChars":17,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/7y5gn2pk","slide":1,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/6xwfexoz","slide":1,"name":"page-number","text":"22","textPreview":"22","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/tk7ypc7q","slide":1,"text":"분산된 보안 Event를 Wazuh 한곳에서 조회하고, 원본 필드와 Custom Rule의 조건 일치 여부를 근거로 Alert 생성 과정을 검증한다.","textPreview":"분산된 보안 Event를 Wazuh 한곳에서 조회하고, 원본 필드와 Custom Rule의 조건 일치 여부를 근거로 Alert 생성 과정을 검증한다.","textChars":83,"textLines":1,"bbox":[60,158,674,70]}
+{"kind":"textbox","id":"sh/szyxg765","slide":1,"text":"분석 목표","textPreview":"분석 목표","textChars":5,"textLines":1,"bbox":[60,246,180,28]}
+{"kind":"textbox","id":"sh/fmpgrmpw","slide":1,"text":"• 분산 로그의 중앙 조회\n• 주요 필드 구조화와 사건 식별자 확인\n• Custom Rule에 의한 Alert 생성\n• 동일 시간창에서 원본 Event와 Alert 대조","textPreview":"• 분산 로그의 중앙 조회 | • 주요 필드 구조화와 사건 식별자 확인 | • Custom Rule에 의한 Alert 생성 | • 동일 시간창에서 원본 Event와 Alert 대조","textChars":94,"textLines":4,"bbox":[60,282,674,112]}
+{"kind":"textbox","id":"sh/ulgzihob","slide":1,"text":"그림 5-1. Wazuh Manager·Indexer·Dashboard 실행 상태","textPreview":"그림 5-1. Wazuh Manager·Indexer·Dashboard 실행 상태","textChars":45,"textLines":1,"bbox":[60,406,674,24]}
+{"kind":"shape","id":"sh/0zyd8by9","slide":1,"bbox":[58,436,678,386]}
+{"kind":"textbox","id":"sh/exgv6lg3","slide":1,"name":"summary","text":"운영 상태 판정\nManager · Indexer · Dashboard가 모두 실행 중이며, 수집·분석·시각화 구성요소가 준비된 상태를 확인하였다.","textPreview":"운영 상태 판정 | Manager · Indexer · Dashboard가 모두 실행 중이며, 수집·분석·시각화 구성요소가 준비된 상태를 확인하였다.","textChars":81,"textLines":2,"bbox":[60,848,674,108]}
+{"kind":"image","id":"im/ehkvq14f","slide":1,"name":"","alt":"Docker Desktop에서 Wazuh Manager, Indexer, Dashboard 컨테이너가 실행 중인 화면","bbox":[60,438,674,382]}
+{"kind":"notes","id":"nt/5erb8n","slide":1,"text":"[Sources]\n- 사용자 제공 Docker Desktop 화면: codex-clipboard-f783c774-61de-4373-a8b0-e2235af3e230.png"}
+{"kind":"slide","id":"sl/aagevd","slide":2,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":13}
+{"kind":"shape","id":"sh/mh8napc7","slide":2,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/9kj654by","slide":2,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/8ja5czud","slide":2,"name":"page-title","text":"5.1.2 Wazuh 중앙 구성요소","textPreview":"5.1.2 Wazuh 중앙 구성요소","textChars":19,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/v61o7ut4","slide":2,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/a5snepcj","slide":2,"name":"page-number","text":"23","textPreview":"23","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/x8j694bu","slide":2,"text":"중앙 SIEM은 수집·분석·검색·시각화 역할을 세 구성요소로 분리한다.","textPreview":"중앙 SIEM은 수집·분석·검색·시각화 역할을 세 구성요소로 분리한다.","textChars":39,"textLines":1,"bbox":[60,158,674,44]}
+{"kind":"textbox","id":"sh/w7apgzup","slide":2,"name":"role-header-1","text":"구성요소","textPreview":"구성요소","textChars":4,"textLines":1,"bbox":[60,230,170,56]}
+{"kind":"textbox","id":"sh/jalobet0","slide":2,"name":"role-header-2","text":"담당 역할","textPreview":"담당 역할","textChars":5,"textLines":1,"bbox":[230,230,504,56]}
+{"kind":"textbox","id":"sh/i9s7i9cf","slide":2,"name":"role-label-0","text":"Wazuh Manager","textPreview":"Wazuh Manager","textChars":13,"textLines":1,"bbox":[60,286,170,96]}
+{"kind":"textbox","id":"sh/87658jq1","slide":2,"name":"role-desc-0","text":"원본 Event를 구조화하고 Custom Rule 조건을 평가하여 Alert를 생성한다.","textPreview":"원본 Event를 구조화하고 Custom Rule 조건을 평가하여 Alert를 생성한다.","textChars":49,"textLines":1,"bbox":[230,286,504,96]}
+{"kind":"textbox","id":"sh/t8f6ho7m","slide":2,"name":"role-label-1","text":"Wazuh Indexer","textPreview":"Wazuh Indexer","textChars":13,"textLines":1,"bbox":[60,382,170,96]}
+{"kind":"textbox","id":"sh/65on698b","slide":2,"name":"role-desc-1","text":"원본 Event와 Alert를 색인하여 시간·Rule·Source별 검색을 제공한다.","textPreview":"원본 Event와 Alert를 색인하여 시간·Rule·Source별 검색을 제공한다.","textChars":47,"textLines":1,"bbox":[230,382,504,96]}
+{"kind":"textbox","id":"sh/76xofepg","slide":2,"name":"role-label-2","text":"Wazuh Dashboard","textPreview":"Wazuh Dashboard","textChars":15,"textLines":1,"bbox":[60,478,170,96]}
+{"kind":"textbox","id":"sh/gb65c36d","slide":2,"name":"role-desc-2","text":"Metric·Timeline·상세 표로 탐지 여부와 근거 필드를 시각화한다.","textPreview":"Metric·Timeline·상세 표로 탐지 여부와 근거 필드를 시각화한다.","textChars":42,"textLines":1,"bbox":[230,478,504,96]}
+{"kind":"textbox","id":"sh/hcz6lo7y","slide":2,"name":"summary","text":"프로젝트 적용 범위\nDVWA 감사 Event와 CloudTrail S3 Data Event를 중앙에서 조회하고, Rule 100110·100111의 탐지 근거를 확인한다.","textPreview":"프로젝트 적용 범위 | DVWA 감사 Event와 CloudTrail S3 Data Event를 중앙에서 조회하고, Rule 100110·100111의 탐지 근거를 확인한다.","textChars":95,"textLines":2,"bbox":[60,650,674,112]}
+{"kind":"notes","id":"nt/aagevd","slide":2,"text":"[Sources]\n- 사용자 제공 프로젝트 내용과 기존 Canva 5.1 초안"}
+{"kind":"slide","id":"sl/743dp1","slide":3,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":10}
+{"kind":"shape","id":"sh/fax4bqpg","slide":3,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/gb6l4vq1","slide":3,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/1cfmdg7m","slide":3,"name":"page-title","text":"5.1.3 로그 수집 경로","textPreview":"5.1.3 로그 수집 경로","textChars":14,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/2d836lo7","slide":3,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/3eh4fqps","slide":3,"name":"page-number","text":"24","textPreview":"24","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/ofql8v6d","slide":3,"text":"Source별 전달 방식과 도착 주기가 다르므로 조기 신호와 확정 근거를 구분한다.","textPreview":"Source별 전달 방식과 도착 주기가 다르므로 조기 신호와 확정 근거를 구분한다.","textChars":46,"textLines":1,"bbox":[60,158,674,48]}
+{"kind":"textbox","id":"sh/pgzmh07i","slide":3,"text":"DVWA 저지연 Event","textPreview":"DVWA 저지연 Event","textChars":14,"textLines":1,"bbox":[60,232,220,30]}
+{"kind":"textbox","id":"sh/ih43a18n","slide":3,"name":"dvwa-path","text":"CloudWatch Logs  →  Subscription  →  Lambda  →  SQS  →  Local Bridge  →  Wazuh","textPreview":"CloudWatch Logs  →  Subscription  →  Lambda  →  SQS  →  Local Bridge  →  Wazuh","textChars":78,"textLines":1,"bbox":[60,274,674,96]}
+{"kind":"textbox","id":"sh/jidk36p8","slide":3,"text":"CloudTrail S3 Data Event","textPreview":"CloudTrail S3 Data Event","textChars":24,"textLines":1,"bbox":[60,410,260,30]}
+{"kind":"textbox","id":"sh/zqlkr61s","slide":3,"name":"cloudtrail-path","text":"CloudTrail  →  Wazuh AWS Module의 10분 예약 수집  →  Wazuh","textPreview":"CloudTrail  →  Wazuh AWS Module의 10분 예약 수집  →  Wazuh","textChars":52,"textLines":1,"bbox":[60,452,674,96]}
+{"kind":"textbox","id":"sh/ypcji107","slide":3,"name":"collection-interpretation","text":"운영 해석\nDVWA Event는 IMDS Credential 접근의 조기 신호로 사용한다.\nCloudTrail Event는 고정 검증용 S3 Object에서 실제 Byte가 반환됐는지 확인하는 근거로 사용한다.","textPreview":"운영 해석 | DVWA Event는 IMDS Credential 접근의 조기 신호로 사용한다. | CloudTrail Event는 고정 검증용 S3 Object에서 실제 Byte가 반환됐는지 확인하는 근거로 사용한다.","textChars":117,"textLines":3,"bbox":[60,606,674,164]}
+{"kind":"textbox","id":"sh/lc32tgjy","slide":3,"text":"두 Source를 하나의 Wazuh Dashboard에서 같은 시간창으로 연결해 조사한다.","textPreview":"두 Source를 하나의 Wazuh Dashboard에서 같은 시간창으로 연결해 조사한다.","textChars":50,"textLines":1,"bbox":[60,818,674,54]}
+{"kind":"notes","id":"nt/743dp1","slide":3,"text":"[Sources]\n- 사용자 제공 프로젝트 수집 경로와 기존 Canva 5.1 초안"}
+{"kind":"slide","id":"sl/p6527h","slide":4,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":7}
+{"kind":"shape","id":"sh/obutkrux","slide":4,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/na1sr6tc","slide":4,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/29sbi1cr","slide":4,"name":"page-title","text":"5.1.4 중앙 관제 Dashboard와 Alert 현황","textPreview":"5.1.4 중앙 관제 Dashboard와 Alert 현황","textChars":31,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/18japwb6","slide":4,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/07atgrul","slide":4,"name":"page-number","text":"25","textPreview":"25","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/f61snmt0","slide":4,"text":"상단 Count로 탐지 여부를 확인하고, 하단 원본 필드에서 Rule 조건과 일치한 근거를 대조한다.","textPreview":"상단 Count로 탐지 여부를 확인하고, 하단 원본 필드에서 Rule 조건과 일치한 근거를 대조한다.","textChars":56,"textLines":1,"bbox":[60,158,674,58]}
+{"kind":"textbox","id":"sh/e5srehcf","slide":4,"text":"그림 5-2. Capital One SOC Dashboard의 Rule 100110·100111 탐지 현황","textPreview":"그림 5-2. Capital One SOC Dashboard의 Rule 100110·100111 탐지 현황","textChars":59,"textLines":1,"bbox":[60,230,674,24]}
+{"kind":"shape","id":"sh/d4jalcba","slide":4,"bbox":[58,260,678,374]}
+{"kind":"textbox","id":"sh/ahkjahof","slide":4,"name":"summary","text":"화면 판정\nRule 100102 수집 상태 = 0건  |  Rule 100110 조기탐지 = 1건  |  Rule 100111 침해확정 = 1건\n동일 시간창에서 Count → 원본 필드 → Rule 조건을 순서대로 확인한다.","textPreview":"화면 판정 | Rule 100102 수집 상태 = 0건  |  Rule 100110 조기탐지 = 1건  |  Rule 100111 침해확정 = 1건 | 동일 시간창에서 Count → 원본 필드 → Rule 조건을 순서대로 확인한다.","textChars":125,"textLines":3,"bbox":[60,674,674,142]}
+{"kind":"textbox","id":"sh/bit03m50","slide":4,"name":"dashboard-caution","text":"주의: Dashboard의 동시 표시는 자동 인과관계를 의미하지 않는다. 사건 식별자와 시간, 주체, 대상 Object를 관제자가 직접 비교한다.","textPreview":"주의: Dashboard의 동시 표시는 자동 인과관계를 의미하지 않는다. 사건 식별자와 시간, 주체, 대상 Object를 관제자가 직접 비교한다.","textChars":81,"textLines":1,"bbox":[60,848,674,92]}
+{"kind":"image","id":"im/xkni9876","slide":4,"name":"","alt":"Capital One SOC Dashboard에서 Rule 100110과 Rule 100111이 각각 1건 탐지된 화면","bbox":[60,262,674,370]}
+{"kind":"notes","id":"nt/p6527h","slide":4,"text":"[Sources]\n- 사용자 제공 Wazuh Dashboard 화면: codex-clipboard-37e40f92-daca-4e37-86e8-076564f33336.png"}
+{"kind":"slide","id":"sl/gt2cn9","slide":5,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":9}
+{"kind":"shape","id":"sh/h83a1wn6","slide":5,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/u5cbqh4f","slide":5,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/f6lszm50","slide":5,"name":"page-title","text":"5.1.5 Rule 100110 — IMDS Credential 접근 조기탐지","textPreview":"5.1.5 Rule 100110 — IMDS Credential 접근 조기탐지","textChars":43,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/83utorm9","slide":5,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/t43axcnu","slide":5,"name":"page-number","text":"26","textPreview":"26","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/61srmh4j","slide":5,"text":"DVWA 명령 실행에서 IMDS Credential endpoint의 실제 출력이 반환된 경우만 Alert를 생성한다.","textPreview":"DVWA 명령 실행에서 IMDS Credential endpoint의 실제 출력이 반환된 경우만 Alert를 생성한다.","textChars":66,"textLines":1,"bbox":[60,158,674,52]}
+{"kind":"textbox","id":"sh/72lsvm54","slide":5,"text":"핵심 조건","textPreview":"핵심 조건","textChars":5,"textLines":1,"bbox":[60,232,180,30]}
+{"kind":"textbox","id":"sh/czet0bmt","slide":5,"name":"rule-100110-conditions","text":"source = dvwa\ntransport = push\nevent_type = command.execution\nroute = /vulnerabilities/exec/\nresource = ec2_imds\nsecurity_level = low\nstage = imds_credential_fetch\nstatus = output_returned\nresult = succeeded","textPreview":"source = dvwa | transport = push | event_type = command.execution | route = /vulnerabilities/exec/ | resource = ec2_imds | security_level...","textChars":207,"textLines":9,"bbox":[60,274,410,420]}
+{"kind":"textbox","id":"sh/d0na9gne","slide":5,"name":"rule-100110-result","text":"판정 결과\n\nLEVEL 12\nALERT","textPreview":"판정 결과 |  | LEVEL 12 | ALERT","textChars":21,"textLines":4,"bbox":[500,274,234,178]}
+{"kind":"textbox","id":"sh/98ry5kfq","slide":5,"name":"rule-100110-limit","text":"해석 한계\nCredential 원문 탈취나 S3 접근 성공을 직접 증명하지 않는다. 조사가 필요한 고위험 Credential 접근 단계를 알리는 조기경보다.","textPreview":"해석 한계 | Credential 원문 탈취나 S3 접근 성공을 직접 증명하지 않는다. 조사가 필요한 고위험 Credential 접근 단계를 알리는 조기경보다.","textChars":87,"textLines":2,"bbox":[500,486,234,208]}
+{"kind":"textbox","id":"sh/o7ihczy5","slide":5,"name":"summary","text":"Rule 100110 판정\nIMDS Credential endpoint의 출력 반환 Event만 Level 12 Alert로 탐지한다.","textPreview":"Rule 100110 판정 | IMDS Credential endpoint의 출력 반환 Event만 Level 12 Alert로 탐지한다.","textChars":75,"textLines":2,"bbox":[60,748,674,110]}
+{"kind":"notes","id":"nt/gt2cn9","slide":5,"text":"[Sources]\n- 사용자 제공 프로젝트 Rule 100110 조건과 기존 Canva 5.1 초안"}
+{"kind":"slide","id":"sl/d4i0h5","slide":6,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":9}
+{"kind":"shape","id":"sh/0valkr6l","slide":6,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/fu1kbm50","slide":6,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/ets3i1of","slide":6,"name":"page-title","text":"5.1.6 Rule 100111 — 보호 S3 객체 접근 확인","textPreview":"5.1.6 Rule 100111 — 보호 S3 객체 접근 확인","textChars":34,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/dsj29wnu","slide":6,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/sralgr69","slide":6,"name":"page-number","text":"27","textPreview":"27","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/rq1k7m5o","slide":6,"text":"CloudTrail S3 Data Event에서 승인 조건이 모두 일치하고 객체 Byte가 실제 반환된 경우만 Alert를 생성한다.","textPreview":"CloudTrail S3 Data Event에서 승인 조건이 모두 일치하고 객체 Byte가 실제 반환된 경우만 Alert를 생성한다.","textChars":74,"textLines":1,"bbox":[60,158,674,52]}
+{"kind":"textbox","id":"sh/q58jeho3","slide":6,"text":"핵심 조건","textPreview":"핵심 조건","textChars":5,"textLines":1,"bbox":[60,232,180,30]}
+{"kind":"textbox","id":"sh/xon2lgny","slide":6,"name":"rule-100111-conditions","text":"eventSource = s3.amazonaws.com\neventName = GetObject\neventCategory = Data\n승인된 Account · Region · AssumedRole\n고정 검증용 Bucket · Object\nhttpStatusCode = 200\nbytesTransferredOut > 0\n유효한 CloudTrail eventID","textPreview":"eventSource = s3.amazonaws.com | eventName = GetObject | eventCategory = Data | 승인된 Account · Region · AssumedRole | 고정 검증용 Bucket · Obje...","textChars":199,"textLines":8,"bbox":[60,274,410,390]}
+{"kind":"textbox","id":"sh/cnulsbmd","slide":6,"name":"rule-100111-result","text":"판정 결과\n\nLEVEL 14\nALERT","textPreview":"판정 결과 |  | LEVEL 14 | ALERT","textChars":21,"textLines":4,"bbox":[500,274,234,178]}
+{"kind":"textbox","id":"sh/y5cvix0b","slide":6,"name":"rule-100111-limit","text":"해석 한계\n고정 검증용 객체의 실제 Byte 반환을 증명한다. S3 전체 유출이나 Rule 100110과의 자동 인과관계까지 증명하지는 않는다.","textPreview":"해석 한계 | 고정 검증용 객체의 실제 Byte 반환을 증명한다. S3 전체 유출이나 Rule 100110과의 자동 인과관계까지 증명하지는 않는다.","textChars":80,"textLines":2,"bbox":[500,486,234,178]}
+{"kind":"textbox","id":"sh/j6lwb21g","slide":6,"name":"summary","text":"Rule 100111 판정\n고정 S3 Object의 실제 Byte 반환 Event만 Level 14 Alert로 탐지한다.","textPreview":"Rule 100111 판정 | 고정 S3 Object의 실제 Byte 반환 Event만 Level 14 Alert로 탐지한다.","textChars":68,"textLines":2,"bbox":[60,724,674,110]}
+{"kind":"notes","id":"nt/d4i0h5","slide":6,"text":"[Sources]\n- 사용자 제공 프로젝트 Rule 100111 조건과 기존 Canva 5.1 초안"}
+{"kind":"slide","id":"sl/au0rdv","slide":7,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":19}
+{"kind":"shape","id":"sh/0ne5kfip","slide":7,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/zm54ra1k","slide":7,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/e1wni50z","slide":7,"name":"page-title","text":"5.1.7 Positive·Negative Rule 검증","textPreview":"5.1.7 Positive·Negative Rule 검증","textChars":31,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/d0nmp0je","slide":7,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/cze5gvit","slide":7,"name":"page-number","text":"28","textPreview":"28","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/ry54na18","slide":7,"text":"정상 입력만 탐지하고 조건 불일치 입력은 제외되는지 Matrix Test로 확인한다.","textPreview":"정상 입력만 탐지하고 조건 불일치 입력은 제외되는지 Matrix Test로 확인한다.","textChars":47,"textLines":1,"bbox":[60,158,674,48]}
+{"kind":"textbox","id":"sh/qxcne50n","slide":7,"name":"matrix-0-0","text":"Rule","textPreview":"Rule","textChars":4,"textLines":1,"bbox":[60,232,154,62]}
+{"kind":"textbox","id":"sh/pw3ml0j2","slide":7,"name":"matrix-0-1","text":"Positive","textPreview":"Positive","textChars":8,"textLines":1,"bbox":[214,232,170,62]}
+{"kind":"textbox","id":"sh/4vulsvix","slide":7,"name":"matrix-0-2","text":"Negative","textPreview":"Negative","textChars":8,"textLines":1,"bbox":[384,232,180,62]}
+{"kind":"textbox","id":"sh/apc3mtgj","slide":7,"name":"matrix-0-3","text":"Duplicate","textPreview":"Duplicate","textChars":9,"textLines":1,"bbox":[564,232,170,62]}
+{"kind":"textbox","id":"sh/bql4fex4","slide":7,"name":"matrix-1-0","text":"100110","textPreview":"100110","textChars":6,"textLines":1,"bbox":[60,294,154,62]}
+{"kind":"textbox","id":"sh/wrulojyp","slide":7,"name":"matrix-1-1","text":"1건 탐지","textPreview":"1건 탐지","textChars":5,"textLines":1,"bbox":[214,294,170,62]}
+{"kind":"textbox","id":"sh/xc3mhofa","slide":7,"name":"matrix-1-2","text":"8건 미탐지","textPreview":"8건 미탐지","textChars":6,"textLines":1,"bbox":[384,294,180,62]}
+{"kind":"textbox","id":"sh/mls3i9gn","slide":7,"name":"matrix-1-3","text":"0건","textPreview":"0건","textChars":2,"textLines":1,"bbox":[564,294,170,62]}
+{"kind":"textbox","id":"sh/nm1kbex8","slide":7,"name":"matrix-2-0","text":"100111","textPreview":"100111","textChars":6,"textLines":1,"bbox":[60,356,154,62]}
+{"kind":"textbox","id":"sh/onulkjyt","slide":7,"name":"matrix-2-1","text":"1건 탐지","textPreview":"1건 탐지","textChars":5,"textLines":1,"bbox":[214,356,170,62]}
+{"kind":"textbox","id":"sh/9o3mdofy","slide":7,"name":"matrix-2-2","text":"15건 미탐지","textPreview":"15건 미탐지","textChars":7,"textLines":1,"bbox":[384,356,180,62]}
+{"kind":"textbox","id":"sh/ehs3e9gb","slide":7,"name":"matrix-2-3","text":"0건","textPreview":"0건","textChars":2,"textLines":1,"bbox":[564,356,170,62]}
+{"kind":"textbox","id":"sh/fi1k7uxw","slide":7,"name":"placeholder-3","text":"증거 3 플레이스홀더\n\nRule 100110 Matrix Test PASS 화면","textPreview":"증거 3 플레이스홀더 |  | Rule 100110 Matrix Test PASS 화면","textChars":44,"textLines":3,"bbox":[60,456,322,176]}
+{"kind":"textbox","id":"sh/3mx0fqdo","slide":7,"name":"placeholder-4","text":"증거 4 플레이스홀더\n\nRule 100111 Matrix Test PASS 화면","textPreview":"증거 4 플레이스홀더 |  | Rule 100111 Matrix Test PASS 화면","textChars":44,"textLines":3,"bbox":[412,456,322,176]}
+{"kind":"textbox","id":"sh/i1oj65w3","slide":7,"name":"summary","text":"정적 검증 판정\n두 Rule 모두 Positive만 탐지하고 Negative와 중복 Alert를 제외하였다. 정적 Test는 실제 Runtime Alert 증거를 대신하지 않는다.","textPreview":"정적 검증 판정 | 두 Rule 모두 Positive만 탐지하고 Negative와 중복 Alert를 제외하였다. 정적 Test는 실제 Runtime Alert 증거를 대신하지 않는다.","textChars":100,"textLines":2,"bbox":[60,688,674,126]}
+{"kind":"notes","id":"nt/au0rdv","slide":7,"text":"[Sources]\n- 사용자 제공 Matrix Test 결과와 기존 Canva 5.1 초안"}
+{"kind":"slide","id":"sl/g83rok","slide":8,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":8}
+{"kind":"shape","id":"sh/6pg7upcj","slide":8,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/tsrqpkba","slide":8,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/sry9wfup","slide":8,"name":"page-title","text":"5.1.8 Rule 100110 Runtime Alert 검증","textPreview":"5.1.8 Rule 100110 Runtime Alert 검증","textChars":34,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/jmp8jats","slide":8,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/ilg7q5cn","slide":8,"name":"page-number","text":"29","textPreview":"29","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/5o7qlkby","slide":8,"text":"Dashboard Panel 21에서 DVWA 원본 Event와 Alert를 동일 event_id로 대조한다.","textPreview":"Dashboard Panel 21에서 DVWA 원본 Event와 Alert를 동일 event_id로 대조한다.","textChars":61,"textLines":1,"bbox":[60,158,674,48]}
+{"kind":"textbox","id":"sh/knypsfud","slide":8,"name":"runtime-100110-fields","text":"대조 필드\n\n• 동일한 Source event_id\n• stage = imds_credential_fetch\n• status = output_returned\n• result = succeeded\n• rule.id = 100110\n• rule.level = 12","textPreview":"대조 필드 |  | • 동일한 Source event_id | • stage = imds_credential_fetch | • status = output_returned | • result = succeeded | • rule.id = 1001...","textChars":145,"textLines":8,"bbox":[60,230,286,360]}
+{"kind":"textbox","id":"sh/vy58fqtw","slide":8,"name":"placeholder-5","text":"증거 5 플레이스홀더\n\nPanel 21의 원본 Event와 Rule 100110 Alert 상세","textPreview":"증거 5 플레이스홀더 |  | Panel 21의 원본 Event와 Rule 100110 Alert 상세","textChars":53,"textLines":3,"bbox":[374,230,360,360]}
+{"kind":"textbox","id":"sh/axw7m5cb","slide":8,"name":"summary","text":"Runtime 판정\n원본 Event의 안전한 분류 필드가 Rule 100110의 모든 조건과 일치했고, 동일 event_id를 가진 Level 12 Alert가 생성되었다.","textPreview":"Runtime 판정 | 원본 Event의 안전한 분류 필드가 Rule 100110의 모든 조건과 일치했고, 동일 event_id를 가진 Level 12 Alert가 생성되었다.","textChars":96,"textLines":2,"bbox":[60,646,674,132]}
+{"kind":"textbox","id":"sh/8zud076l","slide":8,"name":"runtime-100110-redaction","text":"공개 화면에서는 Account, Credential, Cookie, 원문 Command와 응답을 노출하지 않는다.","textPreview":"공개 화면에서는 Account, Credential, Cookie, 원문 Command와 응답을 노출하지 않는다.","textChars":63,"textLines":1,"bbox":[60,824,674,82]}
+{"kind":"notes","id":"nt/g83rok","slide":8,"text":"[Sources]\n- 사용자 제공 Rule 100110 Runtime 검증 기준과 기존 Canva 5.1 초안"}
+{"kind":"slide","id":"sl/6j58le","slide":9,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":8}
+{"kind":"shape","id":"sh/szmd0ryl","slide":9,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/rydcrmh0","slide":9,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/qxkvyhgf","slide":9,"name":"page-title","text":"5.1.9 Rule 100111 Runtime Alert 검증","textPreview":"5.1.9 Rule 100111 Runtime Alert 검증","textChars":34,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/5wbupwzu","slide":9,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/4v2dwry9","slide":9,"name":"page-number","text":"30","textPreview":"30","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/3utcnmho","slide":9,"text":"Dashboard Panel 22에서 CloudTrail 원본 Event와 Alert를 동일 eventID로 대조한다.","textPreview":"Dashboard Panel 22에서 CloudTrail 원본 Event와 Alert를 동일 eventID로 대조한다.","textChars":66,"textLines":1,"bbox":[60,158,674,48]}
+{"kind":"textbox","id":"sh/itkvuhg3","slide":9,"name":"placeholder-6","text":"증거 6 플레이스홀더\n\nPanel 22의 CloudTrail Event와 Rule 100111 Alert 상세","textPreview":"증거 6 플레이스홀더 |  | Panel 22의 CloudTrail Event와 Rule 100111 Alert 상세","textChars":61,"textLines":3,"bbox":[60,230,360,360]}
+{"kind":"textbox","id":"sh/h8bulczy","slide":9,"name":"runtime-100111-fields","text":"대조 필드\n\n• 동일한 CloudTrail eventID\n• eventName = GetObject\n• 승인된 AssumedRole과 Object\n• httpStatusCode = 200\n• bytesTransferredOut > 0\n• rule.id = 100111\n• rule.level = 14","textPreview":"대조 필드 |  | • 동일한 CloudTrail eventID | • eventName = GetObject | • 승인된 AssumedRole과 Object | • httpStatusCode = 200 | • bytesTransferredOu...","textChars":167,"textLines":9,"bbox":[448,230,286,360]}
+{"kind":"textbox","id":"sh/g72ds7yd","slide":9,"name":"summary","text":"Runtime 판정\n원본 CloudTrail Event가 Rule 100111의 모든 조건과 일치했고, 동일 eventID를 가진 Level 14 Alert가 생성되었다.","textPreview":"Runtime 판정 | 원본 CloudTrail Event가 Rule 100111의 모든 조건과 일치했고, 동일 eventID를 가진 Level 14 Alert가 생성되었다.","textChars":95,"textLines":2,"bbox":[60,646,674,132]}
+{"kind":"textbox","id":"sh/edwja1gv","slide":9,"name":"runtime-100111-scope","text":"판정 범위는 고정 검증용 S3 Object의 실제 Byte 반환이다. S3 전체 유출로 확대 해석하지 않는다.","textPreview":"판정 범위는 고정 검증용 S3 Object의 실제 Byte 반환이다. S3 전체 유출로 확대 해석하지 않는다.","textChars":61,"textLines":1,"bbox":[60,824,674,82]}
+{"kind":"notes","id":"nt/6j58le","slide":9,"text":"[Sources]\n- 사용자 제공 Rule 100111 Runtime 검증 기준과 기존 Canva 5.1 초안"}
+{"kind":"slide","id":"sl/nbkcie","slide":10,"title":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textShapes":8}
+{"kind":"shape","id":"sh/21gzq1s7","slide":10,"name":"chapter-header-bg","bbox":[0,0,794,56]}
+{"kind":"textbox","id":"sh/p4ri1wbi","slide":10,"name":"chapter-header","text":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textPreview":"CHAPTER 5. 보안관제(SOC) 기반 탐지·자동 대응 체계","textChars":35,"textLines":1,"bbox":[28,17,720,24]}
+{"kind":"textbox","id":"sh/o3ihsrax","slide":10,"name":"page-title","text":"5.1.10 종합 판정과 해석 한계","textPreview":"5.1.10 종합 판정과 해석 한계","textChars":19,"textLines":1,"bbox":[28,86,728,34]}
+{"kind":"shape","id":"sh/b69036to","slide":10,"name":"title-rule","bbox":[28,130,728,1]}
+{"kind":"textbox","id":"sh/q50zu1s3","slide":10,"name":"page-number","text":"31","textPreview":"31","textChars":2,"textLines":1,"bbox":[680,1070,54,18]}
+{"kind":"textbox","id":"sh/dsri5gbu","slide":10,"text":"중앙 관제 화면은 탐지 결과뿐 아니라 Alert가 생성된 근거를 한 흐름으로 보여준다.","textPreview":"중앙 관제 화면은 탐지 결과뿐 아니라 Alert가 생성된 근거를 한 흐름으로 보여준다.","textChars":48,"textLines":1,"bbox":[60,158,674,48]}
+{"kind":"textbox","id":"sh/c7ihwba9","slide":10,"name":"evidence-chain","text":"원본 Event  →  주요 필드 구조화  →  Rule 조건 일치  →  Alert 생성  →  Dashboard 조사","textPreview":"원본 Event  →  주요 필드 구조화  →  Rule 조건 일치  →  Alert 생성  →  Dashboard 조사","textChars":67,"textLines":1,"bbox":[60,232,674,110]}
+{"kind":"textbox","id":"sh/ra5grmtk","slide":10,"name":"final-results","text":"검증 결과\n\n• 분산된 DVWA·CloudTrail Event를 Wazuh에서 중앙 조회\n• Rule 100110: Positive 1 / Negative 8 / Duplicate 0\n• Rule 100111: Positive 1 / Negative 15 / Duplicate 0\n• 원본 식별자와 Runtime Alert의 일대일 연결 확인","textPreview":"검증 결과 |  | • 분산된 DVWA·CloudTrail Event를 Wazuh에서 중앙 조회 | • Rule 100110: Positive 1 / Negative 8 / Duplicate 0 | • Rule 100111: Positive 1 ...","textChars":191,"textLines":6,"bbox":[60,392,674,230]}
+{"kind":"textbox","id":"sh/69wzihsz","slide":10,"name":"final-limit","text":"해석 한계\n\nRule 100110과 Rule 100111은 독립적으로 발생한다. Dashboard가 공격 인과관계를 자동 계산한 것은 아니며, 관제자가 Event 시각, 식별자, 실행 주체와 대상 Object를 비교해 동일 공격 흐름으로 조사하였다.","textPreview":"해석 한계 |  | Rule 100110과 Rule 100111은 독립적으로 발생한다. Dashboard가 공격 인과관계를 자동 계산한 것은 아니며, 관제자가 Event 시각, 식별자, 실행 주체와 대상 Object를 비교해 동일 공격 흐름으로 ...","textChars":139,"textLines":3,"bbox":[60,666,674,190]}
+{"kind":"textbox","id":"sh/k7yd8jqt","slide":10,"name":"final-verdict","text":"최종 판정: Wazuh 중앙 관제 화면에서 원본 Event → Rule 조건 일치 → Alert 생성 → 사건 조사 흐름을 검증하였다.","textPreview":"최종 판정: Wazuh 중앙 관제 화면에서 원본 Event → Rule 조건 일치 → Alert 생성 → 사건 조사 흐름을 검증하였다.","textChars":75,"textLines":1,"bbox":[60,900,674,74]}
+{"kind":"notes","id":"nt/nbkcie","slide":10,"text":"[Sources]\n- 사용자 제공 프로젝트 검증 결과와 기존 Canva 5.1 초안"}
