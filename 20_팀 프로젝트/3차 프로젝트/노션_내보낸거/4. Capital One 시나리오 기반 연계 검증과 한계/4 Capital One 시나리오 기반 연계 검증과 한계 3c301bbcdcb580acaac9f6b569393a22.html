@@ -1,0 +1,804 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>4. Capital One 시나리오 기반 연계 검증과 한계</title><style>
+/* cspell:disable-file */
+/* webkit printing magic: print all background colors */
+html {
+	-webkit-print-color-adjust: exact;
+}
+* {
+	box-sizing: border-box;
+	-webkit-print-color-adjust: exact;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+@media only screen {
+	body {
+		margin: 2em auto;
+		max-width: 900px;
+		color: rgb(55, 53, 47);
+	}
+}
+
+body {
+	line-height: 1.5;
+	white-space: pre-wrap;
+}
+
+a,
+a.visited {
+	color: inherit;
+	text-decoration: underline;
+}
+
+.pdf-relative-link-path {
+	font-size: 80%;
+	color: #444;
+}
+
+h1,
+h2,
+h3 {
+	letter-spacing: -0.01em;
+	line-height: 1.2;
+	font-weight: 600;
+	margin-bottom: 0;
+}
+
+/* Override strong tags inside headings to maintain consistent weight */
+h1 strong,
+h2 strong,
+h3 strong {
+	font-weight: 600;
+}
+
+.page-title {
+	font-size: 2.5rem;
+	font-weight: 700;
+	margin-top: 0;
+	margin-bottom: 0.75em;
+}
+
+h1 {
+	font-size: 1.875rem;
+	margin-top: 1.875rem;
+}
+
+h2 {
+	font-size: 1.5rem;
+	margin-top: 1.5rem;
+}
+
+h3 {
+	font-size: 1.25rem;
+	margin-top: 1.25rem;
+}
+
+.source {
+	border: 1px solid #ddd;
+	border-radius: 3px;
+	padding: 1.5em;
+	word-break: break-all;
+}
+
+.callout {
+	border-radius: 10px;
+	padding: 1rem;
+}
+
+/* For default-background callouts, render the border outline. */
+.callout.block-color-default_background {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+figure {
+	margin: 1.25em 0;
+	page-break-inside: avoid;
+}
+
+/*
+ * Toggles and callouts hold arbitrary content, so they can easily be taller
+ * than a page. They must stay breakable: avoiding breaks inside them makes
+ * Chromium push the whole block onto the next page, which leaves the previous
+ * page mostly empty before every long toggle.
+ */
+details,
+aside {
+	margin: 1.25em 0;
+}
+
+/* Keep a toggle's title on the same page as the start of its content. */
+summary {
+	page-break-after: avoid;
+	break-after: avoid;
+}
+
+/*
+ * Toggle headings render as <h1/h2/h3 style="display:inline-block"> inside
+ * <summary>. Without this reset, the heading's margin-top pushes it below the
+ * ::marker (▼), so the triangle and the title appear on separate lines.
+ */
+summary h1,
+summary h2,
+summary h3,
+summary h4 {
+	margin-top: 0;
+}
+
+figcaption {
+	opacity: 0.5;
+	font-size: 85%;
+	margin-top: 0.5em;
+}
+
+mark {
+	background-color: transparent;
+}
+
+.indented {
+	padding-left: 1.5em;
+}
+
+hr {
+	background: transparent;
+	display: block;
+	width: 100%;
+	height: 1px;
+	visibility: visible;
+	border: none;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+img {
+	max-width: 100%;
+}
+
+@media only print {
+	img {
+		max-height: 100vh;
+		object-fit: contain;
+	}
+
+	table.collection-content {
+		width: 100%;
+		table-layout: fixed;
+	}
+
+	table.collection-content th,
+	table.collection-content td {
+		overflow-wrap: anywhere;
+	}
+
+	table.collection-content td > .user,
+	table.collection-content td > time {
+		white-space: pre-wrap;
+	}
+}
+
+@page {
+	margin: 1in;
+}
+
+.collection-content-wrapper {
+	overflow-x: auto;
+}
+
+@media only print {
+	.collection-content-wrapper {
+		overflow-x: visible;
+	}
+}
+
+.collection-content {
+	font-size: 0.875rem;
+}
+
+.collection-content td {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.column-list {
+	display: flex;
+	gap: 46px;
+}
+
+.column {
+	min-width: 0;
+	overflow: hidden;
+}
+
+.column > *:first-child {
+	margin-top: 0;
+}
+
+.table_of_contents-item {
+	display: block;
+	font-size: 0.875rem;
+	line-height: 1.3;
+	padding-inline: 0.125rem;
+	padding-block: 0.375rem;
+}
+
+.table_of_contents-indent-1 {
+	margin-left: 1.5rem;
+}
+
+.table_of_contents-indent-2 {
+	margin-left: 3rem;
+}
+
+.table_of_contents-indent-3 {
+	margin-left: 4.5rem;
+}
+
+.table_of_contents-link {
+	text-decoration: none;
+	opacity: 0.7;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.18);
+}
+
+table,
+th,
+td {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+table {
+	border-collapse: collapse;
+	border-left: none;
+	border-right: none;
+}
+
+th,
+td {
+	font-weight: normal;
+	padding: 0.25em 0.5em;
+	line-height: 1.5;
+	min-height: 1.5em;
+	text-align: left;
+}
+
+th {
+	color: rgba(55, 53, 47, 0.6);
+}
+
+ol,
+ul {
+	margin: 0;
+	margin-block-start: 0.6em;
+	margin-block-end: 0.6em;
+}
+
+li > ol:first-child,
+li > ul:first-child {
+	margin-block-start: 0.6em;
+}
+
+ul > li {
+	list-style: disc;
+}
+
+ul.to-do-list {
+	padding-inline-start: 0;
+}
+
+ul.to-do-list > li {
+	list-style: none;
+}
+
+.to-do-children-checked {
+	text-decoration: line-through;
+	opacity: 0.375;
+}
+
+ul.toggle > li {
+	list-style: none;
+}
+
+ul {
+	padding-inline-start: 1.7em;
+}
+
+ul > li {
+	padding-left: 0.1em;
+}
+
+ol {
+	padding-inline-start: 1.6em;
+}
+
+ol.numbered-list.numbered-list-digits-2 {
+	padding-inline-start: 2em;
+}
+
+ol.numbered-list.numbered-list-digits-3plus {
+	padding-inline-start: 2.4em;
+}
+
+ol > li {
+	padding-left: 0.2em;
+}
+
+.mono ol {
+	padding-inline-start: 2em;
+}
+
+.mono ol > li {
+	text-indent: -0.4em;
+}
+
+.toggle {
+	padding-inline-start: 0em;
+	list-style-type: none;
+}
+
+/* Indent toggle children */
+.toggle > li > details {
+	padding-left: 1.7em;
+}
+
+.toggle > li > details > summary {
+	margin-left: -1.1em;
+}
+
+.selected-value {
+	display: inline-block;
+	padding: 0 0.5em;
+	background: rgba(206, 205, 202, 0.5);
+	border-radius: 3px;
+	margin-right: 0.5em;
+	margin-top: 0.3em;
+	margin-bottom: 0.3em;
+	white-space: nowrap;
+}
+
+.collection-title {
+	display: inline-block;
+	margin-right: 1em;
+}
+
+.page-description {
+	margin-bottom: 2em;
+}
+
+.simple-table {
+	margin-top: 1em;
+	font-size: 0.875rem;
+	empty-cells: show;
+}
+.simple-table td {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table th {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table-header-color {
+	background: rgb(247, 246, 243);
+	color: black;
+}
+.simple-table-header {
+	font-weight: 500;
+}
+
+time {
+	opacity: 0.5;
+}
+
+.icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 1.2em;
+	max-height: 1.2em;
+	text-decoration: none;
+	vertical-align: text-bottom;
+	margin-right: 0.5em;
+}
+
+/*
+ * Render emoji icons using a ::before pseudo-element to keep the glyph
+ * out of the DOM textContent traversal. This avoids double-rendering icons
+ * in callouts and page titles.
+ * NOTE(slim/html-export-pseudo-icons): I can't tagref this because it will
+ * flag as a duplicate tag after codegen.
+ */
+.icon[data-emoji]::before {
+	content: attr(data-emoji);
+}
+
+img.icon {
+	border-radius: 3px;
+}
+
+.callout img.notion-static-icon {
+	width: 1em;
+	height: 1em;
+}
+
+.callout p {
+	margin: 0;
+}
+
+.callout h1,
+.callout h2,
+.callout h3 {
+	margin: 0 0 0.6rem;
+}
+
+.user-icon {
+	width: 1.5em;
+	height: 1.5em;
+	border-radius: 100%;
+	margin-right: 0.5rem;
+}
+
+.user-icon-inner {
+	font-size: 0.8em;
+}
+
+.text-icon {
+	border: 1px solid #000;
+	text-align: center;
+}
+
+.page-cover-image {
+	display: block;
+	object-fit: cover;
+	width: 100%;
+	max-height: 30vh;
+}
+
+.page-header-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.page-header-icon-with-cover {
+	margin-top: -0.72em;
+	margin-left: 0.07em;
+}
+
+.page-header-icon img {
+	border-radius: 3px;
+}
+
+.link-to-page {
+	margin: 1em 0;
+	padding: 0;
+	border: none;
+	font-weight: 500;
+}
+
+p > .user {
+	opacity: 0.5;
+}
+
+td > .user,
+td > time {
+	white-space: nowrap;
+}
+
+input[type="checkbox"] {
+	margin-right: 0.4em;
+	vertical-align: middle;
+}
+
+p {
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.image {
+	border: none;
+	margin: 1.5em 0;
+	padding: 0;
+	border-radius: 0;
+	text-align: center;
+}
+
+.code,
+code {
+	background: rgba(135, 131, 120, 0.15);
+	border-radius: 3px;
+	padding: 0.2em 0.4em;
+	border-radius: 3px;
+	font-size: 85%;
+	tab-size: 2;
+}
+
+code {
+	color: #eb5757;
+}
+
+.code {
+	padding: 1.5em 1em;
+}
+
+.code-wrap {
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.code > code {
+	background: none;
+	padding: 0;
+	font-size: 100%;
+	color: inherit;
+}
+
+blockquote {
+	font-size: 1em;
+	margin: 1em 0;
+	padding-left: 1em;
+	border-left: 3px solid rgb(55, 53, 47);
+}
+
+blockquote.quote-large {
+	font-size: 1.25em;
+}
+
+.bookmark {
+	text-decoration: none;
+	max-height: 8em;
+	padding: 0;
+	display: flex;
+	width: 100%;
+	align-items: stretch;
+}
+
+.bookmark-title {
+	font-size: 0.85em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 1.75em;
+	white-space: nowrap;
+}
+
+.bookmark-text {
+	display: flex;
+	flex-direction: column;
+}
+
+.bookmark-info {
+	flex: 4 1 180px;
+	padding: 12px 14px 14px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.bookmark-image {
+	width: 33%;
+	flex: 1 1 180px;
+	display: block;
+	position: relative;
+	object-fit: cover;
+	border-radius: 1px;
+}
+
+.bookmark-description {
+	color: rgba(55, 53, 47, 0.6);
+	font-size: 0.75em;
+	overflow: hidden;
+	max-height: 4.5em;
+	word-break: break-word;
+}
+
+.bookmark-href {
+	font-size: 0.75em;
+	margin-top: 0.25em;
+}
+
+.tab {
+	margin: 1.25em 0;
+	padding-inline: 1rem;
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+.sans { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; }
+.code { font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; }
+.serif { font-family: Lyon-Text, Georgia, ui-serif, serif; }
+.mono { font-family: iawriter-mono, Nitti, Menlo, Courier, monospace; }
+.pdf .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK JP'; }
+.pdf:lang(zh-CN) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK SC'; }
+.pdf:lang(zh-TW) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK TC'; }
+.pdf:lang(ko-KR) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK KR'; }
+.pdf .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.pdf .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK JP'; }
+.pdf:lang(zh-CN) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK SC'; }
+.pdf:lang(zh-TW) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK TC'; }
+.pdf:lang(ko-KR) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK KR'; }
+.pdf .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.highlight-default {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.highlight-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.highlight-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.highlight-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.highlight-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.highlight-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.highlight-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.highlight-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.highlight-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.highlight-default_background {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray_background {
+	background: rgba(42, 28, 0, 0.07);
+}
+.highlight-brown_background {
+	background: rgba(139, 46, 0, 0.086);
+}
+.highlight-orange_background {
+	background: rgba(224, 101, 1, 0.129);
+}
+.highlight-yellow_background {
+	background: rgba(211, 168, 0, 0.137);
+}
+.highlight-teal_background {
+	background: rgba(0, 100, 45, 0.09);
+}
+.highlight-blue_background {
+	background: rgba(0, 124, 215, 0.094);
+}
+.highlight-purple_background {
+	background: rgba(102, 0, 178, 0.078);
+}
+.highlight-pink_background {
+	background: rgba(197, 0, 93, 0.086);
+}
+.highlight-red_background {
+	background: rgba(223, 22, 0, 0.094);
+}
+.block-color-default {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.block-color-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.block-color-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.block-color-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.block-color-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.block-color-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.block-color-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.block-color-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.block-color-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.block-color-default_background {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray_background {
+	background: rgba(240, 239, 237, 1);
+}
+.block-color-brown_background {
+	background: rgba(245, 237, 233, 1);
+}
+.block-color-orange_background {
+	background: rgba(251, 235, 222, 1);
+}
+.block-color-yellow_background {
+	background: rgba(249, 243, 220, 1);
+}
+.block-color-teal_background {
+	background: rgba(232, 241, 236, 1);
+}
+.block-color-blue_background {
+	background: rgba(229, 242, 252, 1);
+}
+.block-color-purple_background {
+	background: rgba(243, 235, 249, 1);
+}
+.block-color-pink_background {
+	background: rgba(250, 233, 241, 1);
+}
+.block-color-red_background {
+	background: rgba(252, 233, 231, 1);
+}
+.select-value-color-default { background-color: rgba(42, 28, 0, 0.07); }
+.select-value-color-gray { background-color: rgba(28, 19, 1, 0.11); }
+.select-value-color-brown { background-color: rgba(127, 51, 0, 0.156); }
+.select-value-color-orange { background-color: rgba(196, 88, 0, 0.203); }
+.select-value-color-yellow { background-color: rgba(209, 156, 0, 0.282); }
+.select-value-color-green { background-color: rgba(0, 96, 38, 0.156); }
+.select-value-color-blue { background-color: rgba(0, 118, 217, 0.203); }
+.select-value-color-purple { background-color: rgba(92, 0, 163, 0.141); }
+.select-value-color-pink { background-color: rgba(183, 0, 78, 0.152); }
+.select-value-color-red { background-color: rgba(206, 24, 0, 0.164); }
+
+.checkbox {
+	display: inline-flex;
+	vertical-align: text-bottom;
+	width: 16;
+	height: 16;
+	background-size: 16px;
+	margin-left: 2px;
+	margin-right: 5px;
+}
+
+.checkbox-on {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%2358A9D7%22%2F%3E%0A%3Cpath%20d%3D%22M6.71429%2012.2852L14%204.9995L12.7143%203.71436L6.71429%209.71378L3.28571%206.2831L2%207.57092L6.71429%2012.2852Z%22%20fill%3D%22white%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+
+.checkbox-off {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20x%3D%220.75%22%20y%3D%220.75%22%20width%3D%2214.5%22%20height%3D%2214.5%22%20fill%3D%22white%22%20stroke%3D%22%2336352F%22%20stroke-width%3D%221.5%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+	
+</style><style>@import url('https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex-swap.min.css')</style></head><body><article id="3c301bbc-dcb5-80ac-aac9-f6b569393a22" class="page sans"><header><h1 class="page-title" dir="auto">4. Capital One 시나리오 기반 연계 검증과 한계</h1><p class="page-description" dir="auto"></p></header><div class="page-body"><p id="3c301bbc-dcb5-80d5-a6d5-d24215cfc000" class="" dir="auto">
+</p><p id="a857af0b-cff4-4fed-b453-24e3c612006c" class="" dir="auto">Capital One 시나리오는 웹 애플리케이션 취약점을 통해 EC2 IMDS에 접근하고, 획득한 Node IAM Role 권한으로 S3 객체를 조회하는 흐름을 기반으로 한다.</p><p id="6d295cb4-3e06-4d6a-9341-1122e7b4f243" class="" dir="auto">본 프로젝트는 개인정보나 운영 데이터 대신 검증용 S3 객체를 사용하여 다음 과정을 검증하였다.</p><p id="5a476702-9e09-4c1a-aac1-37581cfac1e3" class="" dir="auto"><code>웹 공격 → IMDS 접근 탐지 → Workload 격리 → S3 접근 확인 → 웹 취약점 완화</code></p><p id="0e7d6f20-b758-46ed-a2f7-9b5251c1b7d9" class="" dir="auto">임시 자격증명은 검증 과정에서만 사용하고 로그, Shuffle Payload 및 증적에는 저장하지 않는다.</p><h2 id="68076369-14fa-4fce-ae84-3734b4914a14" class="" dir="auto">4.1 전체 검증 흐름</h2><table id="e20d7c73-a5a3-4725-86b7-70c80db89042" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="177ab8c0-1d35-42c3-a928-bec8333175f3" dir="ltr"><th id="vJAU" class="simple-table-header-color simple-table-header" style="width:176.75px">순서</th><th id="&gt;~fi" class="simple-table-header-color simple-table-header" style="width:176.75px">탐지·대응 단계</th><th id=":aVD" class="simple-table-header-color simple-table-header" style="width:176.75px">확인 내용</th><th id="F@VT" class="simple-table-header-color simple-table-header" style="width:176.75px">결과</th></tr></thead><tbody><tr id="6d3f0f6f-d1f0-42be-92ff-5a35c5c07a5f" dir="ltr"><td id="vJAU" class="" style="width:176.75px">1</td><td id="&gt;~fi" class="" style="width:176.75px">웹 애플리케이션 공격</td><td id=":aVD" class="" style="width:176.75px">DVWA 명령 실행 경로에서 IMDS 자격증명 엔드포인트 접근</td><td id="F@VT" class="" style="width:176.75px">감사 로그 생성</td></tr><tr id="e403ac69-e3c4-4c26-9255-85e7cf0c4032" dir="ltr"><td id="vJAU" class="" style="width:176.75px">2</td><td id="&gt;~fi" class="" style="width:176.75px">조기 탐지</td><td id=":aVD" class="" style="width:176.75px">Wazuh Rule <code>100110</code>이 자격증명 응답 반환 탐지</td><td id="F@VT" class="" style="width:176.75px">Alert 확인</td></tr><tr id="ba61a301-c7aa-4ea4-b6b5-fa258ef301f4" dir="ltr"><td id="vJAU" class="" style="width:176.75px">3</td><td id="&gt;~fi" class="" style="width:176.75px">1차 대응</td><td id=":aVD" class="" style="width:176.75px">Shuffle이 Alert와 Pod 이름·UID를 검증하고 격리 Workflow로 전달</td><td id="F@VT" class="" style="width:176.75px">코드·계약 검증 완료</td></tr><tr id="81813be0-c70d-4462-8c70-d81d74647acc" dir="ltr"><td id="vJAU" class="" style="width:176.75px">4</td><td id="&gt;~fi" class="" style="width:176.75px">Workload 격리</td><td id=":aVD" class="" style="width:176.75px">대상 Pod의 Ingress·Egress를 차단하고 정상 Pod 유지</td><td id="F@VT" class="" style="width:176.75px">Runtime 최종 검증 필요</td></tr><tr id="4d364235-f729-4191-a61f-dfa158b9d40a" dir="ltr"><td id="vJAU" class="" style="width:176.75px">5</td><td id="&gt;~fi" class="" style="width:176.75px">침해확정</td><td id=":aVD" class="" style="width:176.75px">CloudTrail에서 보호 S3 객체의 <code>GetObject</code>와 실제 바이트 반환 확인</td><td id="F@VT" class="" style="width:176.75px">Rule <code>100111</code> Alert 확인</td></tr><tr id="92a64271-55cd-4bb8-be26-d3c5e1fceabf" dir="ltr"><td id="vJAU" class="" style="width:176.75px">6</td><td id="&gt;~fi" class="" style="width:176.75px">취약점 완화</td><td id=":aVD" class="" style="width:176.75px">Shuffle이 DVWA 보안 수준을 <code>low → impossible</code>로 변경</td><td id="F@VT" class="" style="width:176.75px">Runtime 실행 성공</td></tr><tr id="a8e1085b-efd3-4d9e-83c5-a7a992ad9509" dir="ltr"><td id="vJAU" class="" style="width:176.75px">7</td><td id="&gt;~fi" class="" style="width:176.75px">배포·복구</td><td id=":aVD" class="" style="width:176.75px">Argo CD로 변경사항을 배포하고 Reset Workflow로 <code>low</code> 복구</td><td id="F@VT" class="" style="width:176.75px"><code>Synced / Healthy</code> 확인</td></tr></tbody></table><p id="e845f33b-f4ce-448c-9f70-84f92c660f1d" class="" dir="auto">Rule <code>100110</code>과 <code>100111</code>은 독립적으로 발생한다. Wazuh Timeline에서 발생 시각, IAM Role 및 접근 대상을 함께 비교하여 동일 사건으로 조사할 수 있는 근거를 제공한다.</p><h2 id="92a2cb01-f5d5-4b58-a8a6-6430f436dbcd" class="" dir="auto">4.2 Rule별 탐지 기준</h2><h3 id="915670a5-d8c9-4e8e-9aca-a7dcad3a0f3b" class="" dir="auto">Rule 100110 — IMDS 접근 조기 탐지</h3><p id="2970cb94-1940-47e9-950a-64b98a4807cd" class="" dir="auto">Rule <code>100110</code>은 DVWA 명령 실행을 통해 IMDS 자격증명 엔드포인트의 응답이 실제 반환된 경우 발생한다.</p><p id="cada4176-19b9-43b5-801b-8c7d6526278a" class="" dir="auto">주요 조건은 다음과 같다.</p><aside class="block-color-gray_background callout" data-notion-callout="" data-notion-callout-background="gray_background" style="white-space:pre-wrap;display:flex" id="3c501bbc-dcb5-80d5-901e-c06e9f618c20" dir="ltr"><div style="width:100%"><ul id="8318ed4c-a2b6-43c5-a955-e15d381c52e4" class="bulleted-list" dir="auto"><li style="list-style-type:disc">DVWA Push 감사 이벤트</li></ul><ul id="560e1f95-a5e0-4660-961a-f86432d9d07a" class="bulleted-list" dir="auto"><li style="list-style-type:disc">요청 경로 <code>/vulnerabilities/exec/</code></li></ul><ul id="b5fd84ca-57e3-47d1-bf5c-d22ca5cd803e" class="bulleted-list" dir="auto"><li style="list-style-type:disc">대상 리소스 <code>ec2_imds</code></li></ul><ul id="d2bd56fd-6693-4e84-a35f-bd46b2fb8213" class="bulleted-list" dir="auto"><li style="list-style-type:disc">공격 단계 <code>imds_credential_fetch</code></li></ul><ul id="e14c9afa-3731-413b-9972-5895d22c4b50" class="bulleted-list" dir="auto"><li style="list-style-type:disc">보안 수준 <code>low</code></li></ul><ul id="cfe6bc09-5151-48b1-802f-15d7076e5cf7" class="bulleted-list" dir="auto"><li style="list-style-type:disc">실행 결과 <code>succeeded</code></li></ul><ul id="05849653-be58-468c-84be-11a61485a583" class="bulleted-list" dir="auto"><li style="list-style-type:disc">응답 상태 <code>output_returned</code></li></ul></div></aside><p id="da6ab8ad-5c5a-4e97-bf26-9bac71621beb" class="" dir="auto">명령문, IMDS 응답, Role 이름 및 자격증명 값은 기록하지 않는다. Alert에는 이벤트 시각, 결과, Pod 이름과 UID 등 대응에 필요한 안전한 필드만 포함한다.</p><p id="9ac3bca8-c6b0-41e0-a264-6224bc472441" class="" dir="auto">Rule <code>100110</code>은 자격증명 접근 성공을 나타내는 조기 경보이지만, S3 객체 접근까지 단독으로 증명하지는 않는다.</p><h3 id="2913d336-2fc7-4234-9d66-5f12390bb501" class="" dir="auto">Rule 100111 — S3 접근 침해확정</h3><p id="90449822-dd5e-44b4-a4fc-7cbbad1370dd" class="" dir="auto">Rule <code>100111</code>은 CloudTrail S3 Data Event에서 다음 조건이 모두 확인될 때 발생한다.</p><aside class="block-color-gray_background callout" data-notion-callout="" data-notion-callout-background="gray_background" style="white-space:pre-wrap;display:flex" id="3c501bbc-dcb5-8028-b175-dba853eb3132" dir="ltr"><div style="width:100%"><ul id="8fae88a5-bf41-4280-b620-8f10ebb447e1" class="bulleted-list" dir="auto"><li style="list-style-type:disc"><code>GetObject</code></li></ul><ul id="03b92ac5-4692-4a4e-9124-805bc0d9ead6" class="bulleted-list" dir="auto"><li style="list-style-type:disc"><code>AssumedRole</code></li></ul><ul id="5f1a90af-15a8-4779-a910-afab07de818c" class="bulleted-list" dir="auto"><li style="list-style-type:disc">승인된 Node IAM Role</li></ul><ul id="c237647f-7d38-4063-aee8-40e394e4d743" class="bulleted-list" dir="auto"><li style="list-style-type:disc">검증용 Bucket과 Object Key</li></ul><ul id="7c8724f1-f8f6-43ac-80a2-9dff2cc3b0ce" class="bulleted-list" dir="auto"><li style="list-style-type:disc">HTTP <code>200</code></li></ul><ul id="0f9fcf5b-c3e3-42e0-9fdf-efca709b6279" class="bulleted-list" dir="auto"><li style="list-style-type:disc"><code>bytesTransferredOut &gt; 0</code></li></ul></div></aside><p id="67df2fcd-a2a2-42b3-8c99-f470c95cd7d1" class="" dir="auto">단순 접근 시도나 <code>AccessDenied</code>가 아니라, 검증용 객체의 데이터가 실제 반환된 사건을 탐지한다.</p><blockquote id="d2180a91-8e69-41d4-9239-4a1655663dcc" class="" dir="auto">[이미지 삽입 위치 — 탐지 증적]<p id="3ca8e075-7ce5-4715-a5ab-3803e0be0a69" class="" dir="auto">Rule <code>100110</code>과 Rule <code>100111</code>이 시간순으로 표시된 Wazuh Timeline</p><p id="cb628ec9-ebee-438b-9f96-5ea1b14d3fe4" class="" dir="auto"><strong>캡션:</strong> IMDS 자격증명 접근 조기 경보와 S3 객체 읽기 성공 경보의 단계별 확인</p></blockquote><p id="3c701bbc-dcb5-8039-b65c-c276e2aa4124" class="" dir="auto">
+</p><p id="3c701bbc-dcb5-80b6-ae15-c1cc3ec6a004" class="" dir="auto">
+</p><h2 id="ac29fd97-d191-4d29-aa2d-1611d9c75520" class="" dir="auto">4.3 Shuffle 대응 연계</h2><p id="2093b98f-e2df-431e-9af2-9a68e8c5d5cf" class="" dir="auto">Shuffle은 Wazuh Alert를 그대로 실행하지 않고 Rule, 계정, 리전, 발생 시각, 이벤트 해시 및 고정 대상을 검증한다.</p><p id="3f62c713-1d41-4651-bb4b-f8501657eb59" class="" dir="auto">Alert가 임의의 Pod, Namespace, Repository, Branch 또는 명령을 지정하는 것은 허용하지 않는다.</p><table id="322e7a8c-6f92-45d5-a78d-916799b8aea1" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="917af33c-259a-402c-b8c9-0e3b5e80d50d" dir="ltr"><th id="csSz" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">Rule</th><th id="sMFz" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">대응</th><th id="^eMp" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">목적</th></tr></thead><tbody><tr id="5d90219a-6118-45a0-89e6-44c2e4240b4a" dir="ltr"><td id="csSz" class="" style="width:235.66666666666666px"><code>100110</code></td><td id="sMFz" class="" style="width:235.66666666666666px">탐지된 DVWA Pod 네트워크 격리</td><td id="^eMp" class="" style="width:235.66666666666666px">추가 IMDS 접근과 내부 확산 제한</td></tr><tr id="bfef80fc-3a6e-4180-be8d-1a8d7950fd84" dir="ltr"><td id="csSz" class="" style="width:235.66666666666666px"><code>100111</code></td><td id="sMFz" class="" style="width:235.66666666666666px">DVWA <code>low → impossible</code> GitOps 변경</td><td id="^eMp" class="" style="width:235.66666666666666px">동일 웹 공격 경로 재사용 방지</td></tr></tbody></table><h3 id="bc1f13c9-944a-4748-addd-c0ef8a626b2e" class="" dir="auto">Rule 100110 대응</h3><p id="cf0fc04f-7608-4a29-bbf6-60a1284a2dee" class="" dir="auto">Rule <code>100110</code> 검증을 통과하면 Pod 이름과 Kubernetes UID가 일치하는 DVWA Pod만 격리한다.</p><p id="22993f62-0ec4-4e33-8489-682ba70f4d9a" class="" dir="auto">NetworkPolicy로 해당 Pod의 Ingress와 Egress를 차단하고, 정상 서비스를 위한 대체 Pod는 유지한다. 이는 S3 격리나 IAM 자격증명 폐기가 아니라, 침해된 웹 애플리케이션의 추가 활동을 제한하는 긴급 1차 대응이다.</p><p id="6ccabdd3-956f-4f15-ba06-e8d83cac3d14" class="" dir="auto">현재 격리 코드와 입력 계약 테스트는 완료되었지만, 실제 Alert를 이용한 최종 Runtime 격리 증적은 추가로 확보해야 한다.</p><h3 id="e4e93a0f-a9b0-4f22-81b7-b52be14ac365" class="" dir="auto">Rule 100111 대응</h3><p id="9d019d7c-a1e4-4499-a535-74e74c89ae72" class="" dir="auto">Rule <code>100111</code> 검증을 통과하면 고정된 GitHub Workflow가 DVWA 보안 수준을 <code>low</code>에서 <code>impossible</code>로 변경한다.</p><p id="f26a1630-4a94-4d5e-a629-19bceabcea6b" class="" dir="auto">변경사항은 Commit SHA로 기록되고 Argo CD를 통해 배포된다. 해당 자동 대응은 실제 Runtime에서 성공했으며, 시연 종료 후 Reset Workflow를 통해 다시 <code>low</code> 상태로 복구하였다.</p><p id="3c601bbc-dcb5-805b-82ac-e70ea2672b55" class="" dir="auto">
+</p><blockquote id="34b50355-8691-4cd5-8df3-27d82af9f1a6" class="" dir="auto"><p id="2b30f554-f196-4f5f-89e3-a47ff1e5bc8c" class="" dir="auto">Rule별 입력 검증과 고정 Workflow 분기가 확인되는 Shuffle 화면</p><p id="9c813e89-0e5f-4a24-8868-65d40eadc6a0" class="" dir="auto"><strong>캡션:</strong> 검증된 Wazuh Alert만 사전에 정의된 대응으로 전달하는 Shuffle 안전 게이트</p></blockquote><p id="3c601bbc-dcb5-8075-9d20-ca88a9e3410c" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-80b4-ae9e-c46b86e8eccc" class="bulleted-list" dir="auto"><li style="list-style-type:disc">Wazuh Alert를 $exec 입력으로 수신하여 Rule별 고정 대응을 수행하도록 구성한 Shuffle Workflow</li></ul><ul id="3c601bbc-dcb5-80f1-a009-ddbbaab67ebf" class="bulleted-list" dir="auto"><li style="list-style-type:disc">Wazuh Alert는 Webhook을 통해 단일 <code>SOC R110 Isolator</code> Action으로 전달된다. Action은 전체 입력값을 $exec로 받아 내부 계약에 따라 Rule <code>100110</code>과 <code>100111</code>을 검증하고, 허용된 Rule만 사전에 고정된 GitHub Workflow로 전달한다. </li></ul><figure id="3c601bbc-dcb5-8075-b221-cf4d0ab61b1c" class="image" data-notion-image="image.png" dir="ltr"><a href="image.png"><img style="width:703.96875px" src="image.png"/></a></figure><p id="3c601bbc-dcb5-8010-92cd-c8360d2aaa9d" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-8016-91ad-cb8987299226" class="bulleted-list" dir="auto"><li style="list-style-type:disc"><strong>(성공)</strong> Rule <code>100111</code> 입력 검증 후 고정된 GitHub Workflow로 대응을 전달한 Shuffle 실행 결과 </li></ul><figure id="3c601bbc-dcb5-80a7-bea9-d52386e264a5" class="image" data-notion-image="image%201.png" dir="ltr"><a href="image%201.png"><img style="width:703.953125px" src="image%201.png"/></a></figure><p id="3c601bbc-dcb5-80f1-829a-d559bea9ef2f" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-8065-a2a8-d2c2e3830511" class="bulleted-list" dir="auto"><li style="list-style-type:disc"><strong>(해당 Rule이 없을 경우) </strong>허용되지 않은 Rule ID 입력을 검증 단계에서 거부하여 후속 GitHub Workflow 실행을 차단한 Shuffle 음성 테스트 결과</li></ul><figure id="3c601bbc-dcb5-804b-8518-cf167585296d" class="image" data-notion-image="image%202.png" dir="ltr"><a href="image%202.png"><img style="width:703.96875px" src="image%202.png"/></a></figure><figure id="3c601bbc-dcb5-8024-a9cf-e61b91281a9f" class="image" data-notion-image="image%203.png" dir="ltr"><a href="image%203.png"><img style="width:703.953125px" src="image%203.png"/></a></figure><p id="3c601bbc-dcb5-801c-8e8a-ccf771628e52" class="" dir="auto">
+</p><blockquote id="e544ffb2-2f9d-4ab3-84eb-fea6b84693a3" class="" dir="auto">Rule <code>100111</code> GitHub Actions 성공과 Argo CD <code>Synced / Healthy</code> 화면<br/><br/><strong>캡션:</strong> S3 침해확정 후 DVWA 보안 수준을 강화한 GitOps 자동 대응</blockquote><p id="3c601bbc-dcb5-80ef-8e56-da267f57a384" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-8045-b302-e4633e3e29b2" class="bulleted-list" dir="auto"><li style="list-style-type:disc">Git Action으로 하드닝 수행.</li></ul><figure id="3c601bbc-dcb5-8065-838c-f448bd2c376b" class="image" data-notion-image="image%204.png" dir="ltr"><a href="image%204.png"><img style="width:703.96875px" src="image%204.png"/></a></figure><p id="3c601bbc-dcb5-801e-981f-de8e4401369a" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-8076-8367-e3078de5c6b3" class="bulleted-list" dir="auto"><li style="list-style-type:disc">ArgoCD에 의한 재배포로 하드닝 작업이 완료된 상태. </li></ul><figure id="3c601bbc-dcb5-8085-a0cc-eefbf483a2fa" class="image" data-notion-image="image%205.png" dir="ltr"><a href="image%205.png"><img style="width:703.96875px" src="image%205.png"/></a></figure><h2 id="17ccfd1a-2d5c-49de-8c55-91e836e5e371" class="" dir="auto">4.4 현재 검증 상태</h2><table id="d27f56b9-ca82-412e-8096-2871470d5b18" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="d93e6598-394e-47b2-9201-da85ad9c14e3" dir="ltr"><th id="_[JN" class="simple-table-header-color simple-table-header" style="width:353.5px">항목</th><th id=";?n?" class="simple-table-header-color simple-table-header" style="width:353.5px">상태</th></tr></thead><tbody><tr id="da11323f-bea7-4bcc-9a9a-3a269996b07d" dir="ltr"><td id="_[JN" class="" style="width:353.5px">DVWA 감사 로그 수집</td><td id=";?n?" class="" style="width:353.5px">확인</td></tr><tr id="3b5212a6-c119-4881-8d9a-46990ca970b1" dir="ltr"><td id="_[JN" class="" style="width:353.5px">Rule <code>100110</code> 탐지</td><td id=";?n?" class="" style="width:353.5px">Runtime Alert 확인</td></tr><tr id="acb511bb-5218-41fe-9cfe-e960caf6e83d" dir="ltr"><td id="_[JN" class="" style="width:353.5px">Rule <code>100111</code> 탐지</td><td id=";?n?" class="" style="width:353.5px">Runtime Alert 확인</td></tr><tr id="0de68ef3-fbf2-4c29-9057-5f22bc7c1db8" dir="ltr"><td id="_[JN" class="" style="width:353.5px">Wazuh → Shuffle 연결</td><td id=";?n?" class="" style="width:353.5px">구성 완료</td></tr><tr id="53a65f4d-775c-4b8a-8cc8-772117da2ec6" dir="ltr"><td id="_[JN" class="" style="width:353.5px">Shuffle 입력 검증</td><td id=";?n?" class="" style="width:353.5px">테스트 완료</td></tr><tr id="062e658f-dec2-4d79-bf7a-21178832d6db" dir="ltr"><td id="_[JN" class="" style="width:353.5px">Rule <code>100110</code> 격리 코드</td><td id=";?n?" class="" style="width:353.5px">구현·테스트 완료</td></tr><tr id="c397b70d-1a84-49c6-b7c4-6fb15532ed77" dir="ltr"><td id="_[JN" class="" style="width:353.5px">Rule <code>100110</code> 실제 Pod 격리</td><td id=";?n?" class="" style="width:353.5px">Runtime 증적 필요</td></tr><tr id="216c08c6-1195-4a79-811b-170175711585" dir="ltr"><td id="_[JN" class="" style="width:353.5px">Rule <code>100111</code> <code>low → impossible</code></td><td id=";?n?" class="" style="width:353.5px">Runtime 성공</td></tr><tr id="c5d83219-22cf-487a-8da8-35eeec1f23ca" dir="ltr"><td id="_[JN" class="" style="width:353.5px">Argo CD 배포</td><td id=";?n?" class="" style="width:353.5px"><code>Synced / Healthy</code> 확인</td></tr><tr id="2351b3fd-9434-470f-8f22-855cdcab477e" dir="ltr"><td id="_[JN" class="" style="width:353.5px">DVWA 기준선 복구</td><td id=";?n?" class="" style="width:353.5px">Reset Workflow 성공</td></tr></tbody></table><h2 id="f7a2d16a-38f7-451f-9a8d-a26b3389a52f" class="" dir="auto">4.5 한계와 의의</h2><p id="8a645a08-d6d9-400a-9fe5-3947aa30c698" class="" dir="auto">현재 시나리오는 EKS Pod Identity가 아니라 EC2 IMDS를 통한 Node Role 접근을 대상으로 한다.</p><p id="1a4ff82e-150c-4d15-a70f-40d7b80688d9" class="" dir="auto">따라서 Pod를 격리해도 이미 외부로 유출된 Node Role 자격증명을 직접 폐기할 수는 없다. 근본 대응을 위해서는 IAM 세션 무효화, Node Role 권한 축소 및 침해 노드 교체가 추가로 필요하다.</p><p id="1995bf42-b3f1-4233-b5b3-34f368bb537c" class="" dir="auto">Pod 격리는 공격 원인을 완전히 제거하는 조치는 아니지만 다음과 같은 의미가 있다.</p><aside class="block-color-gray_background callout" data-notion-callout="" data-notion-callout-background="gray_background" style="white-space:pre-wrap;display:flex" id="3c501bbc-dcb5-8023-9ca4-f7477a1bbc89" dir="ltr"><div style="width:100%"><ul id="92648a29-bdc1-4c38-afa3-cfdc99770089" class="bulleted-list" dir="auto"><li style="list-style-type:disc">추가 IMDS 접근 차단</li></ul><ul id="aec5c0fa-202b-469b-a5e3-9be1d105ccaf" class="bulleted-list" dir="auto"><li style="list-style-type:disc">내부 서비스 공격과 추가 정보 유출 제한</li></ul><ul id="61295ad6-06bc-4d3e-9c3c-15db935e5d50" class="bulleted-list" dir="auto"><li style="list-style-type:disc">침해 Workload와 정상 서비스 분리</li></ul><ul id="0ab37246-cbf0-4e08-acbc-329a150bc973" class="bulleted-list" dir="auto"><li style="list-style-type:disc">관제자의 조사 및 후속 대응 시간 확보</li></ul></div></aside><p id="b41a62c4-19d4-465d-93f5-b90adc8de8dd" class="" dir="auto">본 프로젝트의 의의는 S3 자체를 격리한 데 있지 않다. 웹 애플리케이션 공격을 조기에 탐지하고, 침해 Workload의 추가 행동을 제한한 뒤, CloudTrail로 S3 접근을 확인하고 공격 진입점의 취약한 설정을 자동으로 강화하는 단계적 SOC 대응을 구현했다는 데 있다.</p></div></article><span class="sans" style="font-size:14px;padding-top:2em"></span></body></html>

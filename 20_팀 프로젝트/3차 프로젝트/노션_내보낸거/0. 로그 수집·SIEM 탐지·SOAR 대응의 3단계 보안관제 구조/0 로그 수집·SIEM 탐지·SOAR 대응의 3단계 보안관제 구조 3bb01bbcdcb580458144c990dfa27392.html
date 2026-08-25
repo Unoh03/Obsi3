@@ -1,0 +1,813 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>0. 로그 수집·SIEM 탐지·SOAR 대응의 3단계 보안관제 구조</title><style>
+/* cspell:disable-file */
+/* webkit printing magic: print all background colors */
+html {
+	-webkit-print-color-adjust: exact;
+}
+* {
+	box-sizing: border-box;
+	-webkit-print-color-adjust: exact;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+@media only screen {
+	body {
+		margin: 2em auto;
+		max-width: 900px;
+		color: rgb(55, 53, 47);
+	}
+}
+
+body {
+	line-height: 1.5;
+	white-space: pre-wrap;
+}
+
+a,
+a.visited {
+	color: inherit;
+	text-decoration: underline;
+}
+
+.pdf-relative-link-path {
+	font-size: 80%;
+	color: #444;
+}
+
+h1,
+h2,
+h3 {
+	letter-spacing: -0.01em;
+	line-height: 1.2;
+	font-weight: 600;
+	margin-bottom: 0;
+}
+
+/* Override strong tags inside headings to maintain consistent weight */
+h1 strong,
+h2 strong,
+h3 strong {
+	font-weight: 600;
+}
+
+.page-title {
+	font-size: 2.5rem;
+	font-weight: 700;
+	margin-top: 0;
+	margin-bottom: 0.75em;
+}
+
+h1 {
+	font-size: 1.875rem;
+	margin-top: 1.875rem;
+}
+
+h2 {
+	font-size: 1.5rem;
+	margin-top: 1.5rem;
+}
+
+h3 {
+	font-size: 1.25rem;
+	margin-top: 1.25rem;
+}
+
+.source {
+	border: 1px solid #ddd;
+	border-radius: 3px;
+	padding: 1.5em;
+	word-break: break-all;
+}
+
+.callout {
+	border-radius: 10px;
+	padding: 1rem;
+}
+
+/* For default-background callouts, render the border outline. */
+.callout.block-color-default_background {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+figure {
+	margin: 1.25em 0;
+	page-break-inside: avoid;
+}
+
+/*
+ * Toggles and callouts hold arbitrary content, so they can easily be taller
+ * than a page. They must stay breakable: avoiding breaks inside them makes
+ * Chromium push the whole block onto the next page, which leaves the previous
+ * page mostly empty before every long toggle.
+ */
+details,
+aside {
+	margin: 1.25em 0;
+}
+
+/* Keep a toggle's title on the same page as the start of its content. */
+summary {
+	page-break-after: avoid;
+	break-after: avoid;
+}
+
+/*
+ * Toggle headings render as <h1/h2/h3 style="display:inline-block"> inside
+ * <summary>. Without this reset, the heading's margin-top pushes it below the
+ * ::marker (▼), so the triangle and the title appear on separate lines.
+ */
+summary h1,
+summary h2,
+summary h3,
+summary h4 {
+	margin-top: 0;
+}
+
+figcaption {
+	opacity: 0.5;
+	font-size: 85%;
+	margin-top: 0.5em;
+}
+
+mark {
+	background-color: transparent;
+}
+
+.indented {
+	padding-left: 1.5em;
+}
+
+hr {
+	background: transparent;
+	display: block;
+	width: 100%;
+	height: 1px;
+	visibility: visible;
+	border: none;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+img {
+	max-width: 100%;
+}
+
+@media only print {
+	img {
+		max-height: 100vh;
+		object-fit: contain;
+	}
+
+	table.collection-content {
+		width: 100%;
+		table-layout: fixed;
+	}
+
+	table.collection-content th,
+	table.collection-content td {
+		overflow-wrap: anywhere;
+	}
+
+	table.collection-content td > .user,
+	table.collection-content td > time {
+		white-space: pre-wrap;
+	}
+}
+
+@page {
+	margin: 1in;
+}
+
+.collection-content-wrapper {
+	overflow-x: auto;
+}
+
+@media only print {
+	.collection-content-wrapper {
+		overflow-x: visible;
+	}
+}
+
+.collection-content {
+	font-size: 0.875rem;
+}
+
+.collection-content td {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.column-list {
+	display: flex;
+	gap: 46px;
+}
+
+.column {
+	min-width: 0;
+	overflow: hidden;
+}
+
+.column > *:first-child {
+	margin-top: 0;
+}
+
+.table_of_contents-item {
+	display: block;
+	font-size: 0.875rem;
+	line-height: 1.3;
+	padding-inline: 0.125rem;
+	padding-block: 0.375rem;
+}
+
+.table_of_contents-indent-1 {
+	margin-left: 1.5rem;
+}
+
+.table_of_contents-indent-2 {
+	margin-left: 3rem;
+}
+
+.table_of_contents-indent-3 {
+	margin-left: 4.5rem;
+}
+
+.table_of_contents-link {
+	text-decoration: none;
+	opacity: 0.7;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.18);
+}
+
+table,
+th,
+td {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+table {
+	border-collapse: collapse;
+	border-left: none;
+	border-right: none;
+}
+
+th,
+td {
+	font-weight: normal;
+	padding: 0.25em 0.5em;
+	line-height: 1.5;
+	min-height: 1.5em;
+	text-align: left;
+}
+
+th {
+	color: rgba(55, 53, 47, 0.6);
+}
+
+ol,
+ul {
+	margin: 0;
+	margin-block-start: 0.6em;
+	margin-block-end: 0.6em;
+}
+
+li > ol:first-child,
+li > ul:first-child {
+	margin-block-start: 0.6em;
+}
+
+ul > li {
+	list-style: disc;
+}
+
+ul.to-do-list {
+	padding-inline-start: 0;
+}
+
+ul.to-do-list > li {
+	list-style: none;
+}
+
+.to-do-children-checked {
+	text-decoration: line-through;
+	opacity: 0.375;
+}
+
+ul.toggle > li {
+	list-style: none;
+}
+
+ul {
+	padding-inline-start: 1.7em;
+}
+
+ul > li {
+	padding-left: 0.1em;
+}
+
+ol {
+	padding-inline-start: 1.6em;
+}
+
+ol.numbered-list.numbered-list-digits-2 {
+	padding-inline-start: 2em;
+}
+
+ol.numbered-list.numbered-list-digits-3plus {
+	padding-inline-start: 2.4em;
+}
+
+ol > li {
+	padding-left: 0.2em;
+}
+
+.mono ol {
+	padding-inline-start: 2em;
+}
+
+.mono ol > li {
+	text-indent: -0.4em;
+}
+
+.toggle {
+	padding-inline-start: 0em;
+	list-style-type: none;
+}
+
+/* Indent toggle children */
+.toggle > li > details {
+	padding-left: 1.7em;
+}
+
+.toggle > li > details > summary {
+	margin-left: -1.1em;
+}
+
+.selected-value {
+	display: inline-block;
+	padding: 0 0.5em;
+	background: rgba(206, 205, 202, 0.5);
+	border-radius: 3px;
+	margin-right: 0.5em;
+	margin-top: 0.3em;
+	margin-bottom: 0.3em;
+	white-space: nowrap;
+}
+
+.collection-title {
+	display: inline-block;
+	margin-right: 1em;
+}
+
+.page-description {
+	margin-bottom: 2em;
+}
+
+.simple-table {
+	margin-top: 1em;
+	font-size: 0.875rem;
+	empty-cells: show;
+}
+.simple-table td {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table th {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table-header-color {
+	background: rgb(247, 246, 243);
+	color: black;
+}
+.simple-table-header {
+	font-weight: 500;
+}
+
+time {
+	opacity: 0.5;
+}
+
+.icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 1.2em;
+	max-height: 1.2em;
+	text-decoration: none;
+	vertical-align: text-bottom;
+	margin-right: 0.5em;
+}
+
+/*
+ * Render emoji icons using a ::before pseudo-element to keep the glyph
+ * out of the DOM textContent traversal. This avoids double-rendering icons
+ * in callouts and page titles.
+ * NOTE(slim/html-export-pseudo-icons): I can't tagref this because it will
+ * flag as a duplicate tag after codegen.
+ */
+.icon[data-emoji]::before {
+	content: attr(data-emoji);
+}
+
+img.icon {
+	border-radius: 3px;
+}
+
+.callout img.notion-static-icon {
+	width: 1em;
+	height: 1em;
+}
+
+.callout p {
+	margin: 0;
+}
+
+.callout h1,
+.callout h2,
+.callout h3 {
+	margin: 0 0 0.6rem;
+}
+
+.user-icon {
+	width: 1.5em;
+	height: 1.5em;
+	border-radius: 100%;
+	margin-right: 0.5rem;
+}
+
+.user-icon-inner {
+	font-size: 0.8em;
+}
+
+.text-icon {
+	border: 1px solid #000;
+	text-align: center;
+}
+
+.page-cover-image {
+	display: block;
+	object-fit: cover;
+	width: 100%;
+	max-height: 30vh;
+}
+
+.page-header-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.page-header-icon-with-cover {
+	margin-top: -0.72em;
+	margin-left: 0.07em;
+}
+
+.page-header-icon img {
+	border-radius: 3px;
+}
+
+.link-to-page {
+	margin: 1em 0;
+	padding: 0;
+	border: none;
+	font-weight: 500;
+}
+
+p > .user {
+	opacity: 0.5;
+}
+
+td > .user,
+td > time {
+	white-space: nowrap;
+}
+
+input[type="checkbox"] {
+	margin-right: 0.4em;
+	vertical-align: middle;
+}
+
+p {
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.image {
+	border: none;
+	margin: 1.5em 0;
+	padding: 0;
+	border-radius: 0;
+	text-align: center;
+}
+
+.code,
+code {
+	background: rgba(135, 131, 120, 0.15);
+	border-radius: 3px;
+	padding: 0.2em 0.4em;
+	border-radius: 3px;
+	font-size: 85%;
+	tab-size: 2;
+}
+
+code {
+	color: #eb5757;
+}
+
+.code {
+	padding: 1.5em 1em;
+}
+
+.code-wrap {
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.code > code {
+	background: none;
+	padding: 0;
+	font-size: 100%;
+	color: inherit;
+}
+
+blockquote {
+	font-size: 1em;
+	margin: 1em 0;
+	padding-left: 1em;
+	border-left: 3px solid rgb(55, 53, 47);
+}
+
+blockquote.quote-large {
+	font-size: 1.25em;
+}
+
+.bookmark {
+	text-decoration: none;
+	max-height: 8em;
+	padding: 0;
+	display: flex;
+	width: 100%;
+	align-items: stretch;
+}
+
+.bookmark-title {
+	font-size: 0.85em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 1.75em;
+	white-space: nowrap;
+}
+
+.bookmark-text {
+	display: flex;
+	flex-direction: column;
+}
+
+.bookmark-info {
+	flex: 4 1 180px;
+	padding: 12px 14px 14px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.bookmark-image {
+	width: 33%;
+	flex: 1 1 180px;
+	display: block;
+	position: relative;
+	object-fit: cover;
+	border-radius: 1px;
+}
+
+.bookmark-description {
+	color: rgba(55, 53, 47, 0.6);
+	font-size: 0.75em;
+	overflow: hidden;
+	max-height: 4.5em;
+	word-break: break-word;
+}
+
+.bookmark-href {
+	font-size: 0.75em;
+	margin-top: 0.25em;
+}
+
+.tab {
+	margin: 1.25em 0;
+	padding-inline: 1rem;
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+.sans { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; }
+.code { font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; }
+.serif { font-family: Lyon-Text, Georgia, ui-serif, serif; }
+.mono { font-family: iawriter-mono, Nitti, Menlo, Courier, monospace; }
+.pdf .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK JP'; }
+.pdf:lang(zh-CN) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK SC'; }
+.pdf:lang(zh-TW) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK TC'; }
+.pdf:lang(ko-KR) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK KR'; }
+.pdf .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.pdf .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK JP'; }
+.pdf:lang(zh-CN) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK SC'; }
+.pdf:lang(zh-TW) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK TC'; }
+.pdf:lang(ko-KR) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK KR'; }
+.pdf .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.highlight-default {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.highlight-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.highlight-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.highlight-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.highlight-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.highlight-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.highlight-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.highlight-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.highlight-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.highlight-default_background {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray_background {
+	background: rgba(42, 28, 0, 0.07);
+}
+.highlight-brown_background {
+	background: rgba(139, 46, 0, 0.086);
+}
+.highlight-orange_background {
+	background: rgba(224, 101, 1, 0.129);
+}
+.highlight-yellow_background {
+	background: rgba(211, 168, 0, 0.137);
+}
+.highlight-teal_background {
+	background: rgba(0, 100, 45, 0.09);
+}
+.highlight-blue_background {
+	background: rgba(0, 124, 215, 0.094);
+}
+.highlight-purple_background {
+	background: rgba(102, 0, 178, 0.078);
+}
+.highlight-pink_background {
+	background: rgba(197, 0, 93, 0.086);
+}
+.highlight-red_background {
+	background: rgba(223, 22, 0, 0.094);
+}
+.block-color-default {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.block-color-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.block-color-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.block-color-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.block-color-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.block-color-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.block-color-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.block-color-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.block-color-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.block-color-default_background {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray_background {
+	background: rgba(240, 239, 237, 1);
+}
+.block-color-brown_background {
+	background: rgba(245, 237, 233, 1);
+}
+.block-color-orange_background {
+	background: rgba(251, 235, 222, 1);
+}
+.block-color-yellow_background {
+	background: rgba(249, 243, 220, 1);
+}
+.block-color-teal_background {
+	background: rgba(232, 241, 236, 1);
+}
+.block-color-blue_background {
+	background: rgba(229, 242, 252, 1);
+}
+.block-color-purple_background {
+	background: rgba(243, 235, 249, 1);
+}
+.block-color-pink_background {
+	background: rgba(250, 233, 241, 1);
+}
+.block-color-red_background {
+	background: rgba(252, 233, 231, 1);
+}
+.select-value-color-default { background-color: rgba(42, 28, 0, 0.07); }
+.select-value-color-gray { background-color: rgba(28, 19, 1, 0.11); }
+.select-value-color-brown { background-color: rgba(127, 51, 0, 0.156); }
+.select-value-color-orange { background-color: rgba(196, 88, 0, 0.203); }
+.select-value-color-yellow { background-color: rgba(209, 156, 0, 0.282); }
+.select-value-color-green { background-color: rgba(0, 96, 38, 0.156); }
+.select-value-color-blue { background-color: rgba(0, 118, 217, 0.203); }
+.select-value-color-purple { background-color: rgba(92, 0, 163, 0.141); }
+.select-value-color-pink { background-color: rgba(183, 0, 78, 0.152); }
+.select-value-color-red { background-color: rgba(206, 24, 0, 0.164); }
+
+.checkbox {
+	display: inline-flex;
+	vertical-align: text-bottom;
+	width: 16;
+	height: 16;
+	background-size: 16px;
+	margin-left: 2px;
+	margin-right: 5px;
+}
+
+.checkbox-on {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%2358A9D7%22%2F%3E%0A%3Cpath%20d%3D%22M6.71429%2012.2852L14%204.9995L12.7143%203.71436L6.71429%209.71378L3.28571%206.2831L2%207.57092L6.71429%2012.2852Z%22%20fill%3D%22white%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+
+.checkbox-off {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20x%3D%220.75%22%20y%3D%220.75%22%20width%3D%2214.5%22%20height%3D%2214.5%22%20fill%3D%22white%22%20stroke%3D%22%2336352F%22%20stroke-width%3D%221.5%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+	
+</style><style>@import url('https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex-swap.min.css')</style></head><body><article id="3bb01bbc-dcb5-8045-8144-c990dfa27392" class="page sans"><header><h1 class="page-title" dir="auto">0. 로그 수집·SIEM 탐지·SOAR 대응의 3단계 보안관제 구조</h1><p class="page-description" dir="auto"></p></header><div class="page-body"><h2 id="b4a81edb-0ed6-4335-9c07-7868959a74f6" class="" dir="auto">1. 문서 목적</h2><p id="6d779c1b-e930-4289-84e4-10b48bf6ce33" class="" dir="auto">본 프로젝트의 보안관제 체계는 로그 수집, SIEM 탐지, SOAR 대응의 세 단계로 구성된다.</p><p id="f7236e47-eedd-414b-8cab-0d9452be1f22" class="" dir="auto">각 단계는 다음 질문에 답한다.</p><p id="743c4dbe-1c9b-49e0-93a2-ce737f537d96" class="" dir="auto">① 어떤 요청과 AWS 활동이 발생했는가?</p><p id="46fba2eb-0658-4d1f-b26b-8b385fe4d9d2" class="" dir="auto">② 수집된 로그에서 조사할 보안 이벤트가 발견되었는가?</p><p id="da6983a2-6b48-44c3-8ac8-d1a778ee20bc" class="" dir="auto">③ 해당 경보를 안전하게 대응 절차로 연결할 수 있는가?</p><p id="5849a247-3b7d-462d-b2c1-ec57aca22ce8" class="" dir="auto">이를 통해 단순한 로그 저장을 넘어 탐지, 검증, 대응, 복구까지 연결되는 관제 흐름을 구성하였다.</p><h2 id="99b3c5f2-ffef-48e1-89f2-a848f0529ffc" class="" dir="auto">2. 전체 관제 흐름</h2><figure id="3c601bbc-dcb5-8036-8f8c-fe0693930c17" class="image" data-notion-image="image.png" dir="ltr"><a href="image.png"><img style="width:703.96875px" src="image.png"/></a></figure><figure id="3c601bbc-dcb5-80e0-8496-c2b8b16700ef" class="image" data-notion-image="image%201.png" dir="ltr"><a href="image%201.png"><img style="width:703.984375px" src="image%201.png"/></a></figure><p id="3c601bbc-dcb5-8090-95db-e884585f7db3" class="" dir="auto">
+</p><figure id="3c601bbc-dcb5-807b-a99d-e6ac5a4733ba" class="image" style="text-align:center" data-notion-image="image%202.png" dir="ltr"><a href="image%202.png"><img style="width:720px" src="image%202.png"/></a></figure><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js" integrity="sha512-7Z9J3l1+EYfeaPKcGXu3MS/7T+w19WtKQY/n+xzmw4hZhJ9tyYmcUS+4QqAlzhicE5LAfMQSF3iFTK9bQdTxXg==" crossorigin="anonymous" referrerPolicy="no-referrer"></script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" integrity="sha512-tN7Ec6zAFaVSG3TpNAKtk4DOHNpSwKHxxrsiw4GHKESGPs5njn/0sMCUMl2svV4wo4BK/rCP7juYz+zx+l6oeQ==" crossorigin="anonymous" referrerPolicy="no-referrer"/><pre id="f26bad4c-2768-4c5c-a086-5dda35093e46" class="code code-wrap"><code style="white-space:pre-wrap;word-break:break-all">Wazuh 연계 보안 로그
+→ CloudWatch Logs·S3 및 DVWA Push 경로에서 수집
+→ Wazuh 분석 및 Alert 생성
+→ Shuffle 입력 검증
+→ GitHub Actions 대응 실행
+→ Argo CD 배포
+→ 결과 확인 및 복구</code></pre><p id="15569e14-f4b9-43d0-b984-047b968368df" class="" dir="auto">1단계는 WAF, CloudFront, ALB, VPC, 애플리케이션 및 CloudTrail에서 발생하여 CloudWatch Logs와 S3에 저장된 보안 Telemetry를 수집한다.</p><p id="22dbb341-d54c-428f-8f8d-2c9a06833299" class="" dir="auto">2단계는 Wazuh가 수집된 이벤트를 규칙에 따라 분석하고 조사 대상 Alert를 생성한다.</p><p id="c4b2e15c-ed34-4fab-86bb-e82aaa4fb672" class="" dir="auto">3단계는 Shuffle이 Alert의 입력 계약과 허용된 대응 범위를 검증하고, 허용된 경보만 GitHub Actions Workflow로 전달한다. 이후 Argo CD가 Git 변경을 감지하여 EKS에 반영한다.</p><p id="f022ccc8-2bc8-4049-b3ac-6fa38cf64ab8" class="" dir="auto">GitHub Actions는 Shuffle이 호출하는 대응 실행 채널이고, Argo CD는 Git 변경을 감지하여 EKS에 반영하는 GitOps 배포 채널에 해당한다.</p><table id="b5c09b54-8666-4c21-81cf-ca1e61d02fe4" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="038b642b-cb47-453f-8950-4566b8fe5aeb" dir="ltr"><th id="XM]T" class="simple-table-header-color simple-table-header" style="width:176.75px">단계</th><th id="@`fZ" class="simple-table-header-color simple-table-header" style="width:176.75px">주요 구성</th><th id="|xeq" class="simple-table-header-color simple-table-header" style="width:176.75px">역할</th><th id=":bB[" class="simple-table-header-color simple-table-header" style="width:176.75px">결과</th></tr></thead><tbody><tr id="199e4e35-2f21-4a16-87fe-05eabd361263" dir="ltr"><td id="XM]T" class="" style="width:176.75px">보안 Telemetry 수집</td><td id="@`fZ" class="" style="width:176.75px">WAF, CloudFront, ALB, VPC, 애플리케이션 및 CloudTrail 로그</td><td id="|xeq" class="" style="width:176.75px">요청, 명령 실행 및 AWS API 활동 기록</td><td id=":bB[" class="" style="width:176.75px">원본 로그</td></tr><tr id="38ffeda2-7b56-4883-977c-ba89c6c17287" dir="ltr"><td id="XM]T" class="" style="width:176.75px">SIEM 탐지</td><td id="@`fZ" class="" style="width:176.75px">Wazuh</td><td id="|xeq" class="" style="width:176.75px">로그 분석 및 Rule 기반 이상 징후 식별</td><td id=":bB[" class="" style="width:176.75px">Wazuh Alert</td></tr><tr id="4f46ee5c-3ce8-48a9-89e0-7f842f7095c3" dir="ltr"><td id="XM]T" class="" style="width:176.75px">SOAR 검증</td><td id="@`fZ" class="" style="width:176.75px">Shuffle</td><td id="|xeq" class="" style="width:176.75px">Rule ID, Schema, 이벤트 식별자 및 대응 대상 검증</td><td id=":bB[" class="" style="width:176.75px">승인 또는 거부</td></tr><tr id="aaf9958c-2938-45f1-927f-c9c0e0db4670" dir="ltr"><td id="XM]T" class="" style="width:176.75px">대응 실행</td><td id="@`fZ" class="" style="width:176.75px">GitHub Actions</td><td id="|xeq" class="" style="width:176.75px">고정된 DVWA 설정만 변경</td><td id=":bB[" class="" style="width:176.75px">Git Commit·Artifact</td></tr><tr id="546e8bc8-114e-401b-b843-3cbfbaee83f3" dir="ltr"><td id="XM]T" class="" style="width:176.75px">배포·복구</td><td id="@`fZ" class="" style="width:176.75px">Argo CD, EKS</td><td id="|xeq" class="" style="width:176.75px">GitOps 변경 배포 및 정상 상태 확인</td><td id=":bB[" class="" style="width:176.75px">Synced·Healthy</td></tr></tbody></table><ul id="0a114ce9-ddad-401c-b23e-5b8a132ef909" class="bulleted-list" dir="auto"><li style="list-style-type:disc">WAF, CloudFront, ALB 및 VPC Flow Log는 보안 Telemetry Source이며, Athena와 Grafana는 저장된 로그를 분석·시각화하는 보조 채널로 사용한다.</li></ul><ul id="3c601bbc-dcb5-8050-8041-c55a51c09f90" class="bulleted-list" dir="auto"><li style="list-style-type:disc">GitHub Actions는 Shuffle이 호출하는 대응 실행 채널이고, Argo CD는 Git 변경을 감지하여 EKS에 반영하는 GitOps 배포 채널에 해당한다.</li></ul><h2 id="1b59a099-735c-4ec9-bbc9-f80c56ae226a" class="" dir="auto">3. 보안 Telemetry 수집</h2><p id="9ef6196c-20a9-4ab2-a56e-8f58b0b11d6e" class="" dir="auto">첫 단계에서는 외부 요청, 애플리케이션 처리, AWS API 호출 및 객체 접근 기록을 수집한다.</p><p id="743e2957-2b0a-4f7b-aab6-6c48fd6c5e56" class="" dir="auto">· WAF 로그는 웹 요청과 Rule 적용 결과를 기록한다.</p><p id="a597f580-2952-4e14-b05f-8444b2a39693" class="" dir="auto">· CloudFront와 ALB 로그는 외부 요청이 애플리케이션까지 전달된 경로를 확인한다.</p><p id="ac89ffc6-219d-415f-8dbc-50f2c5edbb0e" class="" dir="auto">· 현재 프로젝트의 VPC Flow Log는 네트워크 연결 중 <code>REJECT</code> 결과를 기록한다.</p><p id="0c22bea0-5db3-44fc-8c7e-9e8d6fe86323" class="" dir="auto">· 애플리케이션 감사 로그는 DVWA 내부의 명령 실행과 IMDS 접근 징후를 제공한다.</p><p id="1dfc56eb-c7c4-462e-a84c-3f28b9d3f5e7" class="" dir="auto">· CloudTrail은 IAM Role을 사용한 AWS API 호출과 S3 객체 접근을 기록한다.</p><p id="709052a7-c189-451a-847d-46ccc9d853e1" class="" dir="auto">CloudWatch Logs는 비교적 빠른 검색과 이벤트 확인에 사용한다. S3, Athena 및 Grafana는 장기 보관된 로그의 검색, 집계 및 시각화에 활용한다.</p><p id="3c601bbc-dcb5-80a0-9942-f2738c20d959" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-8011-bedd-ee0bec737809" class="bulleted-list" dir="auto"><li style="list-style-type:disc">주요 보안 로그 Source와 수집 목적</li></ul><table id="49975cf3-2072-4746-acf9-77ae0e831450" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="cf67e6ce-7eb5-4fed-858a-29e2406a20b9" dir="ltr"><th id="^e_T" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">로그 Source</th><th id="eoNP" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">주요 수집 내용</th><th id=":Mqi" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">확인 목적</th></tr></thead><tbody><tr id="f523d997-d0d4-471f-ad0f-030384c385de" dir="ltr"><td id="^e_T" class="" style="width:235.66666666666666px">WAF</td><td id="eoNP" class="" style="width:235.66666666666666px">요청 URI, Client IP, 적용 Rule, <code>COUNT</code>·<code>BLOCK</code> 결과</td><td id=":Mqi" class="" style="width:235.66666666666666px">웹 공격 패턴과 처리 결과 확인</td></tr><tr id="0225f117-aa7e-43a4-90dd-04ae500270c3" dir="ltr"><td id="^e_T" class="" style="width:235.66666666666666px">CloudFront</td><td id="eoNP" class="" style="width:235.66666666666666px">외부 요청 경로, Edge 정보, 상태 코드</td><td id=":Mqi" class="" style="width:235.66666666666666px">외부 요청의 최초 진입 지점 확인</td></tr><tr id="7596f1ef-1f94-4788-9c44-54d225afccfa" dir="ltr"><td id="^e_T" class="" style="width:235.66666666666666px">ALB</td><td id="eoNP" class="" style="width:235.66666666666666px">Origin 전달 여부, 응답 상태, 처리 시간</td><td id=":Mqi" class="" style="width:235.66666666666666px">요청의 애플리케이션 도달 여부 확인</td></tr><tr id="31ef123e-5e80-473c-a985-4f3eb338d649" dir="ltr"><td id="^e_T" class="" style="width:235.66666666666666px">VPC Flow Log</td><td id="eoNP" class="" style="width:235.66666666666666px">Source, Destination, Port, <code>REJECT</code></td><td id=":Mqi" class="" style="width:235.66666666666666px">네트워크 연결 및 차단 흐름 확인</td></tr><tr id="4f7686d6-4da4-4ab8-a70c-f600088782e8" dir="ltr"><td id="^e_T" class="" style="width:235.66666666666666px">애플리케이션 감사 로그</td><td id="eoNP" class="" style="width:235.66666666666666px">Pod, 요청 경로, 명령 실행, IMDS 접근 징후</td><td id=":Mqi" class="" style="width:235.66666666666666px">Workload 내부 처리 확인</td></tr><tr id="6965b3d5-5401-4ac8-90e7-5fd7722f8ff7" dir="ltr"><td id="^e_T" class="" style="width:235.66666666666666px">CloudTrail</td><td id="eoNP" class="" style="width:235.66666666666666px">IAM Role, AWS API, S3 객체 접근 결과</td><td id=":Mqi" class="" style="width:235.66666666666666px">AWS 권한 사용과 객체 접근 확인</td></tr></tbody></table><ul id="3c601bbc-dcb5-8018-b532-f08aeeeecf24" class="bulleted-list" dir="auto"><li style="list-style-type:disc">로그 저장·검색·분석 구성과 역할</li></ul><table id="1766f413-bd5a-40eb-afd7-ca8d0c3b8ce4" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="a1ce0493-ccb2-4fb0-ba91-36114b460604" dir="ltr"><th id="wdTG" class="simple-table-header-color simple-table-header" style="width:353.5px">저장·분석 구성</th><th id="vi;{" class="simple-table-header-color simple-table-header" style="width:353.5px">활용 목적</th></tr></thead><tbody><tr id="047ac850-f65b-4763-be4c-d1de3787bde0" dir="ltr"><td id="wdTG" class="" style="width:353.5px">CloudWatch Logs</td><td id="vi;{" class="" style="width:353.5px">최근 이벤트 검색 및 실시간에 가까운 로그 확인</td></tr><tr id="46c2bfbf-76b7-4709-9063-f477b0a17701" dir="ltr"><td id="wdTG" class="" style="width:353.5px">S3</td><td id="vi;{" class="" style="width:353.5px">원본 로그 장기 보관</td></tr><tr id="6649a0fb-fbc5-49f2-8368-51d0763d0332" dir="ltr"><td id="wdTG" class="" style="width:353.5px">Athena</td><td id="vi;{" class="" style="width:353.5px">S3 로그에 대한 SQL 기반 분석</td></tr><tr id="45a741a8-d9dc-42ce-8e57-92f4cad9a3b1" dir="ltr"><td id="wdTG" class="" style="width:353.5px">Grafana</td><td id="vi;{" class="" style="width:353.5px">로그 집계 결과와 시간대별 흐름 시각화</td></tr><tr id="faadc313-237d-40e9-9e38-d7e1abb2fc44" dir="ltr"><td id="wdTG" class="" style="width:353.5px">Wazuh</td><td id="vi;{" class="" style="width:353.5px">로그 중앙 수집, Rule 분석 및 Alert 생성</td></tr></tbody></table><h2 id="3e8c69d7-74b0-457d-bc82-5f863c36ace0" class="" dir="auto">4. Wazuh SIEM 탐지</h2><p id="24d89af2-8dd1-42b4-90ea-e156dec74e79" class="" dir="auto">Wazuh는 수집된 애플리케이션 로그와 CloudTrail 이벤트를 Rule에 따라 분석한다.</p><table id="2ba5414d-d16f-4963-aea0-43fb2e65c755" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="662a0fde-e248-4713-9d92-4fa68d1f57d2" dir="ltr"><th id="c^v~" class="simple-table-header-color simple-table-header" style="width:176.75px">Rule</th><th id="vZ?K" class="simple-table-header-color simple-table-header" style="width:176.75px">입력 로그</th><th id="@vwf" class="simple-table-header-color simple-table-header" style="width:176.75px">탐지 조건</th><th id="{uGu" class="simple-table-header-color simple-table-header" style="width:176.75px">보안적 의미</th></tr></thead><tbody><tr id="ff063de3-ee5e-461a-b699-207af57b852f" dir="ltr"><td id="c^v~" class="" style="width:176.75px"><code>100110</code></td><td id="vZ?K" class="" style="width:176.75px">IMDS 자격증명 응답이 반환된 DVWA 명령 실행 감사 이벤트</td><td id="@vwf" class="" style="width:176.75px">IMDS 자격증명 경로 대상 명령이 응답을 반환</td><td id="{uGu" class="" style="width:176.75px">추가 조사가 필요한 조기 경보</td></tr><tr id="3436aa75-516e-4843-9f93-20e44aefb328" dir="ltr"><td id="c^v~" class="" style="width:176.75px"><code>100111</code></td><td id="vZ?K" class="" style="width:176.75px">CloudTrail S3 Data Event</td><td id="@vwf" class="" style="width:176.75px">승인된 Role과 객체에 대한 <code>GetObject</code> 성공 및 실제 바이트 반환</td><td id="{uGu" class="" style="width:176.75px">S3 객체 접근을 확인하는 고신뢰 경보</td></tr></tbody></table><p id="95e3b6f9-e813-4f51-b408-d4c5a7ae2e86" class="" dir="auto">관제자는 서로 독립된 Rule <code>100110</code>과 Rule <code>100111</code> Alert를 시간과 사건 정보를 기준으로 다음 순서로 조사한다.</p><table id="49fae93b-9d99-44ca-bc48-25d1fcac77c3" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="9fcafc39-6690-400e-86a4-f779e4dea4e1" dir="ltr"><th id="_abs" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">탐지 단계</th><th id="cM|?" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">확인 내용</th><th id=";sV}" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">판단</th></tr></thead><tbody><tr id="e3a4ff10-2407-439e-bf34-9a1b625cbde5" dir="ltr"><td id="_abs" class="" style="width:235.66666666666666px">Suspect</td><td id="cM|?" class="" style="width:235.66666666666666px">Rule <code>100110</code> IMDS 접근 징후</td><td id=";sV}" class="" style="width:235.66666666666666px">자격증명 접근 가능성이 있으므로 조사 시작</td></tr><tr id="b5f0621b-1a7c-46d7-99bc-189078d7c89b" dir="ltr"><td id="_abs" class="" style="width:235.66666666666666px">Confirm</td><td id="cM|?" class="" style="width:235.66666666666666px">Rule <code>100111</code> S3 객체 반환 성공</td><td id=";sV}" class="" style="width:235.66666666666666px">검증용 객체 접근 사실 확인</td></tr><tr id="d41af2d6-972d-4cdb-9178-ab3dc9242f3f" dir="ltr"><td id="_abs" class="" style="width:235.66666666666666px">Correlation</td><td id="cM|?" class="" style="width:235.66666666666666px">시간, 실행 주체, IAM Role 및 대상 객체 비교</td><td id=";sV}" class="" style="width:235.66666666666666px">관제자가 동일 사건으로 분석할 근거 확보</td></tr><tr id="80096e4d-1736-4145-95b1-888bd1956ad3" dir="ltr"><td id="_abs" class="" style="width:235.66666666666666px">Response Candidate</td><td id="cM|?" class="" style="width:235.66666666666666px">검증된 Alert를 Shuffle로 전달</td><td id=";sV}" class="" style="width:235.66666666666666px">제한된 대응 절차의 입력으로 사용</td></tr></tbody></table><p id="4cc02918-1c7c-46d4-9d1e-507a703b558c" class="" dir="auto">Rule 검증에는 Positive 입력과 Negative 입력을 함께 사용하였다.</p><table id="aff4d682-a55e-4d5a-864b-e26a4796cf10" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="aa0777b3-cc5a-4eab-abc2-a9fa48756aa3" dir="ltr"><th id="G^l}" class="simple-table-header-color simple-table-header" style="width:176.75px">검증 대상</th><th id="FH@t" class="simple-table-header-color simple-table-header" style="width:176.75px">Positive</th><th id="UjsN" class="simple-table-header-color simple-table-header" style="width:176.75px">Negative</th><th id="yHyZ" class="simple-table-header-color simple-table-header" style="width:176.75px">확인 결과</th></tr></thead><tbody><tr id="ce74ebd2-ffd7-45d8-8ed1-59c7d0107fcc" dir="ltr"><td id="G^l}" class="" style="width:176.75px">Rule <code>100110</code></td><td id="FH@t" class="" style="width:176.75px">1건</td><td id="UjsN" class="" style="width:176.75px">8건</td><td id="yHyZ" class="" style="width:176.75px">허용 조건만 Rule <code>100110</code>으로 탐지</td></tr><tr id="ee16addd-f040-4471-80c9-fff4c91256cd" dir="ltr"><td id="G^l}" class="" style="width:176.75px">Rule <code>100111</code></td><td id="FH@t" class="" style="width:176.75px">1건</td><td id="UjsN" class="" style="width:176.75px">15건</td><td id="yHyZ" class="" style="width:176.75px">계정·Role·Bucket·Object·성공 조건이 일치한 이벤트만 탐지</td></tr></tbody></table><p id="55f0238b-09db-4ab0-b24a-fa9179334e3c" class="" dir="auto">Rule <code>100110</code>만으로 자격증명 탈취나 S3 접근을 확정하지 않는다. 실제 객체 접근은 Rule <code>100111</code>과 CloudTrail 원본 기록을 통해 추가 확인한다.</p><p id="734c1ca5-8772-4430-894e-7e7cce124006" class="" dir="auto">
+</p><h2 id="05bce54b-cda4-4e70-a33f-15ed0829d674" class="" dir="auto">5. Shuffle SOAR 검증과 대응</h2><p id="3534f087-f821-49ff-9431-1683d42738d9" class="" dir="auto">Shuffle은 Wazuh Alert를 수신한 뒤 즉시 대응을 실행하지 않는다. 먼저 Rule ID, 이벤트 식별자, 입력 Schema 및 대응 대상이 사전에 정의된 조건과 일치하는지 확인한다.</p><pre id="73b79fcc-fdad-45fe-bda8-3922d9774fce" class="code code-wrap"><code style="white-space:pre-wrap;word-break:break-all">Wazuh Alert 수신
+→ Rule별 입력 계약 확인
+→ 이벤트 식별자 검증
+→ 허용된 대상 확인
+→ 고정 GitHub Workflow 전달</code></pre><ol type="1" id="78145af9-34c4-4e48-ad3f-7b13dab66050" class="numbered-list" start="1" dir="auto"><li>Shuffle은 Wazuh에서 전달된 Alert를 바로 실행하지 않는다. 먼저 Alert의 Rule ID와 입력 형식이 사전에 정의된 조건에 맞는지 확인하고, 검증에 성공한 경우에만 해당 Rule에 연결된 대응을 실행한다.</li></ol><ol type="1" id="de0fe5fa-329b-4da8-bea9-15105499f97d" class="numbered-list" start="2" dir="auto"><li>Rule <code>100110</code>이 전달되면 대응 대상을 임의로 선택하지 않고, 미리 지정된 DVWA Workload 대응 절차를 호출한다. 이는 IMDS 접근 징후가 발생한 Workload로부터 추가적인 공격이 확산되는 것을 제한하기 위한 조치이다.</li></ol><ol type="1" id="ca3dbc0f-d7ef-4183-b272-65eac68968fd" class="numbered-list" start="3" dir="auto"><li>Rule <code>100111</code>이 전달되면 검증된 S3 객체 접근 사건에 대한 대응으로, 고정된 GitHub Workflow를 호출한다. 해당 Workflow는 DVWA 보안 수준을 <code>low</code>에서 <code>impossible</code>로 변경하고, Argo CD를 통해 변경사항을 배포한다.</li></ol><ol type="1" id="d3ba9ec6-523e-469a-9248-66eac8ae399c" class="numbered-list" start="4" dir="auto"><li>반대로 허용되지 않은 Rule ID, 잘못된 입력 형식 또는 변조된 값이 전달되면 Shuffle은 요청을 <code>RESPONSE_FAILED</code> 상태로 종료한다. 이 경우 GitHub Workflow가 호출되지 않으므로 인프라나 애플리케이션 설정도 변경되지 않는다.</li></ol><table id="4d19e44e-719d-4af9-8922-b2d3af4884ac" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="ff43e891-fbba-4b6b-98c7-0ec56a4481ff" dir="ltr"><th id="B=UU" class="simple-table-header-color simple-table-header">입력 조건</th><th id=":vxw" class="simple-table-header-color simple-table-header">Shuffle 판단</th><th id="O{en" class="simple-table-header-color simple-table-header">연결되는 대응</th><th id="RI|D" class="simple-table-header-color simple-table-header">실행 결과</th></tr></thead><tbody><tr id="cf83f9ce-7aca-408b-99da-92b70b0af84e" dir="ltr"><td id="B=UU" class="">Rule <code>100110</code> 검증 성공</td><td id=":vxw" class="">대응 허용</td><td id="O{en" class="">고정된 DVWA Workload 대응 절차</td><td id="RI|D" class="">지정된 Workload 대응 실행</td></tr><tr id="09a8efce-f714-4107-9292-1d00da9b403f" dir="ltr"><td id="B=UU" class="">Rule <code>100111</code> 검증 성공</td><td id=":vxw" class="">대응 허용</td><td id="O{en" class="">고정된 GitHub Harden Workflow</td><td id="RI|D" class=""><code>low → impossible</code> 변경</td></tr><tr id="41f19d5b-391b-4477-a486-9c86f2cb456a" dir="ltr"><td id="B=UU" class="">허용되지 않은 Rule ID</td><td id=":vxw" class="">입력 거부</td><td id="O{en" class="">없음</td><td id="RI|D" class=""><code>RESPONSE_FAILED</code></td></tr><tr id="b5d1490f-eb57-4eec-a069-1f117411f018" dir="ltr"><td id="B=UU" class="">Schema 또는 필수 값 불일치</td><td id=":vxw" class="">입력 거부</td><td id="O{en" class="">없음</td><td id="RI|D" class=""><code>RESPONSE_FAILED</code></td></tr><tr id="3cf260f9-51b6-431d-ab8d-23bebbb7832b" dir="ltr"><td id="B=UU" class="">변조되거나 허용되지 않은 대상</td><td id=":vxw" class="">입력 거부</td><td id="O{en" class="">없음</td><td id="RI|D" class="">후속 Workflow 미실행</td></tr><tr id="377baf40-bf68-4b93-8427-43f9363789a2" dir="ltr"><td id="B=UU" class="">정상 입력 전달 완료</td><td id=":vxw" class="">대응 전달 성공</td><td id="O{en" class="">Rule별 고정 Workflow</td><td id="RI|D" class=""><code>DISPATCHED</code> 및 Run ID 반환</td></tr></tbody></table><p id="3c601bbc-dcb5-80c3-9fc3-f2341247d122" class="" dir="auto">
+</p><h2 id="c6965aba-9ee2-4f1e-82d0-09feaa6571b8" class="" dir="auto">6. GitOps 변경과 복구</h2><p id="6360ecd2-9769-448f-a88f-34ddfa23970b" class="" dir="auto">Shuffle이 승인한 대응은 GitHub Actions를 통해 GitOps 저장소의 지정된 설정만 변경한다.</p><p id="077ecdba-a51e-4c59-a567-d9bda80a230d" class="" dir="auto">Rule <code>100111</code> 대응에서는 DVWA Helm 설정의 보안 수준을 <code>low</code>에서 <code>impossible</code>로 변경한다. 변경 결과는 Commit SHA와 Workflow Artifact로 기록된다.</p><p id="02f5b076-39ed-4aed-b15d-8df9e8fbe6d6" class="" dir="auto">Argo CD는 저장소의 새 Revision을 감지하고 EKS에 배포한다. 배포 완료 여부는 <code>Synced</code>, <code>Healthy</code>, Revision 및 실제 Deployment 환경변수를 통해 확인한다.</p><pre id="39420ee7-8098-439a-83ad-bdb154995e89" class="code code-wrap"><code style="white-space:pre-wrap;word-break:break-all">Rule 100111
+→ Shuffle 검증
+→ GitHub Actions 성공
+→ Git Commit 생성
+→ Argo CD Synced 및 Healthy
+→ DEFAULT_SECURITY_LEVEL=impossible</code></pre><p id="8fbfeb4c-e7b1-41ea-ae7d-b179d6198070" class="" dir="auto">시연 재촬영 준비 시 Reset Workflow를 <code>prepare_retake=true</code>로 실행하여 격리를 해제하고 보안 수준을 다시 <code>low</code>로 복구한다. 복구 과정 역시 Workflow Run ID, Commit SHA, Argo CD Revision 및 실제 Deployment 설정으로 확인한다.</p><h2 id="678232a7-a2c0-4e69-9261-bbb85bb0c363" class="" dir="auto">7. 현재 구현 수준과 의미</h2><p id="afd407fb-f7ee-4db6-986b-b8244e22609c" class="" dir="auto">현재 프로젝트에서는 다음 범위를 구현하고 검증하였다.</p><p id="33197ca5-b6ab-4d31-95ed-d547717bc7ba" class="" dir="auto">· AWS 및 애플리케이션 로그 수집</p><p id="222aeb0a-4e4c-4d97-a35a-11cf38e06b9a" class="" dir="auto">· Wazuh Rule <code>100110</code>, <code>100111</code> 탐지</p><p id="c9ee11c2-20fa-480b-b350-834f00a04bd3" class="" dir="auto">· Positive 입력과 Negative 입력 검증</p><p id="536da7c7-3aa7-408d-879f-82bb33a40432" class="" dir="auto">· Wazuh Alert의 Shuffle 전달 구조</p><p id="edf6e471-4619-46a9-8978-d634fe69e088" class="" dir="auto">· 정상 Rule 입력의 고정 Workflow 전달</p><p id="7d84b221-3b69-4c26-9c51-2e1e1cf85011" class="" dir="auto">· 허용되지 않은 Rule ID의 실행 전 거부</p><p id="713b4b4a-eb29-418d-be1b-2dbb78c7fa57" class="" dir="auto">· DVWA 보안 수준의 <code>low → impossible</code> 변경</p><p id="c6deda87-f3f3-46d8-aef2-a47d9bde627b" class="" dir="auto">· Argo CD의 <code>Synced</code>, <code>Healthy</code> 배포 확인</p><p id="5e11ceec-5e2a-43d1-81f4-98a40c839e70" class="" dir="auto">· Reset Workflow의 <code>prepare_retake=true</code> 실행을 통한 <code>impossible → low</code> 복구</p><p id="29930e26-e92a-4141-a770-765135c6e4a4" class="" dir="auto">현재 구조의 핵심은 모든 경보를 자동으로 차단하는 것이 아니다. Wazuh가 사건의 근거를 식별하고, Shuffle이 Alert의 입력 계약, 무결성, 신선도 및 허용된 대응 범위를 검증한 뒤, 사전에 허용된 변경만 GitOps 방식으로 실행하는 데 의미가 있다.</p><blockquote id="5f498850-9b67-40a4-b541-057fdf944e95" class="" dir="auto">Wazuh는 발생한 보안 이벤트를 탐지하고, Shuffle은 Alert의 입력 계약과 허용된 대응 범위를 검증한다. GitHub Actions와 Argo CD는 승인된 변경을 추적 가능하고 복구 가능한 방식으로 배포한다.</blockquote></div></article><span class="sans" style="font-size:14px;padding-top:2em"></span></body></html>

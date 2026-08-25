@@ -1,0 +1,845 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"/><title>3. Shuffle을 통한 경보 검증과 대응 연계 </title><style>
+/* cspell:disable-file */
+/* webkit printing magic: print all background colors */
+html {
+	-webkit-print-color-adjust: exact;
+}
+* {
+	box-sizing: border-box;
+	-webkit-print-color-adjust: exact;
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+}
+@media only screen {
+	body {
+		margin: 2em auto;
+		max-width: 900px;
+		color: rgb(55, 53, 47);
+	}
+}
+
+body {
+	line-height: 1.5;
+	white-space: pre-wrap;
+}
+
+a,
+a.visited {
+	color: inherit;
+	text-decoration: underline;
+}
+
+.pdf-relative-link-path {
+	font-size: 80%;
+	color: #444;
+}
+
+h1,
+h2,
+h3 {
+	letter-spacing: -0.01em;
+	line-height: 1.2;
+	font-weight: 600;
+	margin-bottom: 0;
+}
+
+/* Override strong tags inside headings to maintain consistent weight */
+h1 strong,
+h2 strong,
+h3 strong {
+	font-weight: 600;
+}
+
+.page-title {
+	font-size: 2.5rem;
+	font-weight: 700;
+	margin-top: 0;
+	margin-bottom: 0.75em;
+}
+
+h1 {
+	font-size: 1.875rem;
+	margin-top: 1.875rem;
+}
+
+h2 {
+	font-size: 1.5rem;
+	margin-top: 1.5rem;
+}
+
+h3 {
+	font-size: 1.25rem;
+	margin-top: 1.25rem;
+}
+
+.source {
+	border: 1px solid #ddd;
+	border-radius: 3px;
+	padding: 1.5em;
+	word-break: break-all;
+}
+
+.callout {
+	border-radius: 10px;
+	padding: 1rem;
+}
+
+/* For default-background callouts, render the border outline. */
+.callout.block-color-default_background {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+figure {
+	margin: 1.25em 0;
+	page-break-inside: avoid;
+}
+
+/*
+ * Toggles and callouts hold arbitrary content, so they can easily be taller
+ * than a page. They must stay breakable: avoiding breaks inside them makes
+ * Chromium push the whole block onto the next page, which leaves the previous
+ * page mostly empty before every long toggle.
+ */
+details,
+aside {
+	margin: 1.25em 0;
+}
+
+/* Keep a toggle's title on the same page as the start of its content. */
+summary {
+	page-break-after: avoid;
+	break-after: avoid;
+}
+
+/*
+ * Toggle headings render as <h1/h2/h3 style="display:inline-block"> inside
+ * <summary>. Without this reset, the heading's margin-top pushes it below the
+ * ::marker (▼), so the triangle and the title appear on separate lines.
+ */
+summary h1,
+summary h2,
+summary h3,
+summary h4 {
+	margin-top: 0;
+}
+
+figcaption {
+	opacity: 0.5;
+	font-size: 85%;
+	margin-top: 0.5em;
+}
+
+mark {
+	background-color: transparent;
+}
+
+.indented {
+	padding-left: 1.5em;
+}
+
+hr {
+	background: transparent;
+	display: block;
+	width: 100%;
+	height: 1px;
+	visibility: visible;
+	border: none;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+img {
+	max-width: 100%;
+}
+
+@media only print {
+	img {
+		max-height: 100vh;
+		object-fit: contain;
+	}
+
+	table.collection-content {
+		width: 100%;
+		table-layout: fixed;
+	}
+
+	table.collection-content th,
+	table.collection-content td {
+		overflow-wrap: anywhere;
+	}
+
+	table.collection-content td > .user,
+	table.collection-content td > time {
+		white-space: pre-wrap;
+	}
+}
+
+@page {
+	margin: 1in;
+}
+
+.collection-content-wrapper {
+	overflow-x: auto;
+}
+
+@media only print {
+	.collection-content-wrapper {
+		overflow-x: visible;
+	}
+}
+
+.collection-content {
+	font-size: 0.875rem;
+}
+
+.collection-content td {
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.column-list {
+	display: flex;
+	gap: 46px;
+}
+
+.column {
+	min-width: 0;
+	overflow: hidden;
+}
+
+.column > *:first-child {
+	margin-top: 0;
+}
+
+.table_of_contents-item {
+	display: block;
+	font-size: 0.875rem;
+	line-height: 1.3;
+	padding-inline: 0.125rem;
+	padding-block: 0.375rem;
+}
+
+.table_of_contents-indent-1 {
+	margin-left: 1.5rem;
+}
+
+.table_of_contents-indent-2 {
+	margin-left: 3rem;
+}
+
+.table_of_contents-indent-3 {
+	margin-left: 4.5rem;
+}
+
+.table_of_contents-link {
+	text-decoration: none;
+	opacity: 0.7;
+	border-bottom: 1px solid rgba(55, 53, 47, 0.18);
+}
+
+table,
+th,
+td {
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+table {
+	border-collapse: collapse;
+	border-left: none;
+	border-right: none;
+}
+
+th,
+td {
+	font-weight: normal;
+	padding: 0.25em 0.5em;
+	line-height: 1.5;
+	min-height: 1.5em;
+	text-align: left;
+}
+
+th {
+	color: rgba(55, 53, 47, 0.6);
+}
+
+ol,
+ul {
+	margin: 0;
+	margin-block-start: 0.6em;
+	margin-block-end: 0.6em;
+}
+
+li > ol:first-child,
+li > ul:first-child {
+	margin-block-start: 0.6em;
+}
+
+ul > li {
+	list-style: disc;
+}
+
+ul.to-do-list {
+	padding-inline-start: 0;
+}
+
+ul.to-do-list > li {
+	list-style: none;
+}
+
+.to-do-children-checked {
+	text-decoration: line-through;
+	opacity: 0.375;
+}
+
+ul.toggle > li {
+	list-style: none;
+}
+
+ul {
+	padding-inline-start: 1.7em;
+}
+
+ul > li {
+	padding-left: 0.1em;
+}
+
+ol {
+	padding-inline-start: 1.6em;
+}
+
+ol.numbered-list.numbered-list-digits-2 {
+	padding-inline-start: 2em;
+}
+
+ol.numbered-list.numbered-list-digits-3plus {
+	padding-inline-start: 2.4em;
+}
+
+ol > li {
+	padding-left: 0.2em;
+}
+
+.mono ol {
+	padding-inline-start: 2em;
+}
+
+.mono ol > li {
+	text-indent: -0.4em;
+}
+
+.toggle {
+	padding-inline-start: 0em;
+	list-style-type: none;
+}
+
+/* Indent toggle children */
+.toggle > li > details {
+	padding-left: 1.7em;
+}
+
+.toggle > li > details > summary {
+	margin-left: -1.1em;
+}
+
+.selected-value {
+	display: inline-block;
+	padding: 0 0.5em;
+	background: rgba(206, 205, 202, 0.5);
+	border-radius: 3px;
+	margin-right: 0.5em;
+	margin-top: 0.3em;
+	margin-bottom: 0.3em;
+	white-space: nowrap;
+}
+
+.collection-title {
+	display: inline-block;
+	margin-right: 1em;
+}
+
+.page-description {
+	margin-bottom: 2em;
+}
+
+.simple-table {
+	margin-top: 1em;
+	font-size: 0.875rem;
+	empty-cells: show;
+}
+.simple-table td {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table th {
+	height: 29px;
+	min-width: 120px;
+}
+
+.simple-table-header-color {
+	background: rgb(247, 246, 243);
+	color: black;
+}
+.simple-table-header {
+	font-weight: 500;
+}
+
+time {
+	opacity: 0.5;
+}
+
+.icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	max-width: 1.2em;
+	max-height: 1.2em;
+	text-decoration: none;
+	vertical-align: text-bottom;
+	margin-right: 0.5em;
+}
+
+/*
+ * Render emoji icons using a ::before pseudo-element to keep the glyph
+ * out of the DOM textContent traversal. This avoids double-rendering icons
+ * in callouts and page titles.
+ * NOTE(slim/html-export-pseudo-icons): I can't tagref this because it will
+ * flag as a duplicate tag after codegen.
+ */
+.icon[data-emoji]::before {
+	content: attr(data-emoji);
+}
+
+img.icon {
+	border-radius: 3px;
+}
+
+.callout img.notion-static-icon {
+	width: 1em;
+	height: 1em;
+}
+
+.callout p {
+	margin: 0;
+}
+
+.callout h1,
+.callout h2,
+.callout h3 {
+	margin: 0 0 0.6rem;
+}
+
+.user-icon {
+	width: 1.5em;
+	height: 1.5em;
+	border-radius: 100%;
+	margin-right: 0.5rem;
+}
+
+.user-icon-inner {
+	font-size: 0.8em;
+}
+
+.text-icon {
+	border: 1px solid #000;
+	text-align: center;
+}
+
+.page-cover-image {
+	display: block;
+	object-fit: cover;
+	width: 100%;
+	max-height: 30vh;
+}
+
+.page-header-icon {
+	font-size: 3rem;
+	margin-bottom: 1rem;
+}
+
+.page-header-icon-with-cover {
+	margin-top: -0.72em;
+	margin-left: 0.07em;
+}
+
+.page-header-icon img {
+	border-radius: 3px;
+}
+
+.link-to-page {
+	margin: 1em 0;
+	padding: 0;
+	border: none;
+	font-weight: 500;
+}
+
+p > .user {
+	opacity: 0.5;
+}
+
+td > .user,
+td > time {
+	white-space: nowrap;
+}
+
+input[type="checkbox"] {
+	margin-right: 0.4em;
+	vertical-align: middle;
+}
+
+p {
+	margin-top: 0.5em;
+	margin-bottom: 0.5em;
+}
+
+.image {
+	border: none;
+	margin: 1.5em 0;
+	padding: 0;
+	border-radius: 0;
+	text-align: center;
+}
+
+.code,
+code {
+	background: rgba(135, 131, 120, 0.15);
+	border-radius: 3px;
+	padding: 0.2em 0.4em;
+	border-radius: 3px;
+	font-size: 85%;
+	tab-size: 2;
+}
+
+code {
+	color: #eb5757;
+}
+
+.code {
+	padding: 1.5em 1em;
+}
+
+.code-wrap {
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+
+.code > code {
+	background: none;
+	padding: 0;
+	font-size: 100%;
+	color: inherit;
+}
+
+blockquote {
+	font-size: 1em;
+	margin: 1em 0;
+	padding-left: 1em;
+	border-left: 3px solid rgb(55, 53, 47);
+}
+
+blockquote.quote-large {
+	font-size: 1.25em;
+}
+
+.bookmark {
+	text-decoration: none;
+	max-height: 8em;
+	padding: 0;
+	display: flex;
+	width: 100%;
+	align-items: stretch;
+}
+
+.bookmark-title {
+	font-size: 0.85em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	height: 1.75em;
+	white-space: nowrap;
+}
+
+.bookmark-text {
+	display: flex;
+	flex-direction: column;
+}
+
+.bookmark-info {
+	flex: 4 1 180px;
+	padding: 12px 14px 14px;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.bookmark-image {
+	width: 33%;
+	flex: 1 1 180px;
+	display: block;
+	position: relative;
+	object-fit: cover;
+	border-radius: 1px;
+}
+
+.bookmark-description {
+	color: rgba(55, 53, 47, 0.6);
+	font-size: 0.75em;
+	overflow: hidden;
+	max-height: 4.5em;
+	word-break: break-word;
+}
+
+.bookmark-href {
+	font-size: 0.75em;
+	margin-top: 0.25em;
+}
+
+.tab {
+	margin: 1.25em 0;
+	padding-inline: 1rem;
+	border: 1px solid rgba(55, 53, 47, 0.09);
+}
+
+.sans { font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; }
+.code { font-family: "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace; }
+.serif { font-family: Lyon-Text, Georgia, ui-serif, serif; }
+.mono { font-family: iawriter-mono, Nitti, Menlo, Courier, monospace; }
+.pdf .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK JP'; }
+.pdf:lang(zh-CN) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK SC'; }
+.pdf:lang(zh-TW) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK TC'; }
+.pdf:lang(ko-KR) .sans { font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI Variable Display", "Segoe UI", Helvetica, "Apple Color Emoji", "Noto Sans Arabic", "Noto Sans Hebrew", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol", 'Twemoji', 'Noto Color Emoji', 'Noto Sans CJK KR'; }
+.pdf .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .code { font-family: Source Code Pro, "SFMono-Regular", Menlo, Consolas, "PT Mono", "Liberation Mono", Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.pdf .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK JP'; }
+.pdf:lang(zh-CN) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK SC'; }
+.pdf:lang(zh-TW) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK TC'; }
+.pdf:lang(ko-KR) .serif { font-family: PT Serif, Lyon-Text, Georgia, ui-serif, serif, 'Twemoji', 'Noto Color Emoji', 'Noto Serif CJK KR'; }
+.pdf .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK JP'; }
+.pdf:lang(zh-CN) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK SC'; }
+.pdf:lang(zh-TW) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK TC'; }
+.pdf:lang(ko-KR) .mono { font-family: PT Mono, iawriter-mono, Nitti, Menlo, Courier, monospace, 'Twemoji', 'Noto Color Emoji', 'Noto Sans Mono CJK KR'; }
+.highlight-default {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.highlight-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.highlight-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.highlight-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.highlight-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.highlight-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.highlight-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.highlight-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.highlight-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.highlight-default_background {
+	color: rgba(44, 44, 43, 1);
+}
+.highlight-gray_background {
+	background: rgba(42, 28, 0, 0.07);
+}
+.highlight-brown_background {
+	background: rgba(139, 46, 0, 0.086);
+}
+.highlight-orange_background {
+	background: rgba(224, 101, 1, 0.129);
+}
+.highlight-yellow_background {
+	background: rgba(211, 168, 0, 0.137);
+}
+.highlight-teal_background {
+	background: rgba(0, 100, 45, 0.09);
+}
+.highlight-blue_background {
+	background: rgba(0, 124, 215, 0.094);
+}
+.highlight-purple_background {
+	background: rgba(102, 0, 178, 0.078);
+}
+.highlight-pink_background {
+	background: rgba(197, 0, 93, 0.086);
+}
+.highlight-red_background {
+	background: rgba(223, 22, 0, 0.094);
+}
+.block-color-default {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray {
+	color: rgba(125, 122, 117, 1);
+	fill: rgba(125, 122, 117, 1);
+}
+.block-color-brown {
+	color: rgba(159, 118, 90, 1);
+	fill: rgba(159, 118, 90, 1);
+}
+.block-color-orange {
+	color: rgba(210, 123, 45, 1);
+	fill: rgba(210, 123, 45, 1);
+}
+.block-color-yellow {
+	color: rgba(203, 148, 52, 1);
+	fill: rgba(203, 148, 52, 1);
+}
+.block-color-teal {
+	color: rgba(80, 148, 110, 1);
+	fill: rgba(80, 148, 110, 1);
+}
+.block-color-blue {
+	color: rgba(56, 125, 201, 1);
+	fill: rgba(56, 125, 201, 1);
+}
+.block-color-purple {
+	color: rgba(154, 107, 180, 1);
+	fill: rgba(154, 107, 180, 1);
+}
+.block-color-pink {
+	color: rgba(193, 76, 138, 1);
+	fill: rgba(193, 76, 138, 1);
+}
+.block-color-red {
+	color: rgba(207, 81, 72, 1);
+	fill: rgba(207, 81, 72, 1);
+}
+.block-color-default_background {
+	color: inherit;
+	fill: inherit;
+}
+.block-color-gray_background {
+	background: rgba(240, 239, 237, 1);
+}
+.block-color-brown_background {
+	background: rgba(245, 237, 233, 1);
+}
+.block-color-orange_background {
+	background: rgba(251, 235, 222, 1);
+}
+.block-color-yellow_background {
+	background: rgba(249, 243, 220, 1);
+}
+.block-color-teal_background {
+	background: rgba(232, 241, 236, 1);
+}
+.block-color-blue_background {
+	background: rgba(229, 242, 252, 1);
+}
+.block-color-purple_background {
+	background: rgba(243, 235, 249, 1);
+}
+.block-color-pink_background {
+	background: rgba(250, 233, 241, 1);
+}
+.block-color-red_background {
+	background: rgba(252, 233, 231, 1);
+}
+.select-value-color-default { background-color: rgba(42, 28, 0, 0.07); }
+.select-value-color-gray { background-color: rgba(28, 19, 1, 0.11); }
+.select-value-color-brown { background-color: rgba(127, 51, 0, 0.156); }
+.select-value-color-orange { background-color: rgba(196, 88, 0, 0.203); }
+.select-value-color-yellow { background-color: rgba(209, 156, 0, 0.282); }
+.select-value-color-green { background-color: rgba(0, 96, 38, 0.156); }
+.select-value-color-blue { background-color: rgba(0, 118, 217, 0.203); }
+.select-value-color-purple { background-color: rgba(92, 0, 163, 0.141); }
+.select-value-color-pink { background-color: rgba(183, 0, 78, 0.152); }
+.select-value-color-red { background-color: rgba(206, 24, 0, 0.164); }
+
+.checkbox {
+	display: inline-flex;
+	vertical-align: text-bottom;
+	width: 16;
+	height: 16;
+	background-size: 16px;
+	margin-left: 2px;
+	margin-right: 5px;
+}
+
+.checkbox-on {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20width%3D%2216%22%20height%3D%2216%22%20fill%3D%22%2358A9D7%22%2F%3E%0A%3Cpath%20d%3D%22M6.71429%2012.2852L14%204.9995L12.7143%203.71436L6.71429%209.71378L3.28571%206.2831L2%207.57092L6.71429%2012.2852Z%22%20fill%3D%22white%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+
+.checkbox-off {
+	background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2016%2016%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%0A%3Crect%20x%3D%220.75%22%20y%3D%220.75%22%20width%3D%2214.5%22%20height%3D%2214.5%22%20fill%3D%22white%22%20stroke%3D%22%2336352F%22%20stroke-width%3D%221.5%22%2F%3E%0A%3C%2Fsvg%3E");
+}
+	
+</style><style>@import url('https://cdn.jsdelivr.net/npm/katex@0.16.25/dist/katex-swap.min.css')</style></head><body><article id="3c301bbc-dcb5-80a0-9af7-d195aef51140" class="page sans"><header><h1 class="page-title" dir="auto">3. Shuffle을 통한 경보 검증과 대응 연계 </h1><p class="page-description" dir="auto"></p></header><div class="page-body"><p id="d636e953-90f2-4b68-950a-a9f658cf2ddd" class="" dir="auto">Shuffle은 Wazuh에서 생성된 경보를 받아 사전에 정의된 대응 절차와 연결하는 SOAR 구성 요소이다. Wazuh가 로그를 수집하고 이상 행위를 탐지하면, Shuffle은 전달된 Alert가 허용된 Rule과 입력 조건을 충족하는지 검증한 뒤 제한된 GitOps 대응을 실행한다.</p><p id="eb5d7f05-d1f1-4e19-a78b-22e715e13a1e" class="" dir="auto">본 프로젝트의 목적은 모든 Alert에 무조건 자동 대응하는 것이 아니다. 오탐, 변조된 요청 또는 대상이 불명확한 Alert가 Kubernetes 및 GitHub 저장소 변경으로 이어지는 것을 방지하는 것이 핵심이다.</p><p id="d2726b95-4cc1-48b7-b58e-f538dcfdf7e5" class="" dir="auto">따라서 Wazuh 로컬 Integration은 원본 Alert의 Rule별 allowlist와 AWS 사건 조건을 먼저 검증하고, Shuffle은 전달받은 최소 필드의 exact Schema·시각·해시·대응 대상을 다시 검증한다. 두 검증을 모두 통과한 Alert만 코드에 고정된 Workflow로 전달한다.</p><h2 id="f3416268-9a8f-4aef-a6f3-341a6f283010" class="" dir="auto">3.1 Shuffle의 역할</h2><table id="ad95e922-0892-4998-a88d-7b4a9a1943a8" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="10f0dd98-7cd0-4c1f-8daa-796c21b7a16c" dir="ltr"><th id="X|\Z" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">단계</th><th id="wo=f" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">Shuffle의 역할</th><th id="zneC" class="simple-table-header-color simple-table-header" style="width:235.66666666666666px">확인 목적</th></tr></thead><tbody><tr id="996aa19b-9cda-446d-87bd-eeedca531423" dir="ltr"><td id="X|\Z" class="" style="width:235.66666666666666px">경보 수신</td><td id="wo=f" class="" style="width:235.66666666666666px">Wazuh Alert를 인증된 Webhook으로 수신</td><td id="zneC" class="" style="width:235.66666666666666px">비인가 요청 차단</td></tr><tr id="fc4fbc5d-486f-41fc-8bca-91b62b560dd7" dir="ltr"><td id="X|\Z" class="" style="width:235.66666666666666px">입력 검증</td><td id="wo=f" class="" style="width:235.66666666666666px">Rule별 exact Schema, 시각, 해시 및 고정 대응 입력을 검증</td><td id="zneC" class="" style="width:235.66666666666666px">변조된 Alert 및 임의 대상 조치 방지</td></tr><tr id="30d12aba-f178-452e-9f2b-cbe3fc93da3b" dir="ltr"><td id="X|\Z" class="" style="width:235.66666666666666px">이벤트 식별</td><td id="wo=f" class="" style="width:235.66666666666666px">원본 이벤트 ID와 Alert 본문의 SHA-256을 무결성·추적 식별자로 사용</td><td id="zneC" class="" style="width:235.66666666666666px">원문 비공개 상태에서 사건 추적과 입력 무결성 확인</td></tr><tr id="47f9c39b-3980-4c00-83ae-5b794a59fbe0" dir="ltr"><td id="X|\Z" class="" style="width:235.66666666666666px">대응 분기</td><td id="wo=f" class="" style="width:235.66666666666666px">Rule <code>100110</code>과 <code>100111</code>을 서로 다른 고정 Workflow로 전달</td><td id="zneC" class="" style="width:235.66666666666666px">Alert 의미에 맞는 제한적 대응 수행</td></tr><tr id="0a58c259-3bca-49df-9693-74cb799b352c" dir="ltr"><td id="X|\Z" class="" style="width:235.66666666666666px">결과 검증</td><td id="wo=f" class="" style="width:235.66666666666666px">GitHub Workflow Run ID와 고정 Repository·Branch를 검증</td><td id="zneC" class="" style="width:235.66666666666666px">예상하지 않은 Workflow 실행 방지</td></tr><tr id="7d8788e2-6f16-4679-8902-c16679baad80" dir="ltr"><td id="X|\Z" class="" style="width:235.66666666666666px">결과 기록</td><td id="wo=f" class="" style="width:235.66666666666666px">Alert 식별자, Run ID, Commit SHA 및 변경 결과 기록</td><td id="zneC" class="" style="width:235.66666666666666px">사후 추적 및 롤백 근거 확보</td></tr></tbody></table><p id="13e18460-4762-4d55-bb4c-99d11a2d6beb" class="" dir="auto">Alert가 Repository, Branch, Namespace 또는 실행 명령을 임의로 지정할 수 없으며, 대상은 코드에 고정되어 있다.</p><h2 id="6238bc5e-94a6-4eda-813a-f482c4674cdd" class="" dir="auto">3.2 경보 검증 원칙</h2><p id="59a98b5d-3b59-4a63-8ebf-d3401210e4a0" class="" dir="auto">Rule <code>100110</code>과 Rule <code>100111</code>은 탐지 의미와 대응 목적이 다르기 때문에 서로 다른 입력 조건으로 검증한다.</p><h3 id="832f716f-02a2-4c0d-b4db-001d28faf929" class="" dir="auto">Rule 100110 검증 조건</h3><p id="50fcff6a-391c-4708-8c5d-66061d785ea5" class="" dir="auto">Rule <code>100110</code>은 DVWA가 EC2 IMDS 자격증명 엔드포인트를 대상으로 실행한 명령에서 출력이 반환된 사실을 조기에 탐지한다. 자격증명 값의 유출이나 AWS 권한 악용까지 단독으로 확정하는 Rule은 아니다.</p><p id="ddb11d3c-c779-44a5-bbcf-0e0721b46fc3" class="" dir="auto">주요 검증 조건은 다음과 같다.</p><aside class="block-color-gray_background callout" data-notion-callout="" data-notion-callout-background="gray_background" style="white-space:pre-wrap;display:flex" id="3c601bbc-dcb5-80cf-8b50-d7c64f1148c9" dir="ltr"><div style="width:100%"><ol type="1" id="d0cabc0c-c644-48f4-be89-d8d082525710" class="numbered-list" start="1" dir="auto"><li>로그 출처: <code>dvwa</code></li></ol><ol type="1" id="f326fb4b-9ecd-4d5f-bb1b-05f7084afaf7" class="numbered-list" start="2" dir="auto"><li>전송 방식: <code>push</code></li></ol><ol type="1" id="5e04551d-3579-425c-995a-118edd86e481" class="numbered-list" start="3" dir="auto"><li>이벤트 유형: <code>command.execution</code></li></ol><ol type="1" id="0e95958c-98c3-47ed-b931-dc915db04610" class="numbered-list" start="4" dir="auto"><li>요청 경로: <code>/vulnerabilities/exec/</code></li></ol><ol type="1" id="add7a972-f97b-420e-a665-5dd5380a744e" class="numbered-list" start="5" dir="auto"><li>대상 리소스: <code>ec2_imds</code></li></ol><ol type="1" id="7b6895a4-433a-4520-a536-eb3b70730b7b" class="numbered-list" start="6" dir="auto"><li>공격 단계: <code>imds_credential_fetch</code></li></ol><ol type="1" id="5e0b03b5-e369-425e-ae3c-c2857a26e918" class="numbered-list" start="7" dir="auto"><li>실행 결과: <code>succeeded</code></li></ol><ol type="1" id="6546a30b-bd9d-4ea8-a359-d957a29d2a75" class="numbered-list" start="8" dir="auto"><li>응답 상태: <code>output_returned</code></li></ol><ol type="1" id="635ff1ac-4e9d-4175-bcd9-786ef30ca90f" class="numbered-list" start="9" dir="auto"><li>DVWA 보안 수준: <code>low</code></li></ol><ol type="1" id="33a4c74b-bd24-44b8-b1a4-6ea0fc8cb6e8" class="numbered-list numbered-list-digits-2" start="10" dir="auto"><li>Pod 이름과 Kubernetes UID 형식 검증</li></ol><ol type="1" id="d7d7e9bf-f359-4e22-963e-80d9a90bab94" class="numbered-list numbered-list-digits-2" start="11" dir="auto"><li>Push <code>event_id</code> 및 Alert 본문 해시 검증</li></ol></div></aside><p id="54d7935f-5609-4ac4-b536-87a7fa14dd43" class="" dir="auto">Rule <code>100110</code>은 별도의 Pod Agent가 판단하는 경보가 아니다. DVWA가 기록한 안전한 감사 로그를 Wazuh가 탐지하고, Wazuh Integration과 Shuffle이 <code>take_id</code>, Pod 이름·UID, 이벤트·본문 해시 및 시각 조건을 순서대로 검증한다.</p><h3 id="ed79a7b1-d26e-45d8-bcfa-160a918fe637" class="" dir="auto">Rule 100111 검증 조건</h3><p id="eb81fa73-aa9e-46ad-9249-9484618294f7" class="" dir="auto">Rule <code>100111</code>은 탈취된 Node Role을 사용하여 보호 S3 객체의 실제 바이트가 반환된 사건을 침해확정 단계로 탐지한다.</p><p id="1dd500ed-18b3-4a60-bc53-43a540c058dc" class="" dir="auto">주요 검증 조건은 다음과 같다.</p><aside class="block-color-gray_background callout" data-notion-callout="" data-notion-callout-background="gray_background" style="white-space:pre-wrap;display:flex" id="3c601bbc-dcb5-8038-a68e-d30e19ebc786" dir="ltr"><div style="width:100%"><ol type="1" id="3168e4f0-9fd2-4340-acd5-dcc5fd3064a5" class="numbered-list" start="1" dir="auto"><li>이벤트 출처: <code>s3.amazonaws.com</code></li></ol><ol type="1" id="6f2e151e-cfb5-464e-95f1-74f30a4744c3" class="numbered-list" start="2" dir="auto"><li>CloudTrail <code>eventID</code> 해시 검증</li></ol><ol type="1" id="f2b7bdf1-bb29-46c2-8347-b650b0217c1c" class="numbered-list" start="3" dir="auto"><li>반환 바이트: <code>bytesTransferredOut &gt; 0</code></li></ol><ol type="1" id="f4e05afc-9556-431f-955c-12f335df6e6e" class="numbered-list" start="4" dir="auto"><li>HTTP 상태: <code>200</code></li></ol><ol type="1" id="679cc6bf-bfa7-4825-bd1b-3dd61a17f800" class="numbered-list" start="5" dir="auto"><li>보호 객체: <code>validation/capital-one-demo.csv</code></li></ol><ol type="1" id="8dc602a0-c56c-4ace-9715-a16a1929b3f7" class="numbered-list" start="6" dir="auto"><li>보호 버킷: 현재 배포에 고정된 Primary Application Bucket을 Wazuh 로컬에서 검증</li></ol><ol type="1" id="d9dfcac7-c0fc-4750-9003-166c356cecf6" class="numbered-list" start="7" dir="auto"><li>IAM Role: 고정 Node Role을 Wazuh 로컬에서 검증</li></ol><ol type="1" id="6de76af1-9eb6-48eb-80a5-5c3f249cde0c" class="numbered-list" start="8" dir="auto"><li>리전: 현재 승인된 리전을 Wazuh 로컬에서 검증</li></ol><ol type="1" id="9ce8bd0a-af8a-487e-98e3-6ba4291dec17" class="numbered-list" start="9" dir="auto"><li>AWS 계정: 현재 승인된 계정을 Wazuh 로컬에서 검증</li></ol><ol type="1" id="28ae44bb-85d9-4bae-adf2-8c61ad4faed2" class="numbered-list numbered-list-digits-2" start="10" dir="auto"><li>이벤트 범주: CloudTrail S3 Data Event</li></ol><ol type="1" id="33661b1f-9be2-4517-b23e-57d25a2dbd92" class="numbered-list numbered-list-digits-2" start="11" dir="auto"><li>이벤트 이름: <code>GetObject</code></li></ol></div></aside><p id="b1d29aab-0631-4b01-a55b-4126fe98aa6c" class="" dir="auto">이 조건은 단순 S3 API 호출 시도가 아니라, 고정된 보호 객체의 실제 데이터가 반환된 사건만 탐지하기 위한 것이다. 계정·Role·Bucket·Object Key와 CloudTrail 원문은 Wazuh 호스트에서 검증한 뒤 외부로 보내지 않으며, Shuffle에는 <code>rule_id</code>, 발생 시각, Wazuh Alert ID, CloudTrail <code>eventID</code> SHA-256, 원문 SHA-256만 전달한다.</p><p id="3c501bbc-dcb5-80d7-86f5-c2c9a337f3e7" class="" dir="auto">
+</p><h2 id="45caf11c-0752-4fb5-80fb-c88af7cc99ba" class="" dir="auto">3.3 Capital One 시나리오의 대응 연계</h2><p id="1b3a6bd4-32c6-46fb-8851-c1a79660aeba" class="" dir="auto">Capital One 시나리오에서는 Rule <code>100110</code>과 Rule <code>100111</code>을 단계적으로 구분한다.</p><h3 id="c62ce5a9-cb5a-4bf7-9151-b5f337c94cfd" class="" dir="auto">Rule 100110 — 조기 탐지 및 Workload 격리</h3><p id="41a20421-5795-4981-8e87-e536c4eddcdd" class="" dir="auto">Rule <code>100110</code>은 DVWA에서 EC2 IMDS 자격증명 엔드포인트를 대상으로 실행한 명령이 실제 출력을 반환한 사실을 탐지한다.</p><p id="9246c254-6fe2-43c6-9330-ce907066cb85" class="" dir="auto">검증된 Alert는 다음 절차와 연결된다.</p><aside class="block-color-gray_background callout" data-notion-callout="" data-notion-callout-background="gray_background" style="white-space:pre-wrap;display:flex" id="3c601bbc-dcb5-80e4-a669-d37405cb7543" dir="ltr"><div style="width:100%"><ol type="1" id="e9167998-b734-4b85-8bf3-7d9978c451de" class="numbered-list" start="1" dir="auto"><li>Wazuh가 Rule <code>100110</code> Alert 생성</li></ol><ol type="1" id="a80472bc-6a50-4965-a94f-cb683e28d4c2" class="numbered-list" start="2" dir="auto"><li>Wazuh Integration이 허용된 필드만 Shuffle로 전달</li></ol><ol type="1" id="b597d6d0-bddc-4b2d-9c38-c3a77974af37" class="numbered-list" start="3" dir="auto"><li>Shuffle이 Rule, 계정, 리전, 이벤트 단계, Pod 이름과 UID 검증</li></ol><ol type="1" id="1654259f-70d1-4e91-86cf-e56cc8926eb2" class="numbered-list" start="4" dir="auto"><li>고정된 <code>soc-contain-dvwa.yml</code> 실행</li></ol><ol type="1" id="094e1eb9-62da-4029-97c3-3ff19ef2465b" class="numbered-list" start="5" dir="auto"><li>GitOps 값에 격리 대상 Pod 이름과 UID 기록</li></ol><ol type="1" id="d5655e5e-7b53-4c9d-800c-45e42a391681" class="numbered-list" start="6" dir="auto"><li>Argo CD가 변경사항 배포</li></ol><ol type="1" id="1e34671b-fd98-4bd0-9280-bfe9eb1dc9af" class="numbered-list" start="7" dir="auto"><li>검증된 기존 DVWA Pod에 격리 Label 적용</li></ol><ol type="1" id="9808c088-a8b6-4e08-86f9-d382587f96e8" class="numbered-list" start="8" dir="auto"><li>NetworkPolicy를 통해 해당 Pod의 Ingress와 Egress 차단</li></ol><ol type="1" id="8533a952-19a0-4fa1-bb32-e38f5e5a4259" class="numbered-list" start="9" dir="auto"><li>서비스 유지를 위한 정상 DVWA Pod 운영</li></ol></div></aside><p id="176e8755-7ab7-4a88-bcec-6e92b3b46e0e" class="" dir="auto">Pod 격리는 공격 원인을 완전히 제거하는 조치가 아니라, 침해된 시스템의 네트워크 연결을 우선 차단하는 긴급 1차 대응이다. 이를 통해 추가 IMDS 접근, 내부 서비스 접근 및 추가 정보 유출 가능성을 제한하고 관제자가 조사할 시간을 확보한다.</p><h3 id="c745dae5-5a06-4f5c-94fb-02645539c73f" class="" dir="auto">Rule 100111 — S3 침해확정 및 취약점 완화</h3><p id="84695e0d-14dd-4a01-9400-62912f2e3d32" class="" dir="auto">Rule <code>100111</code>은 승인된 Node Role로 보호 S3 객체를 조회하여 실제 데이터가 반환된 사건을 탐지한다.</p><p id="7ae64030-d240-4f72-bc38-299e277e7ff7" class="" dir="auto">검증된 Alert는 다음 절차와 연결된다.</p><aside class="block-color-gray_background callout" data-notion-callout="" data-notion-callout-background="gray_background" style="white-space:pre-wrap;display:flex" id="3c601bbc-dcb5-8052-8c66-e54b74540200" dir="ltr"><div style="width:100%"><ol type="1" id="f5c811e9-f5de-4cdb-851d-1bd1ca277d5f" class="numbered-list" start="1" dir="auto"><li>CloudTrail S3 Data Event 수집</li></ol><ol type="1" id="165f6f61-8905-46a1-bc7f-8d6917344c50" class="numbered-list" start="2" dir="auto"><li>Wazuh가 Rule <code>100111</code> Alert 생성</li></ol><ol type="1" id="18e6d4b2-6971-4a04-a251-ecc4922c4bd1" class="numbered-list" start="3" dir="auto"><li>Wazuh Integration이 계정·리전·Role·Bucket·Object·HTTP 상태·반환 바이트를 로컬 검증하고 최소 해시 필드만 전달</li></ol><ol type="1" id="ee8b3ca9-6f83-479e-ba52-23d87329fdf6" class="numbered-list" start="4" dir="auto"><li>Shuffle이 Rule ID·시각·해시 형식을 검증한 뒤 고정된 <code>soc-harden-dvwa.yml</code> 실행</li></ol><ol type="1" id="1ea56f13-1ddb-4f07-a715-2dac4e5e88dd" class="numbered-list" start="5" dir="auto"><li><code>deploy/dvwa/values.yaml</code>의 보안 수준을 <code>low</code>에서 <code>impossible</code>로 변경</li></ol><ol type="1" id="08524669-070c-43f6-abf9-4826ca7b6c5f" class="numbered-list" start="6" dir="auto"><li>변경사항을 <code>Unoh03/Uns-DVWA</code>의 <code>main</code> Branch에 Commit</li></ol><ol type="1" id="569d7d23-2d72-45b7-b999-5701660787b1" class="numbered-list" start="7" dir="auto"><li>Argo CD가 해당 Commit을 배포</li></ol><ol type="1" id="59c7bf37-a119-4dc6-8898-7e9b105ee276" class="numbered-list" start="8" dir="auto"><li>DVWA의 명령 실행 취약 경로 비활성화</li></ol></div></aside><p id="d908e1a4-3084-4ee0-9420-1a93b5cd6be9" class="" dir="auto">Rule <code>100111</code> 대응은 S3 버킷을 격리하는 조치가 아니다. 공격 진입점인 DVWA Web Application의 취약한 설정을 강화하여 동일한 SSRF·명령 실행 경로가 다시 사용되는 것을 방지하는 조치이다.</p><p id="1f1154f9-3172-44bc-a68e-4863f9d19134" class="" dir="auto">Rule <code>100111</code> 자동 대응은 실제 Shuffle 실행을 통해 GitHub Actions Run <code>32637113392</code>가 성공했으며, DVWA 보안 수준이 <code>impossible</code>로 적용된 사실을 확인하였다. </p><p id="3c501bbc-dcb5-80fe-a993-d39f3dc3495c" class="" dir="auto">
+</p><blockquote id="04560cfd-a514-43da-8510-7db750bb68f7" class="" dir="auto"><p id="79411890-1ded-46a7-ae0c-c08cc1b9716e" class="" dir="auto">인증 Webhook과 Rule <code>100110·100111</code>을 검증·분기하는 고정 Shuffle Action이 확인되는 화면<br/></p><p id="afefa207-a7df-4d6b-830f-8b6bd4f33ee6" class="" dir="auto"><strong>캡션:</strong> Wazuh 경보를 인증된 Webhook으로 수신하고, 고정 Action 내부에서 Rule별 GitOps Workflow로 분기하는 Shuffle 구성</p></blockquote><p id="3c601bbc-dcb5-800f-9e0d-e7d660a1f114" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-801d-ad49-c8edaafbb566" class="bulleted-list" dir="auto"><li style="list-style-type:disc">인증 Webhook과 SOC 대응 Action의 연결 구성</li></ul><figure id="3c601bbc-dcb5-803b-bcbb-c36911886a14" class="image" data-notion-image="image.png" dir="ltr"><a href="image.png"><img style="width:703.984375px" src="image.png"/></a></figure><p id="3c601bbc-dcb5-802d-ad23-eb20537533bf" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-8064-9833-f43c47bb2453" class="bulleted-list" dir="auto"><li style="list-style-type:disc">Wazuh 입력을 $exec로 전달하고 마스킹된 GitHub Token을 사용하는 고정 SOC 대응 Shuffle Action 설정</li></ul><figure id="3c601bbc-dcb5-806c-a0dc-e873caf419d5" class="image" data-notion-image="image%201.png" dir="ltr"><a href="image%201.png"><img style="width:703.96875px" src="image%201.png"/></a></figure><p id="3c601bbc-dcb5-8033-918d-fab2ca092c59" class="" dir="auto">
+</p><blockquote id="3c601bbc-dcb5-8034-9a6c-c91d8652f763" class="" dir="auto"><code>SOC harden Rule 100111</code> Workflow Run <code>32637113392</code>의 성공 화면<br/><br/><strong>캡션:</strong> 보호 S3 객체의 실제 바이트 반환 탐지 후 DVWA <code>low → impossible</code> 변경 성공</blockquote><p id="3c601bbc-dcb5-8021-86cc-c78b8ff85d25" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-80a9-bea9-f23a03b6ae57" class="bulleted-list" dir="auto"><li style="list-style-type:disc"> Rule <code>100111</code> 대응 GitHub Actions가 성공적으로 완료되고 실행 증적 Artifact가 생성된 결과</li></ul><figure id="3c601bbc-dcb5-8064-a9ec-cb72d56ccfbd" class="image" data-notion-image="image%202.png" dir="ltr"><a href="image%202.png"><img style="width:703.984375px" src="image%202.png"/></a></figure><figure id="3c601bbc-dcb5-8074-a9dd-e05de1355844" class="image" data-notion-image="image%203.png" dir="ltr"><a href="image%203.png"><img style="width:703.890625px" src="image%203.png"/></a></figure><p id="3c601bbc-dcb5-8065-8ebb-f80cef712430" class="" dir="auto">
+</p><p id="3c601bbc-dcb5-80b4-9b57-f98b0ceb3fbe" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-8014-9a36-c5416d7a75a5" class="bulleted-list" dir="auto"><li style="list-style-type:disc">입력된 Rule ID와 이벤트 해시를 검증하여 승인된 경보만 대응하도록 제한한 계약 검증 과정.</li></ul><figure id="3c601bbc-dcb5-80e2-abf3-f86dca77edb8" class="image" data-notion-image="image%204.png" dir="ltr"><a href="image%204.png"><img style="width:703.96875px" src="image%204.png"/></a></figure><p id="3c601bbc-dcb5-809f-9c11-f3c4197a82f1" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-80c1-88f5-d3c2bbdf64c9" class="bulleted-list" dir="auto"><li style="list-style-type:disc">DVWA 보안 수준 변경사항을 커밋·푸시하고 정제된 실행 증적을 Artifact로 보관한 결과.</li></ul><figure id="3c601bbc-dcb5-8016-bf6d-eedf2af623a5" class="image" data-notion-image="image%205.png" dir="ltr"><a href="image%205.png"><img style="width:703.96875px" src="image%205.png"/></a></figure><p id="3c601bbc-dcb5-8066-b8b5-e263a668edd4" class="" dir="auto">
+</p><h2 class="" dir="auto">3.4 자동 대응을 구현하는 핵심 코드</h2><p class="" dir="auto"><code>observability/wazuh/integrations/custom-shuffle-soc</code> — Rule <code>100111</code> 원문을 로컬에서 완전 검증하고 외부에는 최소 해시 필드만 반환한다.</p><pre class="code code-wrap"><code style="white-space:pre-wrap;word-break:break-all">return {
+    "rule_id": "100111",
+    "event_time_utc": event_time,
+    "wazuh_alert_id": alert_id,
+    "event_id_sha256": sha256(event_id),
+    "raw_message_sha256": sha256(full_log),
+}</code></pre><p class="" dir="auto"><code>autocontainment.py</code> — Rule별 exact Schema와 시간·해시를 검증하고 저장소·Branch·Workflow가 고정된 URL로만 분기한다.</p><pre class="code code-wrap"><code style="white-space:pre-wrap;word-break:break-all">if rule_id == "100110":
+    inputs = validate_rule_100110_payload(parsed, now=now)
+    dispatch_url = DISPATCH_URL
+elif rule_id == "100111":
+    inputs = validate_rule_100111_payload(parsed, now=now)
+    dispatch_url = HARDEN_DISPATCH_URL
+else:
+    raise ContractError("rule_id")
+
+body = {"ref": "main", "return_run_details": True, "inputs": inputs}</code></pre><p class="" dir="auto"><code>soc-contain-dvwa.yml</code> — Rule <code>100110</code> 입력과 변경 파일을 제한하고, 지정 Pod 이름·UID만 GitOps 격리 요청에 기록한다.</p><pre class="code code-wrap"><code style="white-space:pre-wrap;word-break:break-all">test "${GITHUB_REPOSITORY}" = "Unoh03/Uns-DVWA"
+test "${GITHUB_REF}" = "refs/heads/main"
+test "${RULE_ID}" = "100110"
+
+requested = {
+    "replicas": "2",
+    "enabled": "true",
+    "pod_name": os.environ["POD_NAME"],
+    "pod_uid": os.environ["POD_UID"],
+}
+test "${paths[0]}" = "deploy/dvwa/values.yaml"</code></pre><p class="" dir="auto"><code>soc-harden-dvwa.yml</code> — Rule <code>100111</code>만 허용하고 DVWA 보안 수준 전환 스크립트와 단일 파일 변경만 허용한다.</p><pre class="code code-wrap"><code style="white-space:pre-wrap;word-break:break-all">test "${RULE_ID}" = "100111"
+python .github/scripts/update-dvwa-security-level.py contain
+test "${paths[0]}" = "deploy/dvwa/values.yaml"</code></pre><p class="" dir="auto"><code>gitops/argocd/dvwa.yaml</code> — GitHub Actions가 만든 제한된 Git 변경을 EKS에 자동 반영한다.</p><pre class="code code-wrap"><code style="white-space:pre-wrap;word-break:break-all">syncPolicy:
+  automated:
+    enabled: true
+    prune: true
+    selfHeal: true</code></pre><h2 id="5b1a408b-1e06-4ef7-8154-448d0ecdc01d" class="" dir="auto">3.5 승인·롤백·재검증 원칙</h2><p id="1127833d-8cfa-444a-a8d8-907cdd6659a2" class="" dir="auto">SOAR 자동 대응은 탐지 정확도뿐 아니라 조치 자체의 안전성도 확보해야 한다. 대응 실행 전에는 대상과 변경 범위를 검증하고, 실행 후에는 결과와 변경 이력을 기록한다.</p><table id="205348ba-de6e-4545-929e-0755fccb112a" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="3ef7c3c2-0366-4623-8995-4212cc2cdfaa" dir="ltr"><th id="jO&lt;N" class="simple-table-header-color simple-table-header" style="width:353.5px">구분</th><th id="_I;n" class="simple-table-header-color simple-table-header" style="width:353.5px">적용 원칙</th></tr></thead><tbody><tr id="b3a684bb-bc8e-4ee3-9837-b29ed3e57cc3" dir="ltr"><td id="jO&lt;N" class="" style="width:353.5px">대상 고정</td><td id="_I;n" class="" style="width:353.5px">지정된 DVWA Workload와 <code>Unoh03/Uns-DVWA</code>의 <code>main</code> Branch만 허용</td></tr><tr id="4b724a92-411f-41a2-b03f-5a2684a98c2a" dir="ltr"><td id="jO&lt;N" class="" style="width:353.5px">입력 검증</td><td id="_I;n" class="" style="width:353.5px">Rule별 Schema, allowlist, 이벤트 시각 및 이벤트 식별자 검증</td></tr><tr id="2d2278fd-14b0-4213-a5fc-298b000e6d2d" dir="ltr"><td id="jO&lt;N" class="" style="width:353.5px">범위 제한</td><td id="_I;n" class="" style="width:353.5px">Alert가 임의 Namespace, Repository, Branch 또는 명령을 지정할 수 없도록 제한</td></tr><tr id="cead0b2a-5c9b-4b85-853f-90678385f04c" dir="ltr"><td id="jO&lt;N" class="" style="width:353.5px">이벤트 식별</td><td id="_I;n" class="" style="width:353.5px">Rule <code>100110</code>은 Push <code>event_id</code>, Rule <code>100111</code>은 CloudTrail <code>eventID</code>의 해시 사용</td></tr><tr id="40f6d760-f581-4d5d-9dec-f63bcbe90fd8" dir="ltr"><td id="jO&lt;N" class="" style="width:353.5px">재실행 통제</td><td id="_I;n" class="" style="width:353.5px">동일 GitOps 상태에 대한 변경은 멱등적으로 처리하고 Workflow 동시 실행 제한</td></tr><tr id="846069e9-0a88-4548-a7d7-6015539764ce" dir="ltr"><td id="jO&lt;N" class="" style="width:353.5px">롤백</td><td id="_I;n" class="" style="width:353.5px">격리 해제 또는 Reset Workflow를 통해 DVWA를 정상 상태로 복구</td></tr><tr id="f20aab85-4beb-42ed-9931-bc456b5efd46" dir="ltr"><td id="jO&lt;N" class="" style="width:353.5px">재검증</td><td id="_I;n" class="" style="width:353.5px">Argo CD Revision, Pod Ready 상태, DVWA 보안 수준 및 공개 서비스 응답 확인</td></tr><tr id="fa7d599a-1897-410b-b3aa-1919384c4def" dir="ltr"><td id="jO&lt;N" class="" style="width:353.5px">증적 보관</td><td id="_I;n" class="" style="width:353.5px">Wazuh Alert ID, 이벤트 해시, Workflow Run ID, Commit SHA 및 실행 결과 기록</td></tr></tbody></table><p id="a8bec2c4-b7a2-49fb-bf7c-6c16f4d2dcfc" class="" dir="auto">Rule <code>100110</code> 격리는 Pod 이름만으로 대상을 선택하지 않는다. Kubernetes UID, 애플리케이션 Label, ReplicaSet 및 Deployment 소유 관계를 검증한 뒤 일치하는 Pod만 격리한다.</p><p id="ad8c072b-40a8-43f7-8066-075bed83ece3" class="" dir="auto">Rule <code>100111</code>은 <code>values.yaml</code> 전체를 임의로 수정하지 않는다. <code>defaultSecurityLevel: low</code> 값을 <code>impossible</code>로 변경하는 제한된 전환만 허용하며, 그 외 파일 변경이 발생하면 Workflow를 중단한다.</p><p id="3c601bbc-dcb5-8029-9cf6-f527970de467" class="" dir="auto">
+</p><blockquote id="b5b4d5f8-984d-48e9-8b79-35efaa061aba" class="" dir="auto">Shuffle 실행 결과에서 입력 검증 결과, Rule ID, 이벤트 해시 및 GitHub Workflow Run ID가 확인되는 화면<p id="bde16165-3618-4a3c-8ef8-e1841ec26615" class="" dir="auto"><strong>캡션:</strong> 변조된 입력과 임의 대상을 거부하고 고정된 대응만 허용하는 Shuffle 검증 결과</p></blockquote><p id="3c601bbc-dcb5-809a-b521-fc0d7f683791" class="" dir="auto">
+</p><ul id="7087e491-05c2-4d49-9a07-bb2ccd7f8751" class="bulleted-list" dir="auto"><li style="list-style-type:disc"><strong>(성공)</strong> Rule <code>100111</code> 입력 검증 후 고정된 GitHub Workflow로 대응을 전달한 Shuffle 실행 결과 </li></ul><figure id="3c601bbc-dcb5-80b7-8e11-cfd5be43825c" class="image" data-notion-image="image%206.png" dir="ltr"><a href="image%206.png"><img style="width:703.953125px" src="image%206.png"/></a></figure><p id="3c601bbc-dcb5-808c-8218-dfbcab3a4edc" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-80db-a15a-c71862c0d6bd" class="bulleted-list" dir="auto"><li style="list-style-type:disc"><strong>(해당 Rule이 없을 경우) </strong>허용되지 않은 Rule ID 입력을 검증 단계에서 거부하여 후속 GitHub Workflow 실행을 차단한 Shuffle 음성 테스트 결과</li></ul><figure id="3c601bbc-dcb5-8082-81d4-eeac3fb36981" class="image" data-notion-image="image%207.png" dir="ltr"><a href="image%207.png"><img style="width:703.96875px" src="image%207.png"/></a></figure><figure id="3c601bbc-dcb5-80ae-b98d-fa105243645b" class="image" data-notion-image="image%208.png" dir="ltr"><a href="image%208.png"><img style="width:703.953125px" src="image%208.png"/></a></figure><p id="3c601bbc-dcb5-8044-b7c5-cdac4b2ccec4" class="" dir="auto">
+</p><p id="3c601bbc-dcb5-80fc-b2c2-ff09ec90431a" class="" dir="auto">
+</p><p id="3c601bbc-dcb5-805b-94c0-dd52eeb78a95" class="" dir="auto">
+</p><blockquote id="3c601bbc-dcb5-8091-83b0-cb07ea2a36f7" class="" dir="auto">Reset Workflow Run <code>32643206492</code>와 Argo CD <code>Synced / Healthy</code>, DVWA <code>DEFAULT_SECURITY_LEVEL=low</code>가 확인되는 화면<br/><br/><strong>캡션:</strong> 시연 종료 후 GitOps 기반 DVWA 정상 상태 복구, 원래 상태로 원복</blockquote><p id="3c601bbc-dcb5-8081-8b2d-fa5d7c234499" class="" dir="auto">
+</p><ul id="3c601bbc-dcb5-80af-bbfa-c39987e7ee39" class="bulleted-list" dir="auto"><li style="list-style-type:disc">Reset Workflow 성공 후 DVWA Deployment의 <code>DEFAULT_SECURITY_LEVEL=low</code> 적용을 확인한 정상 상태 복구 결과.</li></ul><figure id="3c601bbc-dcb5-801f-b6e5-eadb7e8c57cc" class="image" data-notion-image="image%209.png" dir="ltr"><a href="image%209.png"><img style="width:703.984375px" src="image%209.png"/></a></figure><figure id="3c601bbc-dcb5-803e-b3f9-cab874431c79" class="image" data-notion-image="image%2010.png" dir="ltr"><a href="image%2010.png"><img style="width:703.859375px" src="image%2010.png"/></a></figure><p id="3c601bbc-dcb5-80b7-8f2d-de1520cb1ba3" class="" dir="auto">
+</p><h2 id="d573ac5d-96ba-44c5-9bef-36d788ca324a" class="" dir="auto">3.6 구현 및 기록된 검증 상태</h2><table id="6a5d82d4-b62f-4de6-ad52-62326f6531f3" class="simple-table" dir="ltr"><thead class="simple-table-header"><tr id="a93db222-ffb7-4d80-81e5-85185de20e9f" dir="ltr"><th id=";\Q&gt;" class="simple-table-header-color simple-table-header" style="width:353.5px">항목</th><th id=":bT\" class="simple-table-header-color simple-table-header" style="width:353.5px">현재 상태</th></tr></thead><tbody><tr id="f39e6077-1474-42d4-b2da-432fb49008dc" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">Wazuh Rule <code>100110</code> 탐지</td><td id=":bT\" class="" style="width:353.5px">Runtime Alert 확인</td></tr><tr id="dbefb1e8-612f-4487-ae6e-913bb85ae4cb" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">Wazuh Rule <code>100111</code> 탐지</td><td id=":bT\" class="" style="width:353.5px">Runtime Alert 확인</td></tr><tr id="99f3a1bb-f0bb-4ad5-b969-d1b8536de249" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">Wazuh → Shuffle Integration</td><td id=":bT\" class="" style="width:353.5px">Rule <code>100110</code>, <code>100111</code> 대상으로 연결</td></tr><tr id="edd9f727-73cb-4006-bfd6-95b48d3e6263" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">Shuffle 인증 및 입력 검증</td><td id=":bT\" class="" style="width:353.5px">구성 및 검증 완료</td></tr><tr id="48ad4978-be61-48f9-bbfb-f4abb3d10d70" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">Rule <code>100110</code> 고정 격리 Workflow</td><td id=":bT\" class="" style="width:353.5px">코드 및 계약 테스트 완료</td></tr><tr id="8372e3e0-8864-41b0-bd40-8c1e089c5074" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">Rule <code>100110</code> 실제 Pod 격리 실행</td><td id=":bT\" class="" style="width:353.5px">Argo CD에서 원본 Pod 격리·보존 및 정상 대체 Pod 확인 기록 있음</td></tr><tr id="8dfcc5d5-95ac-4a3e-9914-a6f86e503373" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">Rule <code>100111</code> <code>low → impossible</code> 대응</td><td id=":bT\" class="" style="width:353.5px">실제 실행 성공</td></tr><tr id="9a276c00-5dbc-42d8-a72d-2c528226a740" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">GitHub Actions 실행 증적</td><td id=":bT\" class="" style="width:353.5px">Run <code>32637113392</code> 성공</td></tr><tr id="b7ae8a42-6415-4565-99fe-ac97ea5b1ff6" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">Reset 및 촬영 기준선 복구</td><td id=":bT\" class="" style="width:353.5px">Run <code>32643206492</code> 성공</td></tr><tr id="620500fd-9fbf-421d-a55a-61b979c2e2b9" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">DVWA 실행 상태</td><td id=":bT\" class="" style="width:353.5px">Reset·Daily Up 이후 변동하므로 촬영 직전 <code>low</code>·비격리·Pod Ready 재확인</td></tr><tr id="3ce77b3b-39af-4c4e-8368-7aefc2e7cda7" dir="ltr"><td id=";\Q&gt;" class="" style="width:353.5px">Argo CD 실행 상태</td><td id=":bT\" class="" style="width:353.5px">배포 시점에 따라 변동하므로 촬영 직전 Revision과 <code>Synced / Healthy</code> 재확인</td></tr></tbody></table><p id="61fd687e-1631-4cbd-bb35-563fb2ef184d" class="" dir="auto">기존 Dashboard의 <code>NOT CONNECTED</code> 문구는 자동 대응 연결 이전에 작성된 정적 안내이므로 현재 구현 상태와 일치하지 않는다. 최종 보고서에는 해당 문구 대신 실제 Shuffle 실행 결과, GitHub Actions Run 및 Argo CD Revision을 증적으로 사용한다.</p><h2 id="805ebf81-4e1b-4fdf-b770-a589ae5d1319" class="" dir="auto">3.7 구현의 의의</h2><p id="77046ada-5026-41b6-b823-bc0d55977949" class="" dir="auto">본 프로젝트는 S3 자체를 격리하거나 탈취된 IAM 자격증명을 직접 폐기하는 시스템이 아니다.</p><p id="5fbcdec1-89a3-4bf1-be2f-c83e370d1f9f" class="" dir="auto">대신 다음과 같은 단계적 SOC 대응 흐름을 구현했다.</p><p id="5df132ef-016e-4191-91ac-f43ec4db27de" class="" dir="auto"><code>웹 애플리케이션 공격 식별 → IMDS 접근 조기 탐지 → 침해 Pod 확산 제한 → S3 침해확정 → 취약한 웹 애플리케이션 설정 강화 → GitOps 기반 복구</code></p><p id="b6c901a1-bc65-4f66-abfd-605cce8abcb1" class="" dir="auto">특히 Alert가 전달한 임의 대상을 신뢰하지 않고, Rule별 입력 조건과 대응 대상을 코드에 고정했다는 점에 의의가 있다. 이를 통해 자동화 수준보다 조치의 통제 가능성과 사후 추적 가능성을 우선하였다.</p><p id="ac0a9a62-9674-4950-92fe-4dfd28f23195" class="" dir="auto">Pod 격리는 공격 원인을 근본적으로 제거하지는 않지만, 침해된 장비의 네트워크 연결을 우선 차단하는 것과 같은 효과를 가진다. 추가 자격증명 조회와 내부 확산을 제한하고, 관제자가 IAM 및 노드 수준의 후속 대응을 수행할 시간을 확보한다.</p><h2 id="f07aa76c-4b06-43c6-bc5f-551ec4b4c9c2" class="" dir="auto">3.8 한계 및 향후 개선 방향</h2><p id="a0592291-e019-4e38-8d90-4bd20a29fd71" class="" dir="auto">현재 Rule <code>100110</code>은 EKS Pod Identity 자격증명 엔드포인트가 아니라 EC2 IMDS를 통한 Node Role 접근 징후를 탐지한다.</p><p id="cd399c6d-3530-4099-b4d7-f9eba127918c" class="" dir="auto">따라서 Pod를 격리하더라도 이미 외부로 유출된 Node Role 자격증명은 계속 악용될 수 있다. Pod 격리는 추가 공격을 제한하는 1차 대응이며, 다음 후속 조치가 필요하다.</p><aside class="block-color-gray_background callout" data-notion-callout="" data-notion-callout-background="gray_background" style="white-space:pre-wrap;display:flex" id="3c601bbc-dcb5-80df-9d7c-e3a0c23f5a86" dir="ltr"><div style="width:100%"><ul id="d104c105-6365-4ca7-8229-d8ae4d1e4a5b" class="bulleted-list" dir="auto"><li style="list-style-type:disc">탈취된 IAM 세션 및 임시 자격증명 무효화</li></ul><ul id="d31ced84-a447-4278-9970-214732578263" class="bulleted-list" dir="auto"><li style="list-style-type:disc">Node Role 권한 축소</li></ul><ul id="5cdc1829-66be-46db-bbe6-d760c078d2ae" class="bulleted-list" dir="auto"><li style="list-style-type:disc">침해 노드 격리 및 교체</li></ul><ul id="00f4ef13-f7ae-4d36-b59f-ec378fed8aa8" class="bulleted-list" dir="auto"><li style="list-style-type:disc">S3 Bucket Policy 또는 IAM 정책을 통한 접근 차단</li></ul><ul id="6579659a-bf10-4b4b-9672-e927cb87c5ce" class="bulleted-list" dir="auto"><li style="list-style-type:disc">EKS Pod Identity 적용</li></ul><ul id="005e5041-3ee6-4797-83ef-b8e2b2394a64" class="bulleted-list" dir="auto"><li style="list-style-type:disc"><code>web-app</code> 전용 최소권한 IAM Role 구성</li></ul><ul id="a4f7b1f6-ba0e-4afe-bfda-edb586e071ed" class="bulleted-list" dir="auto"><li style="list-style-type:disc">Pod Identity 자격증명 엔드포인트 접근 탐지 추가</li></ul></div></aside><p id="ce565ebb-7797-4ef6-87a3-f7b4ae6a9795" class="" dir="auto">향후 Pod Identity를 적용하면 다음과 같이 대응 관계를 더욱 명확하게 구성할 수 있다.</p><p id="2b652a5d-46fe-4d8a-9e3e-c44db36860cb" class="" dir="auto"><code>Pod Identity 자격증명 접근 → web-app Role 탈취 징후 탐지 → 해당 Pod 격리 → Role 세션 차단</code></p><p id="ddc82894-9b47-4fbc-bb3d-7944cd79b0d6" class="" dir="auto">현재 구현은 이를 위한 전 단계로서, 웹 애플리케이션 공격 지점의 식별과 워크로드 단위 자동 격리, 침해확정 후 GitOps 기반 취약점 완화를 검증한 프로젝트로 평가할 수 있다.</p><p id="3c501bbc-dcb5-8032-a58b-c6c1f6638b68" class="" dir="auto">
+</p><p id="5f05ee22-8f6a-4c38-a735-4ae6c6f6cf49" class="" dir="auto">참고: <a href="https://github.com/Unoh03/bank-security-lab-infra/blob/main/observability/shuffle/SHUFFLE-CLOUD-SETUP.md">Shuffle 연계 설계 문서</a>, <a href="https://github.com/Unoh03/bank-security-lab-infra/blob/main/observability/shuffle/shuffle-soc-workflow-contract.json">Shuffle Workflow 계약</a></p><p id="3c301bbc-dcb5-80a2-a2e0-c5b23a542ec9" class="" dir="auto">
+</p></div></article><span class="sans" style="font-size:14px;padding-top:2em"></span></body></html>
