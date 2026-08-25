@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Codex" version="24.7.17" type="device" compressed="false">
+  <diagram id="capital-one-soc-closed-loop" name="5.0_SOC_자동대응_폐쇄루프">
+    <mxGraphModel dx="1600" dy="980" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="980" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="left-lane-bg" value="" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#FFF7FB;strokeColor=#E7157B;strokeWidth=2;dashed=1;dashPattern=8 6;" vertex="1" parent="1">
+          <mxGeometry x="50" y="88" width="700" height="685" as="geometry"/>
+        </mxCell>
+        <mxCell id="right-lane-bg" value="" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#FFF9F2;strokeColor=#C45500;strokeWidth=2;dashed=1;dashPattern=8 6;" vertex="1" parent="1">
+          <mxGeometry x="850" y="88" width="700" height="685" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="title" value="&lt;div&gt;&lt;b&gt;Capital One 시나리오 탐지·자동 대응 폐쇄루프&lt;/b&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=26;fontColor=#17365D;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="180" y="18" width="1240" height="38" as="geometry"/>
+        </mxCell>
+        <mxCell id="subtitle" value="서로 다른 로그에서 독립적으로 탐지하고, 검증된 대응만 GitOps로 실행" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;fontSize=13;fontColor=#5B6573;" vertex="1" parent="1">
+          <mxGeometry x="250" y="56" width="1100" height="22" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="left-header" value="&lt;div&gt;&lt;b&gt;1차 대응 · Rule 100110&lt;/b&gt;&lt;/div&gt;&lt;div&gt;DVWA Audit Event 저지연 경보&lt;/div&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#E7157B;strokeColor=#B80F62;strokeWidth=2;fontColor=#FFFFFF;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="80" y="100" width="640" height="48" as="geometry"/>
+        </mxCell>
+        <mxCell id="right-header" value="&lt;div&gt;&lt;b&gt;2차 대응 · Rule 100111&lt;/b&gt;&lt;/div&gt;&lt;div&gt;CloudTrail S3 Data Event 고신뢰 확인&lt;/div&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#C45500;strokeColor=#943F00;strokeWidth=2;fontColor=#FFFFFF;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;spacing=5;" vertex="1" parent="1">
+          <mxGeometry x="880" y="100" width="640" height="48" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="left-attack" value="&lt;div&gt;&lt;b&gt;공격 단계&lt;/b&gt;&lt;/div&gt;&lt;div&gt;DVWA Command Injection → IMDS Credential endpoint&lt;/div&gt;&lt;div style=&quot;font-size:11px;color:#8A3B67;&quot;&gt;공격 스크립트 종료 전 차단을 보장하지 않음&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=2;fontColor=#232F3E;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="164" width="640" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="left-transport" value="&lt;div&gt;&lt;b&gt;수집·전달&lt;/b&gt;&lt;/div&gt;&lt;div&gt;CloudWatch Logs → Lambda → SQS → Local Bridge&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;DVWA Audit Event 저지연 전달&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2;fontColor=#232F3E;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="252" width="640" height="64" as="geometry"/>
+        </mxCell>
+        <mxCell id="left-wazuh" value="&lt;div&gt;&lt;b&gt;Wazuh SIEM · Rule 100110 · Level 12&lt;/b&gt;&lt;/div&gt;&lt;div&gt;imds_credential_fetch + output_returned&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;IMDS Credential endpoint 대상 명령의 출력 반환 탐지&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#C45500;strokeWidth=2.5;fontColor=#232F3E;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="334" width="640" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="left-shuffle" value="&lt;div&gt;&lt;b&gt;Shuffle SOAR 입력 검증&lt;/b&gt;&lt;/div&gt;&lt;div&gt;Rule · Schema · Timestamp · 해시 · Pod 정보 검증&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;허용된 요청만 고정 Workflow로 전달&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF6F4;strokeColor=#D13212;strokeWidth=2.5;fontColor=#232F3E;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="422" width="640" height="72" as="geometry"/>
+        </mxCell>
+        <mxCell id="left-github" value="&lt;div&gt;&lt;b&gt;GitHub Actions · soc-contain-dvwa.yml&lt;/b&gt;&lt;/div&gt;&lt;div&gt;main · Pod name · Pod UID · 변경 파일 검증&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;검증된 격리 요청만 Git Commit으로 기록&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#24292F;strokeWidth=2.5;fontColor=#24292F;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="512" width="640" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="left-argo" value="&lt;div&gt;&lt;b&gt;Argo CD → EKS&lt;/b&gt;&lt;/div&gt;&lt;div&gt;Git Revision 자동 동기화 · UID·Label·Owner 관계 재검증&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#EEF7FF;strokeColor=#0073BB;strokeWidth=2.5;fontColor=#17365D;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="600" width="640" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="left-result" value="&lt;div&gt;&lt;b&gt;Runtime 결과&lt;/b&gt;&lt;/div&gt;&lt;div&gt;침해 Pod 격리·보존 + 정상 대체 Pod 운영&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;반복 공격과 추가 활동 제한 · 조사 대상 보존&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#EAF7EE;strokeColor=#1B7F3A;strokeWidth=3;fontColor=#164B2A;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="676" width="640" height="76" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="right-attack" value="&lt;div&gt;&lt;b&gt;공격 결과&lt;/b&gt;&lt;/div&gt;&lt;div&gt;Node Role → 보호 S3 Object GetObject&lt;/div&gt;&lt;div style=&quot;font-size:11px;color:#824900;&quot;&gt;HTTP 200 + bytesTransferredOut &gt; 0&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#C45500;strokeWidth=2;fontColor=#232F3E;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="880" y="164" width="640" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="right-transport" value="&lt;div&gt;&lt;b&gt;수집·전달&lt;/b&gt;&lt;/div&gt;&lt;div&gt;CloudTrail Data Event → CloudWatch Logs → Wazuh&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;Wazuh AWS Module 5분 주기 수집&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#C45500;strokeWidth=2;fontColor=#232F3E;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="880" y="252" width="640" height="64" as="geometry"/>
+        </mxCell>
+        <mxCell id="right-wazuh" value="&lt;div&gt;&lt;b&gt;Wazuh SIEM · Rule 100111 · Level 14&lt;/b&gt;&lt;/div&gt;&lt;div&gt;고정 Role·Bucket·Object + GetObject 성공 + 실제 바이트 반환&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;보호 S3 Object 접근 결과를 독립적으로 확인&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#C45500;strokeWidth=2.5;fontColor=#232F3E;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="880" y="334" width="640" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="right-shuffle" value="&lt;div&gt;&lt;b&gt;Shuffle SOAR 입력 검증&lt;/b&gt;&lt;/div&gt;&lt;div&gt;Rule · Timestamp · eventID SHA-256 · 원문 SHA-256 검증&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;계정·Role·Bucket·Object 원문은 Wazuh에서 로컬 검증&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF6F4;strokeColor=#D13212;strokeWidth=2.5;fontColor=#232F3E;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="880" y="422" width="640" height="72" as="geometry"/>
+        </mxCell>
+        <mxCell id="right-github" value="&lt;div&gt;&lt;b&gt;GitHub Actions · soc-harden-dvwa.yml&lt;/b&gt;&lt;/div&gt;&lt;div&gt;main · 고정 Repository · low → impossible 한 줄 Diff 검증&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;허용된 보안 수준 변경만 Git Commit으로 기록&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F3F4F6;strokeColor=#24292F;strokeWidth=2.5;fontColor=#24292F;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="880" y="512" width="640" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="right-argo" value="&lt;div&gt;&lt;b&gt;Argo CD → EKS&lt;/b&gt;&lt;/div&gt;&lt;div&gt;Git Revision 자동 동기화 · 새 DVWA Pod와 Session 반영&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#EEF7FF;strokeColor=#0073BB;strokeWidth=2.5;fontColor=#17365D;fontSize=13;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="880" y="600" width="640" height="58" as="geometry"/>
+        </mxCell>
+        <mxCell id="right-result" value="&lt;div&gt;&lt;b&gt;Runtime 결과&lt;/b&gt;&lt;/div&gt;&lt;div&gt;DVWA Security Level · low → impossible&lt;/div&gt;&lt;div style=&quot;font-size:11px;&quot;&gt;동일한 웹 공격 진입점의 재사용 제한&lt;/div&gt;" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#EAF7EE;strokeColor=#1B7F3A;strokeWidth=3;fontColor=#164B2A;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;spacing=6;" vertex="1" parent="1">
+          <mxGeometry x="880" y="676" width="640" height="76" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="shared-footer" value="&lt;div&gt;&lt;b&gt;관제자 조사 · 증적 · 복구&lt;/b&gt;&lt;/div&gt;&lt;div&gt;두 Rule은 독립 탐지 · Wazuh Timeline에서 시각·take_id·Pod·IAM Role·S3 Object를 비교해 동일 사건 여부 조사&lt;/div&gt;&lt;div&gt;Alert ID → Shuffle Execution → GitHub Run·Commit → Argo Revision → Runtime 상태 · Reset Workflow로 기준선 복구&lt;/div&gt;" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F7F8FA;strokeColor=#5B6573;strokeWidth=3;fontColor=#232F3E;fontSize=13;align=center;verticalAlign=middle;spacing=8;" vertex="1" parent="1">
+          <mxGeometry x="200" y="806" width="1200" height="112" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-left-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#E7157B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="left-attack" target="left-transport">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-left-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#E7157B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="left-transport" target="left-wazuh">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-left-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#E7157B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="left-wazuh" target="left-shuffle">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-left-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#E7157B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="left-shuffle" target="left-github">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-left-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#E7157B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="left-github" target="left-argo">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-left-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#E7157B;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="left-argo" target="left-result">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-left-footer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#5B6573;exitX=0.5;exitY=1;entryX=0.166667;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="left-result" target="shared-footer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e-right-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#C45500;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="right-attack" target="right-transport">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-right-2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#C45500;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="right-transport" target="right-wazuh">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-right-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#C45500;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="right-wazuh" target="right-shuffle">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-right-4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#C45500;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="right-shuffle" target="right-github">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-right-5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#C45500;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="right-github" target="right-argo">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-right-6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#C45500;exitX=0.5;exitY=1;entryX=0.5;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="right-argo" target="right-result">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e-right-footer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;endArrow=block;endFill=1;strokeWidth=2.6;strokeColor=#5B6573;exitX=0.5;exitY=1;entryX=0.833333;entryY=0;exitPerimeter=1;entryPerimeter=1;" edge="1" parent="1" source="right-result" target="shared-footer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
