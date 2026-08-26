@@ -71,19 +71,19 @@
         <mxCell id="s3-num" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" value="3" vertex="1">
           <mxGeometry height="42" width="42" x="52" y="628" as="geometry" />
         </mxCell>
-        <mxCell id="s3-heading" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#B7791F;fontSize=15;fontStyle=1;" value="멘토 상담 이후 판단 정교화" vertex="1">
+        <mxCell id="s3-heading" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#B7791F;fontSize=15;fontStyle=1;" value="멘토의 문제 제기" vertex="1">
           <mxGeometry height="24" width="300" x="165" y="578" as="geometry" />
         </mxCell>
-        <mxCell id="s3-question" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#232F3E;fontSize=18;fontStyle=1;" value="저지연 신호는 무엇을 증명하며, 어디까지 자동 대응해도 안전한가?" vertex="1">
+        <mxCell id="s3-question" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#232F3E;fontSize=18;fontStyle=1;" value="‘빠른 Route / 느린 Route’라는 설명이 관제 신호의 역할을 제대로 표현하는가?" vertex="1">
           <mxGeometry height="38" width="720" x="165" y="604" as="geometry" />
         </mxCell>
-        <mxCell id="s3-review" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#FF9900;strokeWidth=1.2;fontColor=#7A4A00;fontSize=12;align=center;verticalAlign=middle;" value="&lt;b&gt;멘토 조언&lt;/b&gt;&lt;br&gt;정확도 · Rule 튜닝 · 오탐 방지 · 안전한 자동화" vertex="1">
+        <mxCell id="s3-review" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#FF9900;strokeWidth=1.2;fontColor=#7A4A00;fontSize=12;align=center;verticalAlign=middle;" value="&lt;b&gt;표현에 대한 지적&lt;/b&gt;&lt;br&gt;‘빠른 관제 / 느린 관제’는 현업의 일반적 표현이 아님" vertex="1">
           <mxGeometry height="42" width="345" x="165" y="646" as="geometry" />
         </mxCell>
-        <mxCell id="s3-factcheck" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF9900;strokeWidth=1.2;fontColor=#7A4A00;fontSize=12;align=center;verticalAlign=middle;" value="&lt;b&gt;후속 팩트체크&lt;/b&gt;&lt;br&gt;정확도와 적시성 모두 필요 · 위험도에 따라 균형" vertex="1">
+        <mxCell id="s3-factcheck" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#FF9900;strokeWidth=1.2;fontColor=#7A4A00;fontSize=12;align=center;verticalAlign=middle;" value="&lt;b&gt;운영에 대한 조언&lt;/b&gt;&lt;br&gt;정확도 · Rule 튜닝 · 오탐 방지 · 안전한 자동화 범위" vertex="1">
           <mxGeometry height="42" width="365" x="520" y="646" as="geometry" />
         </mxCell>
-        <mxCell id="s3-change" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#FF9900;strokeWidth=1.3;fontColor=#7A4A00;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="저지연 고신뢰 신호 → 제한적·가역적 대응　|　추가 Evidence → 침해 확인·영향 범위 보강" vertex="1">
+        <mxCell id="s3-change" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#FF9900;strokeWidth=1.3;fontColor=#7A4A00;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="기존 Route를 폐기한 것이 아니라, 신호의 의미와 자동 대응 범위를 다시 검토하는 계기" vertex="1">
           <mxGeometry height="28" width="720" x="165" y="696" as="geometry" />
         </mxCell>
 
@@ -96,17 +96,20 @@
         <mxCell id="s4-num" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;" value="4" vertex="1">
           <mxGeometry height="42" width="42" x="52" y="838" as="geometry" />
         </mxCell>
-        <mxCell id="s4-heading" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#394B59;fontSize=15;fontStyle=1;" value="프로젝트 범위 결정" vertex="1">
+        <mxCell id="s4-heading" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#394B59;fontSize=15;fontStyle=1;" value="별도 검증과 판단 수정" vertex="1">
           <mxGeometry height="24" width="180" x="165" y="788" as="geometry" />
         </mxCell>
-        <mxCell id="s4-judgment" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#232F3E;fontSize=17;fontStyle=1;spacing=2;" value="5개 Source의 Route를 모두 바꾸고&lt;br&gt;같은 수준으로 Runtime 재검증할 수 있는가?" vertex="1">
-          <mxGeometry height="60" width="720" x="165" y="815" as="geometry" />
+        <mxCell id="s4-judgment" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#232F3E;fontSize=17;fontStyle=1;spacing=2;" value="멘토의 ‘정확도 우선’을 보편적인 관제 원칙으로 볼 수 있는가?" vertex="1">
+          <mxGeometry height="38" width="720" x="165" y="815" as="geometry" />
         </mxCell>
-        <mxCell id="s4-current" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#394B59;strokeWidth=1.4;fontColor=#394B59;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" value="검증된 Baseline은 현재 성과로 유지" vertex="1">
-          <mxGeometry height="38" width="315" x="165" y="890" as="geometry" />
+        <mxCell id="s4-current" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#394B59;strokeWidth=1.4;fontColor=#394B59;fontSize=12;align=center;verticalAlign=middle;" value="&lt;b&gt;검증 결과&lt;/b&gt;&lt;br&gt;정확도 &gt; 속도는 보편 원칙이 아님" vertex="1">
+          <mxGeometry height="40" width="315" x="165" y="858" as="geometry" />
         </mxCell>
-        <mxCell id="s4-future" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#EEF7FF;strokeColor=#0073BB;strokeWidth=1.4;dashed=1;dashPattern=5 4;fontColor=#005B96;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" value="미검증 후보는 현재 성과와 분리해 Future Work로 명시" vertex="1">
-          <mxGeometry height="38" width="385" x="500" y="890" as="geometry" />
+        <mxCell id="s4-future" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#EEF7FF;strokeColor=#0073BB;strokeWidth=1.4;fontColor=#005B96;fontSize=12;align=center;verticalAlign=middle;" value="&lt;b&gt;운영 기준&lt;/b&gt;&lt;br&gt;정확도와 적시성 모두 필요 · 위험도에 따라 균형" vertex="1">
+          <mxGeometry height="40" width="385" x="500" y="858" as="geometry" />
+        </mxCell>
+        <mxCell id="s4-change" parent="1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#F4F5F7;strokeColor=#7D8998;strokeWidth=1.2;fontColor=#394B59;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="저지연 고신뢰 신호 → 제한적·가역적 대응　|　추가 Evidence → 침해 확인·영향 범위 보강" vertex="1">
+          <mxGeometry height="28" width="720" x="165" y="907" as="geometry" />
         </mxCell>
 
         <mxCell id="s5-card" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#F6FBFF;strokeColor=#0073BB;strokeWidth=2;" value="" vertex="1">
@@ -131,10 +134,10 @@
           <mxGeometry height="28" width="650" x="190" y="1127" as="geometry" />
         </mxCell>
 
-        <mxCell id="current-box" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#F0F9F2;strokeColor=#1B7F3A;strokeWidth=2;fontColor=#1B5E2D;fontSize=13;align=center;verticalAlign=middle;spacing=5;" value="&lt;font style=&quot;font-size:15px;&quot;&gt;&lt;b&gt;현재 검증&lt;/b&gt;&lt;/font&gt;&lt;br&gt;광범위 Poll·Archive + DVWA 저지연 Route" vertex="1">
+        <mxCell id="current-box" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#F0F9F2;strokeColor=#1B7F3A;strokeWidth=2;fontColor=#1B5E2D;fontSize=13;align=center;verticalAlign=middle;spacing=5;" value="&lt;font style=&quot;font-size:15px;&quot;&gt;&lt;b&gt;현재 성과로 유지&lt;/b&gt;&lt;/font&gt;&lt;br&gt;5개 Source Poll·Archive + DVWA 저지연 Route" vertex="1">
           <mxGeometry height="76" width="375" x="125" y="1200" as="geometry" />
         </mxCell>
-        <mxCell id="future-box" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#EEF7FF;strokeColor=#0073BB;strokeWidth=2;dashed=1;dashPattern=7 5;fontColor=#005B96;fontSize=13;align=center;verticalAlign=middle;spacing=5;" value="&lt;font style=&quot;font-size:15px;&quot;&gt;&lt;b&gt;후속 검증&lt;/b&gt;&lt;/font&gt;&lt;br&gt;Source별 Telemetry Route + Wazuh Correlation&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;Target Candidate · Runtime 검증 필요&lt;/font&gt;" vertex="1">
+        <mxCell id="future-box" parent="1" style="rounded=1;arcSize=12;whiteSpace=wrap;html=1;fillColor=#EEF7FF;strokeColor=#0073BB;strokeWidth=2;dashed=1;dashPattern=7 5;fontColor=#005B96;fontSize=13;align=center;verticalAlign=middle;spacing=5;" value="&lt;font style=&quot;font-size:15px;&quot;&gt;&lt;b&gt;Future Work로 분리&lt;/b&gt;&lt;/font&gt;&lt;br&gt;Source별 Telemetry Route + Wazuh Correlation&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;동등한 Runtime 재검증 필요&lt;/font&gt;" vertex="1">
           <mxGeometry height="76" width="405" x="530" y="1200" as="geometry" />
         </mxCell>
 
@@ -151,20 +154,20 @@
         <mxCell id="edge23" edge="1" parent="1" source="s2-card" target="s3-card" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.4;strokeColor=#17365D;exitX=0.5;exitY=1;entryX=0.5;entryY=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="label23" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=12;fontStyle=1;" value="상담 후" vertex="1">
-          <mxGeometry height="20" width="70" x="455" y="535" as="geometry" />
+        <mxCell id="label23" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=12;fontStyle=1;" value="멘토 상담" vertex="1">
+          <mxGeometry height="20" width="80" x="450" y="535" as="geometry" />
         </mxCell>
         <mxCell id="edge34" edge="1" parent="1" source="s3-card" target="s4-card" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.4;strokeColor=#17365D;exitX=0.5;exitY=1;entryX=0.5;entryY=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="label34" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=12;fontStyle=1;" value="현실적으로" vertex="1">
+        <mxCell id="label34" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=12;fontStyle=1;" value="별도 검증" vertex="1">
           <mxGeometry height="20" width="80" x="450" y="745" as="geometry" />
         </mxCell>
         <mxCell id="edge45" edge="1" parent="1" source="s4-card" target="s5-card" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.4;strokeColor=#17365D;exitX=0.5;exitY=1;entryX=0.5;entryY=0;">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="label45" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=12;fontStyle=1;" value="대신" vertex="1">
-          <mxGeometry height="20" width="60" x="460" y="955" as="geometry" />
+        <mxCell id="label45" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=12;fontStyle=1;" value="새 질문" vertex="1">
+          <mxGeometry height="20" width="70" x="455" y="955" as="geometry" />
         </mxCell>
         <mxCell id="edge5-current" edge="1" parent="1" source="s5-card" target="current-box" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#1B7F3A;exitX=0.42;exitY=1;entryX=0.5;entryY=0;">
           <mxGeometry relative="1" as="geometry" />
