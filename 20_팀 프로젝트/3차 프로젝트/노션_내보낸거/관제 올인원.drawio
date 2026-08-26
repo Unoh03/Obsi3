@@ -25,7 +25,7 @@
         <mxCell id="p1-legend-core-text" parent="p1-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;fontSize=10;fontColor=#5F6B7A;" value="핵심 관제 경로" vertex="1">
           <mxGeometry height="18" width="82" x="733" y="26" as="geometry" />
         </mxCell>
-        <mxCell id="p1-s1" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" value="1" vertex="1">
+        <mxCell id="p1-s1" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="1" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="76" as="geometry" />
         </mxCell>
         <mxCell id="p1-s1-label" parent="p1-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;공격 발생&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -46,7 +46,7 @@
         <mxCell id="p1-aws-label" parent="p1-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#232F3E;fontSize=13;fontStyle=1;" value="AWS Cloud" vertex="1">
           <mxGeometry height="22" width="90" x="140" y="144" as="geometry" />
         </mxCell>
-        <mxCell id="p1-s2" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" value="2" vertex="1">
+        <mxCell id="p1-s2" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="2" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="230" as="geometry" />
         </mxCell>
         <mxCell id="p1-s2-label" parent="p1-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;로그 생성&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -76,7 +76,7 @@
         <mxCell id="p1-hot-transport" parent="p1-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2.6;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:17px;&quot;&gt;&lt;b&gt;DVWA 저지연 전달&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;CWL Subscription → Lambda → SQS → Local Bridge&lt;br&gt;Rule 100102·100110 Event 입력&lt;/font&gt;" vertex="1">
           <mxGeometry height="70" width="315" x="180" y="320" as="geometry" />
         </mxCell>
-        <mxCell id="p1-s3" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" value="3" vertex="1">
+        <mxCell id="p1-s3" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="3" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="472" as="geometry" />
         </mxCell>
         <mxCell id="p1-s3-label" parent="p1-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;전달·지연&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -88,10 +88,10 @@
         <mxCell id="p1-local" parent="p1-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7F8F8;fillOpacity=72;strokeColor=#7D8998;strokeWidth=1.8;dashed=1;dashPattern=8 5;" value="" vertex="1">
           <mxGeometry height="640" width="810" x="130" y="680" as="geometry" />
         </mxCell>
-        <mxCell id="p1-local-label" parent="p1-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#7D8998;fontSize=11;" value="Local workstation · AWS 외부 · Wazuh SIEM" vertex="1">
+        <mxCell id="p1-local-label" parent="p1-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#7D8998;fontSize=12;" value="Local workstation · AWS 외부 · Wazuh SIEM" vertex="1">
           <mxGeometry height="18" width="280" x="140" y="683" as="geometry" />
         </mxCell>
-        <mxCell id="p1-s4" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" value="4" vertex="1">
+        <mxCell id="p1-s4" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="4" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="760" as="geometry" />
         </mxCell>
         <mxCell id="p1-s4-label" parent="p1-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;통합 관제&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -103,7 +103,7 @@
         <mxCell id="p1-rule102" parent="p1-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#64748B;strokeWidth=1.8;fontColor=#334155;fontSize=16;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;Rule 100102 · Level 3 · Transport Health&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;push · dvwa · wazuh.push.validation · SAFE_VALIDATION_EVENT　│　Dashboard Count만 확인 · 자동 대응 없음&lt;/font&gt;" vertex="1">
           <mxGeometry height="68" width="620" x="210" y="850" as="geometry" />
         </mxCell>
-        <mxCell id="p1-s5" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" value="5" vertex="1">
+        <mxCell id="p1-s5" parent="p1-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="5" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="982" as="geometry" />
         </mxCell>
         <mxCell id="p1-s5-label" parent="p1-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;Rule 탐지&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -219,10 +219,10 @@
         <mxCell id="p2-boundary" parent="p2-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7F8F8;fillOpacity=65;strokeColor=#7D8998;strokeWidth=1.8;dashed=1;dashPattern=8 5;" value="" vertex="1">
           <mxGeometry height="1150" width="810" x="130" y="150" as="geometry" />
         </mxCell>
-        <mxCell id="p2-boundary-label" parent="p2-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#7D8998;fontSize=11;" value="SOC / GitOps response boundary · 인증된 고정 Workflow만 외부 상태 변경" vertex="1">
+        <mxCell id="p2-boundary-label" parent="p2-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#7D8998;fontSize=12;" value="SOC / GitOps response boundary · 인증된 고정 Workflow만 외부 상태 변경" vertex="1">
           <mxGeometry height="18" width="520" x="140" y="153" as="geometry" />
         </mxCell>
-        <mxCell id="p2-s4" parent="p2-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" value="4" vertex="1">
+        <mxCell id="p2-s4" parent="p2-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="4" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="300" as="geometry" />
         </mxCell>
         <mxCell id="p2-s4-label" parent="p2-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;검증·분기&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -252,13 +252,13 @@
         <mxCell id="p2-decision111" parent="p2-1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#D13212;strokeWidth=2.2;fontColor=#7F1D1D;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" value="계약 검증&lt;br&gt;성공?" vertex="1">
           <mxGeometry height="72" width="100" x="620" y="520" as="geometry" />
         </mxCell>
-        <mxCell id="p2-reject110" parent="p2-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#B91C1C;strokeWidth=1.8;fontColor=#7F1D1D;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" value="NO&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;미호출&lt;br&gt;변경 없음&lt;/font&gt;" vertex="1">
+        <mxCell id="p2-reject110" parent="p2-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#B91C1C;strokeWidth=1.8;fontColor=#7F1D1D;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" value="NO&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;미호출&lt;br&gt;변경 없음&lt;/font&gt;" vertex="1">
           <mxGeometry height="54" width="82" x="145" y="530" as="geometry" />
         </mxCell>
-        <mxCell id="p2-reject111" parent="p2-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#B91C1C;strokeWidth=1.8;fontColor=#7F1D1D;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" value="NO&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;미호출&lt;br&gt;변경 없음&lt;/font&gt;" vertex="1">
+        <mxCell id="p2-reject111" parent="p2-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FEE2E2;strokeColor=#B91C1C;strokeWidth=1.8;fontColor=#7F1D1D;fontSize=13;fontStyle=1;align=center;verticalAlign=middle;" value="NO&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;미호출&lt;br&gt;변경 없음&lt;/font&gt;" vertex="1">
           <mxGeometry height="54" width="72" x="853" y="530" as="geometry" />
         </mxCell>
-        <mxCell id="p2-s5" parent="p2-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" value="5" vertex="1">
+        <mxCell id="p2-s5" parent="p2-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="5" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="700" as="geometry" />
         </mxCell>
         <mxCell id="p2-s5-label" parent="p2-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;GitOps 실행&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -276,7 +276,7 @@
         <mxCell id="p2-argo111" parent="p2-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EEF7FF;strokeColor=#0073BB;strokeWidth=2.4;fontColor=#17365D;fontSize=16;align=center;verticalAlign=middle;" value="&lt;b&gt;Argo CD → EKS&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;Git Commit Revision을 동기화하고 새 Pod·Session에 impossible 반영&lt;/font&gt;" vertex="1">
           <mxGeometry height="74" width="300" x="520" y="745" as="geometry" />
         </mxCell>
-        <mxCell id="p2-s6" parent="p2-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" value="6" vertex="1">
+        <mxCell id="p2-s6" parent="p2-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="6" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="900" as="geometry" />
         </mxCell>
         <mxCell id="p2-s6-label" parent="p2-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;상태 변경&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -291,7 +291,7 @@
         <mxCell id="p2-limit" parent="p2-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#B7791F;strokeWidth=1.4;dashed=1;dashPattern=6 4;fontColor=#744210;fontSize=13;align=center;verticalAlign=middle;" value="&lt;b&gt;자동 대응의 한계&lt;/b&gt; · 두 조치는 이미 발생한 S3 반환을 취소하거나 Node Role Credential 자체를 폐기하지 않는다." vertex="1">
           <mxGeometry height="52" width="480" x="250" y="970" as="geometry" />
         </mxCell>
-        <mxCell id="p2-s7" parent="p2-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;align=center;verticalAlign=middle;" value="7" vertex="1">
+        <mxCell id="p2-s7" parent="p2-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="7" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="1110" as="geometry" />
         </mxCell>
         <mxCell id="p2-s7-label" parent="p2-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;증적·복구&lt;/font&gt;&lt;/b&gt;" vertex="1">
@@ -324,16 +324,16 @@
         <mxCell id="p2-e6" edge="1" parent="p2-1" source="p2-shuffle111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.5;strokeColor=#D13212;" target="p2-decision111">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="p2-e7" edge="1" parent="p2-1" source="p2-decision110" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#B91C1C;fontColor=#B91C1C;fontSize=11;fontStyle=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" target="p2-reject110" value="NO">
+        <mxCell id="p2-e7" edge="1" parent="p2-1" source="p2-decision110" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#B91C1C;fontColor=#B91C1C;fontSize=12;fontStyle=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" target="p2-reject110" value="NO">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="p2-e8" edge="1" parent="p2-1" source="p2-decision111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#B91C1C;fontColor=#B91C1C;fontSize=11;fontStyle=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="p2-reject111" value="NO">
+        <mxCell id="p2-e8" edge="1" parent="p2-1" source="p2-decision111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#B91C1C;fontColor=#B91C1C;fontSize=12;fontStyle=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" target="p2-reject111" value="NO">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="p2-e9" edge="1" parent="p2-1" source="p2-decision110" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#E7157B;fontColor=#E7157B;fontSize=11;fontStyle=1;" target="p2-github110" value="YES">
+        <mxCell id="p2-e9" edge="1" parent="p2-1" source="p2-decision110" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#E7157B;fontColor=#E7157B;fontSize=12;fontStyle=1;" target="p2-github110" value="YES">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="p2-e10" edge="1" parent="p2-1" source="p2-decision111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#C45500;fontColor=#C45500;fontSize=11;fontStyle=1;" target="p2-github111" value="YES">
+        <mxCell id="p2-e10" edge="1" parent="p2-1" source="p2-decision111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#C45500;fontColor=#C45500;fontSize=12;fontStyle=1;" target="p2-github111" value="YES">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="p2-e11" edge="1" parent="p2-1" source="p2-github110" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#E7157B;" target="p2-argo110">
@@ -354,10 +354,10 @@
         <mxCell id="p2-e16" edge="1" parent="p2-1" source="p2-result111" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.5;strokeColor=#1B7F3A;entryX=0.78;entryY=0;" target="p2-evidence">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="p2-e17" edge="1" parent="p2-1" source="p2-evidence" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#B7791F;fontColor=#B7791F;fontSize=11;fontStyle=1;exitX=0.22;exitY=1;entryX=0.5;entryY=0;" target="p2-manual" value="후속 조치">
+        <mxCell id="p2-e17" edge="1" parent="p2-1" source="p2-evidence" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#B7791F;fontColor=#B7791F;fontSize=12;fontStyle=1;exitX=0.22;exitY=1;entryX=0.5;entryY=0;" target="p2-manual" value="후속 조치">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="p2-e18" edge="1" parent="p2-1" source="p2-evidence" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0073BB;fontColor=#0073BB;fontSize=11;fontStyle=1;exitX=0.78;exitY=1;entryX=0.5;entryY=0;" target="p2-reset" value="기준선 복구">
+        <mxCell id="p2-e18" edge="1" parent="p2-1" source="p2-evidence" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0073BB;fontColor=#0073BB;fontSize=12;fontStyle=1;exitX=0.78;exitY=1;entryX=0.5;entryY=0;" target="p2-reset" value="기준선 복구">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
         <mxCell id="p2-feedback110" edge="1" parent="p2-1" source="p2-result110" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=4;strokeColor=#E7157B;dashed=1;dashPattern=7 5;fontColor=#B80F62;fontSize=12;fontStyle=1;labelBackgroundColor=#FFFFFF;exitX=0;exitY=0.5;entryX=0;entryY=0.35;jumpStyle=arc;jumpSize=7;" target="p2-runtime" value="격리 상태 반영">
@@ -376,7 +376,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="p2-reset-loop" edge="1" parent="p2-1" source="p2-reset" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.8;strokeColor=#0073BB;dashed=1;dashPattern=8 6;fontColor=#0073BB;fontSize=11;fontStyle=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;entryX=1;entryY=0.75;jumpStyle=arc;jumpSize=7;" target="p2-runtime" value="low · 비격리 기준선">
+        <mxCell id="p2-reset-loop" edge="1" parent="p2-1" source="p2-reset" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.8;strokeColor=#0073BB;dashed=1;dashPattern=8 6;fontColor=#0073BB;fontSize=12;fontStyle=1;labelBackgroundColor=#FFFFFF;exitX=1;exitY=0.5;entryX=1;entryY=0.75;jumpStyle=arc;jumpSize=7;" target="p2-runtime" value="low · 비격리 기준선">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="955" y="1208" />
@@ -401,10 +401,10 @@
         <mxCell id="p3-aws-zone" parent="p3-1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#F8FBFD;strokeColor=#A8C8DB;strokeWidth=1.5;" value="" vertex="1">
           <mxGeometry height="410" width="810" x="130" y="82" as="geometry" />
         </mxCell>
-        <mxCell id="p3-aws-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#4B6B7D;fontSize=11;fontStyle=1;" value="AWS · EKS Workload 및 저지연 전달" vertex="1">
+        <mxCell id="p3-aws-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#4B6B7D;fontSize=12;fontStyle=1;" value="AWS · EKS Workload 및 저지연 전달" vertex="1">
           <mxGeometry height="18" width="250" x="145" y="84" as="geometry" />
         </mxCell>
-        <mxCell id="p3-s1" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="1" vertex="1">
+        <mxCell id="p3-s1" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="1" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="126" as="geometry" />
         </mxCell>
         <mxCell id="p3-s1-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;공격·이상행위&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -416,28 +416,28 @@
         <mxCell id="p3-output" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2.4;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;IMDS Credential Endpoint 출력 반환&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;result=succeeded&lt;br&gt;stage=imds_credential_fetch · status=output_returned&lt;/font&gt;" vertex="1">
           <mxGeometry height="78" width="330" x="555" y="112" as="geometry" />
         </mxCell>
-        <mxCell id="p3-s2" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="2" vertex="1">
+        <mxCell id="p3-s2" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="2" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="260" as="geometry" />
         </mxCell>
         <mxCell id="p3-s2-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;저지연 전달&lt;/font&gt;&lt;/b&gt;" vertex="1">
           <mxGeometry height="34" width="78" x="52" y="255" as="geometry" />
         </mxCell>
-        <mxCell id="p3-cwl" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;CloudWatch Logs&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;DVWA Audit Event&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-cwl" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;CloudWatch Logs&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;DVWA Audit Event&lt;/font&gt;" vertex="1">
           <mxGeometry height="68" width="150" x="150" y="235" as="geometry" />
         </mxCell>
-        <mxCell id="p3-lambda" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;Subscription → Lambda&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;민감정보 제거·필드 정규화&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-lambda" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;Subscription → Lambda&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;민감정보 제거·필드 정규화&lt;/font&gt;" vertex="1">
           <mxGeometry height="68" width="190" x="325" y="235" as="geometry" />
         </mxCell>
-        <mxCell id="p3-sqs" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;SQS&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;비동기 Buffer&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-sqs" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;SQS&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;비동기 Buffer&lt;/font&gt;" vertex="1">
           <mxGeometry height="68" width="125" x="540" y="235" as="geometry" />
         </mxCell>
-        <mxCell id="p3-bridge" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;Local Bridge&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;SQS Consume → live JSONL&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-bridge" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;Local Bridge&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;SQS Consume → live JSONL&lt;/font&gt;" vertex="1">
           <mxGeometry height="68" width="200" x="690" y="235" as="geometry" />
         </mxCell>
         <mxCell id="p3-redaction" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF9FC;strokeColor=#E7157B;strokeWidth=1.2;dashed=1;dashPattern=6 4;fontColor=#8A3B67;fontSize=12;align=center;verticalAlign=middle;" value="&lt;b&gt;전송 경계&lt;/b&gt; · Command · 응답 · Credential · Cookie는 제거하고 event_type · result · route · take_id · Pod name·UID 등 승인 필드만 유지" vertex="1">
           <mxGeometry height="52" width="680" x="180" y="325" as="geometry" />
         </mxCell>
-        <mxCell id="p3-s3" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="3" vertex="1">
+        <mxCell id="p3-s3" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="3" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="414" as="geometry" />
         </mxCell>
         <mxCell id="p3-s3-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;SIEM 탐지&lt;/font&gt;&lt;/b&gt;" vertex="1">
@@ -446,61 +446,61 @@
         <mxCell id="p3-decoder" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#C45500;strokeWidth=2;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;Wazuh Manager · Decoder&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;JSON 수신 → payload.* 필드화&lt;/font&gt;" vertex="1">
           <mxGeometry height="70" width="285" x="180" y="400" as="geometry" />
         </mxCell>
-        <mxCell id="p3-rule" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2.6;fontColor=#232F3E;fontSize=16;align=center;verticalAlign=middle;" value="&lt;b&gt;Rule 100110 · Level 12&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;push · dvwa · command.execution · succeeded&lt;br&gt;low · imds_credential_fetch · output_returned&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-rule" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2.6;fontColor=#232F3E;fontSize=16;align=center;verticalAlign=middle;" value="&lt;b&gt;Rule 100110 · Level 12&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;push · dvwa · command.execution · succeeded&lt;br&gt;low · imds_credential_fetch · output_returned&lt;/font&gt;" vertex="1">
           <mxGeometry height="80" width="350" x="535" y="395" as="geometry" />
         </mxCell>
         <mxCell id="p3-soc-zone" parent="p3-1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FCFAF7;strokeColor=#D8C3A5;strokeWidth=1.5;" value="" vertex="1">
           <mxGeometry height="815" width="810" x="130" y="505" as="geometry" />
         </mxCell>
-        <mxCell id="p3-soc-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#7A6348;fontSize=11;fontStyle=1;" value="Local Wazuh · Shuffle Cloud · GitHub · Argo CD · EKS" vertex="1">
+        <mxCell id="p3-soc-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#7A6348;fontSize=12;fontStyle=1;" value="Local Wazuh · Shuffle Cloud · GitHub · Argo CD · EKS" vertex="1">
           <mxGeometry height="18" width="330" x="145" y="508" as="geometry" />
         </mxCell>
-        <mxCell id="p3-s4" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="4" vertex="1">
+        <mxCell id="p3-s4" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="4" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="595" as="geometry" />
         </mxCell>
         <mxCell id="p3-s4-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;계약 검증&lt;/b&gt;&lt;/font&gt;" vertex="1">
           <mxGeometry height="34" width="78" x="52" y="590" as="geometry" />
         </mxCell>
-        <mxCell id="p3-integration" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF9FC;strokeColor=#E7157B;strokeWidth=2.2;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;custom-shuffle-soc · 로컬 검증&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;Rule·Level·Account·Region·고정 Event 조건&lt;br&gt;take_id · Pod name·UID · Alert ID 형식 · raw SHA-256&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-integration" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF9FC;strokeColor=#E7157B;strokeWidth=2.2;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;custom-shuffle-soc · 로컬 검증&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;Rule·Level·Account·Region·고정 Event 조건&lt;br&gt;take_id · Pod name·UID · Alert ID 형식 · raw SHA-256&lt;/font&gt;" vertex="1">
           <mxGeometry height="105" width="340" x="165" y="555" as="geometry" />
         </mxCell>
-        <mxCell id="p3-shuffle" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2.4;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;Shuffle SOAR · 100110 App&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;Schema v3 · Timestamp · body SHA-256&lt;br&gt;Pod·Event 형식 재검증 · 고정 Repository·Workflow&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-shuffle" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2.4;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;Shuffle SOAR · 100110 App&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;Schema v3 · Timestamp · body SHA-256&lt;br&gt;Pod·Event 형식 재검증 · 고정 Repository·Workflow&lt;/font&gt;" vertex="1">
           <mxGeometry height="105" width="330" x="555" y="555" as="geometry" />
         </mxCell>
         <mxCell id="p3-reject" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F6F7;strokeColor=#7D8998;strokeWidth=1.3;dashed=1;dashPattern=6 4;fontColor=#5F6B7A;fontSize=12;align=center;verticalAlign=middle;" value="검증 실패 → Webhook 또는 GitHub Workflow 미호출 · Git 상태 변경 없음" vertex="1">
           <mxGeometry height="45" width="540" x="250" y="680" as="geometry" />
         </mxCell>
-        <mxCell id="p3-s5" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="5" vertex="1">
+        <mxCell id="p3-s5" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="5" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="802" as="geometry" />
         </mxCell>
         <mxCell id="p3-s5-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;GitOps 실행&lt;/b&gt;&lt;/font&gt;" vertex="1">
           <mxGeometry height="34" width="93" x="43" y="798" as="geometry" />
         </mxCell>
-        <mxCell id="p3-workflow" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F4F5F7;strokeColor=#394B59;strokeWidth=2;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;soc-contain-dvwa.yml&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;main · CAPITAL-ONE · Rule 100110&lt;br&gt;take_id · event hash · Pod name·UID · body hash 검증&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-workflow" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F4F5F7;strokeColor=#394B59;strokeWidth=2;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;soc-contain-dvwa.yml&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;main · CAPITAL-ONE · Rule 100110&lt;br&gt;take_id · event hash · Pod name·UID · body hash 검증&lt;/font&gt;" vertex="1">
           <mxGeometry height="100" width="335" x="165" y="760" as="geometry" />
         </mxCell>
-        <mxCell id="p3-values" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F4F5F7;strokeColor=#394B59;strokeWidth=2;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;deploy/dvwa/values.yaml 한정 변경&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;replicaCount 1→2 · quarantine.enabled=true&lt;br&gt;eventIdSha256 · podName · podUid 기록&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-values" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F4F5F7;strokeColor=#394B59;strokeWidth=2;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;deploy/dvwa/values.yaml 한정 변경&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;replicaCount 1→2 · quarantine.enabled=true&lt;br&gt;eventIdSha256 · podName · podUid 기록&lt;/font&gt;" vertex="1">
           <mxGeometry height="100" width="335" x="550" y="760" as="geometry" />
         </mxCell>
         <mxCell id="p3-commit" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#394B59;strokeWidth=1.5;fontColor=#334155;fontSize=13;align=center;verticalAlign=middle;" value="Git diff 검증 → Commit → main Push → Sanitized Artifact" vertex="1">
           <mxGeometry height="48" width="540" x="250" y="885" as="geometry" />
         </mxCell>
-        <mxCell id="p3-argo" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=2.3;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;Argo CD · Git Revision 감지&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;Auto Sync · Prune · Self Heal → EKS Helm 리소스 반영&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-argo" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=2.3;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;Argo CD · Git Revision 감지&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;Auto Sync · Prune · Self Heal → EKS Helm 리소스 반영&lt;/font&gt;" vertex="1">
           <mxGeometry height="70" width="540" x="250" y="955" as="geometry" />
         </mxCell>
-        <mxCell id="p3-s6" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="6" vertex="1">
+        <mxCell id="p3-s6" parent="p3-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="6" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="1090" as="geometry" />
         </mxCell>
         <mxCell id="p3-s6-label" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;격리·증적&lt;/b&gt;&lt;/font&gt;" vertex="1">
           <mxGeometry height="38" width="78" x="52" y="1084" as="geometry" />
         </mxCell>
-        <mxCell id="p3-uidcheck" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F0F9F2;strokeColor=#1B7F3A;strokeWidth=1.8;fontColor=#22543D;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;UID·Owner 검증&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;대상 Pod·ReplicaSet·Deployment 확인&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-uidcheck" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F0F9F2;strokeColor=#1B7F3A;strokeWidth=1.8;fontColor=#22543D;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;UID·Owner 검증&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;대상 Pod·ReplicaSet·Deployment 확인&lt;/font&gt;" vertex="1">
           <mxGeometry height="72" width="220" x="150" y="1055" as="geometry" />
         </mxCell>
-        <mxCell id="p3-detach" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F0F9F2;strokeColor=#1B7F3A;strokeWidth=1.8;fontColor=#22543D;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;침해 Pod 보존&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;quarantined 라벨 · instance 변경&lt;br&gt;OwnerReference 제거&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-detach" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F0F9F2;strokeColor=#1B7F3A;strokeWidth=1.8;fontColor=#22543D;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;침해 Pod 보존&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;quarantined 라벨 · instance 변경&lt;br&gt;OwnerReference 제거&lt;/font&gt;" vertex="1">
           <mxGeometry height="72" width="220" x="390" y="1055" as="geometry" />
         </mxCell>
-        <mxCell id="p3-policy" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F0F9F2;strokeColor=#1B7F3A;strokeWidth=1.8;fontColor=#22543D;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;통신 격리·서비스 유지&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:11px;&quot;&gt;deny-all NetworkPolicy&lt;br&gt;정상 ReplicaSet이 대체 Pod 제공&lt;/font&gt;" vertex="1">
+        <mxCell id="p3-policy" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F0F9F2;strokeColor=#1B7F3A;strokeWidth=1.8;fontColor=#22543D;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;통신 격리·서비스 유지&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;deny-all NetworkPolicy&lt;br&gt;정상 ReplicaSet이 대체 Pod 제공&lt;/font&gt;" vertex="1">
           <mxGeometry height="72" width="260" x="630" y="1055" as="geometry" />
         </mxCell>
         <mxCell id="p3-result" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#1B7F3A;strokeWidth=2.4;fontColor=#22543D;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;최종 상태&lt;/b&gt; · 침해 Pod는 실행 상태로 보존되지만 네트워크는 차단되고, 정상 DVWA 서비스는 대체 Pod로 계속 제공" vertex="1">
@@ -509,7 +509,7 @@
         <mxCell id="p3-evidence" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.6;dashed=1;dashPattern=6 4;fontColor=#334155;fontSize=13;align=center;verticalAlign=middle;" value="&lt;b&gt;증적 Chain&lt;/b&gt;　Wazuh Alert ID → Shuffle Execution → GitHub Run·Commit → Argo exact Revision → 격리 Pod·NetworkPolicy 상태" vertex="1">
           <mxGeometry height="56" width="700" x="170" y="1230" as="geometry" />
         </mxCell>
-        <mxCell id="p3-footer" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#7D8998;fontSize=11;" value="실패 정책 · 어느 검증 단계에서든 불일치하면 다음 외부 행동을 호출하지 않고 Git·EKS 상태를 바꾸지 않는다." vertex="1">
+        <mxCell id="p3-footer" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#7D8998;fontSize=12;" value="실패 정책 · 어느 검증 단계에서든 불일치하면 다음 외부 행동을 호출하지 않고 Git·EKS 상태를 바꾸지 않는다." vertex="1">
           <mxGeometry height="24" width="680" x="180" y="1290" as="geometry" />
         </mxCell>
         <mxCell id="p3-e1" edge="1" parent="p3-1" source="p3-attack" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=3;strokeColor=#E7157B;" target="p3-output">
@@ -608,10 +608,10 @@
         <mxCell id="p4-aws-zone" parent="p4-1" style="rounded=1;arcSize=10;whiteSpace=wrap;html=1;fillColor=#FFFBF5;strokeColor=#E4B477;strokeWidth=1.5;" value="" vertex="1">
           <mxGeometry height="425" width="810" x="130" y="82" as="geometry" />
         </mxCell>
-        <mxCell id="p4-aws-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#824900;fontSize=11;fontStyle=1;" value="AWS · S3 Data Event 및 정기 수집" vertex="1">
+        <mxCell id="p4-aws-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#824900;fontSize=12;fontStyle=1;" value="AWS · S3 Data Event 및 정기 수집" vertex="1">
           <mxGeometry height="18" width="250" x="145" y="84" as="geometry" />
         </mxCell>
-        <mxCell id="p4-s1" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="1" vertex="1">
+        <mxCell id="p4-s1" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="1" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="126" as="geometry" />
         </mxCell>
         <mxCell id="p4-s1-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;침해 확정 행위&lt;/font&gt;&lt;/b&gt;" vertex="1">
@@ -626,7 +626,7 @@
         <mxCell id="p4-cloudtrail" parent="p4-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#C45500;strokeWidth=2.2;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;CloudTrail Data Event&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 12px;&quot;&gt;GetObject · AwsApiCall · Data&lt;br&gt;AssumedRole · readOnly=true&lt;/font&gt;" vertex="1">
           <mxGeometry height="88" width="225" x="665" y="107" as="geometry" />
         </mxCell>
-        <mxCell id="p4-s2" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="2" vertex="1">
+        <mxCell id="p4-s2" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="2" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="274" as="geometry" />
         </mxCell>
         <mxCell id="p4-s2-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;정기 수집&lt;/font&gt;&lt;/b&gt;" vertex="1">
@@ -638,7 +638,7 @@
         <mxCell id="p4-poll" parent="p4-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7FBEF;strokeColor=#7AA116;strokeWidth=2.3;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;Wazuh AWS Module · 5분 Polling&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;S3와 CloudWatch Logs를 같은 주기로 조회&lt;br&gt;전달 지연 때문에 100110보다 늦게 탐지 가능&lt;/font&gt;" vertex="1">
           <mxGeometry height="88" width="335" x="550" y="240" as="geometry" />
         </mxCell>
-        <mxCell id="p4-s3" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="3" vertex="1">
+        <mxCell id="p4-s3" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="3" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="417" as="geometry" />
         </mxCell>
         <mxCell id="p4-s3-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;SIEM 탐지&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -653,10 +653,10 @@
         <mxCell id="p4-soc-zone" parent="p4-1" style="rounded=1;arcSize=8;whiteSpace=wrap;html=1;fillColor=#FCFAF7;strokeColor=#D8C3A5;strokeWidth=1.5;" value="" vertex="1">
           <mxGeometry height="800" width="810" x="130" y="520" as="geometry" />
         </mxCell>
-        <mxCell id="p4-soc-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#7A6348;fontSize=11;fontStyle=1;" value="Local Wazuh · Shuffle Cloud · GitHub · Argo CD · EKS" vertex="1">
+        <mxCell id="p4-soc-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#7A6348;fontSize=12;fontStyle=1;" value="Local Wazuh · Shuffle Cloud · GitHub · Argo CD · EKS" vertex="1">
           <mxGeometry height="18" width="330" x="153" y="535" as="geometry" />
         </mxCell>
-        <mxCell id="p4-s4" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="4" vertex="1">
+        <mxCell id="p4-s4" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="4" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="614" as="geometry" />
         </mxCell>
         <mxCell id="p4-s4-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size: 15px;&quot;&gt;&lt;b&gt;검증·최소전송&lt;/b&gt;&lt;/font&gt;" vertex="1">
@@ -677,7 +677,7 @@
         <mxCell id="p4-reject" parent="p4-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F5F6F7;strokeColor=#7D8998;strokeWidth=1.3;dashed=1;dashPattern=6 4;fontColor=#5F6B7A;fontSize=12;align=center;verticalAlign=middle;" value="&lt;font&gt;검증 실패 → GitHub Workflow 미호출 · Git 상태 변경 없음&lt;/font&gt;" vertex="1">
           <mxGeometry height="42" width="440" x="300" y="850" as="geometry" />
         </mxCell>
-        <mxCell id="p4-s5" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="5" vertex="1">
+        <mxCell id="p4-s5" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="5" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="942" as="geometry" />
         </mxCell>
         <mxCell id="p4-s5-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;GitOps 강화&lt;/font&gt;&lt;/b&gt;" vertex="1">
@@ -695,7 +695,7 @@
         <mxCell id="p4-argo" parent="p4-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=2.3;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;" value="&lt;b&gt;Argo CD · 새 Git Revision 자동 동기화&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 12px;&quot;&gt;Deployment 환경변수 갱신 → 새 Revision·Pod에 impossible 기준 적용&lt;/font&gt;" vertex="1">
           <mxGeometry height="70" width="620" x="210" y="1090" as="geometry" />
         </mxCell>
-        <mxCell id="p4-s6" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=11;fontStyle=1;" value="6" vertex="1">
+        <mxCell id="p4-s6" parent="p4-1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;" value="6" vertex="1">
           <mxGeometry height="24" width="24" x="25" y="1202" as="geometry" />
         </mxCell>
         <mxCell id="p4-s6-label" parent="p4-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#232F3E;fontSize=12;" value="&lt;b&gt;&lt;font style=&quot;font-size: 15px;&quot;&gt;결과·한계&lt;/font&gt;&lt;/b&gt;" vertex="1">
