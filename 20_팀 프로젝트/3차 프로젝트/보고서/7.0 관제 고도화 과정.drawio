@@ -1,133 +1,102 @@
-<mxfile host="app.diagrams.net" agent="Codex" compressed="false" pages="1">
-  <diagram id="soc-improvement-story" name="관제 고도화 과정">
+<mxfile host="app.diagrams.net" agent="Codex" compressed="false" pages="2">
+  <diagram id="soc-improvement-story-1" name="1_문제·개선·새 질문">
     <mxGraphModel dx="1259" dy="1358" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="980" pageHeight="1340" background="#FFFFFF" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#17365D;fontSize=22;fontStyle=1;" value="관제를 구축한 뒤, 어떻게 더 나은 관제로 고도화했는가" vertex="1">
-          <mxGeometry height="30" width="760" x="110" y="12" as="geometry" />
+        <mxCell id="title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#17365D;fontSize=24;fontStyle=1;" value="① 10분 Poll의 한계에서 새로운 질문까지" vertex="1">
+          <mxGeometry height="34" width="780" x="100" y="12" as="geometry" />
         </mxCell>
-        <mxCell id="subtitle" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=12;" value="10분 Poll의 탐지 지연 개선에서 Source별 Telemetry 판단까지" vertex="1">
-          <mxGeometry height="20" width="700" x="140" y="43" as="geometry" />
+        <mxCell id="subtitle" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=14;" value="관제를 구축한 뒤, 실제 지연을 줄이고 고도화 조건을 다시 정리한 과정" vertex="1">
+          <mxGeometry height="22" width="720" x="130" y="48" as="geometry" />
         </mxCell>
 
-        <mxCell id="s1" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="1" vertex="1">
-          <mxGeometry height="24" width="24" x="25" y="110" as="geometry" />
+        <mxCell id="s1" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" value="1" vertex="1">
+          <mxGeometry height="28" width="28" x="21" y="130" as="geometry" />
         </mxCell>
-        <mxCell id="s1-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size:15px;&quot;&gt;&lt;b&gt;한계 발견&lt;/b&gt;&lt;/font&gt;" vertex="1">
-          <mxGeometry height="28" width="75" x="55" y="108" as="geometry" />
+        <mxCell id="s1-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size:17px;&quot;&gt;&lt;b&gt;한계 발견&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="32" width="80" x="52" y="128" as="geometry" />
         </mxCell>
         <mxCell id="initial-zone" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F8EA;fillOpacity=45;strokeColor=#7AA116;strokeWidth=1.8;" value="" vertex="1">
-          <mxGeometry height="190" width="810" x="130" y="75" as="geometry" />
+          <mxGeometry height="280" width="810" x="130" y="85" as="geometry" />
         </mxCell>
         <mxCell id="initial-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#527A14;fontSize=13;fontStyle=1;" value="초기 As-built · 정기·광범위 수집" vertex="1">
-          <mxGeometry height="22" width="220" x="140" y="78" as="geometry" />
+          <mxGeometry height="24" width="250" x="140" y="90" as="geometry" />
         </mxCell>
-        <mxCell id="initial-poll" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7FBEF;strokeColor=#7AA116;strokeWidth=2.2;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:18px;&quot;&gt;&lt;b&gt;5개 Source → Wazuh 10분 Poll&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;CloudFront · ALB · WAF · DVWA · CloudTrail&lt;/font&gt;" vertex="1">
-          <mxGeometry height="62" width="690" x="190" y="105" as="geometry" />
+        <mxCell id="initial-poll" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7FBEF;strokeColor=#7AA116;strokeWidth=2.2;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:21px;&quot;&gt;&lt;b&gt;5개 Source → Wazuh 10분 Poll&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:15px;&quot;&gt;CloudFront · ALB · WAF · DVWA · CloudTrail&lt;/font&gt;" vertex="1">
+          <mxGeometry height="85" width="690" x="190" y="125" as="geometry" />
         </mxCell>
-        <mxCell id="initial-value" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7AA116;strokeWidth=1.5;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;유지할 가치&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;넓은 Coverage · 원본 Evidence · Replay · 장기 조사&lt;/font&gt;" vertex="1">
-          <mxGeometry height="62" width="330" x="190" y="188" as="geometry" />
+        <mxCell id="initial-value" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7AA116;strokeWidth=1.5;fontColor=#232F3E;fontSize=16;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;유지할 가치&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;넓은 Coverage · 원본 Evidence&lt;br&gt;Replay · 장기 조사&lt;/font&gt;" vertex="1">
+          <mxGeometry height="95" width="335" x="180" y="235" as="geometry" />
         </mxCell>
-        <mxCell id="initial-limit" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#C45500;strokeWidth=2;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;발견한 한계&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;Event가 Poll 직후 발생하면 Wazuh 입력 전&lt;br&gt;&lt;b&gt;최대 10분을 추가 대기&lt;/b&gt;&lt;/font&gt;" vertex="1">
-          <mxGeometry height="62" width="330" x="550" y="188" as="geometry" />
+        <mxCell id="initial-limit" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7ED;strokeColor=#C45500;strokeWidth=2;fontColor=#232F3E;fontSize=16;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;발견한 한계&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;Event가 Poll 직후 발생하면 Wazuh 입력 전&lt;br&gt;&lt;b&gt;최대 10분을 추가 대기&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="95" width="350" x="540" y="235" as="geometry" />
         </mxCell>
 
-        <mxCell id="s2" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="2" vertex="1">
-          <mxGeometry height="24" width="24" x="25" y="340" as="geometry" />
+        <mxCell id="s2" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" value="2" vertex="1">
+          <mxGeometry height="28" width="28" x="21" y="475" as="geometry" />
         </mxCell>
-        <mxCell id="s2-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size:15px;&quot;&gt;&lt;b&gt;실제 개선&lt;/b&gt;&lt;/font&gt;" vertex="1">
-          <mxGeometry height="28" width="75" x="55" y="338" as="geometry" />
+        <mxCell id="s2-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size:17px;&quot;&gt;&lt;b&gt;실제 개선&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="32" width="80" x="52" y="473" as="geometry" />
         </mxCell>
         <mxCell id="improvement-zone" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#232F3E;strokeWidth=2.2;" value="" vertex="1">
-          <mxGeometry height="315" width="810" x="130" y="285" as="geometry" />
+          <mxGeometry height="450" width="810" x="130" y="400" as="geometry" />
         </mxCell>
         <mxCell id="improvement-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=#FFFFFF;align=left;verticalAlign=middle;fontColor=#232F3E;fontSize=13;fontStyle=1;" value="검증된 As-built · 기존 Evidence를 버리지 않은 지연 개선" vertex="1">
-          <mxGeometry height="22" width="360" x="140" y="288" as="geometry" />
+          <mxGeometry height="24" width="430" x="140" y="405" as="geometry" />
         </mxCell>
         <mxCell id="baseline-zone" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F8EA;fillOpacity=45;strokeColor=#7AA116;strokeWidth=1.8;" value="" vertex="1">
-          <mxGeometry height="210" width="355" x="155" y="325" as="geometry" />
+          <mxGeometry height="285" width="355" x="155" y="450" as="geometry" />
         </mxCell>
-        <mxCell id="baseline-title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#527A14;fontSize=16;fontStyle=1;" value="정기·광범위 경로 유지" vertex="1">
-          <mxGeometry height="28" width="305" x="180" y="332" as="geometry" />
+        <mxCell id="baseline-title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#527A14;fontSize=19;fontStyle=1;" value="정기·광범위 경로 유지" vertex="1">
+          <mxGeometry height="34" width="305" x="180" y="460" as="geometry" />
         </mxCell>
-        <mxCell id="baseline-route" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7AA116;strokeWidth=1.5;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;Security S3 · CloudWatch Logs&lt;/b&gt;&lt;br&gt;Wazuh AWS Module Polling&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#5F6B7A;&quot;&gt;5개 Source의 폭넓은 로그와 후행 Evidence&lt;/font&gt;" vertex="1">
-          <mxGeometry height="82" width="305" x="180" y="375" as="geometry" />
+        <mxCell id="baseline-route" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7AA116;strokeWidth=1.5;fontColor=#232F3E;fontSize=16;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;Security S3 · CloudWatch Logs&lt;/b&gt;&lt;br&gt;Wazuh AWS Module Polling&lt;br&gt;&lt;font style=&quot;font-size:14px;color:#5F6B7A;&quot;&gt;5개 Source의 폭넓은 로그와&lt;br&gt;후행 Evidence&lt;/font&gt;" vertex="1">
+          <mxGeometry height="115" width="305" x="180" y="510" as="geometry" />
         </mxCell>
-        <mxCell id="baseline-role" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7FBEF;strokeColor=#7AA116;strokeWidth=2;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;역할&lt;/b&gt; · 침해 확인 · 영향 범위 분석&lt;br&gt;Evidence 보존 · 누락 보완" vertex="1">
-          <mxGeometry height="56" width="305" x="180" y="470" as="geometry" />
+        <mxCell id="baseline-role" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F7FBEF;strokeColor=#7AA116;strokeWidth=2;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;역할&lt;/b&gt;&lt;br&gt;침해 확인 · 영향 범위 분석&lt;br&gt;Evidence 보존 · 누락 보완" vertex="1">
+          <mxGeometry height="75" width="305" x="180" y="645" as="geometry" />
         </mxCell>
         <mxCell id="lowlatency-zone" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF4FA;fillOpacity=45;strokeColor=#E7157B;strokeWidth=1.8;" value="" vertex="1">
-          <mxGeometry height="210" width="380" x="535" y="325" as="geometry" />
+          <mxGeometry height="285" width="380" x="535" y="450" as="geometry" />
         </mxCell>
-        <mxCell id="lowlatency-title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#B80F62;fontSize=16;fontStyle=1;" value="DVWA 저지연 경로 추가" vertex="1">
-          <mxGeometry height="28" width="330" x="560" y="332" as="geometry" />
+        <mxCell id="lowlatency-title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#B80F62;fontSize=19;fontStyle=1;" value="DVWA 저지연 경로 추가" vertex="1">
+          <mxGeometry height="34" width="330" x="560" y="460" as="geometry" />
         </mxCell>
-        <mxCell id="lowlatency-route" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.5;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;DVWA Audit Event&lt;/b&gt;&lt;br&gt;CWL Subscription → Lambda → SQS·DLQ&lt;br&gt;→ Local Bridge → Wazuh&lt;br&gt;&lt;font style=&quot;font-size:12px;color:#8A3B67;&quot;&gt;Poll 대기 구간을 제거한 선별 전달&lt;/font&gt;" vertex="1">
-          <mxGeometry height="82" width="330" x="560" y="375" as="geometry" />
+        <mxCell id="lowlatency-route" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#E7157B;strokeWidth=1.5;fontColor=#232F3E;fontSize=16;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;DVWA Audit Event&lt;/b&gt;&lt;br&gt;CWL Subscription → Lambda → SQS·DLQ&lt;br&gt;→ Local Bridge → Wazuh&lt;br&gt;&lt;font style=&quot;font-size:14px;color:#8A3B67;&quot;&gt;Poll 대기 구간을 제거한 선별 전달&lt;/font&gt;" vertex="1">
+          <mxGeometry height="115" width="330" x="560" y="510" as="geometry" />
         </mxCell>
-        <mxCell id="lowlatency-result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2.6;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;Event→Alert 실측&lt;/b&gt; · N=3 · 누락 0&lt;br&gt;&lt;font style=&quot;font-size:16px;&quot;&gt;&lt;b&gt;3.427~6.439초&lt;/b&gt;&lt;/font&gt;" vertex="1">
-          <mxGeometry height="56" width="330" x="560" y="470" as="geometry" />
+        <mxCell id="lowlatency-result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2.6;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;Event→Alert 실측&lt;/b&gt; · N=3 · 누락 0&lt;br&gt;&lt;font style=&quot;font-size:19px;&quot;&gt;&lt;b&gt;3.427~6.439초&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="75" width="330" x="560" y="645" as="geometry" />
         </mxCell>
-        <mxCell id="role-summary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;fontColor=#5F6B7A;fontSize=14;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;Poll을 폐기한 것이 아니다.&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;기존 경로는 Evidence를 유지하고, DVWA 위험 신호에는 저지연 Trigger를 추가했다.&lt;/font&gt;" vertex="1">
-          <mxGeometry height="48" width="700" x="185" y="545" as="geometry" />
+        <mxCell id="role-summary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.4;dashed=1;dashPattern=6 4;fontColor=#5F6B7A;fontSize=16;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;Poll을 폐기한 것이 아니다.&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;기존 경로는 Evidence를 유지하고, DVWA 위험 신호에는 저지연 Trigger를 추가했다.&lt;/font&gt;" vertex="1">
+          <mxGeometry height="75" width="710" x="180" y="755" as="geometry" />
         </mxCell>
 
-        <mxCell id="s3" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="3" vertex="1">
-          <mxGeometry height="24" width="24" x="25" y="670" as="geometry" />
+        <mxCell id="s3" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" value="3" vertex="1">
+          <mxGeometry height="28" width="28" x="21" y="930" as="geometry" />
         </mxCell>
-        <mxCell id="s3-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size:15px;&quot;&gt;&lt;b&gt;고도화 조건&lt;/b&gt;&lt;/font&gt;" vertex="1">
-          <mxGeometry height="28" width="82" x="52" y="668" as="geometry" />
+        <mxCell id="s3-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size:17px;&quot;&gt;&lt;b&gt;평가 기준&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="32" width="84" x="50" y="928" as="geometry" />
         </mxCell>
         <mxCell id="criteria-zone" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7E8;fillOpacity=50;strokeColor=#C45500;strokeWidth=1.8;" value="" vertex="1">
-          <mxGeometry height="225" width="810" x="130" y="620" as="geometry" />
+          <mxGeometry height="330" width="810" x="130" y="875" as="geometry" />
         </mxCell>
-        <mxCell id="criteria-title" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#C45500;strokeWidth=2.4;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:17px;&quot;&gt;&lt;b&gt;멘토 상담 후, 개선의 평가 조건을 넓혔다&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;속도를 포기한 것이 아니라 정확성과 자동화 안전성도 함께 요구&lt;/font&gt;" vertex="1">
-          <mxGeometry height="62" width="670" x="200" y="645" as="geometry" />
+        <mxCell id="criteria-title" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#C45500;strokeWidth=2.4;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:20px;&quot;&gt;&lt;b&gt;멘토 상담 후, 개선의 평가 조건을 넓혔다&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:15px;&quot;&gt;속도를 포기한 것이 아니라 정확성과 자동화 안전성도 함께 요구&lt;/font&gt;" vertex="1">
+          <mxGeometry height="75" width="700" x="185" y="905" as="geometry" />
         </mxCell>
-        <mxCell id="criterion-speed" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=1.8;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;적시성&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;위험 신호가&lt;br&gt;언제 관제에 도착하는가&lt;/font&gt;" vertex="1">
-          <mxGeometry height="86" width="210" x="165" y="730" as="geometry" />
+        <mxCell id="criterion-speed" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=1.8;fontColor=#232F3E;fontSize=17;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;적시성&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;위험 신호가&lt;br&gt;언제 관제에 도착하는가&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="220" x="155" y="1020" as="geometry" />
         </mxCell>
-        <mxCell id="criterion-accuracy" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=1.8;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;정확성&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;Rule 조건과 Correlation이&lt;br&gt;오탐을 얼마나 통제하는가&lt;/font&gt;" vertex="1">
-          <mxGeometry height="86" width="210" x="430" y="730" as="geometry" />
+        <mxCell id="criterion-accuracy" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=1.8;fontColor=#232F3E;fontSize=17;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;정확성&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;Rule 조건과 Correlation이&lt;br&gt;오탐을 얼마나 통제하는가&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="220" x="425" y="1020" as="geometry" />
         </mxCell>
-        <mxCell id="criterion-safety" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F8EA;strokeColor=#7AA116;strokeWidth=1.8;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;자동화 안전성&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;대상이 고정되고 조치가&lt;br&gt;제한적·가역적인가&lt;/font&gt;" vertex="1">
-          <mxGeometry height="86" width="210" x="695" y="730" as="geometry" />
-        </mxCell>
-
-        <mxCell id="s4" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="4" vertex="1">
-          <mxGeometry height="24" width="24" x="25" y="930" as="geometry" />
-        </mxCell>
-        <mxCell id="s4-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size:15px;&quot;&gt;&lt;b&gt;확장 조사&lt;/b&gt;&lt;/font&gt;" vertex="1">
-          <mxGeometry height="28" width="75" x="55" y="928" as="geometry" />
-        </mxCell>
-        <mxCell id="study-zone" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;fillOpacity=45;strokeColor=#0073BB;strokeWidth=1.8;" value="" vertex="1">
-          <mxGeometry height="250" width="810" x="130" y="865" as="geometry" />
-        </mxCell>
-        <mxCell id="study-question" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0073BB;strokeWidth=2.2;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:17px;&quot;&gt;&lt;b&gt;DVWA의 Poll 대기 개선을 다른 AWS Source에도 적용할 수 있는가?&lt;/b&gt;&lt;/font&gt;" vertex="1">
-          <mxGeometry height="54" width="700" x="185" y="890" as="geometry" />
-        </mxCell>
-        <mxCell id="study-model" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F1F5F9;strokeColor=#64748B;strokeWidth=1.8;fontColor=#334155;fontSize=16;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;Service / Resource　≠　Telemetry mechanism　≠　Destination　≠　SIEM Transport&lt;/b&gt;" vertex="1">
-          <mxGeometry height="52" width="700" x="185" y="965" as="geometry" />
-        </mxCell>
-        <mxCell id="study-result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=2.4;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=6;" value="&lt;b&gt;확인한 원리&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;Event-driven은 주로 AWS 소비 지점→Wazuh의 Poll 대기를 줄인다.&lt;br&gt;Source 고유 생성·전달 지연까지 자동으로 없애지는 않으므로 Source별 적합한 경로를 선택해야 한다.&lt;/font&gt;" vertex="1">
-          <mxGeometry height="72" width="700" x="185" y="1032" as="geometry" />
+        <mxCell id="criterion-safety" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F8EA;strokeColor=#7AA116;strokeWidth=1.8;fontColor=#232F3E;fontSize=17;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;자동화 안전성&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;대상이 고정되고 조치가&lt;br&gt;제한적·가역적인가&lt;/font&gt;" vertex="1">
+          <mxGeometry height="120" width="220" x="695" y="1020" as="geometry" />
         </mxCell>
 
-        <mxCell id="s5" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=12;fontStyle=1;align=center;verticalAlign=middle;" value="5" vertex="1">
-          <mxGeometry height="24" width="24" x="25" y="1185" as="geometry" />
-        </mxCell>
-        <mxCell id="s5-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=12;" value="&lt;font style=&quot;font-size:15px;&quot;&gt;&lt;b&gt;설계 결론&lt;/b&gt;&lt;/font&gt;" vertex="1">
-          <mxGeometry height="28" width="75" x="55" y="1183" as="geometry" />
-        </mxCell>
-        <mxCell id="current-result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F8EA;strokeColor=#7AA116;strokeWidth=2.2;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:16px;&quot;&gt;&lt;b&gt;현재 검증 구조 유지&lt;/b&gt;&lt;/font&gt;&lt;br&gt;5개 Source Poll·Archive&lt;br&gt;+ DVWA 저지연 전달" vertex="1">
-          <mxGeometry height="100" width="350" x="155" y="1140" as="geometry" />
-        </mxCell>
-        <mxCell id="future-result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=2.2;dashed=1;dashPattern=8 5;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:16px;&quot;&gt;&lt;b&gt;후속 Target Architecture&lt;/b&gt;&lt;/font&gt;&lt;br&gt;Source별 적합한 Telemetry·Route&lt;br&gt;+ Wazuh 중앙 Correlation" vertex="1">
-          <mxGeometry height="100" width="380" x="535" y="1140" as="geometry" />
-        </mxCell>
-        <mxCell id="conclusion" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#17365D;strokeColor=#17365D;fontColor=#FFFFFF;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;spacing=6;" value="관제를 구축하는 데서 멈추지 않고, 탐지 지연을 줄이면서 정확성과 안전성을 지키는 더 나은 수집·탐지 경로를 찾았다." vertex="1">
-          <mxGeometry height="58" width="760" x="145" y="1260" as="geometry" />
+        <mxCell id="question-hook" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#17365D;strokeColor=#17365D;strokeWidth=2.4;fontColor=#FFFFFF;align=center;verticalAlign=middle;spacing=7;" value="&lt;font style=&quot;font-size:20px;&quot;&gt;&lt;b&gt;DVWA에서 줄인 Poll 대기를 다른 AWS Source에도 적용할 수 있는가?&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;이 질문이 Telemetry와 로그 지연 구조를 조사한 출발점이 되었다.&lt;/font&gt;" vertex="1">
+          <mxGeometry height="90" width="760" x="155" y="1230" as="geometry" />
         </mxCell>
 
         <mxCell id="e-initial-value" edge="1" parent="1" source="initial-poll" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#7AA116;entryX=0.5;entryY=0;" target="initial-value">
@@ -157,25 +126,135 @@
         <mxCell id="e-criteria-safety" edge="1" parent="1" source="criteria-title" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=1.8;strokeColor=#7AA116;entryX=0.5;entryY=0;" target="criterion-safety">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-criteria-study" edge="1" parent="1" source="criterion-accuracy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.5;strokeColor=#0073BB;fontColor=#0073BB;fontSize=12;fontStyle=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="study-question" value="다른 Source로 확장 가능한가?">
+        <mxCell id="e-criteria-study" edge="1" parent="1" source="criteria-zone" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.8;strokeColor=#0073BB;fontColor=#0073BB;fontSize=13;fontStyle=1;labelBackgroundColor=#FFFFFF;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" target="question-hook" value="새로운 질문">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-study-model" edge="1" parent="1" source="study-question" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0073BB;" target="study-model">
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="soc-improvement-story-2" name="2_Telemetry·지연·설계 판단">
+    <mxGraphModel dx="1259" dy="1358" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="980" pageHeight="1340" background="#FFFFFF" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="p2-title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#17365D;fontSize=24;fontStyle=1;" value="② ‘다른 Source로 확장 가능한가?’를 조사하며 얻은 답" vertex="1">
+          <mxGeometry height="34" width="840" x="70" y="12" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-subtitle" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#5F6B7A;fontSize=14;" value="Telemetry·지연 구간·Route 선택 기준을 분리하고 현재 구현과 후속 검증을 나눴다" vertex="1">
+          <mxGeometry height="22" width="760" x="110" y="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-s4" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" value="4" vertex="1">
+          <mxGeometry height="28" width="28" x="21" y="135" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-s4-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=17;fontStyle=1;" value="조사 결론" vertex="1">
+          <mxGeometry height="32" width="82" x="52" y="133" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-answer-zone" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;fillOpacity=45;strokeColor=#0073BB;strokeWidth=1.8;" value="" vertex="1">
+          <mxGeometry height="225" width="810" x="130" y="85" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-question" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#0073BB;strokeWidth=2.2;fontColor=#232F3E;fontSize=18;fontStyle=1;align=center;verticalAlign=middle;spacing=6;" value="DVWA에서 줄인 Poll 대기를 다른 AWS Source에도 적용할 수 있는가?" vertex="1">
+          <mxGeometry height="60" width="700" x="185" y="112" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-answer" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=2.6;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=7;" value="&lt;font style=&quot;font-size:19px;&quot;&gt;&lt;b&gt;모든 Source에 같은 구현을 복제하는 문제는 아니었다.&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;Source마다 관찰할 Activity, Telemetry 생성 방식, AWS Destination과 SIEM 전달 경로가 달랐다.&lt;/font&gt;" vertex="1">
+          <mxGeometry height="95" width="700" x="185" y="195" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-s5" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" value="5" vertex="1">
+          <mxGeometry height="28" width="28" x="21" y="385" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-s5-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=17;fontStyle=1;" value="학습 결과" vertex="1">
+          <mxGeometry height="32" width="82" x="52" y="383" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-study-zone" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F1F5F9;fillOpacity=40;strokeColor=#64748B;strokeWidth=1.8;" value="" vertex="1">
+          <mxGeometry height="690" width="810" x="130" y="335" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-unit-title" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=2;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=5;" value="&lt;font style=&quot;font-size:18px;&quot;&gt;&lt;b&gt;① 같은 이름으로 묶었던 관찰 단위를 분리했다&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="50" width="700" x="185" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-unit-chain" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.8;fontColor=#334155;align=center;verticalAlign=middle;spacing=7;" value="&lt;font style=&quot;font-size:16px;&quot;&gt;&lt;b&gt;Service / Resource　≠　Observed Activity　≠　Telemetry Signal&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:16px;&quot;&gt;&lt;b&gt;Logging Mechanism　≠　AWS Destination　≠　SIEM Transport　≠　Rule / Action&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="92" width="700" x="185" y="430" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-latency-title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#17365D;fontSize=18;fontStyle=1;" value="② ‘느리다’를 A/B/C/D/E 지연 구간으로 나눴다" vertex="1">
+          <mxGeometry height="34" width="700" x="185" y="545" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-lat-a" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#C45500;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;A&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;Event → Record 생성&lt;/font&gt;" vertex="1">
+          <mxGeometry height="78" width="130" x="155" y="595" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-lat-b" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#C45500;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;B&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;AWS 소비 지점 도착&lt;/font&gt;" vertex="1">
+          <mxGeometry height="78" width="130" x="305" y="595" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-lat-c" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=2.2;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;C&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;소비 지점 → Wazuh&lt;br&gt;입력&lt;/font&gt;" vertex="1">
+          <mxGeometry height="78" width="130" x="455" y="595" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-lat-d" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F8EA;strokeColor=#7AA116;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;D&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;Wazuh Rule → Alert&lt;/font&gt;" vertex="1">
+          <mxGeometry height="78" width="130" x="605" y="595" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-lat-e" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=1.7;fontColor=#232F3E;fontSize=14;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;E&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:12px;&quot;&gt;Shuffle → 최종 Action&lt;/font&gt;" vertex="1">
+          <mxGeometry height="78" width="130" x="755" y="595" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-latency-result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF4FA;strokeColor=#E7157B;strokeWidth=2.2;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:16px;&quot;&gt;&lt;b&gt;Event-driven 전환은 주로 C의 Poll·Transport 대기를 줄인다.&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;Source 고유 A+B까지 자동으로 없애지는 않는다. DVWA N=3 실측은 Event→Alert(A+B+C+D)이며 E는 별도다.&lt;/font&gt;" vertex="1">
+          <mxGeometry height="80" width="700" x="185" y="695" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-selection-title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#17365D;fontSize=18;fontStyle=1;" value="③ Source마다 Route를 선택할 때 함께 볼 기준을 정리했다" vertex="1">
+          <mxGeometry height="34" width="700" x="185" y="800" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-criterion-value" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#64748B;strokeWidth=1.6;fontColor=#232F3E;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" value="탐지 가치·필드" vertex="1">
+          <mxGeometry height="55" width="140" x="155" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-criterion-latency" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=1.6;fontColor=#232F3E;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" value="지연·적시성" vertex="1">
+          <mxGeometry height="55" width="140" x="303" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-criterion-delivery" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F8EA;strokeColor=#7AA116;strokeWidth=1.6;fontColor=#232F3E;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" value="전달 보장·누락" vertex="1">
+          <mxGeometry height="55" width="140" x="451" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-criterion-boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF2F8;strokeColor=#E7157B;strokeWidth=1.6;fontColor=#232F3E;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" value="보안 경계" vertex="1">
+          <mxGeometry height="55" width="140" x="599" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-criterion-ops" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF7E8;strokeColor=#C45500;strokeWidth=1.6;fontColor=#232F3E;fontSize=15;fontStyle=1;align=center;verticalAlign=middle;" value="비용·운영 복잡도" vertex="1">
+          <mxGeometry height="55" width="140" x="747" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-selection-result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#17365D;strokeColor=#17365D;fontColor=#FFFFFF;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:17px;&quot;&gt;&lt;b&gt;‘가장 빠른 하나의 경로’가 아니라, 신호의 역할과 위험에 맞는 경로를 선택한다.&lt;/b&gt;&lt;/font&gt;" vertex="1">
+          <mxGeometry height="72" width="700" x="185" y="930" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-s6" parent="1" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=#FF9900;strokeColor=#FF9900;fontColor=#FFFFFF;fontSize=14;fontStyle=1;align=center;verticalAlign=middle;" value="6" vertex="1">
+          <mxGeometry height="28" width="28" x="21" y="1105" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-s6-label" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#232F3E;fontSize=17;fontStyle=1;" value="범위 결정" vertex="1">
+          <mxGeometry height="32" width="82" x="52" y="1103" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-current" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#F3F8EA;strokeColor=#7AA116;strokeWidth=2.4;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:18px;&quot;&gt;&lt;b&gt;현재 검증 구조 유지&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;5개 Source Poll·Archive&lt;br&gt;+ DVWA 저지연 전달&lt;/font&gt;" vertex="1">
+          <mxGeometry height="105" width="350" x="155" y="1065" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-future" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=2.4;dashed=1;dashPattern=8 5;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:18px;&quot;&gt;&lt;b&gt;후속 Target Architecture&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;Source별 적합한 Telemetry·Route&lt;br&gt;+ Wazuh 중앙 Correlation&lt;/font&gt;" vertex="1">
+          <mxGeometry height="105" width="380" x="535" y="1065" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-boundary" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.5;dashed=1;dashPattern=6 4;fontColor=#5F6B7A;fontSize=13;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;프로젝트 범위 판단&lt;/b&gt; · 검증된 Baseline은 유지하고, 동일 수준의 Runtime 재검증이 필요한 후보는 Future Work로 분리했다." vertex="1">
+          <mxGeometry height="55" width="760" x="155" y="1190" as="geometry" />
+        </mxCell>
+        <mxCell id="p2-conclusion" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#17365D;strokeColor=#17365D;fontColor=#FFFFFF;fontSize=16;fontStyle=1;align=center;verticalAlign=middle;spacing=6;" value="관제를 구축한 뒤의 다음 과제는, 각 Source의 증거 역할과 지연에 맞는 경로를 선택하고 다시 검증하는 것이었다." vertex="1">
+          <mxGeometry height="60" width="760" x="155" y="1270" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p2-e-question-answer" edge="1" parent="1" source="p2-question" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.5;strokeColor=#0073BB;" target="p2-answer">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-study-result" edge="1" parent="1" source="study-model" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0073BB;" target="study-result">
+        <mxCell id="p2-e-answer-unit" edge="1" parent="1" source="p2-answer" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.2;strokeColor=#64748B;" target="p2-unit-title">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-current" edge="1" parent="1" source="study-result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.2;strokeColor=#7AA116;entryX=0.5;entryY=0;" target="current-result">
+        <mxCell id="p2-e-unit-latency" edge="1" parent="1" source="p2-unit-chain" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#64748B;" target="p2-latency-title">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-future" edge="1" parent="1" source="study-result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.2;strokeColor=#0073BB;dashed=1;dashPattern=8 5;entryX=0.5;entryY=0;" target="future-result">
+        <mxCell id="p2-e-latency-selection" edge="1" parent="1" source="p2-latency-result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#0073BB;" target="p2-selection-title">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-current-conclusion" edge="1" parent="1" source="current-result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#17365D;entryX=0.3;entryY=0;" target="conclusion">
+        <mxCell id="p2-e-current" edge="1" parent="1" source="p2-selection-result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.2;strokeColor=#7AA116;entryX=0.5;entryY=0;" target="p2-current">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="e-future-conclusion" edge="1" parent="1" source="future-result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2;strokeColor=#17365D;entryX=0.7;entryY=0;" target="conclusion">
+        <mxCell id="p2-e-future" edge="1" parent="1" source="p2-selection-result" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;strokeWidth=2.2;strokeColor=#0073BB;dashed=1;dashPattern=8 5;entryX=0.5;entryY=0;" target="p2-future">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
       </root>
