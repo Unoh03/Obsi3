@@ -504,10 +504,10 @@
           <mxGeometry height="72" width="260" x="630" y="1055" as="geometry" />
         </mxCell>
         <mxCell id="p3-result" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#1B7F3A;strokeWidth=2.4;fontColor=#22543D;fontSize=14;align=center;verticalAlign=middle;" value="&lt;b&gt;최종 상태&lt;/b&gt; · 침해 Pod는 실행 상태로 보존되지만 네트워크는 차단되고, 정상 DVWA 서비스는 대체 Pod로 계속 제공" vertex="1">
-          <mxGeometry height="58" width="700" x="170" y="1150" as="geometry" />
+          <mxGeometry height="58" width="760" x="170" y="1150" as="geometry" />
         </mxCell>
         <mxCell id="p3-evidence" parent="p3-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#7D8998;strokeWidth=1.6;dashed=1;dashPattern=6 4;fontColor=#334155;fontSize=13;align=center;verticalAlign=middle;" value="&lt;b&gt;증적 Chain&lt;/b&gt;　Wazuh Alert ID → Shuffle Execution → GitHub Run·Commit → Argo exact Revision → 격리 Pod·NetworkPolicy 상태" vertex="1">
-          <mxGeometry height="56" width="700" x="170" y="1230" as="geometry" />
+          <mxGeometry height="56" width="760" x="170" y="1230" as="geometry" />
         </mxCell>
         <mxCell id="p3-footer" parent="p3-1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;fontColor=#7D8998;fontSize=12;" value="실패 정책 · 어느 검증 단계에서든 불일치하면 다음 외부 행동을 호출하지 않고 Git·EKS 상태를 바꾸지 않는다." vertex="1">
           <mxGeometry height="24" width="680" x="180" y="1290" as="geometry" />
