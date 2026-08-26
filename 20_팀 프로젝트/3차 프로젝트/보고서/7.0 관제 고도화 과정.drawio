@@ -128,7 +128,7 @@
     </mxGraphModel>
   </diagram>
   <diagram id="soc-improvement-story-2" name="2_Telemetry·지연·설계 판단">
-    <mxGraphModel dx="1259" dy="1358" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="980" pageHeight="1340" background="#FFFFFF" math="0" shadow="0">
+    <mxGraphModel dx="2162" dy="1216" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="980" pageHeight="1340" background="#FFFFFF" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -186,7 +186,7 @@
         <mxCell id="p2-lat-e" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#EAF4FB;strokeColor=#0073BB;strokeWidth=1.7;fontColor=#232F3E;fontSize=15;align=center;verticalAlign=middle;spacing=5;" value="&lt;b&gt;E&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:13px;&quot;&gt;Shuffle → 최종 Action&lt;/font&gt;" vertex="1">
           <mxGeometry height="78" width="130" x="755" y="595" as="geometry" />
         </mxCell>
-        <mxCell id="p2-latency-result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF4FA;strokeColor=#E7157B;strokeWidth=2.2;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;font style=&quot;font-size:17px;&quot;&gt;&lt;b&gt;Event-driven 전환은 주로 C의 Poll·Transport 대기를 줄인다.&lt;/b&gt;&lt;/font&gt;&lt;br&gt;&lt;font style=&quot;font-size:14px;&quot;&gt;Source 고유 A+B까지 자동으로 없애지는 않는다. DVWA N=3 실측은 Event→Alert(A+B+C+D)이며 E는 별도다.&lt;/font&gt;" vertex="1">
+        <mxCell id="p2-latency-result" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFF4FA;strokeColor=#E7157B;strokeWidth=2.2;fontColor=#232F3E;align=center;verticalAlign=middle;spacing=6;" value="&lt;span style=&quot;font-size: 17px;&quot;&gt;&lt;b&gt;DVWA 저지연 경로는 10분 주기 조회 대신, 로그 도착 시 전달을 시작한다.&lt;/b&gt;&lt;/span&gt;&lt;br&gt;&lt;div&gt;&lt;span style=&quot;font-size: 14px;&quot;&gt;줄인 것: Wazuh의 10분 주기 조회 대기&amp;nbsp;&lt;/span&gt;&lt;span style=&quot;font-size: 14px; background-color: transparent; color: light-dark(rgb(35, 47, 62), rgb(189, 199, 212));&quot;&gt;→ 남은 것: 로그 생성·AWS 전달·탐지·대응 시간&lt;/span&gt;&lt;/div&gt;" vertex="1">
           <mxGeometry height="80" width="700" x="185" y="695" as="geometry" />
         </mxCell>
         <mxCell id="p2-selection-title" parent="1" style="html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#17365D;fontSize=19;fontStyle=1;" value="③ Source마다 Route를 선택할 때 함께 볼 기준을 정리했다" vertex="1">
