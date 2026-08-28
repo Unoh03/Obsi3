@@ -63,7 +63,7 @@ project_moc: "[[00_3차프로젝트_목차]]"
 >
 > GitHub Actions는 격리 대상과 관련된 `values.yaml` 설정만 변경하고, Argo CD가 이 변경을 EKS에 반영합니다.
 >
-> 중요한 점은 침해된 Pod를 바로 삭제하지 않는다는 것입니다. 대상 Pod의 UID와 소유 관계를 다시 확인한 뒤 정상 서비스 대상에서 분리하고, `deny-all` NetworkPolicy로 통신을 차단합니다. 침해 Pod는 조사할 수 있도록 보존하고, 정상 ReplicaSet이 대체 Pod를 제공해 서비스는 계속 유지합니다.
+> **(맨 끝 초록들)** 중요한 점은 침해된 Pod를 바로 삭제하지 않는다는 것입니다. 대상 Pod의 UID와 소유 관계를 다시 확인한 뒤 정상 서비스 대상에서 분리하고, `deny-all` NetworkPolicy로 통신을 차단합니다. 침해 Pod는 조사할 수 있도록 보존하고, 정상 ReplicaSet이 대체 Pod를 제공해 서비스는 계속 유지합니다.
 
 ## 슬라이드 32 — Rule 100111과 DVWA 보안 강화
 
