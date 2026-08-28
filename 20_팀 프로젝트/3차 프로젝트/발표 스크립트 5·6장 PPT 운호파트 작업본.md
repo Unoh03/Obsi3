@@ -13,35 +13,39 @@ project_moc: "[[00_3차프로젝트_목차]]"
 
 > 먼저 공격이 발생한 뒤 Wazuh 경보가 만들어지는 흐름입니다.
 >
-> 공격자는 DVWA의 Command Injection 취약점으로 서버 내부 명령을 실행합니다. 이후 IMDS(인스턴스 메타데이터 서비스)라는 내부 정보 서비스를 통해 서버에 부여된 AWS 역할과 임시 자격증명을 확인하고, 그 권한으로 보호된 S3 파일을 읽습니다.
+> **(공격 발생 밑부분)** 공격자는 DVWA의 Command Injection 취약점으로 서버 내부 명령을 실행합니다. 이후 IMDS(인스턴스 메타데이터 서비스)라는 내부 정보 서비스를 통해 서버에 부여된 AWS 역할과 임시 자격증명을 확인하고, 그 권한으로 보호된 S3 파일을 읽습니다.
 >
 > 저희는 이 과정을 두 가지 경로로 수집했습니다.
 >
-> 초록색 경로는 S3와 CloudWatch Logs를 Wazuh가 5분마다 확인하는 정기 수집 경로입니다. 조금 늦을 수 있지만 여러 AWS 로그를 넓게 수집하고, 원본 보관과 사후 조사에 활용할 수 있습니다.
+> **초록색 경로**는 **S3**와 **CloudWatch Logs**를 Wazuh가 5분마다 확인하는 정기 수집 경로입니다. 조금 늦을 수 있지만 여러 AWS 로그를 넓게 수집하고, 원본 보관과 사후 조사에 활용할 수 있습니다.
 >
-> 분홍색 경로는 DVWA의 중요한 사건만 빠르게 전달하는 경로입니다. DVWA가 관제용 Event를 만들 때 실제 명령어나 자격증명 원문은 처음부터 넣지 않습니다. 이후 CloudWatch Logs에서 Lambda로 전달되면 허용된 필드만 다시 골라 형식을 맞추고, SQS와 Local Bridge를 거쳐 Wazuh로 전달합니다.
+> **분홍색 경로**는 DVWA의 중요한 사건만 빠르게 전달하는 저지연 경로입니다. DVWA가 관제용 Event를 만들 때 실제 명령어나 자격증명 원문은 처음부터 넣지 않고, 여기 나와있는 것들만 넣습니다. 이후 **CloudWatch Logs**에서 **Lambda**로 전달되면 허용된 필드만 다시 골라 형식을 맞추고, **SQS**와 **Local Bridge**를 거쳐 Wazuh로 전달합니다.
 >
-> Wazuh에서는 Rule 100102로 이 빠른 전달 경로가 정상인지 확인합니다.
-> Rule 100110은 IMDS 자격증명 주소에서 출력이 실제로 반환된 시점을 조기에 탐지하고
-> Rule 100111은 CloudTrail 기록을 통해 보호된 S3 파일의 바이트가 실제로 반환된 사실을 확인합니다.
+> **(Wazue SIEM)** Wazuh에서는 Rule 100102로 이 빠른 전달 경로(분홍색 경로)가 정상인지 확인합니다.
+> **Rule 100110**은 IMDS 자격증명 주소에서 출력이 실제로 반환된 시점을 조기에 탐지하고
+> **Rule 100111**은 CloudTrail 기록을 통해 보호된 S3 파일의 바이트가 실제로 반환된 사실을 확인합니다.
 >
-> 두 경보는 도착 시점이 다르고 자동으로 하나로 합쳐지지는 않습니다. 발생 시각과 공격 식별값, Pod, AWS 역할, S3 Object를 비교해 같은 사건인지 판단하도록 구성했습니다.
+> **(그 밑에 상관분석)** 두 경보는 도착 시점이 다르고 자동으로 하나로 합쳐지지는 않습니다. 발생 시각과 공격 식별값, Pod, AWS 역할, S3 Object를 비교해 같은 사건인지 판단하도록 구성했습니다.
 
 ## 슬라이드 29 — SOAR·GitOps 자동 대응 폐쇄루프
 
 > 다음은 Wazuh 경보가 실제 대응으로 이어지는 전체 구조입니다.
 >
-> 먼저 Wazuh Integrator가 자동 대응 대상으로 지정한 Rule 100110과 100111 경보만 골라, 저희가 만든 연계 스크립트로 넘깁니다.
+> (**Wazuh Rule 100110·100111 Alert**) 먼저 Wazuh Integrator가 자동 대응 대상으로 지정한 Rule 100110과 100111 경보만 골라, 저희가 만든 연계 스크립트로 넘깁니다.
 >
-> **Wazuh 연계,로컬 검증** 부분에서 `custom-shuffle-soc` 연계 스크립트는 Rule 번호만 보는 것이 아니라 로그 발생지, 계정, 지역, 공격 단계와 결과가 저희가 정한 조건과 맞는지 다시 확인합니다. 조건이 맞지 않으면 외부로 전송하지 않습니다.
+> (**Wazuh 연계 · 로컬 검증 / Wazuh 연계 · 원문 검증**) 연계 스크립트는 Rule 번호만 보는 것이 아니라 로그 발생지, 계정, 지역, 공격 단계와 결과가 저희가 정한 조건과 맞는지 다시 확인합니다. 조건이 맞지 않으면 외부로 전송하지 않습니다.
 >
-> 검증에 성공해도 전체 Alert를 그대로 보내지 않습니다. 대응에 필요한 값만 골라 새로운 JSON을 만들고, 원본 Event나 Log는 SHA-256 값으로 바꿔 동일한 사건인지 확인할 수 있게 했습니다.
+> (**두 Wazuh 연계 검증 박스의 전달 항목**) 검증에 성공해도 전체 Alert를 그대로 보내지 않습니다. 대응에 필요한 값만 담아 새로운 JSON을 만들고, 원본 로그와 전달 내용이 바뀌지 않았는지는 SHA-256 해시값으로 확인합니다.
 >
-> Shuffle에서도 인증 정보, 입력 형식, 발생 시각과 해시값을 다시 검사합니다. 검증에 실패하면 GitHub 작업을 실행하지 않기 때문에 실제 환경도 바뀌지 않습니다.
+> (**Shuffle SOAR · 100110 / Shuffle SOAR · 100111**) Shuffle에서도 인증 정보, 입력 형식, 발생 시각과 해시값을 다시 검사합니다. 검증에 실패하면 GitHub 작업을 실행하지 않기 때문에 실제 환경도 바뀌지 않습니다.
 >
-> 여기서 Shuffle이 Kubernetes를 직접 변경하는 것은 아닙니다. 검증을 통과하면 사건에 맞는 GitHub Actions Workflow를 선택해 실행합니다. GitHub Actions는 `values.yaml`에서 허용된 설정만 바꾸고, Argo CD가 이 Git 변경을 감지해 EKS에 반영합니다.
+> (**Shuffle SOAR에서 아래 GitHub Workflow 박스로**) 여기서 Shuffle이 Kubernetes를 직접 변경하는 것은 아닙니다. 검증을 통과하면 사건에 맞는 GitHub Actions를 실행합니다. GitHub Actions는 GitHub에서 미리 정해둔 설정 변경 작업을 자동으로 실행하는 기능입니다.
 >
-> Rule 100110은 침해된 Pod를 격리하고, Rule 100111은 DVWA의 보안 수준을 `low`에서 `impossible`로 높입니다. 이후 Wazuh Alert ID부터 Shuffle 실행, GitHub Run과 Commit, Argo CD Revision, 실제 Runtime 상태까지 연결해 대응 과정을 추적 할 수 있도록 설계했습니다.
+> (**soc-contain-dvwa.yml / soc-harden-dvwa.yml**)이 두 파일은 GitHub Actions에서 실행할 자동화 절차를 적어 둔 Workflow 파일입니다. 각각 침해된 Pod를 격리하거나 DVWA의 보안 수준을 높이기 위해, 저장소에서 허용된 설정만 변경합니다.
+>
+> (**Argo CD → EKS**) 변경된 설정은 배포 도구를 통해 실제 환경에 반영됩니다.
+>
+> (**격리된 Pod / DVWA low → impossible**) Rule 100110은 침해된 Pod를 격리하고, Rule 100111은 DVWA의 보안 수준을 `low`에서 `impossible`로 높입니다. (**관제 증적 Chain**) 이후 Wazuh Alert ID부터 Shuffle 실행, GitHub Run과 Commit, 실제 환경에 반영된 Git 버전과 실제 실행 상태까지 연결해 대응 과정을 추적할 수 있도록 설계했습니다.
 
 ## 슬라이드 30 — AWS 로그 통합 대시보드
 
@@ -53,9 +57,9 @@ project_moc: "[[00_3차프로젝트_목차]]"
 
 > 이번에는 Rule 100110의 대응을 확대해서 보겠습니다.
 >
-> DVWA에서 IMDS 자격증명 주소의 출력이 반환되면, 이 사건은 CloudWatch Logs, Lambda, SQS, Local Bridge를 거쳐 Wazuh로 빠르게 전달됩니다. Wazuh는 DVWA의 보안 수준이 `low`인지, 자격증명을 가져오는 단계인지, 실행 결과와 출력 반환 상태가 모두 맞는지 확인한 뒤 Rule 100110 경보를 만듭니다.
+> **(공격, 이상행위 밑 둘)** DVWA에서 IMDS 자격증명 주소의 출력이 반환되면, **(오른쪽으로 하나씩)** 이 사건은 CloudWatch Logs, Lambda, SQS, Local Bridge를 거쳐 Wazuh로 빠르게 전달됩니다. Wazuh는 DVWA의 보안 수준이 `low`인지, 자격증명을 가져오는 단계인지, 실행 결과와 출력 반환 상태가 모두 맞는지 확인한 뒤 Rule 100110 경보를 만듭니다.
 >
-> 이후 연계 스크립트와 Shuffle이 대상 Pod의 이름과 UID, 사건 식별값을 다시 검증하고, 고정된 `soc-contain-dvwa.yml` Workflow만 실행합니다.
+> **(계약 검증 밑 둘)** 이후 연계 스크립트(custom-셔플)와 Shuffle이 대상 Pod의 이름과 UID, 사건 식별값을 다시 검증하고, 고정된 **soc-contain-dvwa.yml** Workflow만 실행합니다.
 >
 > GitHub Actions는 격리 대상과 관련된 `values.yaml` 설정만 변경하고, Argo CD가 이 변경을 EKS에 반영합니다.
 >
