@@ -136,15 +136,15 @@ project_moc: "[[00_3차프로젝트_목차]]"
 
 ## 슬라이드 43 — Telemetry 지연 설계 판단
 
-> 	그 원인을 알기 위해 공부하던 중 텔레메트리에 대해 알게 되었습니다.
+> 왜 같은 방식을 적용했는데도 로그마다 지연이 다르게 나타나는지 궁금했습니다. 그 원인을 찾기 위해 공부하던 중, 텔레메트리라는 개념을 알게 되었습니다.
 >
-> 먼저 무엇을 관찰하는지와 어떻게 전달하는지를 분리했습니다. 위쪽처럼 서비스와 자원, 실제 행동, 관찰할 신호를 정하고, 별도로 로그 생성 방식과 AWS 저장 위치, Wazuh 전달 경로, 마지막 Rule과 대응을 연결했습니다.
+> **1.** 먼저 무엇을 관찰하는지와 어떻게 전달하는지를 분리했습니다. 위쪽처럼 서비스와 자원, 실제 행동, 관찰할 신호를 정하고, 별도로 로그 생성 방식과 AWS 저장 위치, Wazuh 전달 경로, 마지막 Rule과 대응을 연결했습니다.
 >
-> 전체 지연도 다섯 구간으로 나눴습니다. 사건 뒤 로그가 만들어지는 구간, AWS 저장 위치까지 도착하는 구간, Wazuh로 전달되는 구간, Wazuh가 경보를 만드는 구간, 마지막으로 자동 대응 구간입니다.
+> **2.** 전체 지연도 다섯 구간으로 나눴습니다. 사건 뒤 로그가 만들어지는 구간, AWS 저장 위치까지 도착하는 구간, Wazuh로 전달되는 구간, Wazuh가 경보를 만드는 구간, 마지막으로 자동 대응 구간입니다.
 >
 > DVWA 저지연 경로가 직접 줄인 것은 세 번째인 Wazuh 전달 대기였습니다. 하지만 다른 AWS 로그는 로그 생성이나 AWS 내부 전달부터 늦을 수 있기 때문에, 똑같은 Push 구조를 붙인다고 전체 시간이 항상 줄어드는 것은 아닙니다.
 >
-> 따라서 탐지에 필요한 정보가 있는지, 얼마나 늦게 도착하는지, 누락 가능성과 보안 경계, 비용과 운영 부담이 어떤지를 함께 비교해야 합니다.
+> **3.** 따라서 탐지에 필요한 정보가 있는지, 얼마나 늦게 도착하는지, 누락 가능성과 보안 경계, 비용과 운영 부담이 어떤지를 함께 비교했습니다.
 >
 > 최종 결론은 하나의 가장 빠른 경로를 모든 로그에 적용하는 것이 아니라, 기존의 검증된 수집 경로는 보존하고 각 신호의 역할과 위험도에 맞는 전달 경로를 선택해야 한다는 것입니다.
 
@@ -163,3 +163,28 @@ project_moc: "[[00_3차프로젝트_목차]]"
 | `DISPATCHED`이므로 대응이 완료됐습니다. | `DISPATCHED`는 실행 요청이 전달됐다는 뜻이며, 실제 설정과 Runtime 상태를 별도로 확인합니다. |
 | Rule 100110과 100111이 하나의 공격으로 자동 연결됩니다. | 두 경보의 시각과 식별값, Pod와 AWS Event를 비교해 같은 사건인지 판단합니다. |
 | 슬라이드 34는 Live AWS 공격 증거입니다. | 슬라이드 34는 Rule과 데이터 연결 구조를 확인한 통제된 로컬 재현 자료입니다. |
+
+## Telemetry 정의
+
+> **정식 정의:** Telemetry는 시스템이나 서비스가 자신의 상태·행위·성능·발생 사건을 외부에서 관찰하고 분석할 수 있도록 생성·노출하는 관측 데이터 또는 운영 신호의 총칭이다.
+>
+> **발표용 정의:** Telemetry는 시스템의 상태와 행동을 외부에서 관찰할 수 있도록 만들어지는 데이터이며, 로그는 Telemetry의 한 종류이다.
+
+| 구분              | 발표에서 사용할 의미                                                |
+| --------------- | ---------------------------------------------------------- |
+| Telemetry       | 시스템을 관찰하기 위한 데이터의 상위 개념으로, Log·Metric·Trace·Event 등이 포함된다. |
+| CloudWatch Logs | Log Telemetry를 수집·저장하는 위치이다.                               |
+| SQS             | Telemetry를 운반하고 일시적으로 보관하는 Queue이다.                        |
+| Wazuh           | 전달받은 Telemetry를 분석하고 탐지 Rule을 적용하는 SIEM이다.                 |
+| Wazuh Alert     | 원본 Telemetry를 Rule로 분석한 뒤 만들어진 탐지 결과이다.                    |
+
+
+| 서비스 / Telemetry mechanism                    | Telemetry 사용 가능 지연 (Event → AWS 소비 지점, A+B) / 공식 상태                                                                                                | 현재 프로젝트 Route                                                                         | 가능한 가장 빠른 공식 후보                                                                       | 프로젝트 판단 / Target Candidate                                                                                | 검증 상태                                                                                                   |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **DVWA Custom Audit → CloudWatch Logs**      | **공식 A+B 수치 미공개. 프로젝트 하위 경로 관측:** DVWA Event → Wazuh Rule `100102` Alert, N=3, `6.439 / 3.427 / 3.761초`, 누락 0. 이는 A+B+C+D 합계이며 Shuffle(E)은 포함하지 않음 | DVWA → CloudWatch Logs → Subscription → Lambda Allowlist → SQS → Local Bridge → Wazuh | 애플리케이션이 Wazuh로 직접 전송하도록 만들 수도 있으나 강결합·Inbound·Buffer 부재 문제가 생김                        | **현재 Route 유지 후보.** 속도·보존·보안 경계의 균형이 좋음                                                                   | Evidence: `[[20_팀 프로젝트/3차 프로젝트/일일 로그/RAW/2026-08-17_RAW]]`. 구간별 측정·Clock skew·SHA-256은 이 노트에 별도 기록되지 않음 |
+| **AWS WAF Web ACL Logs**                     | **공식 수치 미공개.** 요청별 로그를 CloudWatch Logs/S3/Firehose로 전송 가능                                                                                          | WAF → CloudWatch Logs → Wazuh `GetLogEvents` 10분 Poll                                 | WAF → CloudWatch Logs → Subscription → Lambda → SQS → Bridge → Wazuh                  | **CWL Subscription 기반 Event-driven 전환 후보.** 장기 보존이 필요하면 별도 Archive 유지                                     | Poll 대기 제거 효과 큼, A+B 실측 필요                                                                              |
+| **ALB Legacy Access Logs → S3**              | **공식 수치:** 노드별 5분마다 Log file 게시 + eventual consistency                                                                                             | ALB → S3 → Wazuh S3 List/Get 10분 Poll                                                 | 같은 Legacy를 유지한다면 S3 `ObjectCreated` → SQS → Bridge → Wazuh                            | Archive·Replay에는 유효. 저지연 주 탐지 Source로는 제약이 크며 Vended Logs와 Runtime 비교가 필요                                 | `ALB=5분 고정`은 Legacy에만 해당                                                                                |
+| **ALB Vended Access/Connection/Health Logs** | **공식 정성 표현:** CloudWatch Logs에서 Live Tail로 관찰 가능. 이벤트별 정량 latency·상한·SLA는 미공개                                                                      | 현재 미사용                                                                                | ALB Vended Logs → CloudWatch Logs → Subscription → Lambda → SQS → Bridge → Wazuh      | **ALB 저지연 SIEM 수집을 위한 우선 평가 후보.** Legacy S3 5분 파일 제약을 피할 가능성은 있지만 실제 latency·누락·중복·비용은 Runtime 비교 전 확정 금지 | Target Candidate / Runtime 비교 필요                                                                        |
+| **CloudFront Standard Logs (v2/legacy)**     | **공식 수치:** 일반적으로 이벤트 후 1시간 이내, 일부 항목은 최대 24시간 지연 가능                                                                                                | 현재 CloudFront CloudWatch Logs → Wazuh `GetLogEvents` Poll 계열                          | 같은 Standard를 유지하면 CWL/Firehose 직접 전달 후 Event-driven 소비 가능하지만 **Standard의 A+B 지연은 남음** | 저지연 Trigger보다 Evidence/Archive/Historical analysis 용도                                                     | Destination을 바꿔도 Standard의 A+B 지연은 사라지지 않음                                                              |
+| **CloudFront Real-time Access Logs**         | **공식 수치:** 요청 수신 후 수초 내 Kinesis Data Streams 전달. Best-effort이며 드물게 지연/누락 가능                                                                        | Native Real-time Logs는 현재 주 경로가 아님                                                    | CloudFront Real-time Logs → Kinesis → Consumer/Lambda → SQS → Bridge → Wazuh          | **CloudFront 고유 필드가 저지연 탐지에 필요할 때의 조건부 후보.** 비용·Sampling·Consumer 운영·WAF 중복을 비교해야 함                       | Target Candidate / Runtime 비교 필요                                                                        |
+| **CloudTrail S3 Data Event (`GetObject`)**   | **공식 수치:** API 호출 후 CloudWatch Logs/S3에서 사용 가능해지기까지 평균 약 5분(A+B), 보장값 아님                                                                           | CloudTrail → Security Log S3 → Wazuh S3 List/Get 10분 Poll                             | CloudTrail → CloudWatch Logs → Subscription → Lambda → SQS → Bridge → Wazuh           | CWL Event-driven은 C의 Poll 대기를 줄이는 후보이고 Trail S3는 Audit/Archive로 유지. A+B 평균 약 5분은 남음                       |                                                                                                         |
