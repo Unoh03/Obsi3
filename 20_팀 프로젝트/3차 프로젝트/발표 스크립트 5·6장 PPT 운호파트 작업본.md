@@ -5,15 +5,6 @@ created: 2026-08-28
 project: "3차 프로젝트"
 project_moc: "[[00_3차프로젝트_목차]]"
 ---
-# 발표 스크립트 5·6장 — PPT 운호파트 작업본
-
-- 기준 PPT: `PPT 운호파트.pptx` 18장
-- 기준 다이어그램: `관제 올인원-가로.drawio` 4개 페이지
-- 예상 시간: 약 9분 30초~10분
-- 설명 원칙: **다이어그램의 기술 단계는 유지하고, 말은 쉽게 풀어서 설명한다.**
-
----
-
 ## 슬라이드 27 — 5장 목차
 
 > 지금부터 Wazuh와 Shuffle을 이용해 보안 경보를 탐지하고, 실제 대응으로 연결한 과정을 설명드리겠습니다.
@@ -42,7 +33,7 @@ project_moc: "[[00_3차프로젝트_목차]]"
 >
 > 먼저 Wazuh Integrator가 자동 대응 대상으로 지정한 Rule 100110과 100111 경보만 골라, 저희가 만든 연계 스크립트로 넘깁니다.
 >
-> **Wazuh 연계,로컬 검증** 부분에서 `custom-shuffle-soc` 연계 스크립트는 Rule 번호만 보는 것이 아니라 Source, Account, Region, 공격 단계와 결과가 저희가 정한 조건과 맞는지 다시 확인합니다. 조건이 맞지 않으면 외부로 전송하지 않습니다.
+> **Wazuh 연계,로컬 검증** 부분에서 `custom-shuffle-soc` 연계 스크립트는 Rule 번호만 보는 것이 아니라 로그 발생지, 계정, 지역, 공격 단계와 결과가 저희가 정한 조건과 맞는지 다시 확인합니다. 조건이 맞지 않으면 외부로 전송하지 않습니다.
 >
 > 검증에 성공해도 전체 Alert를 그대로 보내지 않습니다. 대응에 필요한 값만 골라 새로운 JSON을 만들고, 원본 Event나 Log는 SHA-256 값으로 바꿔 동일한 사건인지 확인할 수 있게 했습니다.
 >
@@ -50,7 +41,7 @@ project_moc: "[[00_3차프로젝트_목차]]"
 >
 > 여기서 Shuffle이 Kubernetes를 직접 변경하는 것은 아닙니다. 검증을 통과하면 사건에 맞는 GitHub Actions Workflow를 선택해 실행합니다. GitHub Actions는 `values.yaml`에서 허용된 설정만 바꾸고, Argo CD가 이 Git 변경을 감지해 EKS에 반영합니다.
 >
-> Rule 100110은 침해된 Pod를 격리하고, Rule 100111은 DVWA의 보안 수준을 `low`에서 `impossible`로 높입니다. 이후 Wazuh Alert ID부터 Shuffle 실행, GitHub Run과 Commit, Argo CD Revision, 실제 Runtime 상태까지 연결해 대응 과정을 추적합니다.
+> Rule 100110은 침해된 Pod를 격리하고, Rule 100111은 DVWA의 보안 수준을 `low`에서 `impossible`로 높입니다. 이후 Wazuh Alert ID부터 Shuffle 실행, GitHub Run과 Commit, Argo CD Revision, 실제 Runtime 상태까지 연결해 대응 과정을 추적 할 수 있도록 설계했습니다.
 
 ## 슬라이드 30 — AWS 로그 통합 대시보드
 
@@ -122,7 +113,7 @@ project_moc: "[[00_3차프로젝트_목차]]"
 >
 > GitHub Actions는 제한된 AWS 역할을 사용해 S3 Public Access Block을 활성화하고 공개 Bucket Policy를 제거합니다. 이후 외부에서 같은 객체를 다시 요청해 403이 반환되는지 확인하고, Workflow Run과 결과 파일을 증적으로 남깁니다.
 >
-> 화면의 `SUCCESS`와 `DISPATCHED`는 복구 요청이 GitHub로 전달됐다는 증거입니다. 이것만으로 복구 완료라고 판단하지 않고, 실제 Bucket Policy와 Public Access Block 상태, 외부 재요청의 403 결과까지 확인해야 합니다.
+> 화면의 `SUCCESS`와 `DISPATCHED`는 복구 요청이 GitHub로 전달됐다는 증거입니다.
 ## 슬라이드 42 — 10분 Poll의 한계와 실제 개선
 
 > 이 구조를 만들면서 가장 먼저 발견한 문제는 Polling 대기 시간이었습니다.
