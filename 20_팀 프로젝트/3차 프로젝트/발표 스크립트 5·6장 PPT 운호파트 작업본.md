@@ -21,7 +21,7 @@ project_moc: "[[00_3차프로젝트_목차]]"
 >
 > **분홍색 경로**는 DVWA의 중요한 사건만 빠르게 전달하는 저지연 경로입니다. DVWA가 관제용 Event를 만들 때 실제 명령어나 자격증명 원문은 처음부터 넣지 않고, 여기 나와있는 것들만 넣습니다. 이후 **CloudWatch Logs**에서 **Lambda**로 전달되면 허용된 필드만 다시 골라 형식을 맞추고, **SQS**와 **Local Bridge**를 거쳐 Wazuh로 전달합니다.
 >
-> **(Wazue SIEM)** Wazuh에서는 Rule 100102로 이 빠른 전달 경로(분홍색 경로)가 정상인지 확인합니다.
+> **(Wazuh SIEM)** Wazuh에서는 Rule 100102로 이 빠른 전달 경로(분홍색 경로)가 정상인지 확인합니다.
 > **Rule 100110**은 IMDS 자격증명 주소에서 출력이 실제로 반환된 시점을 조기에 탐지하고
 > **Rule 100111**은 CloudTrail 기록을 통해 보호된 S3 파일의 바이트가 실제로 반환된 사실을 확인합니다.
 >
@@ -41,7 +41,7 @@ project_moc: "[[00_3차프로젝트_목차]]"
 >
 > (**Shuffle SOAR에서 아래 GitHub Workflow 박스로**) 여기서 Shuffle이 Kubernetes를 직접 변경하는 것은 아닙니다. 검증을 통과하면 사건에 맞는 GitHub Actions를 실행합니다. GitHub Actions는 GitHub에서 미리 정해둔 설정 변경 작업을 자동으로 실행하는 기능입니다.
 >
-> (**soc-contain-dvwa.yml / soc-harden-dvwa.yml**)이 두 파일은 GitHub Actions에서 실행할 자동화 절차를 적어 둔 Workflow 파일입니다. 각각 침해된 Pod를 격리하거나 DVWA의 보안 수준을 높이기 위해, 저장소에서 허용된 설정만 변경합니다.
+> (**soc-contain-dvwa.yml / soc-harden-dvwa. yml**) 이 두 파일은 GitHub Actions에서 실행할 자동화 절차를 적어 둔 Workflow 파일입니다. 각각 침해된 Pod를 격리하거나 DVWA의 보안 수준을 높이기 위해, 저장소에서 허용된 설정만 변경합니다.
 >
 > (**Argo CD → EKS**) 변경된 설정은 배포 도구를 통해 실제 환경에 반영됩니다.
 >
@@ -63,13 +63,13 @@ project_moc: "[[00_3차프로젝트_목차]]"
 >
 > GitHub Actions는 격리 대상과 관련된 `values.yaml` 설정만 변경하고, Argo CD가 이 변경을 EKS에 반영합니다.
 >
-> **(맨 끝 초록들)** 중요한 점은 침해된 Pod를 바로 삭제하지 않는다는 것입니다. 대상 Pod의 UID와 소유 관계를 다시 확인한 뒤 정상 서비스 대상에서 분리하고, `deny-all` NetworkPolicy로 통신을 차단합니다. 침해 Pod는 조사할 수 있도록 보존하고, 정상 ReplicaSet이 대체 Pod를 제공해 서비스는 계속 유지합니다.
+> **(맨 끝 초록들)** 중요한 점은 침해된 Pod를 바로 삭제하지 않는다는 것입니다. 대상 Pod의 UID와 소유 관계를 다시 확인한 뒤 정상 서비스 대상에서 분리하고, 공격받은 Pod에 네트워크 통신을 차단하는 정책을 적용해 격리합니다. 침해 Pod는 조사할 수 있도록 보존하고, 정상 ReplicaSet이 대체 Pod를 제공해 서비스는 계속 유지합니다.
 
 ## 슬라이드 32 — Rule 100111과 DVWA 보안 강화
 
 > Rule 100111은 조기 징후보다 한 단계 뒤의 사건을 확인합니다.
 >
-> 침해된 AWS 역할이 정해둔 S3 Object를 요청했고, HTTP 200과 함께 실제 바이트가 반환되면 CloudTrail Data Event가 남습니다. Wazuh는 이 기록을 정기 수집한 뒤 Account, Region, Role, Bucket, Object와 반환 바이트 조건까지 모두 확인해 Rule 100111 경보를 만듭니다.
+> **(침해 확정 행위 밑 셋)** 침해된 AWS 역할이 정해둔 S3 Object를 요청했고, HTTP 200과 함께 실제 바이트가 반환되면 **CloudTrail Data Event**가 남습니다. Wazuh는 이 기록을 정기 수집한 뒤 계정, 지역, 역할,  반환 바이트 조건까지 모두 확인해 Rule 100111 경보를 만듭니다.
 >
 > 상세 원문은 로컬 연계 스크립트에서 검증하지만, Shuffle에는 계정이나 역할, Bucket, Object 원문을 보내지 않습니다. Rule 번호, 발생 시각, Wazuh Alert ID와 두 개의 SHA-256 값, 총 다섯 개 필드만 전달합니다.
 >
