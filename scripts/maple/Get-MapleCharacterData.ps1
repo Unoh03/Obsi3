@@ -10,7 +10,7 @@ Collect MapleStory character data from NEXON Open API and save it as JSON.
 - Throttles requests for development-stage NEXON Open API keys.
 - Retries HTTP 429 responses with exponential backoff.
 - Continues when an optional endpoint fails and records the error in the output.
-- When launched from Windows Explorer, waits for Enter before closing the window.
+- Supports an explicit pause-on-exit mode for double-click launchers.
 
 Data based on NEXON Open API.
 https://openapi.nexon.com/ko/game/maplestory/
@@ -34,13 +34,27 @@ param(
     [int]$MaxRetries = 5,
 
     [Parameter()]
-    [switch]$NoPause
+    [switch]$NoPause,
+
+    [Parameter()]
+    [switch]$PauseOnExit
 )
 
 $ErrorActionPreference = "Stop"
 $BaseUrl = "https://open.api.nexon.com/maplestory/v1"
 $ScriptDir = Split-Path -Parent $PSCommandPath
 $script:LastRequestAt = [DateTimeOffset]::MinValue
+
+# Keep Korean prompts and status text readable when launched through cmd.exe.
+try {
+    $Utf8 = [System.Text.UTF8Encoding]::new($false)
+    [Console]::InputEncoding = $Utf8
+    [Console]::OutputEncoding = $Utf8
+    $OutputEncoding = $Utf8
+}
+catch {
+    # Encoding setup is best-effort and should not block API collection.
+}
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $OutputDir = Join-Path $ScriptDir "output"
@@ -137,7 +151,7 @@ function Invoke-NexonApi {
     }
 }
 
-$PauseOnExit = (-not $NoPause) -and (Test-LaunchedFromExplorer)
+$ShouldPauseOnExit = $PauseOnExit -or ((-not $NoPause) -and (Test-LaunchedFromExplorer))
 $SecureKey = $null
 $ApiKey = $null
 $Headers = $null
@@ -220,7 +234,7 @@ finally {
     $Headers = $null
     $SecureKey = $null
 
-    if ($PauseOnExit) {
+    if ($ShouldPauseOnExit) {
         Write-Host ""
         [void](Read-Host "Enter를 누르면 창을 닫습니다")
     }
