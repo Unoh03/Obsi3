@@ -5,15 +5,28 @@ cd /d "%~dp0"
 where pwsh.exe >nul 2>&1 || goto :missing_pwsh
 
 chcp 65001 >nul
-pwsh.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Get-MapleCharacterData.ps1" -PauseOnExit
-set "EXIT_CODE=%ERRORLEVEL%"
+pwsh.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Get-MapleCharacterData.ps1" -NoPause
+if errorlevel 1 goto :collector_failed
 
-if "%EXIT_CODE%"=="0" exit /b 0
+pwsh.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Build-MapleSnapshot.ps1"
+if errorlevel 1 goto :snapshot_failed
 
 echo.
-echo PowerShell exited with code %EXIT_CODE%.
+echo Maple API collection and snapshot build completed.
 pause
-exit /b %EXIT_CODE%
+exit /b 0
+
+:collector_failed
+echo.
+echo Maple API collector failed.
+pause
+exit /b 1
+
+:snapshot_failed
+echo.
+echo Maple snapshot build failed.
+pause
+exit /b 1
 
 :missing_pwsh
 echo PowerShell 7 pwsh.exe was not found in PATH.
