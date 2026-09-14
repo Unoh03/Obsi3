@@ -33,3 +33,4 @@ desktop.ini
 # ========================
 __pycache__/
 *.py[cod]
+scripts/maple/output/
