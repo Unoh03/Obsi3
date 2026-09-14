@@ -5,9 +5,11 @@
 This is a Korean Obsidian study vault, not a software project. Keep
 `AGENTS.md` in English and keep `README.md` and vault content in Korean unless
 asked otherwise. `00_index/Home.md` is the entry point; study, project,
-certification, source, optional-template, and temporary material live under
-`10_학습 노트/`, `20_팀 프로젝트/`, `30_자격증/`, `40_자료/`, `90_템플릿/`,
-and `99_잡동사니/` respectively.
+certification, source, employment-preparation, and optional-template material
+live under `10_학습 노트/`, `20_팀 프로젝트/`, `30_자격증/`, `40_자료/`,
+`50_취업 준비/`, and `90_템플릿/` respectively. Validation utilities live
+under `scripts/`. Do not assume an unclassified or temporary-material folder
+exists; verify the current repository before routing material there.
 
 ## Workflow
 
