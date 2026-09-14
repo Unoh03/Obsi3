@@ -10,6 +10,7 @@ Collect MapleStory character data from NEXON Open API and save it as JSON.
 - Throttles requests for development-stage NEXON Open API keys.
 - Retries HTTP 429 responses with exponential backoff.
 - Continues when an optional endpoint fails and records the error in the output.
+- When launched from Windows Explorer, waits for Enter before closing the window.
 
 Data based on NEXON Open API.
 https://openapi.nexon.com/ko/game/maplestory/
@@ -30,7 +31,10 @@ param(
 
     [Parameter()]
     [ValidateRange(0, 10)]
-    [int]$MaxRetries = 5
+    [int]$MaxRetries = 5,
+
+    [Parameter()]
+    [switch]$NoPause
 )
 
 $ErrorActionPreference = "Stop"
@@ -48,6 +52,17 @@ else {
     $ParentDir = Split-Path -Parent $OutputPath
     if ($ParentDir) {
         New-Item -ItemType Directory -Path $ParentDir -Force | Out-Null
+    }
+}
+
+function Test-LaunchedFromExplorer {
+    try {
+        $CurrentProcess = Get-CimInstance Win32_Process -Filter "ProcessId=$PID" -ErrorAction Stop
+        $ParentProcess = Get-Process -Id $CurrentProcess.ParentProcessId -ErrorAction Stop
+        return $ParentProcess.ProcessName -ieq "explorer"
+    }
+    catch {
+        return $false
     }
 }
 
@@ -122,13 +137,18 @@ function Invoke-NexonApi {
     }
 }
 
-$SecureKey = Read-Host "NEXON Open API Key 입력" -AsSecureString
-$ApiKey = ConvertFrom-SecureStringPlainText -SecureString $SecureKey
-$Headers = @{
-    "x-nxopen-api-key" = $ApiKey
-}
+$PauseOnExit = (-not $NoPause) -and (Test-LaunchedFromExplorer)
+$SecureKey = $null
+$ApiKey = $null
+$Headers = $null
 
 try {
+    $SecureKey = Read-Host "NEXON Open API Key 입력" -AsSecureString
+    $ApiKey = ConvertFrom-SecureStringPlainText -SecureString $SecureKey
+    $Headers = @{
+        "x-nxopen-api-key" = $ApiKey
+    }
+
     Write-Host "[$CharacterName] OCID 조회 중..."
     $IdResult = Invoke-NexonApi -Path "id" -Query @{ character_name = $CharacterName }
     $Ocid = $IdResult.ocid
@@ -199,4 +219,9 @@ finally {
     $ApiKey = $null
     $Headers = $null
     $SecureKey = $null
+
+    if ($PauseOnExit) {
+        Write-Host ""
+        [void](Read-Host "Enter를 누르면 창을 닫습니다")
+    }
 }
