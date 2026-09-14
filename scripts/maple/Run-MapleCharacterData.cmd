@@ -1,23 +1,24 @@
 @echo off
 setlocal
+chcp 65001 >nul
 cd /d "%~dp0"
 
 where pwsh >nul 2>&1
 if errorlevel 1 (
-    echo PowerShell 7 ^(pwsh^)을 찾을 수 없습니다.
-    echo PowerShell 7 설치 또는 PATH 등록 상태를 확인하세요.
+    echo PowerShell 7 (pwsh) was not found in PATH.
+    echo Install PowerShell 7 or add pwsh.exe to PATH.
     echo.
     pause
     exit /b 1
 )
 
-pwsh -NoProfile -ExecutionPolicy Bypass -File "%~dp0Get-MapleCharacterData.ps1" -NoPause
+pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Get-MapleCharacterData.ps1" -PauseOnExit
 set "EXIT_CODE=%ERRORLEVEL%"
 
-echo.
 if not "%EXIT_CODE%"=="0" (
-    echo 실행이 오류 코드 %EXIT_CODE%로 종료되었습니다.
+    echo.
+    echo Script exited with code %EXIT_CODE%.
+    pause
 )
 
-pause
 exit /b %EXIT_CODE%
