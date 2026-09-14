@@ -1,6 +1,5 @@
 @echo off
 setlocal
-chcp 65001 >nul
 cd /d "%~dp0"
 
 where pwsh >nul 2>&1
@@ -12,13 +11,5 @@ if errorlevel 1 (
     exit /b 1
 )
 
-pwsh -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Get-MapleCharacterData.ps1" -PauseOnExit
-set "EXIT_CODE=%ERRORLEVEL%"
-
-if not "%EXIT_CODE%"=="0" (
-    echo.
-    echo Script exited with code %EXIT_CODE%.
-    pause
-)
-
-exit /b %EXIT_CODE%
+start "Maple API Collector" pwsh.exe -NoLogo -NoProfile -NoExit -ExecutionPolicy Bypass -File "%~dp0Get-MapleCharacterData.ps1" -NoPause
+exit /b 0
