@@ -7,6 +7,8 @@ Collect MapleStory character data from NEXON Open API and save it as JSON.
 - Prompts for the NEXON Open API key as a SecureString.
 - Does not persist the API key.
 - Saves generated JSON under scripts/maple/output/ by default.
+- Throttles requests for development-stage NEXON Open API keys.
+- Retries HTTP 429 responses with exponential backoff.
 - Continues when an optional endpoint fails and records the error in the output.
 
 Data based on NEXON Open API.
@@ -20,12 +22,21 @@ param(
     [string]$CharacterName = "우노03",
 
     [Parameter()]
-    [string]$OutputPath
+    [string]$OutputPath,
+
+    [Parameter()]
+    [ValidateRange(200, 5000)]
+    [int]$RequestIntervalMs = 250,
+
+    [Parameter()]
+    [ValidateRange(0, 10)]
+    [int]$MaxRetries = 5
 )
 
 $ErrorActionPreference = "Stop"
 $BaseUrl = "https://open.api.nexon.com/maplestory/v1"
 $ScriptDir = Split-Path -Parent $PSCommandPath
+$script:LastRequestAt = [DateTimeOffset]::MinValue
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $OutputDir = Join-Path $ScriptDir "output"
@@ -55,6 +66,18 @@ function ConvertFrom-SecureStringPlainText {
     }
 }
 
+function Wait-NexonRequestSlot {
+    if ($script:LastRequestAt -eq [DateTimeOffset]::MinValue) {
+        return
+    }
+
+    $ElapsedMs = ([DateTimeOffset]::UtcNow - $script:LastRequestAt).TotalMilliseconds
+    if ($ElapsedMs -lt $RequestIntervalMs) {
+        $WaitMs = [Math]::Ceiling($RequestIntervalMs - $ElapsedMs)
+        Start-Sleep -Milliseconds $WaitMs
+    }
+}
+
 function Invoke-NexonApi {
     param(
         [Parameter(Mandatory)]
@@ -75,7 +98,28 @@ function Invoke-NexonApi {
         $Uri += "?" + ($Pairs -join "&")
     }
 
-    Invoke-RestMethod -Method Get -Uri $Uri -Headers $script:Headers
+    for ($Attempt = 0; $Attempt -le $MaxRetries; $Attempt++) {
+        Wait-NexonRequestSlot
+        $script:LastRequestAt = [DateTimeOffset]::UtcNow
+
+        try {
+            return Invoke-RestMethod -Method Get -Uri $Uri -Headers $script:Headers
+        }
+        catch {
+            $StatusCode = $null
+            if ($null -ne $_.Exception.Response -and $null -ne $_.Exception.Response.StatusCode) {
+                $StatusCode = [int]$_.Exception.Response.StatusCode
+            }
+
+            if ($StatusCode -ne 429 -or $Attempt -ge $MaxRetries) {
+                throw
+            }
+
+            $DelaySeconds = [Math]::Min(8, [Math]::Pow(2, $Attempt))
+            Write-Warning "429 Too Many Requests - $DelaySeconds초 후 재시도 ($($Attempt + 1)/$MaxRetries)"
+            Start-Sleep -Seconds $DelaySeconds
+        }
+    }
 }
 
 $SecureKey = Read-Host "NEXON Open API Key 입력" -AsSecureString
