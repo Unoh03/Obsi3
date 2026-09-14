@@ -11,5 +11,5 @@ if errorlevel 1 (
     exit /b 1
 )
 
-start "Maple API Collector" pwsh.exe -NoLogo -NoProfile -NoExit -ExecutionPolicy Bypass -File "%~dp0Get-MapleCharacterData.ps1" -NoPause
-exit /b 0
+chcp 65001 >nul
+pwsh.exe -NoLogo -NoProfile -NoExit -ExecutionPolicy Bypass -File "%~dp0Get-MapleCharacterData.ps1" -NoPause
