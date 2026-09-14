@@ -45,17 +45,6 @@ $BaseUrl = "https://open.api.nexon.com/maplestory/v1"
 $ScriptDir = Split-Path -Parent $PSCommandPath
 $script:LastRequestAt = [DateTimeOffset]::MinValue
 
-# Keep Korean prompts and status text readable when launched through cmd.exe.
-try {
-    $Utf8 = [System.Text.UTF8Encoding]::new($false)
-    [Console]::InputEncoding = $Utf8
-    [Console]::OutputEncoding = $Utf8
-    $OutputEncoding = $Utf8
-}
-catch {
-    # Encoding setup is best-effort and should not block API collection.
-}
-
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $OutputDir = Join-Path $ScriptDir "output"
     New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
