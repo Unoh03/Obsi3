@@ -27,6 +27,7 @@ parent_moc: "[[10_학습 노트/클라우드/00_클라우드_목차]]"
 - p.31-p.51 Scheduling·Node 운영: [[Lab_EKS Pod Scheduling과 Node 운영 실습]]
 - p.52-p.73 ReplicaSet: [[Lab_EKS ReplicaSet 기초 실습]]
 - p.74-p.85 Deployment·Rolling Update·직전 Revision Rollback: [[Lab_EKS Deployment 기초와 Rolling Update 실습]]
+- [[Lab_EKS Deployment 기초와 Rolling Update 실습#실제 장애 사례: Destiny 2 계정 데이터 손상과 전체 Rollback|Destiny 2 계정 데이터 손상과 전체 Rollback]]
 - Chapter 06 ClusterIP Service: [[Lab_EKS Service 기초 실습]]
 
 ## 핵심 개념
