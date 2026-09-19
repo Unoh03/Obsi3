@@ -16,6 +16,7 @@ Data based on NEXON Open API.
 https://openapi.nexon.com/ko/game/maplestory/
 #>
 
+#requires -Version 7.5
 [CmdletBinding()]
 param(
     [Parameter()]
@@ -34,6 +35,10 @@ param(
     [int]$MaxRetries = 5,
 
     [Parameter()]
+    [ValidateRange(5, 300)]
+    [int]$TimeoutSeconds = 30,
+
+    [Parameter()]
     [switch]$NoPause,
 
     [Parameter()]
@@ -43,12 +48,14 @@ param(
 $ErrorActionPreference = "Stop"
 $BaseUrl = "https://open.api.nexon.com/maplestory/v1"
 $ScriptDir = Split-Path -Parent $PSCommandPath
+Import-Module (Join-Path $ScriptDir 'MapleSnapshot.psm1') -Force
 $script:LastRequestAt = [DateTimeOffset]::MinValue
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
     $OutputDir = Join-Path $ScriptDir "output"
     New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
-    $OutputPath = Join-Path $OutputDir "$CharacterName-maple-api.json"
+    $SafeCharacter = $CharacterName -replace '[\\/:*?"<>|]', '_'
+    $OutputPath = Join-Path $OutputDir "$SafeCharacter-maple-api.json"
 }
 else {
     $OutputPath = [IO.Path]::GetFullPath($OutputPath)
@@ -121,7 +128,7 @@ function Invoke-NexonApi {
         $script:LastRequestAt = [DateTimeOffset]::UtcNow
 
         try {
-            return Invoke-RestMethod -Method Get -Uri $Uri -Headers $script:Headers
+            return Invoke-RestMethod -Method Get -Uri $Uri -Headers $script:Headers -TimeoutSec $TimeoutSeconds
         }
         catch {
             $StatusCode = $null
@@ -134,7 +141,7 @@ function Invoke-NexonApi {
             }
 
             $DelaySeconds = [Math]::Min(8, [Math]::Pow(2, $Attempt))
-            Write-Warning "429 Too Many Requests - $DelaySeconds초 후 재시도 ($($Attempt + 1)/$MaxRetries)"
+            Write-Warning "429 Too Many Requests - ${DelaySeconds}초 후 재시도 ($($Attempt + 1)/$MaxRetries)"
             Start-Sleep -Seconds $DelaySeconds
         }
     }
@@ -162,28 +169,7 @@ try {
 
     Write-Host "OCID 확인 완료."
 
-    $Endpoints = [ordered]@{
-        basic            = "character/basic"
-        stat             = "character/stat"
-        hyper_stat       = "character/hyper-stat"
-        ability          = "character/ability"
-        item_equipment   = "character/item-equipment"
-        symbol_equipment = "character/symbol-equipment"
-        set_effect       = "character/set-effect"
-        pet_equipment    = "character/pet-equipment"
-        link_skill       = "character/link-skill"
-        vmatrix          = "character/vmatrix"
-        hexamatrix       = "character/hexamatrix"
-        hexamatrix_stat  = "character/hexamatrix-stat"
-        dojang           = "character/dojang"
-        other_stat       = "character/other-stat"
-        ring_exchange    = "character/ring-exchange-skill-equipment"
-        ring_reserve     = "character/ring-reserve-skill-equipment"
-        union            = "user/union"
-        union_raider     = "user/union-raider"
-        union_artifact   = "user/union-artifact"
-        union_champion   = "user/union-champion"
-    }
+    $Endpoints = Get-MapleEndpoints
 
     $Data = [ordered]@{
         metadata = [ordered]@{
@@ -202,17 +188,26 @@ try {
             $Data[$Name] = Invoke-NexonApi -Path $Endpoints[$Name] -Query @{ ocid = $Ocid }
         }
         catch {
+            $Failure = $_
+            $StatusCode = $null
+            if ($null -ne $Failure.Exception.Response.StatusCode) { $StatusCode = [int]$Failure.Exception.Response.StatusCode }
+            $ApiCode = $null
+            try {
+                $ErrorPayload = $Failure.ErrorDetails.Message | ConvertFrom-Json -ErrorAction Stop
+                if ($ErrorPayload.error.name -cmatch '^[A-Z0-9_]+$') { $ApiCode = $ErrorPayload.error.name }
+            } catch { }
             $Data[$Name] = [ordered]@{
                 error   = $true
-                message = $_.Exception.Message
+                message = $Failure.Exception.Message
+                http_status = $StatusCode
+                api_error_code = $ApiCode
             }
             Write-Warning "$Name 조회 실패 - 계속 진행합니다."
         }
     }
 
-    $Data |
-        ConvertTo-Json -Depth 100 |
-        Set-Content -Path $OutputPath -Encoding utf8
+    $Data.metadata.collection_finished_at = (Get-Date).ToString('o')
+    Write-MapleJson $Data $OutputPath
 
     Write-Host ""
     Write-Host "완료:"

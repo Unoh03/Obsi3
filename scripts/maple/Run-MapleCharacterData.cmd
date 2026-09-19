@@ -13,6 +13,7 @@ if errorlevel 1 goto :snapshot_failed
 
 echo.
 echo Maple API collection and snapshot build completed.
+echo Give output\ai-context.json to your AI chat.
 pause
 exit /b 0
 
