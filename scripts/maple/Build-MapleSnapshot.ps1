@@ -49,6 +49,8 @@ foreach ($File in Get-ChildItem -LiteralPath $RawDir -File | Sort-Object Name) {
     }
     if ($CandidateHash -ceq $Hash) { if (-not $RawPath) { $RawPath = $File.FullName }; continue }
     if ($Time -eq $Collected) { throw "같은 collected_at에 내용이 다른 원본이 있습니다: $($File.Name)" }
+    # Failed collections remain in raw, but are not a baseline for the next success.
+    if (@(Get-MapleRequiredFailures $Candidate).Count -gt 0) { continue }
     if ($Time -lt $Collected -and $Time -gt $PreviousTime) {
         $Previous = $Candidate
         $PreviousPath = $File.FullName
@@ -61,6 +63,10 @@ if (-not $RawPath) {
 }
 if ((Get-FileHash -LiteralPath $RawPath -Algorithm SHA256).Hash.ToLowerInvariant() -cne $Hash) {
     throw '보관 원본의 SHA-256이 입력과 다릅니다.'
+}
+$RequiredFailures = @(Get-MapleRequiredFailures $Data)
+if ($RequiredFailures.Count -gt 0) {
+    throw "필수 정보 수집 실패: $($RequiredFailures -join ', '). 원본은 $RawPath 에 보존했습니다. 완료 결과를 갱신하지 않습니다."
 }
 $Summary = New-MapleSummary $Data
 $Summary.metadata.raw_file = [IO.Path]::GetRelativePath($OutputDirectory, $RawPath).Replace('\','/')

@@ -68,6 +68,13 @@ function Get-MapleSectionState($Data, [string]$Section) {
     return 'ok'
 }
 
+function Get-MapleRequiredFailures($Data) {
+    foreach ($Section in @('basic', 'stat')) {
+        $State = Get-MapleSectionState $Data $Section
+        if ($State -ne 'ok') { "$Section ($State)" }
+    }
+}
+
 function Test-MapleHyperEntries($Value) {
     if ($Value -isnot [System.Collections.IList]) { return $false }
     foreach ($Row in $Value) {
@@ -369,4 +376,4 @@ function Publish-MapleSnapshot($Summary, $Diff, $Context, [string]$RawPath, [str
     }
 }
 
-Export-ModuleMember -Function Get-MapleEndpoints,Read-MapleJson,Write-MapleJson,New-MapleSummary,New-MapleDiff,Get-MaplePublishedSet,Publish-MapleSnapshot
+Export-ModuleMember -Function Get-MapleEndpoints,Read-MapleJson,Write-MapleJson,New-MapleSummary,New-MapleDiff,Get-MaplePublishedSet,Publish-MapleSnapshot,Get-MapleRequiredFailures

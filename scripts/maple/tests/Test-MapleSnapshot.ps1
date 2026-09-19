@@ -258,6 +258,79 @@ try {
         Assert $ConflictRejected 'Conflicting same-time snapshot accepted'
     }
 
+    Test 'required failures preserve raw, exit unsuccessfully and retain last good results' {
+        $Source = Join-Path $Work 'required-source.json'
+        $Out = Join-Path $Work 'required-result'
+        $Good = New-Data
+        Write-MapleJson $Good $Source
+        & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out
+        $Names = @('summary.json','diff.json','latest.json','ai-context.json','current.json')
+        $Hashes = @{}
+        foreach ($Name in $Names) { $Hashes[$Name] = (Get-FileHash (Join-Path $Out $Name)).Hash }
+        $Index = 0
+        foreach ($Case in @('basic', 'stat', 'all', 'missing-basic', 'null-stat')) {
+            $Index++
+            $Data = Copy-Data $Good
+            $Data.metadata.collected_at = "2026-09-19T10:0${Index}:00+09:00"
+            switch ($Case) {
+                'basic' { $Data.basic = @{error=$true;message='failure'} }
+                'stat' { $Data.stat = @{error=$true;message='failure'} }
+                'all' { foreach ($Name in (Get-MapleEndpoints).Keys) { $Data[$Name] = @{error=$true;message='failure'} } }
+                'missing-basic' { $Data.Remove('basic') }
+                'null-stat' { $Data.stat = $null }
+            }
+            Write-MapleJson $Data $Source
+            $SourceHash = (Get-FileHash $Source).Hash
+            if ($Case -eq 'all') {
+                # Verify the actual process exit code used by the double-click launcher.
+                $Log = & pwsh -NoProfile -File (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out 2>&1
+                Assert ($LASTEXITCODE -ne 0) 'CLI returned success for failed collection'
+            }
+            else {
+                $Failed = $false
+                try { & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out } catch { $Failed = $true }
+                Assert $Failed "Accepted required failure: $Case"
+            }
+            foreach ($Name in $Names) { Assert ((Get-FileHash (Join-Path $Out $Name)).Hash -ceq $Hashes[$Name]) "Required failure overwrote $Name" }
+            $Saved = @(Get-ChildItem (Join-Path $Out 'raw') -File | Where-Object { (Get-FileHash -LiteralPath $_.FullName).Hash -ceq $SourceHash })
+            Assert ($Saved.Count -eq 1) "Failed raw not preserved: $Case"
+            Assert ((Get-FileHash $Source).Hash -ceq $SourceHash) 'Failed source modified'
+        }
+        $Good.metadata.collected_at = '2026-09-19T11:00:00+09:00'
+        $Good.basic.character_level = 277
+        Write-MapleJson $Good $Source
+        & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out
+        $Final = Read-MapleJson (Join-Path $Out 'ai-context.json')
+        Assert ($Final.changes_since_previous.metadata.previous_collected_at -ceq '2026-09-18T10:00:00+09:00') 'Recovery compared against failed raw'
+        Assert ($Final.changes_since_previous.change_count -eq 1) 'Recovery lost changes since last good snapshot'
+    }
+
+    Test 'first failed collection archives raw without publishing empty results' {
+        $Source = Join-Path $Work 'first-failure.json'
+        $Out = Join-Path $Work 'first-failure-result'
+        $Data = New-Data; $Data.stat = @{error=$true;message='failure'}
+        Write-MapleJson $Data $Source
+        $Failed = $false
+        try { & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out } catch { $Failed = $true }
+        Assert $Failed 'First failed collection accepted'
+        Assert (@(Get-ChildItem (Join-Path $Out 'raw') -File).Count -eq 1) 'First failed raw not archived'
+        foreach ($Name in @('ai-context.json','summary.json','diff.json','latest.json','current.json','snapshots')) {
+            Assert (-not (Test-Path -LiteralPath (Join-Path $Out $Name))) "Published incomplete first result: $Name"
+        }
+    }
+
+    Test 'optional failures still publish a partial result with explicit quality' {
+        $Source = Join-Path $Work 'optional-source.json'
+        $Out = Join-Path $Work 'optional-result'
+        $Data = New-Data; $Data.ring_reserve = @{error=$true;message='optional failure'}
+        Write-MapleJson $Data $Source
+        & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out
+        $Final = Read-MapleJson (Join-Path $Out 'ai-context.json')
+        Assert ($Final.quality.section_status.basic -ceq 'ok' -and $Final.quality.section_status.stat -ceq 'ok') 'Required statuses incorrect'
+        Assert ($Final.quality.section_status.ring_reserve -ceq 'error') 'Optional error hidden'
+        Assert ($null -ne (Get-MaplePublishedSet $Out)) 'Optional failure blocked publication'
+    }
+
     Test 'locked output and mid-publish failure preserve the completed set' {
         $Source = Join-Path $Work 'publish-source.json'
         $Out = Join-Path $Work 'publish-result'
