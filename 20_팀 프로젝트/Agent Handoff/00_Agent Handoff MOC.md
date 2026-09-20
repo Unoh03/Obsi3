@@ -24,6 +24,10 @@ Chat에서 탐색·설계를 진행한 뒤 Codex/Astra 같은 실행 Agent로 �
 
 현재 10-field 구조는 강한 후보이며, 기술적 근거와 실제 handoff/context-engineering 패턴을 학습하면서 유지·통합·삭제·추가 여부를 검증한다.
 
+## 연구 기록
+
+- [[20_팀 프로젝트/Agent Handoff/01_연구 로그|연구 로그]] - handoff 개념 학습, schema 공격, 사용자 경험에서 나온 아이디어와 개선 후보를 누적 기록한다.
+
 ## 현재 기준 초안
 
 - [[20_팀 프로젝트/Agent Handoff/HANDOFF_SKILL_DRAFT|HANDOFF Skill Draft]]
@@ -76,6 +80,13 @@ Chat에서 탐색·설계를 진행한 뒤 Codex/Astra 같은 실행 Agent로 �
 - Scope와 Constraints를 보존하는가
 - Evidence와 Done을 같은 기준으로 해석하는가
 - 첫 생산적 행동까지의 재탐색 비용이 줄어드는가
+
+## 버전 관리 원칙
+
+- HANDOFF_SKILL_DRAFT.md는 현재 baseline으로 보존한다.
+- 세부 변경 이력은 Git commit/diff로 추적한다.
+- schema나 설계 철학이 의미 있게 바뀔 때만 HANDOFF_SKILL_DRAFT_v0.x.md 형태의 비교용 복사본을 만든다.
+- 연구가 안정되면 별도 canonical spec을 만든다.
 
 ## 현재 재시작 지점
 
