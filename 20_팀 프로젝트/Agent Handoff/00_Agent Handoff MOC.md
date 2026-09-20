@@ -31,15 +31,21 @@ Chat에서 탐색·설계를 진행한 뒤 Codex/Astra 같은 실행 Agent로 �
 ## 현재 기준 초안
 
 - [[20_팀 프로젝트/Agent Handoff/HANDOFF_SKILL_DRAFT|HANDOFF Skill Draft]]
-  - 현재까지의 설계 가설과 구현 요구사항
-  - English canonical draft
-  - 최종 명세가 아니라 연구 중인 기준점
+  - 공부 시작 전 baseline
+  - 비교를 위해 그대로 보존
+
+- [[20_팀 프로젝트/Agent Handoff/HANDOFF_SKILL_DRAFT_v0.2|HANDOFF Skill Draft v0.2]]
+  - 첫 research-driven candidate
+  - WHY+GOAL → INTENT, DECISIONS 승격, CURRENT STATE 재정의, 상태 축 분리를 반영
+  - 아직 canonical spec 아님
 
 ## 현재 후보 Schema
 
-1. WHY
-2. GOAL
-3. CURRENT STATE
+v0.2 기준:
+
+1. INTENT
+2. CURRENT STATE
+3. DECISIONS
 4. SCOPE
 5. INPUTS & ASSETS
 6. HOW
@@ -50,9 +56,11 @@ Chat에서 탐색·설계를 진행한 뒤 Codex/Astra 같은 실행 Agent로 �
 
 추가 원칙:
 
-- 주요 단계는 WHAT뿐 아니라 WHY를 보존한다.
-- FACT / VERIFIED or OBSERVED / ASSUMPTION / PLAN을 구분한다.
-- DECISIONS, REJECTED ALTERNATIVES, OPEN QUESTIONS / BLOCKERS는 필요 시 하위 구조로 보존한다.
+- INTENT는 Outcome을 필수로, Rationale을 decision-relevant할 때 보존한다.
+- Task WHY는 INTENT.Rationale, Method WHY는 DECISIONS.Rationale로 분리한다.
+- CURRENT STATE는 compact execution snapshot으로 제한한다.
+- Execution Status, Epistemic Status, Evidence를 하나의 label 체계로 섞지 않는다.
+- baseline schema는 비교를 위해 유지한다.
 
 ## 연구 질문
 
@@ -90,13 +98,13 @@ Chat에서 탐색·설계를 진행한 뒤 Codex/Astra 같은 실행 Agent로 �
 
 ## 현재 재시작 지점
 
-Skill 구현 전에 먼저 Agent handoff 자체를 공부하고, 현재 10-field schema를 비판적으로 재평가한다.
+Skill 구현 전에 Agent handoff schema 공격을 계속한다. 현재 v0.2는 첫 대안 설계안이며 아직 확정본이 아니다.
 
 학습 순서:
 
-1. 현재 10-field 초안이 왜 좋아 보였는지 기술적 근거 해부
-2. Agent handoff / context engineering / checkpoint / runbook 등 인접 개념 비교
-3. 공개된 실제 handoff 패턴과 현재 schema 대조
-4. schema를 유지 / 통합 / 삭제 / 추가 항목으로 재판정
-5. 실제 Chat → Astra 사례로 비교 테스트 설계
-6. 이후 Skill 구현 여부와 최종 명세 결정
+1. SCOPE 공격
+2. INPUTS & ASSETS / Source of Truth 경계 검토
+3. HOW와 AUTHORITY / CAPABILITIES 분리 가능성 검토
+4. CONSTRAINTS, EVIDENCE, DONE, FIRST ACTION 순서로 공격
+5. baseline vs v0.2를 실제 Chat → Astra 사례로 비교 테스트 설계
+6. 이후 canonical spec과 Skill 구현 여부 결정
