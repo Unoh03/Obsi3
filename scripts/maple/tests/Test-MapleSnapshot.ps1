@@ -55,6 +55,30 @@ Test 'current stats, detailed options and arrays survive; source is untouched' {
     Assert ($Before -ceq (ConvertTo-Json -InputObject $Data -Depth 100 -Compress)) 'Input mutated'
 }
 
+Test 'quality distinguishes field presence from completeness and temporal verification' {
+    $Data = New-Data
+    $Data.basic.date = '2026-09-17T00:00:00+09:00'
+    foreach ($Case in @(
+        @{state='missing';present=$false},
+        @{state='null';present=$true;value=$null},
+        @{state='empty_array';present=$true;value=@()},
+        @{state='unexpected_type';present=$true;value='invalid'},
+        @{state='array_present';present=$true;value=@(@{preset_no=2;union_state_stat=@('획득 경험치 5.0% 증가')})}
+    )) {
+        $Data.union_raider.Remove('union_state_stat_preset')
+        $Data.union_raider.union_raider_preset_1 = $null
+        if ($Case.present) { $Data.union_raider.union_state_stat_preset = $Case.value }
+        $Summary = New-MapleSummary $Data
+        $Assessment = $Summary.quality.assessment
+        Assert ($Assessment.union_state_stat_preset -ceq $Case.state) 'Field states conflated'
+        Assert ($Assessment.complete_schema_validation -ceq 'not_performed') 'Invented full validation'
+        Assert ($Assessment.cross_section_consistency -ceq 'unverified') 'Invented simultaneous refresh'
+        Assert ($Assessment.final_stats_preset_binding -ceq 'unverified') 'Invented stat/preset binding'
+        Assert ('basic' -notin $Assessment.sections_without_data_date -and 'stat' -in $Assessment.sections_without_data_date) 'Date presence incorrect'
+    }
+    Assert ($Summary.presets.union_raider.union_state_stat_preset[0].preset_no -eq 2) 'New union preset lost beside null legacy field'
+}
+
 Test 'unrecognized hyper preset is preserved instead of guessed' {
     $Data = New-Data; $Data.hyper_stat.use_preset_no = 9
     $Summary = New-MapleSummary $Data
@@ -205,10 +229,60 @@ Test 'inactive preset edits, additions and failures are compared separately' {
     Assert (@($Diff.not_compared | Where-Object section -eq 'hyper_stat').Count -eq 1) 'Preset comparison gap hidden'
 }
 
+Test 'user roles are character scoped and do not infer missing preset data' {
+    $Summary = New-MapleSummary (New-Data)
+    $Summary.presets.ability = @{ability_preset_1=$null}
+    $Before = ConvertTo-Json $Summary -Depth 100 -Compress
+    $Config = @{schema_version=1;characters=@{'테스트'=@{recorded_on='2026-09-27';preset_roles=@{
+        hyper_stat=@{'2'='사냥용'}; ability=@{'1'='보스용';'2'='사냥용'}
+    }}}}
+    $Result = New-MapleUserContext $Summary $Config
+    Assert ($Result.source -ceq 'user_description') 'Source attribution missing'
+    Assert (($Result.preset_roles | Where-Object section -eq 'hyper_stat').data_presence -ceq 'present') 'Existing preset not found'
+    Assert (($Result.preset_roles | Where-Object { $_.section -eq 'ability' -and $_.preset_no -eq 1 }).data_presence -ceq 'null') 'Null conflated'
+    Assert (($Result.preset_roles | Where-Object { $_.section -eq 'ability' -and $_.preset_no -eq 2 }).data_presence -ceq 'missing') 'Missing data invented'
+    Assert ((ConvertTo-Json $Summary -Depth 100 -Compress) -ceq $Before) 'API summary mutated'
+    $Summary.metadata.character_name = '다른캐릭터'
+    Assert ($null -eq (New-MapleUserContext $Summary $Config)) 'User roles leaked to another character'
+    $Summary.metadata.character_name = '테스트'
+    $Config.characters['테스트'].preset_roles.hyper_stat['9']='invalid'
+    $Failed=$false
+    try { New-MapleUserContext $Summary $Config | Out-Null } catch { $Failed=$true }
+    Assert $Failed 'Invalid preset accepted'
+}
+
 $TestParent = [IO.Path]::GetFullPath((Join-Path $Root 'output'))
 $Work = Join-Path $TestParent "test-$([guid]::NewGuid().ToString('N'))"
 New-Item -ItemType Directory -Path $Work -Force | Out-Null
 try {
+    Test 'user annotations persist separately, do not affect diff, and bad config retains completed set' {
+        $Source = Join-Path $Work 'roles-source.json'
+        $Out = Join-Path $Work 'roles-result'
+        $ConfigPath = Join-Path $Work 'roles.json'
+        Write-MapleJson (New-Data) $Source
+        $Config = @{schema_version=1;characters=@{'테스트'=@{recorded_on='2026-09-27';preset_roles=@{hyper_stat=@{'2'='사냥용'}}}}}
+        Write-MapleJson $Config $ConfigPath
+        & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out -PresetRolesPath $ConfigPath
+        $Before = Read-MapleJson (Join-Path $Out 'ai-context.json')
+        Assert ($Before.user_context.preset_roles[0].purpose -ceq '사냥용') 'Description absent in output'
+        $Config.characters['테스트'].preset_roles.hyper_stat['2']='다른용도'
+        Write-MapleJson $Config $ConfigPath
+        & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out -PresetRolesPath $ConfigPath
+        $After = Read-MapleJson (Join-Path $Out 'ai-context.json')
+        Assert ($After.user_context.preset_roles[0].purpose -ceq '다른용도') 'Description change not applied'
+        foreach ($Field in @('actual','presets','metadata','changes_since_previous')) {
+            Assert ((ConvertTo-Json $Before[$Field] -Depth 100 -Compress) -ceq (ConvertTo-Json $After[$Field] -Depth 100 -Compress)) "Description altered $Field"
+        }
+        $PointerHash = (Get-FileHash (Join-Path $Out 'current.json')).Hash
+        [IO.File]::WriteAllText($ConfigPath, '{broken')
+        $Failed=$false
+        try { & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out -PresetRolesPath $ConfigPath } catch { $Failed=$true }
+        Assert $Failed 'Bad config silently accepted'
+        Assert ((Get-FileHash (Join-Path $Out 'current.json')).Hash -ceq $PointerHash) 'Bad config replaced completed results'
+        & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out -PresetRolesPath ''
+        Assert (-not (Read-MapleJson (Join-Path $Out 'ai-context.json')).Contains('user_context')) 'Explicit disable ignored'
+    }
+
     Test 'real file pipeline preserves bytes, history and repeat diff' {
         $Source = Join-Path $Work 'source.json'
         $Out = Join-Path $Work 'result'
@@ -329,6 +403,31 @@ try {
         Assert ($Final.quality.section_status.basic -ceq 'ok' -and $Final.quality.section_status.stat -ceq 'ok') 'Required statuses incorrect'
         Assert ($Final.quality.section_status.ring_reserve -ceq 'error') 'Optional error hidden'
         Assert ($null -ne (Get-MaplePublishedSet $Out)) 'Optional failure blocked publication'
+    }
+
+    Test 'dated exports use verified bundle, reuse identical data and never overwrite' {
+        $Source = Join-Path $Work 'export-source.json'
+        $Out = Join-Path $Work 'export-result'
+        $Data = New-Data
+        $Data.metadata.collected_at = '2026-09-18T01:00:00+00:00'
+        Write-MapleJson $Data $Source
+        & (Join-Path $Root 'Build-MapleSnapshot.ps1') -SourcePath $Source -OutputDirectory $Out
+        $Export = Export-MapleAIContext $Out
+        Assert ($Export.path -match '2026-09-18-100000-KST-') 'Filename is not collection time in KST'
+        Assert ((Get-FileHash $Export.path).Hash.ToLowerInvariant() -ceq $Export.sha256) 'Export hash mismatch'
+        Assert ((Export-MapleAIContext $Out).path -ceq $Export.path) 'Identical export not reused'
+        [IO.File]::WriteAllText((Join-Path $Out 'ai-context.json'), 'broken convenience copy')
+        Assert ((Export-MapleAIContext $Out).sha256 -ceq $Export.sha256) 'Export trusted convenience copy'
+        [IO.File]::WriteAllText($Export.path, 'existing conflicting data')
+        $Failed = $false
+        try { Export-MapleAIContext $Out | Out-Null } catch { $Failed = $true }
+        Assert $Failed 'Conflicting export accepted'
+        Assert ((Get-Content $Export.path -Raw) -ceq 'existing conflicting data') 'Existing export overwritten'
+        $Bundle = Get-MaplePublishedSet $Out
+        [IO.File]::WriteAllText((Join-Path $Bundle.directory 'ai-context.json'), 'corrupt bundle')
+        $Failed = $false
+        try { Export-MapleAIContext $Out | Out-Null } catch { $Failed = $true }
+        Assert $Failed 'Corrupt bundle accepted'
     }
 
     Test 'locked output and mid-publish failure preserve the completed set' {

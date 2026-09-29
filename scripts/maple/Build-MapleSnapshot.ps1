@@ -2,7 +2,8 @@
 [CmdletBinding()]
 param(
     [string]$SourcePath = (Join-Path $PSScriptRoot 'output/우노03-maple-api.json'),
-    [string]$OutputDirectory
+    [string]$OutputDirectory,
+    [string]$PresetRolesPath = (Join-Path $PSScriptRoot 'preset-roles.json')
 )
 $ErrorActionPreference = 'Stop'
 Import-Module (Join-Path $PSScriptRoot 'MapleSnapshot.psm1') -Force
@@ -81,6 +82,13 @@ $Diff.metadata = [ordered]@{
     current_raw_sha256 = $Hash
 }
 $Diff.history_warnings = @($HistoryWarnings.ToArray())
+if ($PresetRolesPath) {
+    $UserContext = New-MapleUserContext $Summary (Read-MapleJson $PresetRolesPath)
+    if ($null -ne $UserContext) {
+        $Summary.user_context = $UserContext
+        $Summary.reading_guide += 'user_context는 별도 사용자 설명입니다. preset_roles의 경로와 data_presence를 확인하고, 용도 라벨을 현재 착용 상태나 프리셋별 최종 스탯으로 해석하지 마세요.'
+    }
+}
 $Context = [ordered]@{
     schema_version = $Summary.schema_version
     metadata = $Summary.metadata
@@ -90,8 +98,15 @@ $Context = [ordered]@{
     presets = $Summary.presets
     changes_since_previous = $Diff
 }
+if ($Summary.Contains('user_context')) { $Context.user_context = $Summary.user_context }
 Publish-MapleSnapshot $Summary $Diff $Context $RawPath $OutputDirectory
 Write-Host "AI에 전달: $(Join-Path $OutputDirectory 'ai-context.json')"
+try {
+    $Export = Export-MapleAIContext $OutputDirectory
+    Write-Host "날짜 포함 전달본: $($Export.path)"
+    Write-Host "수집 시작: $($Export.collected_at) / 전달본 SHA-256: $($Export.sha256)"
+}
+catch { Write-Warning "결과 묶음은 갱신됐지만 날짜 포함 전달본 생성 실패: $($_.Exception.Message)" }
 Write-Host "원본 보관: $RawPath"
 Write-Host "변경 $($Diff.change_count)건 / 수집 실패·누락 $($Summary.quality.unavailable_sections.Count)개"
 foreach ($Warning in $HistoryWarnings) { Write-Warning $Warning }

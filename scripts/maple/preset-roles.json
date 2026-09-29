@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "characters": {
+    "우노03": {
+      "recorded_on": "2026-09-27",
+      "preset_roles": {
+        "item_equipment": {"1": "보스용", "2": "사냥용"},
+        "hyper_stat": {"1": "보스용", "2": "사냥용"},
+        "ability": {"1": "보스용", "2": "사냥용"},
+        "link_skill": {"1": "보스용", "2": "사냥용"}
+      }
+    }
+  }
+}

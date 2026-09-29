@@ -160,9 +160,12 @@ function New-MapleSummary($Data) {
         }
         reading_guide = @(
             'NEXON API가 반환한 캐릭터 상태입니다. 실시간 접속 상태나 환산 결과를 뜻하지 않습니다.',
+            '먼저 metadata.collected_at과 raw_sha256을 확인하세요. 로컬 재수집은 이미 첨부한 파일을 갱신하지 않습니다.',
             'actual.stat.values는 API의 최종 스탯입니다. 장비/링크/유니온 효과를 여기에 다시 더하지 마세요.',
             '미수집/실패/불완전(partial)은 quality에 표시하며 0 또는 미장착으로 해석하지 않습니다. date=null이면 데이터 기준 시각 미확인입니다.',
             'actual은 현재 상태, presets는 저장된 대안 설정입니다. presets는 API 섹션/원래 필드명으로 찾으며 번호·남은 포인트·null·빈 배열도 보존합니다. 보스용/사냥용이라는 용도는 임의로 추정하지 마세요.',
+            '유니온 상태 프리셋은 presets.union_raider.union_state_stat_preset을 우선 확인하세요. 구형 union_raider_preset_1~5의 null만으로 프리셋 전체가 없다고 판단하지 마세요.',
+            'quality.section_status의 ok는 전체 필드 검증이나 섹션 간 동시 갱신을 보증하지 않습니다. 검증 범위와 미확인은 quality.assessment에 표시합니다.',
             '이미지 URL·외형 필드는 생략했습니다. 현재 상태와 저장 프리셋의 수치·옵션·효과·설명·null·0·배열 순서는 보존하며 전체 응답은 raw에 있습니다.',
             '숫자처럼 보이는 문자열도 API 타입 그대로입니다. diff는 정상 수집된 섹션만 비교하며 변화의 원인을 단정하지 않습니다.'
         )
@@ -172,10 +175,87 @@ function New-MapleSummary($Data) {
             errors = $Errors
             validation_issues = $ValidationIssues
             data_dates = $Dates
+            assessment = [ordered]@{
+                validation_scope = 'section_presence_and_error; stat_names_when_array; active_hyper_entries'
+                complete_schema_validation = 'not_performed'
+                cross_section_consistency = 'unverified'
+                final_stats_preset_binding = 'unverified'
+                sections_without_data_date = @($Sections | Where-Object { -not $Dates.Contains($_) -or $null -eq $Dates[$_] -or [string]::IsNullOrWhiteSpace([string]$Dates[$_]) })
+                union_state_stat_preset = Get-MapleFieldState $Data.union_raider 'union_state_stat_preset'
+            }
         }
         actual = $Actual
         presets = $Presets
     }
+}
+
+# Presence is not schema validity or proof that the preset is currently active.
+function Get-MapleFieldState($Object, [string]$Name) {
+    if ($Object -isnot [System.Collections.IDictionary] -or -not $Object.Contains($Name)) { return 'missing' }
+    if ($null -eq $Object[$Name]) { return 'null' }
+    if ($Object[$Name] -isnot [System.Collections.IList]) { return 'unexpected_type' }
+    if ($Object[$Name].Count -eq 0) { return 'empty_array' }
+    return 'array_present'
+}
+
+function New-MapleUserContext($Summary, $Config) {
+    if ($Config -isnot [System.Collections.IDictionary] -or $Config.schema_version -ne 1 -or
+        $Config.characters -isnot [System.Collections.IDictionary]) { throw 'Invalid preset-roles config' }
+    $Character = [string]$Summary.metadata.character_name
+    if (-not $Config.characters.Contains($Character)) { return $null }
+    $Description = $Config.characters[$Character]
+    if ($Description -isnot [System.Collections.IDictionary] -or
+        $Description.preset_roles -isnot [System.Collections.IDictionary] -or
+        [string]::IsNullOrWhiteSpace([string]$Description.recorded_on)) { throw 'Invalid character preset description' }
+    $Prefixes = @{
+        item_equipment = 'item_equipment_preset_'; hyper_stat = 'hyper_stat_preset_'
+        ability = 'ability_preset_'; link_skill = 'character_link_skill_preset_'
+    }
+    $References = [System.Collections.Generic.List[object]]::new()
+    foreach ($Section in $Description.preset_roles.Keys) {
+        $Roles = $Description.preset_roles[$Section]
+        if (-not $Prefixes.ContainsKey($Section) -or $Roles -isnot [System.Collections.IDictionary]) {
+            throw "Unsupported preset role section: $Section"
+        }
+        foreach ($Number in $Roles.Keys) {
+            if ([string]$Number -cnotmatch '^[1-3]$' -or $Roles[$Number] -isnot [string] -or
+                [string]::IsNullOrWhiteSpace($Roles[$Number])) { throw 'Invalid preset number or label' }
+            $Field = $Prefixes[$Section] + $Number
+            $Value = $Summary.presets[$Section]
+            $State = if ($Value -isnot [System.Collections.IDictionary] -or -not $Value.Contains($Field)) { 'missing' }
+                elseif ($null -eq $Value[$Field]) { 'null' }
+                else { 'present' }
+            $References.Add([ordered]@{
+                section = $Section; preset_no = [int]$Number; purpose = $Roles[$Number]
+                data_path = "presets.$Section.$Field"; data_presence = $State
+            })
+        }
+    }
+    return [ordered]@{
+        source = 'user_description'
+        character_name = $Character
+        recorded_on = $Description.recorded_on
+        note = '사용자가 설명한 프리셋 용도입니다. 현재 적용·최종 스탯·설정의 최신성을 보증하지 않습니다. 미지정 프리셋의 용도는 추정하지 않습니다.'
+        preset_roles = @($References.ToArray())
+    }
+}
+
+function Export-MapleAIContext([string]$OutputDirectory) {
+    $Published = Get-MaplePublishedSet $OutputDirectory
+    if (-not $Published) { throw '완료된 결과 묶음이 없습니다.' }
+    $Source = Join-Path $Published.directory 'ai-context.json'
+    $Context = Read-MapleJson $Source
+    $Collected = ([DateTimeOffset]$Context.metadata.collected_at).ToOffset([TimeSpan]::FromHours(9))
+    $Character = [string]$Context.metadata.character_name -replace '[\\/:*?"<>|]', '_'
+    $Hash = $Published.manifest.files['ai-context.json']
+    $ExportDir = Join-Path $OutputDirectory 'exports'
+    New-Item -ItemType Directory -Path $ExportDir -Force | Out-Null
+    $Path = Join-Path $ExportDir "ai-context-$Character-$($Collected.ToString('yyyy-MM-dd-HHmmss'))-KST-$($Hash.Substring(0,12)).json"
+    if (-not (Test-Path -LiteralPath $Path)) { [IO.File]::Copy($Source, $Path, $false) }
+    if ((Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant() -cne $Hash) {
+        throw '전달용 파일 hash 불일치. 기존 파일을 덮어쓰지 않습니다.'
+    }
+    return [ordered]@{ path = [IO.Path]::GetFullPath($Path); collected_at = $Context.metadata.collected_at; sha256 = $Hash }
 }
 
 function Get-MapleArrayKey($Left, $Right) {
@@ -376,4 +456,4 @@ function Publish-MapleSnapshot($Summary, $Diff, $Context, [string]$RawPath, [str
     }
 }
 
-Export-ModuleMember -Function Get-MapleEndpoints,Read-MapleJson,Write-MapleJson,New-MapleSummary,New-MapleDiff,Get-MaplePublishedSet,Publish-MapleSnapshot,Get-MapleRequiredFailures
+Export-ModuleMember -Function Get-MapleEndpoints,Read-MapleJson,Write-MapleJson,New-MapleSummary,New-MapleDiff,Get-MaplePublishedSet,Publish-MapleSnapshot,Get-MapleRequiredFailures,Export-MapleAIContext,New-MapleUserContext

@@ -6,7 +6,7 @@ NEXON Open API로 캐릭터 정보를 수집하고, AI와 대화할 때 사용�
 
 1. `Run-MapleCharacterData.cmd`를 더블클릭한다.
 2. PowerShell 입력창에 NEXON API key를 입력한다. 키는 파일에 저장하지 않는다.
-3. 현재 스펙·저장 프리셋·직전 변경을 분석하려면 **`output/ai-context.json`을 AI에 첨부**한다. 원본 API 응답을 감사하거나 생략한 외형/식별 정보를 확인할 때는 raw를 사용한다.
+3. 현재 스펙·저장 프리셋·직전 변경을 분석하려면 **실행 마지막에 표시되는 `output/exports/ai-context-캐릭터-날짜-시간-KST-해시.json`을 AI에 첨부**한다. [[scripts/maple/00_메이플_AI_목차|메이플 AI 데이터 목차]]를 함께 제공하면 읽기 순서와 필드 경로를 안내할 수 있다. 원본 API 응답을 감사하거나 생략한 외형/식별 정보를 확인할 때는 raw를 사용한다.
 
 기본 캐릭터는 우노03이다. 직접 실행하거나 다른 캐릭터를 수집하려면:
 
@@ -29,6 +29,7 @@ Set-Location 'D:\Obsidian\Vault\Obsi2\scripts\maple'
 | 파일 | 역할 |
 |---|---|
 | `ai-context.json` | AI용 기본 파일. 현재 상태 + 저장 프리셋 + 수집 품질 + 직전 수집과의 변경 내역. 공백을 줄인 JSON |
+| `exports/ai-context-*.json` | 검증된 완료 묶음의 AI 파일과 바이트가 같은 전달용 사본. 수집 시작 시각(KST)과 내용 해시를 이름에 포함하며 덮어쓰지 않음 |
 | `summary.json` | 같은 현재 상태와 저장 프리셋을 사람이 읽기 좋게 들여쓴 JSON. 변경 내역 제외 |
 | `diff.json` | 변경 내역만 필요할 때 사용 |
 | `캐릭터명-maple-api.json`, `latest.json` | 원본 응답을 보존한 수집본 |
@@ -37,6 +38,8 @@ Set-Location 'D:\Obsidian\Vault\Obsi2\scripts\maple'
 | `snapshots/<hash>/` | 함께 생성·검증된 summary/diff/latest/ai-context. 공개 후 덮어쓰지 않는 결과 묶음 |
 
 여러 캐릭터의 raw 이력은 구분하지만, `ai-context.json` 등 고정 이름 파일은 마지막으로 처리한 캐릭터를 가리킨다. 동시에 실행하지 않는다. 모든 생성 파일은 Git 제외 대상이다.
+
+로컬 재수집만으로 ChatGPT에 이미 첨부한 사본이 바뀌지는 않는다. 새 전달본을 올리고 AI가 `metadata.collected_at`을 먼저 확인하도록 한다. 파일명은 가공 시각이 아닌 **원본 수집 시각**이다. 같은 원본도 가공 규칙·비교 이력이 다르면 전달본 내용 해시가 달라질 수 있다. 전달본의 SHA-256과 `metadata.raw_sha256`(원본 해시)은 서로 다른 파일의 식별자다. 전달본 생성이 실패하면 경고를 출력하고, 완료 묶음과 기본 `ai-context.json`은 유지한다.
 
 `summary.json`과 `diff.json`의 내용은 `ai-context.json`에 들어 있으므로 AI에 중복 첨부할 필요가 없다. 두 파일은 로컬 확인용으로 계속 생성한다. `latest.json`은 캐릭터별 수집 원본의 복사본이며, raw 이력과 함께 원본 검증용으로 보존한다.
 
@@ -48,8 +51,10 @@ Set-Location 'D:\Obsidian\Vault\Obsi2\scripts\maple'
 
 - `metadata`: 캐릭터명, 수집 시작·종료 시각, NEXON 출처, raw 상대 경로와 SHA-256.
 - `quality`: 각 API의 성공/실패/누락/불완전(`partial`), 오류, 구조 검증 사유(`validation_issues`), API 응답의 데이터 기준 시각. `date: null`은 기준 시각을 확인하지 못했다는 뜻이다.
+- `quality.assessment`: 수행한 검증의 범위, 전체 스키마 검증 미수행, 섹션 간 동시 갱신·최종 스탯과 프리셋 연결 미확인, 기준 시각 없는 섹션 목록. 유니온 새 프리셋 필드는 `missing` / `null` / `empty_array` / `array_present` / `unexpected_type`을 구분한다. 배열 존재는 내용 검증이나 현재 적용의 증거가 아니다.
 - `actual`: 모든 최종 스탯, 현재 장비의 상세 옵션·잠재·추옵·스타포스, 하이퍼 스탯·어빌리티, 심볼, 세트, 펫, 링크, V 매트릭스, HEXA 코어·스탯, 무릉, 기타 스탯, 반지, 유니온·아티팩트·챔피언.
 - `presets`: 저장된 하이퍼 스탯·어빌리티·장비·칭호·링크/자체 링크·V 매트릭스·HEXA 스탯·유니온·펫 장비 프리셋. API 섹션과 원래 필드명을 유지하며, 현재 적용 설정으로 간주하지 않는다.
+- `user_context`: 해당 캐릭터에 등록한 사용자 설명이 있을 때만 포함. `preset_roles`의 용도·원본 JSON 경로·데이터 존재 여부를 제공한다. NEXON 응답과 분리되며 최종 스탯이나 활성 상태를 덮어쓰지 않는다.
 - `changes_since_previous`: 직전의 더 오래된 **동일 캐릭터** 수집본과 비교한 현재 상태·저장 프리셋의 변경값 및 비교하지 못한 섹션. 프리셋 변경 경로는 `$.presets.`로 시작한다.
 
 예를 들어 하이퍼 2번은 `presets.hyper_stat.hyper_stat_preset_2`, 어빌리티 2번은 `presets.ability.ability_preset_2`, 칭호 3번은 `presets.item_equipment.title_preset3`에 있다. 유니온 상태 프리셋은 `presets.union_raider.union_state_stat_preset`에 있다. 번호와 API가 반환한 순서를 유지하며, 보스용/사냥용 용도는 임의로 붙이지 않는다.
@@ -57,6 +62,18 @@ Set-Location 'D:\Obsidian\Vault\Obsi2\scripts\maple'
 이미지 URL과 외형 표시 필드는 현재 상태와 프리셋 모두에서 덜어낸다. 하이퍼 스탯의 현재 배분은 API의 사용 프리셋 번호로 선택하며, 번호가 확인되지 않거나 선택한 값이 null/비정상 구조이면 `active_preset_resolved: false`, 섹션 상태 `partial`로 표시하고 후보들은 `presets`에 남긴다. 빈 배열은 null과 구분해 그대로 보존한다. 프리셋별 남은 포인트·수치 문자열·0·null·빈 배열도 보존한다. 스탯 이름은 NEXON의 한글 이름을 사용한다. 아이템 설명은 효과 정보가 포함될 수 있어 유지한다. **이 파일은 raw 전체를 대체하지 않는다.** OCID·외형 정보 등 생략한 정보, 현재 수집 대상 밖 정보, API 오류로 받지 못한 정보까지 포함한다는 뜻은 아니다.
 
 API 최종 스탯에 장비·링크·유니온 효과를 다시 더하면 중복 계산이 된다. 수집 시각은 실제 게임 상태의 기준 시각과 같다고 보장하지 않는다. 제공된 API 범위 밖 정보나 실패 응답을 0/미장착으로 추정하지 않으며, 별도의 환산 계산은 하지 않는다.
+
+`section_status: ok`는 섹션 존재와 오류 응답 여부를 기준으로 하며, 하이퍼 활성 배분 등 일부 추가 검증을 포함한다. 모든 필드가 정상이라는 뜻은 아니다. `validation_issues`가 비어 있어도 미검증 영역이 있으므로 `assessment`를 함께 읽는다.
+
+## 단발 수집과 프리셋 용도
+
+한 번 수집하여 현재 최종 스탯, 저장된 대안 프리셋, 이전 수집과의 차이를 제공한다. 두 프리셋을 연속 수집하거나 게임 내 전환을 감시하는 기능은 도입하지 않는다. 미착용 프리셋의 최종 전투력은 계산하지 않는다.
+
+`preset-roles.json`에 캐릭터별 사용자 설명을 저장한다. 우노03은 사용자가 설명한 장비·하이퍼·어빌·링크의 1번을 보스용, 2번을 사냥용으로 연결했다. 유니온·V 매트릭스 등 별도 번호의 용도가 확인되지 않은 항목은 임의로 연결하지 않는다.
+
+설정의 `characters` 아래 캐릭터명, `recorded_on`(설명 기록일), `preset_roles`의 섹션별 번호/용도를 수정하면 다음 후처리부터 반영된다. 다른 캐릭터에 우노03 설명을 적용하지 않는다. 현재 지원하는 네 섹션은 1~3번을 지정할 수 있다. 설명 날짜는 API 수집 시각과 별개이며 재가공할 때 자동 갱신하지 않는다. 용도를 바꿨다면 설정도 함께 수정해야 한다.
+
+참조 대상이 없으면 `data_presence: missing`, null이면 `null`, 값이 있으면 `present`로 표시한다. `present`는 내용의 유효성이나 현재 적용을 보증하지 않는다. 사용자 설명은 캐릭터 변화 diff에 섞지 않는다. 잘못된 설정 파일은 후처리를 오류로 종료하고 기존 완료 결과를 유지한다. 별도 설정은 `Build-MapleSnapshot.ps1 -PresetRolesPath 경로`로 지정하며, `-PresetRolesPath ''`로 설명을 제외할 수 있다. 과거 원본 재가공도 현재 지정한 설명을 사용하므로 기록일과 수집일을 함께 확인한다.
 
 현재 수집에서는 과거 조회용 `ring_exchange`를 호출하지 않고 `ring_reserve`를 사용한다. [NEXON의 2026-03-19 업데이트 안내](https://openapi.nexon.com/ko/support/notice/3402834/)에 따른 구분이다. 기존 raw에 남아 있는 `ring_exchange` 데이터/오류는 그대로 읽고 보존하므로, 과거 수집본을 재가공했다고 과거 오류가 사라지지는 않는다.
 
@@ -76,6 +93,7 @@ API 최종 스탯에 장비·링크·유니온 효과를 다시 더하면 중복
 | `Get-MapleCharacterData.ps1` | SecureString 키 입력, API 요청 간격·429 재시도·요청 제한 시간, 원본 저장 |
 | `MapleSnapshot.psm1` | API 목록, JSON 입출력, AI용 상태 정리, 변경 비교 |
 | `Build-MapleSnapshot.ps1` | raw 이력 선택·보관과 출력 생성 |
+| `preset-roles.json` | 캐릭터별 사용자 설명. API 원본과 별개로 보존하는 프리셋 용도 |
 | `tests/Test-MapleSnapshot.ps1` | 네트워크 없이 가공·변경 비교·원본 보존 검증 |
 
 ```powershell
