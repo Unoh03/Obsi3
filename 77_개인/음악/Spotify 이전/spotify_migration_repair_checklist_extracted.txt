@@ -1,0 +1,551 @@
+# Spotify 이전 검수 체크리스트 (검색용 텍스트 추출본)
+원본: 이 대화의 spotify_migration_repair_checklist.xlsx (file_00000000be008209a62a4964a69cb11b)
+원본 Excel의 5개 시트에서 추출한 텍스트이며, 셀 서식·수식·시트 기능을 보존한 XLSX 파일은 아니다.
+Vaundy: 현재 Apple Music CSV 89곡을 정답으로 사용하며 의도적으로 제거된 곡은 복구하지 않는다.
+Spotify 플레이리스트 실제 변경은 이 텍스트의 검수 결과와 구별해야 한다.
+
+<PARSED TEXT FOR SHEET: 1 / 5 TABS
+TAB NAME: 요약>
+index,Apple Music → Spotify 이전 검수 및 수정 계획,Unnamed: 1
+0,업로드된 CSV 시점 기준 · Spotify 라이브러리는 변경하지 않음 · Vaundy는 Apple 원본 89곡을 정답으로 유지,
+1,,
+2,항목,값
+3,Apple Music 원본 총 곡수,463
+4,Spotify 이전 총 곡수,459
+5,요루시카 누락,4
+6,요루시카 발매 항목 교체 검토,21
+7,다른 플레이리스트 검토,19
+8,,
+9,작업 순서,처리 방침
+10,1 · 요루시카 누락 4곡,"『幻燈』에서 추가하고 Apple 원본 위치 67,68,69,80에 맞춰 재배치"
+11,2 · 요루시카 수록본 21곡,동일 곡을 Apple의 발매 항목에 대응하는 Spotify 앨범/싱글 항목으로 교체
+12,3 · 즛토마요 등 19건,원본 차이와 원하는 규칙을 확인하여 개별 수정; 자동 삭제 금지
+13,4 · Vaundy,현재 업로드한 Apple 목록 89곡이 정답. 과거 96곡 기준으로 복원하지 않음
+14,5 · 재검증,수정 후 Spotify CSV를 다시 내보내 전체 순서·ISRC·앨범명을 비교
+15,편집 권한,연동 Spotify 도구는 기존 플레이리스트의 곡 교체/재정렬을 지원하지 않으므로 실제 수정은 앱에서 수행
+16,,
+17,해석 주의,내용
+18,ISRC,동일 ISRC는 같은 녹음 식별자라는 강한 단서이나 같은 발매 항목·마스터 파일을 보장하지 않음
+19,앨범명 번역,"Elma=エルマ, Plagiarism=盗作, Creation=創作, second person=二人称 같은 현지화 표기는 오류 아님"
+20,좌우맹,"左右盲의 Apple ISRC 공란: 제목/위치로 대응, 교체 전 수동 확인"
+21,컴필레이션,같은 ISRC라도 Apple에서 선택한 정규 앨범/싱글 대신 임의 컴필레이션이 잡히면 검토
+22,기타 중복,즛토마요 残機 싱글/앨범 중복은 원본에도 있었으므로 임의 삭제하지 않음
+<PARSED TEXT FOR SHEET: 2 / 5 TABS
+TAB NAME: 요루시카_누락4>
+index,Apple 순서,Apple 표기,Spotify 검색명,목표 앨범,직전 원본 곡,직후 원본 곡,Spotify 목표 앨범 링크,조치,상태
+0,67,Miyakoochi,都落ち,幻燈,Portrait of Summer,Bremen,https://open.spotify.com/album/4wbmfOquB4wKqtm3UAy9fj?utm_source=openai&utm_medium=chatgpt&request_id=15d45333-6cd4-4faa-b70f-410db040659f,앨범에서 추가 후 원본 순서대로 배치,미완료
+1,68,Bremen,ブレーメン,幻燈,Miyakoochi,Chinokate,https://open.spotify.com/album/4wbmfOquB4wKqtm3UAy9fj?utm_source=openai&utm_medium=chatgpt&request_id=15d45333-6cd4-4faa-b70f-410db040659f,앨범에서 추가 후 원본 순서대로 배치,미완료
+2,69,Chinokate,チノカテ,幻燈,Bremen,Snow Country,https://open.spotify.com/album/4wbmfOquB4wKqtm3UAy9fj?utm_source=openai&utm_medium=chatgpt&request_id=15d45333-6cd4-4faa-b70f-410db040659f,앨범에서 추가 후 원본 순서대로 배치,미완료
+3,80,Algernon,アルジャーノン,幻燈,Left-Right Confusion,The First Night,https://open.spotify.com/album/4wbmfOquB4wKqtm3UAy9fj?utm_source=openai&utm_medium=chatgpt&request_id=15d45333-6cd4-4faa-b70f-410db040659f,앨범에서 추가 후 원본 순서대로 배치,미완료
+<PARSED TEXT FOR SHEET: 3 / 5 TABS
+TAB NAME: 요루시카_교체21>
+index,Apple 순서,현재 Spotify 순서,Apple 곡명,현재 Spotify 곡명,Apple 앨범,목표 Spotify 앨범,현재 Spotify 앨범,Apple ISRC,Spotify ISRC,ISRC 검증,현재 Spotify ID,목표 앨범 링크,조치,상태
+0,34,34,Rain with Cappuccino,雨とカプチーノ,Elma,エルマ,雨とカプチーノ,JPPO01902974,JPPO01902974,동일 ISRC,7lRCvofuqk5YZinCcxiYXK,https://open.spotify.com/album/2jgZDVp8aoPDTAqxswhz9g?utm_source=openai&utm_medium=chatgpt&request_id=b26d1d05-e808-4873-8afe-2b46f6295bbe,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+1,37,37,After the Rain,雨晴るる,Elma,エルマ,Daylight Chill Vibes in Tokyo,JPPO01902977,JPPO01902977,동일 ISRC,28ejHNG1qQBwNi0bWQHQfI,https://open.spotify.com/album/2jgZDVp8aoPDTAqxswhz9g?utm_source=openai&utm_medium=chatgpt&request_id=b26d1d05-e808-4873-8afe-2b46f6295bbe,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+2,48,48,Prostitution,春ひさぎ,Plagiarism,盗作,春ひさぎ,JPPO02001467,JPPO02001467,동일 ISRC,3opvzEeKvkWEKi0TV2ePbC,https://open.spotify.com/album/6pZ0SrZCP8Bm28L6JhMtBy?utm_source=openai&utm_medium=chatgpt&request_id=0a1e07ea-1806-440a-b202-2a60cb34e333,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+3,58,58,Night Journey,夜行,Plagiarism,盗作,夜行,JPPO02000003,JPPO02000003,동일 ISRC,1sPu1euMR0UlTMFFWHh4wB,https://open.spotify.com/album/6pZ0SrZCP8Bm28L6JhMtBy?utm_source=openai&utm_medium=chatgpt&request_id=0a1e07ea-1806-440a-b202-2a60cb34e333,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+4,59,59,Ghost In A Flower,花に亡霊,Plagiarism,盗作,Anime Hits,JPPO02001032,JPPO02001032,동일 ISRC,5kI8XD4lrotjJWHj6APboB,https://open.spotify.com/album/6pZ0SrZCP8Bm28L6JhMtBy?utm_source=openai&utm_medium=chatgpt&request_id=0a1e07ea-1806-440a-b202-2a60cb34e333,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+5,61,61,Spring Thief,Spring Thief,Creation - EP,創作,Tunes That Stick Vol 18,JPPO02004291,JPPO02004291,동일 ISRC,2jML0qsWomEa82Rmjq19P8,https://open.spotify.com/album/3BnM7AuvYkREVqNTPIxTRH?utm_source=openai&utm_medium=chatgpt&request_id=7e42b48d-0688-41e4-aa37-21ddc9f2f5c2,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+6,63,63,Eat the wind,風を食む,Creation - EP,創作,風を食む,JPPO02002997,JPPO02002997,동일 ISRC,68OYaxreTGmAuD9cAztr2p,https://open.spotify.com/album/3BnM7AuvYkREVqNTPIxTRH?utm_source=openai&utm_medium=chatgpt&request_id=7e42b48d-0688-41e4-aa37-21ddc9f2f5c2,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+7,64,64,Liar,嘘月,Creation - EP,創作,Tokyo Moon,JPPO02001548,JPPO02001548,동일 ISRC,3yC6LsC5ea8TPGKqtl0oTT,https://open.spotify.com/album/3BnM7AuvYkREVqNTPIxTRH?utm_source=openai&utm_medium=chatgpt&request_id=7e42b48d-0688-41e4-aa37-21ddc9f2f5c2,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+8,65,65,Telepath,テレパス,Telepath - Single,テレパス,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02205009,JPPO02205009,동일 ISRC,2UbwEA43H9kDB74z2vwGyp,https://open.spotify.com/album/2UGjDQb2VvvfasGe7n1hxN?utm_source=openai&utm_medium=chatgpt&request_id=f208ed82-566e-42f5-87d8-41927e0dc2e4,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+9,79,76,Left-Right Confusion,左右盲,Magic Lantern,幻燈,左右盲,,JPPO02202188,"Apple ISRC 공란, 곡명/위치로 매칭",797EOD68bmVFiyalgBGeOZ,https://open.spotify.com/album/4wbmfOquB4wKqtm3UAy9fj?utm_source=openai&utm_medium=chatgpt&request_id=15d45333-6cd4-4faa-b70f-410db040659f,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+10,91,87,Setting Sun,斜陽,Setting Sun - Single,斜陽,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02301095,JPPO02301095,동일 ISRC,2Yg3P1b0S9v0Vs3flw1hm0,https://open.spotify.com/album/4FGNOtaosV0RFQZohUbGHj?utm_source=openai&utm_medium=chatgpt&request_id=47c4b5f8-2d57-49cf-83a7-7119284d9c9e,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+11,100,96,Play Sick,プレイシック,second person,二人称,プレイシック,JPPO02504413,JPPO02504413,동일 ISRC,4HWJSaMneOtNkFOrD1LU0c,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+12,102,98,Sun,太陽,second person,二人称,太陽,JPPO02405010,JPPO02405010,동일 ISRC,1JNQLqxqvwHDekTfOhs4wu,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+13,103,99,Sunny,晴る,second person,二人称,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02304150,JPPO02304150,동일 ISRC,2dkQcaZZyX8FDmpLKT9HNX,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+14,104,100,Forget it,忘れてください,second person,二人称,忘れてください,JPPO02403065,JPPO02403065,동일 ISRC,7raKnLKyQSatDiVVpiZDds,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+15,105,101,Shura,修羅,second person,二人称,TOKYO VIRAL HITS 2025,JPPO02502207,JPPO02502207,동일 ISRC,43IzeKSCuXxdPi2dMH16rI,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+16,106,102,Martian,火星人,second person,二人称,TOKYO VIRAL HITS 2025,JPPO02500982,JPPO02500982,동일 ISRC,5zZbpOTSYsFHJxEX1Ysdrd,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+17,107,103,Rubato,ルバート,second person,二人称,ルバート,JPPO02400612,JPPO02400612,동일 ISRC,1w3837OMA0xxpFqqMtL7B5,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+18,109,105,Aporia,アポリア,second person,二人称,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02404516,JPPO02404516,동일 ISRC,5TfF8SSzjRT8JXL2M9H33B,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+19,110,106,Snake,へび,second person,二人称,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02405696,JPPO02405696,동일 ISRC,0Dr7CohGLCv6R2D9o97UJe,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+20,114,110,Moonbath,月光浴,second person,二人称,月光浴,JPPO02302380,JPPO02302380,동일 ISRC,6HyPxNFn7WcIIGVIPejiB1,https://open.spotify.com/album/0eYZtVRBgZDpEibSKVri8P?utm_source=openai&utm_medium=chatgpt&request_id=fdd89df3-e143-4160-8640-74fd8bea8fff,현재 곡을 목표 앨범 수록본으로 교체한 뒤 같은 위치 유지,미완료
+<PARSED TEXT FOR SHEET: 4 / 5 TABS
+TAB NAME: 다른곡_검토19>
+index,플레이리스트,순서,Apple 곡명,Spotify 곡명,Apple 앨범,Spotify 앨범,ISRC,현재 Spotify ID,유의사항,상태
+0,너드커넥션,39,Losing Myself,Losing Myself,그래도 우리는,Losing Myself,KRA382403885,37jgMVaU64Sv2gqtwOsdvl,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+1,즛토마요,1,Byoushinwo Kamu,Byoushinwo Kamu,Byoushinwo Kamu - Single,Tadashii Itsuwarikarano Kishou,JPPO01804003,2B5IKyvmjIHXMwn8SGTPX2,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+2,즛토마요,8,Seigi,Seigi,Seigi - Single,Imawa Imade Chikaiwa Emide,JPPO01901735,3qsk3aJREabIH46Sdoi75p,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+3,즛토마요,21,Obenkyou Shitoiteyo,Obenkyou Shitoiteyo,Obenkyou Shitoiteyo - Single,Hogarakana Hifutote Fufuku,JPPO02001468,5ZvftnPYgURAHlhVzHw4Us,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+4,즛토마요,27,Can't Be Right,正しくなれない,Can't Be Right - Single,ZUTOMAYO's Playlist for U.S.,JPPO02003594,4XOs9qS82Wphz3Dnsf8G63,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+5,즛토마요,28,Hunch Gray,Hunch Gray,Hunch Gray - Single,Gusare,JPPO02003593,0gBom70sQO80qgGAACptjh,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+6,즛토마요,31,Darken,Darken,Darken - Single,Gusare,JPPO02003592,15mJGBtLcTAURQ0XOdDXXy,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+7,즛토마요,37,袖のキルト,袖のキルト,沈香学,J-Pop 輕旅行,JPPO02200054,5IO52ff5epAbottJ7hiGi2,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+8,즛토마요,38,Inside Joke,Inside Joke,Inside Joke - Single,Tunes That Stick Vol 18,JPPO02101873,4bT9YDb2FjpxVBmYHS7wih,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+9,즛토마요,39,Neko Reset,猫リセット,Neko Reset - Single,ZUTOMAYO's Playlist for Taiwan Vol.2,JPPO02104528,4MKJVcmd7nVF8gtT2z34wB,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+10,즛토마요,41,Stay Foolish,ばかじゃないのに,Stay Foolish - Single,ZUTOMAYO's Playlist for U.S.,JPPO02102165,0YmfAKzgmA3hp5XDxWnUOs,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+11,즛토마요,43,Time Left,残機,Time Left - Single,Anime Hits,JPPO02203871,09B93O3GwbQMPPZC6RkvLD,원본 Apple에서도 싱글/앨범 같은 ISRC 중복. 사용자 확인 전 임의 삭제 금지,검토
+12,즛토마요,44,Kira Killer (feat. Mori Calliope),Kira Killer,Kira Killer (feat. Mori Calliope) - Single,Power Girl Workout,JPPO02204831,6n4trY1LLkP5nBf95V5ZnY,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+13,즛토마요,47,INTRUSION,Intrusion,INTRUSION - Single,Jinkougaku,JPPO02300963,5p9w1K4zt7oJCcbA7TyQDh,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+14,즛토마요,52,TAIDADA,TAIDADA,Koke no ichinen Kaiba ni takusu - EP,Nostalgic Gacha Songs,JPPO02404477,7dFGGldxnLeBaA6ZaLS6Y7,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+15,즛토마요,59,CREAM,クリームで会いにいけますか,CREAM - Single,Daylight Chill Vibes in Tokyo,JPPO02501554,5bpumpWz5GMslA0GCU4ANQ,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+16,즛토마요,69,yomosugara,yomosugara,KEISOUDO,yomosugara,JPPO02600599,3kDghWIadlBGiz5830reKu,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+17,DJMAX,40,Rabbit Hole,ラビットホール,Rabbit Hole - Single,TRANSFORM,JP92Q2301331,0kCRrfk1WV7QMnlxqhpwV9,Apple 수록본 기준으로 교체 가능 여부 확인,검토
+18,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,20,Missing,Missing - Amazon Original,ELLEGARDEN TRIBUTE,Boys in Stereo: Asia - Spring,JPPO02204315,4W3EQGSsEm3aicQdhz6WdP,Vaundy는 Apple 89곡이 최종 기준. 예전 96곡 복구 금지. 원래 수록본 이용 가능 여부 확인,검토
+<PARSED TEXT FOR SHEET: 5 / 5 TABS
+TAB NAME: 전수대조463>
+index,플레이리스트,Apple 순서,Apple 곡명,Apple 아티스트,Apple 앨범,Apple ISRC,Apple ID,Spotify 순서,Spotify 곡명,Spotify 앨범,Spotify ISRC,Spotify ID,판정
+0,너드커넥션,1,Hymn of the Birds,Nerd Connection,Hymn of the Birds - Single,KRZ291820537,1723306933,1.0,Hymn of the Birds,Hymn of the Birds,KRZ291820537,0A72P9RIKkzzkmlSen8G1n,ISRC 일치
+1,너드커넥션,2,대나무숲,Nerd Connection,대나무숲 - Single,KRMIM1903857,1736914238,2.0,대나무숲,대나무숲,KRMIM1903857,07yp5YDZU6Zch6cJrXs6wo,ISRC 일치
+2,너드커넥션,3,Waterfall,Nerd Connection,TOO FAST - EP,KRMIM1919311,1716865704,3.0,Waterfall,TOO FAST,KRMIM1919311,1PiiizMHD5nkVIix7Gdekr,ISRC 일치
+3,너드커넥션,4,Marion,Nerd Connection,TOO FAST - EP,KRMIM1919312,1716865705,4.0,Marion,TOO FAST,KRMIM1919312,7pjCYwZ3ERnmMXwJy8jB2Z,ISRC 일치
+4,너드커넥션,5,V,Nerd Connection,TOO FAST - EP,KRMIM1919313,1716865706,5.0,V,TOO FAST,KRMIM1919313,6JN0khhntFsQJ7jVfDdywY,ISRC 일치
+5,너드커넥션,6,Interlude,Nerd Connection,TOO FAST - EP,KRMIM1919314,1716865707,6.0,Interlude,TOO FAST,KRMIM1919314,20SiVkVTmLJxUkBBG07sII,ISRC 일치
+6,너드커넥션,7,Castel,Nerd Connection,TOO FAST - EP,KRMIM1919315,1716865708,7.0,Castel,TOO FAST,KRMIM1919315,6mZyN8zz6hIHnrjM5otVI4,ISRC 일치
+7,너드커넥션,8,Where are we,Nerd Connection,TOO FAST - EP,KRMIM1919316,1716865709,8.0,Where are we,TOO FAST,KRMIM1919316,6kZ9qrnp9Id6wHkyH1muMn,ISRC 일치
+8,너드커넥션,9,좋은 밤 좋은 꿈,Nerd Connection,좋은 밤 좋은 꿈 - Single,KRMIM2004811,1738889871,9.0,‎Good Night Good Dream,‎Good Night Good Dream,KRMIM2004811,3s761CQaziQ0GEN1yUkIsG,ISRC 일치
+9,너드커넥션,10,Back in Time,Nerd Connection,Back in Time - Single,USA2P2038027,1712637722,10.0,Back in Time,Back in Time,USA2P2038027,2pGhPIV1OSHbNxSw0pGNOw,ISRC 일치
+10,너드커넥션,11,진눈깨비,Nerd Connection,진눈깨비 - Single,KRMIM2100398,1725964719,11.0,Time Falling,Time Falling,KRMIM2100398,26G8WqtVv2Yx0aDAshCYAx,ISRC 일치
+11,너드커넥션,12,걸어갈래요,Nerd Connection,걸어갈래요 - Single,KRMIM2107163,1736914854,12.0,걸어갈래요,걸어갈래요,KRMIM2107163,3e6V7K9v4RBpO8WKJ14Cbe,ISRC 일치
+12,너드커넥션,13,두려울뿐야,Nerd Connection,두려울뿐야 - Single,KRB472100913,1570599751,13.0,Nan,Nan,KRB472100913,2VWOdpAeKTbhls7Ncibbr2,ISRC 일치
+13,너드커넥션,14,21st Century Kingdom,Nerd Connection,New Century Masterpiece Cinema,KRB472102071,1592057287,14.0,21st Century Kingdom,New Century Masterpiece Cinema,KRB472102071,31E2IFjCOPtBa2NUUW2vWz,ISRC 일치
+14,너드커넥션,15,Hollywood Movie Star,Nerd Connection,New Century Masterpiece Cinema,KRB472102072,1592057288,15.0,Hollywood Movie Star,New Century Masterpiece Cinema,KRB472102072,0rNFteW7h6OPmcbgObIOVr,ISRC 일치
+15,너드커넥션,16,29,Nerd Connection,New Century Masterpiece Cinema,KRB472102073,1592057289,16.0,29,New Century Masterpiece Cinema,KRB472102073,0c9cXXQGM6KFwl6wC0t9hI,ISRC 일치
+16,너드커넥션,17,Behind the Trees,Nerd Connection,New Century Masterpiece Cinema,KRB472102074,1592057290,17.0,Behind the Trees,New Century Masterpiece Cinema,KRB472102074,0uAhCZulJ52Rg8FV6JbrE2,ISRC 일치
+17,너드커넥션,18,SUPERNOVA!,Nerd Connection,New Century Masterpiece Cinema,KRB472102075,1592057291,18.0,SUPERNOVA!,New Century Masterpiece Cinema,KRB472102075,11MePXddwefEqVWuCOgwsc,ISRC 일치
+18,너드커넥션,19,항성통신,Nerd Connection,New Century Masterpiece Cinema,KRB472102076,1592057292,19.0,Star Communications,New Century Masterpiece Cinema,KRB472102076,3OWQ0o1lmuXVenuJTnojjn,ISRC 일치
+19,너드커넥션,20,우린 노래가 될까,Nerd Connection,New Century Masterpiece Cinema,KRB472102077,1592057293,20.0,Will We Be a Melody,New Century Masterpiece Cinema,KRB472102077,5D4ZBKq21jlQW1HUIsg5UZ,ISRC 일치
+20,너드커넥션,21,Snowman in a Bathtub,Nerd Connection,New Century Masterpiece Cinema,KRB472102078,1592057294,21.0,Snowman in a Bathtub,New Century Masterpiece Cinema,KRB472102078,0JiAoA1xZfbVR9bImdIqwG,ISRC 일치
+21,너드커넥션,22,Green Fields,Nerd Connection,New Century Masterpiece Cinema,KRB472102079,1592057295,22.0,Green Fields,New Century Masterpiece Cinema,KRB472102079,3RMMW2vqV2dl3RqTCWk6QN,ISRC 일치
+22,너드커넥션,23,Odds,Nerd Connection,New Century Masterpiece Cinema,KRB472102080,1592057296,23.0,Odds,New Century Masterpiece Cinema,KRB472102080,08hh16CClmaqteTqu5VkiA,ISRC 일치
+23,너드커넥션,24,Life Dancing,Nerd Connection,New Century Masterpiece Cinema,KRMIM2130748,1592057297,24.0,Life Dancing,New Century Masterpiece Cinema,KRMIM2130748,5ePFwSr9p9uKc4pjdQUGvH,ISRC 일치
+24,너드커넥션,25,조용히 완전히 영원히,Nerd Connection,New Century Masterpiece Cinema,KRB472102081,1592057298,25.0,Silently Completely Eternally,New Century Masterpiece Cinema,KRB472102081,2i3HoDE1ZvQ2bh2ZmgpSug,ISRC 일치
+25,너드커넥션,26,버들길,Nerd Connection,버들길 - Single,KRMIM2221180,1628230067,26.0,Beodeul-gil,Beodeul-gil,KRMIM2221180,21wpi5GG1LVmKSeZUphXCr,ISRC 일치
+26,너드커넥션,27,파블로,Nerd Connection,파블로 - Single,KRB472201537,1643102995,27.0,Pablo,Pablo,KRB472201537,0M01clwlcQ5wmhF3MT5lbt,ISRC 일치
+27,너드커넥션,28,그 또한 우리 사랑,Nerd Connection,그 또한 우리 사랑 - Single,KRB472202477,1661495713,28.0,That′s also our love,That′s also our love,KRB472202477,20CKqiWnA3BImjgUih3int,ISRC 일치
+28,너드커넥션,29,그대만 있다면 (영화 '여름날 우리'),Nerd Connection,그대만 있다면 (영화 '여름날 우리') - Single,KRA382320028,1702792482,29.0,If I have you only (My love X Nerd Connection),If I have you only (My love X Nerd Connection),KRA382320028,3TQHPUEVdvdq8ejwEcHUlL,ISRC 일치
+29,너드커넥션,30,Planet Earth,Nerd Connection,설명하기 어려운 것들 - EP,KRA382320648,1706970026,30.0,Planet Earth,Hard To Explain,KRA382320648,1uHbhD0rmB7n0BFCuxmJum,ISRC 일치
+30,너드커넥션,31,Stand Up,Nerd Connection,설명하기 어려운 것들 - EP,KRA382320649,1706970027,31.0,Stand Up,Hard To Explain,KRA382320649,4FlqPERN6mk193kRjdSqt8,ISRC 일치
+31,너드커넥션,32,"Hi, Drunk!",Nerd Connection,설명하기 어려운 것들 - EP,KRA382320650,1706970028,32.0,"Hi, Drunk!",Hard To Explain,KRA382320650,4scN2IsNjjoGDAM5t17gUC,ISRC 일치
+32,너드커넥션,33,I Robbed a Bank (2023 Remastered ver.),Nerd Connection,설명하기 어려운 것들 - EP,KRA382320651,1706970029,33.0,I Robbed a Bank (Remastered ver.),Hard To Explain,KRA382320651,2SbmHHKn4eo5GgHSUHcsjV,ISRC 일치
+33,너드커넥션,34,여전히 이곳에,Nerd Connection,설명하기 어려운 것들 - EP,KRA382320652,1706970030,34.0,Been This Way,Hard To Explain,KRA382320652,4fxC5QcJ5kwft92t5uKzkp,ISRC 일치
+34,너드커넥션,35,그림자 놀이,Nerd Connection,그래도 우리는,KRA382404833,1761791050,35.0,Playing Shadow,"And yet, We still",KRA382404833,2s5XgwqtwgjFZWdNB9Q7fr,ISRC 일치
+35,너드커넥션,36,Psychiatric Hospital,Nerd Connection,그래도 우리는,KRA382404834,1761791051,36.0,Psychiatric Hospital,"And yet, We still",KRA382404834,06GxghzdCyjGwu5OwnVkpf,ISRC 일치
+36,너드커넥션,37,headshrinker,Nerd Connection,그래도 우리는,KRA382404835,1761791052,37.0,headshrinker,"And yet, We still",KRA382404835,0bnNi0UECxMtoC4dwKyt7k,ISRC 일치
+37,너드커넥션,38,CASH,Nerd Connection,그래도 우리는,KRA382404836,1761791053,38.0,CASH,"And yet, We still",KRA382404836,3k2iGbGDCAL0Sr3SveHIos,ISRC 일치
+38,너드커넥션,39,Losing Myself,Nerd Connection,그래도 우리는,KRA382403885,1761791054,39.0,Losing Myself,Losing Myself,KRA382403885,37jgMVaU64Sv2gqtwOsdvl,발매항목 변경 검토
+39,너드커넥션,40,무너진 땅 위에서,Nerd Connection,그래도 우리는,KRA382404837,1761791055,40.0,Forever Only,"And yet, We still",KRA382404837,6NComlS3eAJ3JIvcODbjkM,ISRC 일치
+40,너드커넥션,41,사랑을 닮은 이유로,Nerd Connection,그래도 우리는,KRA382404838,1761791056,41.0,You,"And yet, We still",KRA382404838,3ZaJ7gSdt43D5wBuKlpQXr,ISRC 일치
+41,너드커넥션,42,꽉 잡아,Nerd Connection,그래도 우리는,KRA382404839,1761791057,42.0,Hold on Tight,"And yet, We still",KRA382404839,695GIpOZUXH85ZFnzfmGHj,ISRC 일치
+42,너드커넥션,43,She,Nerd Connection,그래도 우리는,KRA382404840,1761791058,43.0,She,"And yet, We still",KRA382404840,7fONw04kvumFWNRhIB3NnJ,ISRC 일치
+43,너드커넥션,44,Freddy,Nerd Connection,그래도 우리는,KRA382404841,1761791419,44.0,Freddy,"And yet, We still",KRA382404841,4NCukrisJy9l4ZMDEkBnn2,ISRC 일치
+44,너드커넥션,45,Clown,Nerd Connection,그래도 우리는,KRA382404842,1761791420,45.0,Clown,"And yet, We still",KRA382404842,3d4wbjXCPq9wzCaIKjMgvA,ISRC 일치
+45,너드커넥션,46,가장 높은 인연,Nerd Connection,그래도 우리는,KRA382404843,1761791421,46.0,The Highest Tie,"And yet, We still",KRA382404843,3yBBhn9tmrgWqPj6EyL06o,ISRC 일치
+46,너드커넥션,47,행운을 빌어,Nerd Connection,그래도 우리는,KRA382404844,1761791422,47.0,Good Luck,"And yet, We still",KRA382404844,5mwrJYsvi7RTQ2silZwvZs,ISRC 일치
+47,너드커넥션,48,딱 네 잔 (Bonus Track),Nerd Connection,그래도 우리는,KRA382404845,1761791423,48.0,Just 4 Shots (Bonus Track),"And yet, We still",KRA382404845,1MKd6M2uWQFuzpMTjxfcSv,ISRC 일치
+48,너드커넥션,49,Cliché,Nerd Connection,Cliché - Single,KRA382506678,1852383737,49.0,Cliché,Cliché,KRA382506678,4ozNmVoyTVIiXQBjN2xDVC,ISRC 일치
+49,요루시카,1,夏陰、ピアノを弾く,요루시카,夏草が邪魔をする,JPA651703788,1648882048,1.0,夏陰、ピアノを弾く,夏草が邪魔をする,JPA651703788,2PZR7FcWfSTlXr5lQgVZKd,ISRC 일치
+50,요루시카,2,カトレア,요루시카,夏草が邪魔をする,JPA651703789,1648882052,2.0,カトレア,夏草が邪魔をする,JPA651703789,4AK6TjpIybCTe1QphPXFn9,ISRC 일치
+51,요루시카,3,言って。,요루시카,夏草が邪魔をする,JPA651703790,1648882055,3.0,言って。,夏草が邪魔をする,JPA651703790,6z1TvLTR0oOsWSJfDrERmj,ISRC 일치
+52,요루시카,4,あの夏に咲け,요루시카,夏草が邪魔をする,JPA651703791,1648882056,4.0,あの夏に咲け,夏草が邪魔をする,JPA651703791,4Z8WSP6i30vg05WTDyvw0X,ISRC 일치
+53,요루시카,5,飛行,요루시카,夏草が邪魔をする,JPA651703792,1648882062,5.0,飛行,夏草が邪魔をする,JPA651703792,2BKnDjJA2uystZA6TciFVE,ISRC 일치
+54,요루시카,6,靴の花火,요루시카,夏草が邪魔をする,JPA651703793,1648882337,6.0,靴の花火,夏草が邪魔をする,JPA651703793,5mOOwyOGev9frlXm5NDEQy,ISRC 일치
+55,요루시카,7,雲と幽霊,요루시카,夏草が邪魔をする,JPA651703794,1648882342,7.0,雲と幽霊,夏草が邪魔をする,JPA651703794,469v6OYBSwcdGRTTvj37ps,ISRC 일치
+56,요루시카,8,前世,요루시카,負け犬にアンコールはいらない,JPA651804018,1648875815,8.0,前世,負け犬にアンコールはいらない,JPA651804018,5JjN98gJbp8qwYCX3cb0CE,ISRC 일치
+57,요루시카,9,負け犬にアンコールはいらない,요루시카,負け犬にアンコールはいらない,JPA651804019,1648875825,9.0,負け犬にアンコールはいらない,負け犬にアンコールはいらない,JPA651804019,1fooGB6yJLKiOk8jW3thn6,ISRC 일치
+58,요루시카,10,爆弾魔,요루시카,負け犬にアンコールはいらない,JPA651804020,1648876075,10.0,爆弾魔,負け犬にアンコールはいらない,JPA651804020,2L9dBaAmQ5qydXHSz8bN96,ISRC 일치
+59,요루시카,11,ヒッチコック,요루시카,負け犬にアンコールはいらない,JPA651804021,1648876084,11.0,ヒッチコック,負け犬にアンコールはいらない,JPA651804021,153lRbNmhQZVi69kbhmjY8,ISRC 일치
+60,요루시카,12,落下,요루시카,負け犬にアンコールはいらない,JPA651804022,1648876307,12.0,落下,負け犬にアンコールはいらない,JPA651804022,6hsZkg5ssSa2S8DHV9XJqd,ISRC 일치
+61,요루시카,13,準透明少年,요루시카,負け犬にアンコールはいらない,JPA651804023,1648876321,13.0,準透明少年,負け犬にアンコールはいらない,JPA651804023,7nj9JW6QQrholNi2R2lffN,ISRC 일치
+62,요루시카,14,ただ君に晴れ,요루시카,負け犬にアンコールはいらない,JPA651804024,1648876333,14.0,ただ君に晴れ,負け犬にアンコールはいらない,JPA651804024,3wJHCry960drNlAUGrJLmz,ISRC 일치
+63,요루시카,15,冬眠,요루시카,負け犬にアンコールはいらない,JPA651804025,1648876492,15.0,冬眠,負け犬にアンコールはいらない,JPA651804025,28QP3jpaBPGgKKH4x3y5Dg,ISRC 일치
+64,요루시카,16,夏、バス停、君を待つ,요루시카,負け犬にアンコールはいらない,JPA651804026,1648876499,16.0,夏、バス停、君を待つ,負け犬にアンコールはいらない,JPA651804026,2JpShP9hy9ZsuHTAG64EH2,ISRC 일치
+65,요루시카,17,8/31,요루시카,だから僕は音楽を辞めた,JPA651904573,1648876457,17.0,8/31,だから僕は音楽を辞めた,JPA651904573,6nrImcv9m7yG4DbAxE5j8S,ISRC 일치
+66,요루시카,18,藍二乗,요루시카,だから僕は音楽を辞めた,JPA651804340,1648876468,18.0,藍二乗,だから僕は音楽を辞めた,JPA651804340,6BV77pE4JyUQUtaqnXeKa5,ISRC 일치
+67,요루시카,19,八月、某、月明かり,요루시카,だから僕は音楽を辞めた,JPA651904574,1648876473,19.0,八月、某、月明かり,だから僕は音楽を辞めた,JPA651904574,2dZP7UEXGIvn1HXgfWFA3Z,ISRC 일치
+68,요루시카,20,詩書きとコーヒー,요루시카,だから僕は音楽を辞めた,JPA651904575,1648876485,20.0,詩書きとコーヒー,だから僕は音楽を辞めた,JPA651904575,296hhXjbt43FQe30TvlZTE,ISRC 일치
+69,요루시카,21,7/13,요루시카,だから僕は音楽を辞めた,JPA651904576,1648876734,21.0,7/13,だから僕は音楽を辞めた,JPA651904576,6N5JFGXQsrIfkQBbhg2EO7,ISRC 일치
+70,요루시카,22,踊ろうぜ,요루시카,だから僕は音楽を辞めた,JPA651904577,1648876743,22.0,踊ろうぜ,だから僕は音楽を辞めた,JPA651904577,1yISTmavzT0lQ1o0VZZK6M,ISRC 일치
+71,요루시카,23,六月は雨上がりの街を書く,요루시카,だから僕は音楽を辞めた,JPA651904578,1648876753,23.0,六月は雨上がりの街を書く,だから僕は音楽を辞めた,JPA651904578,7q0rpYkJLqXduCHgMXE5oA,ISRC 일치
+72,요루시카,24,五月は花緑青の窓辺から,요루시카,だから僕は音楽を辞めた,JPA651904579,1648877033,24.0,五月は花緑青の窓辺から,だから僕は音楽を辞めた,JPA651904579,26GW1dAtZ9Ya1GB7bbB9aO,ISRC 일치
+73,요루시카,25,夜紛い,요루시카,だから僕は音楽を辞めた,JPA651904580,1648877043,25.0,夜紛い,だから僕は音楽を辞めた,JPA651904580,0oP2Xuft7MjxRZrSCTwyr6,ISRC 일치
+74,요루시카,26,5/6,요루시카,だから僕は音楽を辞めた,JPA651904581,1648877052,26.0,5/6,だから僕は音楽を辞めた,JPA651904581,1IIbKQS90UuYyMUuVsG8zS,ISRC 일치
+75,요루시카,27,パレード,요루시카,だから僕は音楽を辞めた,JPA651904582,1648877301,27.0,パレード,だから僕は音楽を辞めた,JPA651904582,2SdXNiI9ny1WunIx4A7Bjg,ISRC 일치
+76,요루시카,28,エルマ,요루시카,だから僕は音楽を辞めた,JPA651904583,1648877308,28.0,エルマ,だから僕は音楽を辞めた,JPA651904583,5YCwibP7MrreKevBdimMZU,ISRC 일치
+77,요루시카,29,4/10,요루시카,だから僕は音楽を辞めた,JPA651904584,1648877316,29.0,4/10,だから僕は音楽を辞めた,JPA651904584,6KFOG2TFDyh4GFzVdeJaBY,ISRC 일치
+78,요루시카,30,だから僕は音楽を辞めた,요루시카,だから僕は音楽を辞めた,JPA651904585,1648877323,30.0,だから僕は音楽を辞めた,だから僕は音楽を辞めた,JPA651904585,5j7ixaLeGTGSv4DzKs0pCM,ISRC 일치
+79,요루시카,31,Train Window,요루시카,Elma,JPPO01902971,1474061931,31.0,車窓,エルマ,JPPO01902971,6Z6dzWu4OyvIrEdDwaUXUm,ISRC 일치
+80,요루시카,32,Only Sorrow,요루시카,Elma,JPPO01902972,1474061935,32.0,憂一乗,エルマ,JPPO01902972,0yVovOZGZtBXoZQr5gakeb,ISRC 일치
+81,요루시카,33,"Evening Calm, Somewhere, Fireworks",요루시카,Elma,JPPO01902973,1474062329,33.0,夕凪、某、花惑い,エルマ,JPPO01902973,3gY1UX6zV7IQAKcBgi2gcm,ISRC 일치
+82,요루시카,34,Rain with Cappuccino,요루시카,Elma,JPPO01902974,1474062330,34.0,雨とカプチーノ,雨とカプチーノ,JPPO01902974,7lRCvofuqk5YZinCcxiYXK,발매항목 변경 검토
+83,요루시카,35,Lakeside Town,요루시카,Elma,JPPO01902975,1474062332,35.0,湖の街,エルマ,JPPO01902975,5WcMvxjo8J4Lzp8GnQR1Gm,ISRC 일치
+84,요루시카,36,Dance of You,요루시카,Elma,JPPO01902976,1474062334,36.0,神様のダンス,エルマ,JPPO01902976,01mOJXQ2RVOODY6SFIXPKA,ISRC 일치
+85,요루시카,37,After the Rain,요루시카,Elma,JPPO01902977,1474062339,37.0,雨晴るる,Daylight Chill Vibes in Tokyo,JPPO01902977,28ejHNG1qQBwNi0bWQHQfI,발매항목 변경 검토
+86,요루시카,38,Walk,요루시카,Elma,JPPO01902978,1474062340,38.0,歩く,エルマ,JPPO01902978,6svbcQPHZFH58Tjr14NzT2,ISRC 일치
+87,요루시카,39,Hole in the Heart,요루시카,Elma,JPPO01902577,1474062342,39.0,心に穴が空いた,エルマ,JPPO01902577,0fFPF89LHrD2ziMbeLSxXy,ISRC 일치
+88,요루시카,40,Church in the Forest,요루시카,Elma,JPPO01902979,1474062389,40.0,森の教会,エルマ,JPPO01902979,3x5xoVNp8DDYjKKo13OFTV,ISRC 일치
+89,요루시카,41,Voice,요루시카,Elma,JPPO01902980,1474062397,41.0,声,エルマ,JPPO01902980,3GeXeP5GWHjTO5PXzl9dN0,ISRC 일치
+90,요루시카,42,Amy,요루시카,Elma,JPPO01902981,1474062398,42.0,エイミー,エルマ,JPPO01902981,2QIefK7s0YYQI0hXlrSWLc,ISRC 일치
+91,요루시카,43,"Seabed,Moonlight",요루시카,Elma,JPPO01902982,1474062402,43.0,海底、月明かり,エルマ,JPPO01902982,56xDh58H5z7NPMlgXkTQA3,ISRC 일치
+92,요루시카,44,Nautilus,요루시카,Elma,JPPO01902983,1474062410,44.0,ノーチラス,エルマ,JPPO01902983,6B8gUB7PhCUDbCO0OiesrB,ISRC 일치
+93,요루시카,45,Make-up Shadow,요루시카,Inoue Yosui Tribute,JPPO01904456,1488299770,45.0,Make-up Shadow,井上陽水トリビュート,JPPO01904456,0ddW75PWqkWQxDOtKLmoQC,ISRC 일치
+94,요루시카,46,Confession Of Plagiarist,요루시카,Plagiarism,JPPO02001729,1519740113,46.0,音楽泥棒の自白,盗作,JPPO02001729,6nLZy0j7qHm88glCrmJXU4,ISRC 일치
+95,요루시카,47,Burglar,요루시카,Plagiarism,JPPO02001730,1519740120,47.0,昼鳶,盗作,JPPO02001730,4MEr1Y8pLCtZ4gW5MriwB9,ISRC 일치
+96,요루시카,48,Prostitution,요루시카,Plagiarism,JPPO02001467,1519740122,48.0,春ひさぎ,春ひさぎ,JPPO02001467,3opvzEeKvkWEKi0TV2ePbC,발매항목 변경 검토
+97,요루시카,49,Bomber (Re-Recording),요루시카,Plagiarism,JPPO02001731,1519740247,49.0,爆弾魔 - Re-Recording,盗作,JPPO02001731,4wufVE3ELYSfNRBIjvSi5D,ISRC 일치
+98,요루시카,50,"Adolescent, Burglar",요루시카,Plagiarism,JPPO02001732,1519740248,50.0,青年期、空き巣,盗作,JPPO02001732,3YkfVM4lIT6kJHgiiHg00A,ISRC 일치
+99,요루시카,51,Replicant,요루시카,Plagiarism,JPPO02001733,1519740249,51.0,レプリカント,盗作,JPPO02001733,4QJndoYmN9io3P7l3dAGyt,ISRC 일치
+100,요루시카,52,Thoughtcrime,요루시카,Plagiarism,JPPO02001698,1519740257,52.0,思想犯,盗作,JPPO02001698,5o3LSzu8xCMDpbAwm4dZ46,ISRC 일치
+101,요루시카,53,Flower And Badger Game,요루시카,Plagiarism,JPPO02001734,1519740251,53.0,花人局,盗作,JPPO02001734,5nvA0EX0Itao5I6t89A7X2,ISRC 일치
+102,요루시카,54,"Middle Age, Plagiarist",요루시카,Plagiarism,JPPO02001735,1519740253,54.0,朱夏期、音楽泥棒,盗作,JPPO02001735,4iStC23BqfDS3TKZsKR5Ep,ISRC 일치
+103,요루시카,55,Plagiarism,요루시카,Plagiarism,JPPO02001736,1519740256,55.0,盗作,盗作,JPPO02001736,0k0zcBRE3StKssNhEF86rW,ISRC 일치
+104,요루시카,56,Escape,요루시카,Plagiarism,JPPO02001737,1519740259,56.0,逃亡,盗作,JPPO02001737,444TdAemfLOz77t9dlCeAa,ISRC 일치
+105,요루시카,57,"Childhood, In Memories",요루시카,Plagiarism,JPPO02001738,1519740261,57.0,幼年期、思い出の中,盗作,JPPO02001738,7fgFJx02miHDqWFdvpC95M,ISRC 일치
+106,요루시카,58,Night Journey,요루시카,Plagiarism,JPPO02000003,1519740263,58.0,夜行,夜行,JPPO02000003,1sPu1euMR0UlTMFFWHh4wB,발매항목 변경 검토
+107,요루시카,59,Ghost In A Flower,요루시카,Plagiarism,JPPO02001032,1519740266,59.0,花に亡霊,Anime Hits,JPPO02001032,5kI8XD4lrotjJWHj6APboB,발매항목 변경 검토
+108,요루시카,60,Robber And Bouquet,요루시카,Creation - EP,JPPO02004290,1546186121,60.0,強盗と花束,創作,JPPO02004290,0mgABgKDsaSGnTOLcjlHWd,ISRC 일치
+109,요루시카,61,Spring Thief,요루시카,Creation - EP,JPPO02004291,1546186122,61.0,Spring Thief,Tunes That Stick Vol 18,JPPO02004291,2jML0qsWomEa82Rmjq19P8,발매항목 변경 검토
+110,요루시카,62,Creation,요루시카,Creation - EP,JPPO02004292,1546186123,62.0,創作,創作,JPPO02004292,1GURqvJ665JtnUp4UmFFm4,ISRC 일치
+111,요루시카,63,Eat the wind,요루시카,Creation - EP,JPPO02002997,1546186124,63.0,風を食む,風を食む,JPPO02002997,68OYaxreTGmAuD9cAztr2p,발매항목 변경 검토
+112,요루시카,64,Liar,요루시카,Creation - EP,JPPO02001548,1546186126,64.0,嘘月,Tokyo Moon,JPPO02001548,3yC6LsC5ea8TPGKqtl0oTT,발매항목 변경 검토
+113,요루시카,65,Telepath,요루시카,Telepath - Single,JPPO02205009,1660547756,65.0,テレパス,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02205009,2UbwEA43H9kDB74z2vwGyp,발매항목 변경 검토
+114,요루시카,66,Portrait of Summer,요루시카,Magic Lantern,JPPO02300695,6781645644,66.0,夏の肖像,幻燈,JPPO02300695,3sSDUvc0CJgUAZaSndH5vN,ISRC 일치
+115,요루시카,67,Miyakoochi,요루시카,Magic Lantern,,1678418024,,,,,,누락
+116,요루시카,68,Bremen,요루시카,Magic Lantern,,1678418305,,,,,,누락
+117,요루시카,69,Chinokate,요루시카,Magic Lantern,,1678418307,,,,,,누락
+118,요루시카,70,Snow Country,요루시카,Magic Lantern,JPPO02300697,6781645654,67.0,雪国,幻燈,JPPO02300697,0TMRobKDRZmWVeHVRrik1k,ISRC 일치
+119,요루시카,71,Howl At The Moon,요루시카,Magic Lantern,,1678418309,68.0,月に吠える,幻燈,JPPO02103314,5GWIE5PNbwNdqXr5b79p6V,원본 ISRC 공란·동일 위치/제목 확인
+120,요루시카,72,451,요루시카,Magic Lantern,,1678418312,69.0,451,幻燈,JPPO02300501,6WgLRnw7Iy7VTvRqNFQPA8,원본 ISRC 공란·동일 위치/제목 확인
+121,요루시카,73,Pas de Deux,요루시카,Magic Lantern,JPPO02300698,6781645777,70.0,パドドゥ,幻燈,JPPO02300698,5ZBzdTOno8sKS9eW3wpYnw,ISRC 일치
+122,요루시카,74,Matasaburo,요루시카,Magic Lantern,,1678418315,71.0,又三郎,幻燈,JPPO02101475,5WaZtrNloyJpX2w5fwYYEL,원본 ISRC 공란·동일 위치/제목 확인
+123,요루시카,75,Fireworks of shoes (Re-Recording),요루시카,Magic Lantern,JPPO02300699,6781645781,72.0,靴の花火 - Re-Recording,幻燈,JPPO02300699,4lSeleVXbI78Do2KzmqJpv,ISRC 일치
+124,요루시카,76,The Old Man and the Sea,요루시카,Magic Lantern,,1678418324,73.0,老人と海,幻燈,JPPO02102558,5MItzr2nCCkQVzfv48VGmn,원본 ISRC 공란·동일 위치/제목 확인
+125,요루시카,77,Goodbye Molten,요루시카,Magic Lantern,JPPO02300700,6781645783,74.0,さよならモルテン,幻燈,JPPO02300700,0zatqkcL3nd9RGJDeJ5QJ7,ISRC 일치
+126,요루시카,78,Whale,요루시카,Magic Lantern,JPPO02300701,6781645787,75.0,いさな,幻燈,JPPO02300701,48R50Xw3cRyUq9pnfjcOk8,ISRC 일치
+127,요루시카,79,Left-Right Confusion,요루시카,Magic Lantern,,1678418325,76.0,左右盲,左右盲,JPPO02202188,797EOD68bmVFiyalgBGeOZ,발매항목 변경 검토
+128,요루시카,80,Algernon,요루시카,Magic Lantern,,1678418569,,,,,,누락
+129,요루시카,81,The First Night,요루시카,Magic Lantern,,1678418574,77.0,第一夜,幻燈,JPPO02300702,77lx5eryFoUIzzXTbVV7gG,원본 ISRC 공란·동일 위치/제목 확인
+130,요루시카,82,The Second Night,요루시카,Magic Lantern,JPPO02300703,6781645793,78.0,第二夜,幻燈,JPPO02300703,4tfQ4KRxWATboZ4injhGe0,ISRC 일치
+131,요루시카,83,The Third Night,요루시카,Magic Lantern,JPPO02300704,6781645794,79.0,第三夜,幻燈,JPPO02300704,6SaDWNFF2tsZduR2IkcYQS,ISRC 일치
+132,요루시카,84,The Fourth Night,요루시카,Magic Lantern,JPPO02300705,6781645795,80.0,第四夜,幻燈,JPPO02300705,4A3gteygLhLyXoVEcscnHB,ISRC 일치
+133,요루시카,85,The Fifth Night,요루시카,Magic Lantern,JPPO02300706,6781645797,81.0,第五夜,幻燈,JPPO02300706,2UdPKfB8jLTbhVIHeXLVoa,ISRC 일치
+134,요루시카,86,The Sixth Night,요루시카,Magic Lantern,JPPO02300707,6781645799,82.0,第六夜,幻燈,JPPO02300707,7yvjLfalt7mf1nNgmmbevg,ISRC 일치
+135,요루시카,87,The Seventh Night,요루시카,Magic Lantern,JPPO02300708,6781645800,83.0,第七夜,幻燈,JPPO02300708,652Rixc9QxERXHvKNMnAqw,ISRC 일치
+136,요루시카,88,The Eighth Night,요루시카,Magic Lantern,JPPO02300709,6781645803,84.0,第八夜,幻燈,JPPO02300709,29BOvkay43BTjAYBhl3HpQ,ISRC 일치
+137,요루시카,89,The Ninth Night,요루시카,Magic Lantern,JPPO02300710,6781645805,85.0,第九夜,幻燈,JPPO02300710,1v14d2gypPphUC2XFuT6EX,ISRC 일치
+138,요루시카,90,The Tenth Night,요루시카,Magic Lantern,JPPO02300711,6781645986,86.0,第十夜,幻燈,JPPO02300711,1s5kG4drr5xaHsS7YtAtuZ,ISRC 일치
+139,요루시카,91,Setting Sun,요루시카,Setting Sun - Single,JPPO02301095,1684164654,87.0,斜陽,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02301095,2Yg3P1b0S9v0Vs3flw1hm0,발매항목 변경 검토
+140,요루시카,92,"Yu, Sansan",요루시카,"Yu, Sansan - Single",JPPO02404004,1763788608,88.0,憂、燦々,憂、燦々,JPPO02404004,65npSVkyhQVDDqOsbOW0Aa,ISRC 일치
+141,요루시카,93,Darma Grand Prix,요루시카,Darma Grand Prix - Single,JPPO02504063,1851386710,89.0,DARMA GRAND PRIX,DARMA GRAND PRIX,JPPO02504063,3ObSLLg2RNv3vhL2fIB5EK,ISRC 일치
+142,요루시카,94,Madder,요루시카,Madder - Single,JPPO02504722,1869557604,90.0,茜,茜,JPPO02504722,2TSJ1d6cLgHqrrCIRN3bn2,ISRC 일치
+143,요루시카,95,"Early morning, mailbox",요루시카,second person,JPPO02600138,1876728642,91.0,早朝、郵便受け,二人称,JPPO02600138,5c1KeZ3ZqlA8zxzouN21p5,ISRC 일치
+144,요루시카,96,Become a cloud,요루시카,second person,JPPO02600143,1876728645,92.0,雲になる,二人称,JPPO02600143,2PlVDpeo6SzC6s7Y8fNG8Y,ISRC 일치
+145,요루시카,97,The flowers are also noisy,요루시카,second person,JPPO02600147,1876728646,93.0,花も騒めく,二人称,JPPO02600147,5IqdmPAkcUVKrKgShlBKRR,ISRC 일치
+146,요루시카,98,Plover,요루시카,second person,JPPO02600145,1876728685,94.0,千鳥,二人称,JPPO02600145,61uep4aDBpNnnFGfm6yzUF,ISRC 일치
+147,요루시카,99,Devilishness,요루시카,second person,JPPO02600148,1876728647,95.0,魔性,二人称,JPPO02600148,3fHEu6oWkIQKl6llskFvSQ,ISRC 일치
+148,요루시카,100,Play Sick,요루시카,second person,JPPO02504413,1876728648,96.0,プレイシック,プレイシック,JPPO02504413,4HWJSaMneOtNkFOrD1LU0c,발매항목 변경 검토
+149,요루시카,101,Post spring,요루시카,second person,JPPO02600149,1876728649,97.0,ポスト春,二人称,JPPO02600149,5A82kTVYFGf6nVXlqpcJxp,ISRC 일치
+150,요루시카,102,Sun,요루시카,second person,JPPO02405010,1876728650,98.0,太陽,太陽,JPPO02405010,1JNQLqxqvwHDekTfOhs4wu,발매항목 변경 검토
+151,요루시카,103,Sunny,요루시카,second person,JPPO02304150,1876728651,99.0,晴る,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02304150,2dkQcaZZyX8FDmpLKT9HNX,발매항목 변경 검토
+152,요루시카,104,Forget it,요루시카,second person,JPPO02403065,1876728652,100.0,忘れてください,忘れてください,JPPO02403065,7raKnLKyQSatDiVVpiZDds,발매항목 변경 검토
+153,요루시카,105,Shura,요루시카,second person,JPPO02502207,1876728653,101.0,修羅,TOKYO VIRAL HITS 2025,JPPO02502207,43IzeKSCuXxdPi2dMH16rI,발매항목 변경 검토
+154,요루시카,106,Martian,요루시카,second person,JPPO02500982,1876728655,102.0,火星人,TOKYO VIRAL HITS 2025,JPPO02500982,5zZbpOTSYsFHJxEX1Ysdrd,발매항목 변경 검토
+155,요루시카,107,Rubato,요루시카,second person,JPPO02400612,1876728658,103.0,ルバート,ルバート,JPPO02400612,1w3837OMA0xxpFqqMtL7B5,발매항목 변경 검토
+156,요루시카,108,Cremation,요루시카,second person,JPPO02600140,1876728673,104.0,火葬,二人称,JPPO02600140,43ziakCPpRW78eUVEjH6ef,ISRC 일치
+157,요루시카,109,Aporia,요루시카,second person,JPPO02404516,1876728676,105.0,アポリア,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02404516,5TfF8SSzjRT8JXL2M9H33B,발매항목 변경 검토
+158,요루시카,110,Snake,요루시카,second person,JPPO02405696,1876728678,106.0,へび,HARAJUKU BUZZ TRACKS - Anime Lovers -,JPPO02405696,0Dr7CohGLCv6R2D9o97UJe,발매항목 변경 검토
+159,요루시카,111,Groan,요루시카,second person,JPPO02600139,1876728679,107.0,うめき,二人称,JPPO02600139,5KJNBojaUGEfEEdqQ5InQS,ISRC 일치
+160,요루시카,112,Woodpecker,요루시카,second person,JPPO02600142,1876728680,108.0,啄木鳥,二人称,JPPO02600142,7y6HOcbQ80bsOsq1GahaVP,ISRC 일치
+161,요루시카,113,Hitchcock (Re-Recording),요루시카,second person,JPPO02600141,1876728683,109.0,ヒッチコック - Re-Recording,二人称,JPPO02600141,1kaGaPZjsbA0y3CFjqroAc,ISRC 일치
+162,요루시카,114,Moonbath,요루시카,second person,JPPO02302380,1876728684,110.0,月光浴,月光浴,JPPO02302380,6HyPxNFn7WcIIGVIPejiB1,발매항목 변경 검토
+163,요루시카,115,Paddle,요루시카,second person,JPPO02600144,1876728686,111.0,櫂,二人称,JPPO02600144,3BDbMUKrhxvl3PzKBfScoX,ISRC 일치
+164,요루시카,116,To the sea,요루시카,second person,JPPO02600146,1876728687,112.0,海へ,二人称,JPPO02600146,71lOKrJl5ZEXbJAPtGlieQ,ISRC 일치
+165,요루시카,117,Bubble,요루시카,Bubble - Single,JPPO02601177,1889425904,113.0,あぶく,あぶく,JPPO02601177,59h6J25QnnT8xshPTFLkpe,ISRC 일치
+166,즛토마요,1,Byoushinwo Kamu,ZUTOMAYO,Byoushinwo Kamu - Single,JPPO01804003,1428083880,1.0,Byoushinwo Kamu,Tadashii Itsuwarikarano Kishou,JPPO01804003,2B5IKyvmjIHXMwn8SGTPX2,발매항목 변경 검토
+167,즛토마요,2,Humanoid,ZUTOMAYO,Tadashii Itsuwarikarano Kishou - EP,JPPO01805179,1440134014,2.0,Humanoid,Tadashii Itsuwarikarano Kishou,JPPO01805179,10fLXyRxpxoYnE2brKJtRp,ISRC 일치
+168,즛토마요,3,Saturn,ZUTOMAYO,Tadashii Itsuwarikarano Kishou - EP,JPPO01805180,1440134053,3.0,サターン,正しい偽りからの起床,JPPO01805180,3Vd6MNEn1aLRvddvuNWYw1,ISRC 일치
+169,즛토마요,4,Uni To Kuri,ZUTOMAYO,Tadashii Itsuwarikarano Kishou - EP,JPPO01805181,1440134057,4.0,Uni To Kuri,Tadashii Itsuwarikarano Kishou,JPPO01805181,7sFjzvOxG7Oo4M6lcJhslB,ISRC 일치
+170,즛토마요,5,Nouriueno Cracker,ZUTOMAYO,Hisohiso Banashi,JPPO01805158,1481464099,5.0,Nouriueno Cracker,Hisohiso Banashi,JPPO01805158,19ItMDGvUW3nwlzMd8yeQy,ISRC 일치
+171,즛토마요,6,Kimigaite Mizuninaru,ZUTOMAYO,Tadashii Itsuwarikarano Kishou - EP,JPPO01805182,1440134065,6.0,君がいて水になる,正しい偽りからの起床,JPPO01805182,3fqBoBlZnFGj0ah0airwQ7,ISRC 일치
+172,즛토마요,7,Kan Saete Kuyashiiwa,ZUTOMAYO,Imawa Imade Chikaiwa Emide - EP,JPPO01901535,1464108341,7.0,Kan Saete Kuyashiiwa,Imawa Imade Chikaiwa Emide,JPPO01901535,3SWW8QeKkozAalmTUheWlr,ISRC 일치
+173,즛토마요,8,Seigi,ZUTOMAYO,Seigi - Single,JPPO01901735,1462837857,8.0,Seigi,Imawa Imade Chikaiwa Emide,JPPO01901735,3qsk3aJREabIH46Sdoi75p,발매항목 변경 검토
+174,즛토마요,9,Matane Maboroshi,ZUTOMAYO,Imawa Imade Chikaiwa Emide - EP,JPPO01901846,1464108347,9.0,またね幻,今は今で誓いは笑みで,JPPO01901846,3FYWuYpw0KUTn1fP523jvx,ISRC 일치
+175,즛토마요,10,Minority Myakuraku,ZUTOMAYO,Imawa Imade Chikaiwa Emide - EP,JPPO01901847,1464108351,10.0,Minority Myakuraku,Imawa Imade Chikaiwa Emide,JPPO01901847,3Cd7FDoYRyf48cD87l2aOW,ISRC 일치
+176,즛토마요,11,Samayoi Yoi Ondo,ZUTOMAYO,Imawa Imade Chikaiwa Emide - EP,JPPO01901848,1464108354,11.0,彷徨い酔い温度,今は今で誓いは笑みで,JPPO01901848,4PGTB8V2YpxLDOrVtacgLr,ISRC 일치
+177,즛토마요,12,Mabushii DNA Dake,ZUTOMAYO,Mabushii DNA Dake - Single,JPPO01900212,1452721879,12.0,眩しいDNAだけ,眩しいDNAだけ,JPPO01900212,1LojHMUAEwkYewkIk9JPWD,ISRC 일치
+178,즛토마요,13,Inemuri Enseitai,ZUTOMAYO,Hisohiso Banashi,JPPO01903828,1481464102,13.0,Inemuri Enseitai,Hisohiso Banashi,JPPO01903828,2I19G4B8vx7mrbK1PjpVq3,ISRC 일치
+179,즛토마요,14,Haze Haseru Haterumade,ZUTOMAYO,Hisohiso Banashi,JPPO01903829,1481464103,14.0,Haze Haseru Haterumade,Hisohiso Banashi,JPPO01903829,26DKUZmgpkh3XsXAv3EcvC,ISRC 일치
+180,즛토마요,15,Kettobashita Moufu,ZUTOMAYO,Hisohiso Banashi,JPPO01903830,1481464105,15.0,Kettobashita Moufu,Hisohiso Banashi,JPPO01903830,0szCBUYjSY0Kx6gITEbXC7,ISRC 일치
+181,즛토마요,16,"Dear. Mr""F""",ZUTOMAYO,Hisohiso Banashi,JPPO01903831,1481464168,16.0,Dear Mr「F」,潜潜話,JPPO01903831,5AQRhpC5hM1usCnJFNM3EW,ISRC 일치
+182,즛토마요,17,Konnakoto Soudou,ZUTOMAYO,Hisohiso Banashi,JPPO01903832,1481464169,17.0,Konnakoto Soudou,Hisohiso Banashi,JPPO01903832,34KFo1IbyQ6dqXQR9wrOud,ISRC 일치
+183,즛토마요,18,Glass to Rum Raisin,ZUTOMAYO,Hisohiso Banashi,JPPO01903833,1481464172,18.0,Glass To Rum Raisin,Hisohiso Banashi,JPPO01903833,4peQVHdP2xqr1TOo9gaeFc,ISRC 일치
+184,즛토마요,19,Yasashiku Last Smile,ZUTOMAYO,Hisohiso Banashi,JPPO01903834,1481464175,19.0,Yasashiku Last Smile,Hisohiso Banashi,JPPO01903834,7Al3A47dhss5ISJbcEtkK5,ISRC 일치
+185,즛토마요,20,Fastening,ZUTOMAYO,Hogarakana Hifutote Fufuku - EP,JPPO02001850,1522244019,20.0,Fastening,Hogarakana Hifutote Fufuku,JPPO02001850,0LXl0LJrFbQA4ZtJ7VYPjL,ISRC 일치
+186,즛토마요,21,Obenkyou Shitoiteyo,ZUTOMAYO,Obenkyou Shitoiteyo - Single,JPPO02001468,1511078938,21.0,Obenkyou Shitoiteyo,Hogarakana Hifutote Fufuku,JPPO02001468,5ZvftnPYgURAHlhVzHw4Us,발매항목 변경 검토
+187,즛토마요,22,Ham,ZUTOMAYO,Hogarakana Hifutote Fufuku - EP,JPPO02001851,1522244022,22.0,Ham,Hogarakana Hifutote Fufuku,JPPO02001851,1DWB1Co5giWFBMyv3u4VjG,ISRC 일치
+188,즛토마요,23,JK Bomber,ZUTOMAYO,Hogarakana Hifutote Fufuku - EP,JPPO02001852,1522244024,23.0,JK Bomber,Hogarakana Hifutote Fufuku,JPPO02001852,3h7sP5Uy1iF8VWOs78goNi,ISRC 일치
+189,즛토마요,24,Marine Blue Garden,ZUTOMAYO,Hogarakana Hifutote Fufuku - EP,JPPO02001853,1522244025,24.0,Marine Blue Garden,Hogarakana Hifutote Fufuku,JPPO02001853,2sAUd7rBXbMLIQY7KV12O3,ISRC 일치
+190,즛토마요,25,Milabo,ZUTOMAYO,Hogarakana Hifutote Fufuku - EP,JPPO02001854,1522244028,25.0,Milabo,Hogarakana Hifutote Fufuku,JPPO02001854,3dREO1F40SWjj4rs0TTtd9,ISRC 일치
+191,즛토마요,26,One's Mind,ZUTOMAYO,Gusare,JPPO02100040,1548835885,26.0,One's Mind,Gusare,JPPO02100040,6Xa2lIKWD2P72bSuR7tF4y,ISRC 일치
+192,즛토마요,27,Can't Be Right,ZUTOMAYO,Can't Be Right - Single,JPPO02003594,1543162548,27.0,正しくなれない,ZUTOMAYO's Playlist for U.S.,JPPO02003594,4XOs9qS82Wphz3Dnsf8G63,발매항목 변경 검토
+193,즛토마요,28,Hunch Gray,ZUTOMAYO,Hunch Gray - Single,JPPO02003593,1540258079,28.0,Hunch Gray,Gusare,JPPO02003593,0gBom70sQO80qgGAACptjh,발매항목 변경 검토
+194,즛토마요,29,Have A,ZUTOMAYO,Gusare,JPPO02100041,1548835891,29.0,Have A,Gusare,JPPO02100041,4OPjFek67RCM2h2LOkI20M,ISRC 일치
+195,즛토마요,30,Engine Oil,ZUTOMAYO,Gusare,JPPO02100042,1548835894,30.0,機械油,ぐされ,JPPO02100042,3jco86p8x2ZJZb0Zemtbcq,ISRC 일치
+196,즛토마요,31,Darken,ZUTOMAYO,Darken - Single,JPPO02003592,1536572613,31.0,Darken,Gusare,JPPO02003592,15mJGBtLcTAURQ0XOdDXXy,발매항목 변경 검토
+197,즛토마요,32,Loneliness,ZUTOMAYO,Gusare,JPPO02100043,1548835934,32.0,ろんりねす,ぐされ,JPPO02100043,76zBWDh2YUmGantphDwqUs,ISRC 일치
+198,즛토마요,33,Crop,ZUTOMAYO,Gusare,JPPO02100044,1548835937,33.0,Crop,Gusare,JPPO02100044,1vjPL6aZEdZGtN7RN2qX8C,ISRC 일치
+199,즛토마요,34,Hypersomnia,ZUTOMAYO,Gusare,JPPO02100045,1548835938,34.0,Hypersomnia,Gusare,JPPO02100045,4eUuyx5Ld7wbQl6bj5uxNc,ISRC 일치
+200,즛토마요,35,Inner Heart,ZUTOMAYO,Gusare,JPPO02100046,1548835940,35.0,奥底に眠るルーツ,ぐされ,JPPO02100046,4M0rktmlJVIcIWUlOtPntQ,ISRC 일치
+201,즛토마요,36,Flow Different,ZUTOMAYO,Nobi Shigusa Korite Itomagoi - EP,JPPO02200053,1607082972,36.0,Flow Different,Nobi Shigusa Korite Itomagoi,JPPO02200053,76XkonqPqBOngM6bbfiOMY,ISRC 일치
+202,즛토마요,37,袖のキルト,ZUTOMAYO,沈香学,JPPO02200054,1688968786,37.0,袖のキルト,J-Pop 輕旅行,JPPO02200054,5IO52ff5epAbottJ7hiGi2,발매항목 변경 검토
+203,즛토마요,38,Inside Joke,ZUTOMAYO,Inside Joke - Single,JPPO02101873,1570795403,38.0,Inside Joke,Tunes That Stick Vol 18,JPPO02101873,4bT9YDb2FjpxVBmYHS7wih,발매항목 변경 검토
+204,즛토마요,39,Neko Reset,ZUTOMAYO,Neko Reset - Single,JPPO02104528,1596281571,39.0,猫リセット,ZUTOMAYO's Playlist for Taiwan Vol.2,JPPO02104528,4MKJVcmd7nVF8gtT2z34wB,발매항목 변경 검토
+205,즛토마요,40,Kisumi at Midnight,ZUTOMAYO,Nobi Shigusa Korite Itomagoi - EP,JPPO02200055,1607082994,40.0,Kisumi at Midnight,Nobi Shigusa Korite Itomagoi,JPPO02200055,47fgnLoZgfkovAJgnLlgFp,ISRC 일치
+206,즛토마요,41,Stay Foolish,ZUTOMAYO,Stay Foolish - Single,JPPO02102165,1573520803,41.0,ばかじゃないのに,ZUTOMAYO's Playlist for U.S.,JPPO02102165,0YmfAKzgmA3hp5XDxWnUOs,발매항목 변경 검토
+207,즛토마요,42,花一匁,ZUTOMAYO,沈香学,JPPO02301433,1688968528,42.0,花一匁,沈香学,JPPO02301433,7xwmx6snj1GphKH9ihzo8e,ISRC 일치
+208,즛토마요,43,Time Left,ZUTOMAYO,Time Left - Single,JPPO02203871,1649264715,43.0,残機,Anime Hits,JPPO02203871,09B93O3GwbQMPPZC6RkvLD,발매항목 변경 검토
+209,즛토마요,44,Kira Killer (feat. Mori Calliope),ZUTOMAYO,Kira Killer (feat. Mori Calliope) - Single,JPPO02204831,1657388658,44.0,Kira Killer,Power Girl Workout,JPPO02204831,6n4trY1LLkP5nBf95V5ZnY,발매항목 변경 검토
+210,즛토마요,45,馴れ合いサーブ,ZUTOMAYO,沈香学,JPPO02301434,1688968539,45.0,馴れ合いサーブ,沈香学,JPPO02301434,2uQj4nOK3L9NtMIToEUMJ0,ISRC 일치
+211,즛토마요,46,夏枯れ,ZUTOMAYO,沈香学,JPPO02203089,1688968545,46.0,夏枯れ,沈香学,JPPO02203089,2D9YnRZA1cZMfWbrr5RBqu,ISRC 일치
+212,즛토마요,47,INTRUSION,ZUTOMAYO,INTRUSION - Single,JPPO02300963,1686875513,47.0,Intrusion,Jinkougaku,JPPO02300963,5p9w1K4zt7oJCcbA7TyQDh,발매항목 변경 검토
+213,즛토마요,48,消えてしまいそうです,ZUTOMAYO,沈香学,JPPO02203088,1688968789,48.0,消えてしまいそうです,沈香学,JPPO02203088,65k4LHIBkkImqlDj6My8K7,ISRC 일치
+214,즛토마요,49,ミラーチューン,ZUTOMAYO,沈香学,JPPO02201065,1688968790,49.0,ミラーチューン,沈香学,JPPO02201065,6KB2OPefadupVDnVNYq23A,ISRC 일치
+215,즛토마요,50,上辺の私自身なんだよ,ZUTOMAYO,沈香学,JPPO02301435,1688968791,50.0,Superficial Me,Jinkougaku,JPPO02301435,2FJV46j3oqHbYtiBvyTDnX,ISRC 일치
+216,즛토마요,51,KOKE,ZUTOMAYO,Koke no ichinen Kaiba ni takusu - EP,JPPO02404476,1770242094,51.0,KOKE,Koke no ichinen Kaiba ni takusu,JPPO02404476,6r3ItZ4cuMuxcolHxNtSm2,ISRC 일치
+217,즛토마요,52,TAIDADA,ZUTOMAYO,Koke no ichinen Kaiba ni takusu - EP,JPPO02404477,1770242096,52.0,TAIDADA,Nostalgic Gacha Songs,JPPO02404477,7dFGGldxnLeBaA6ZaLS6Y7,발매항목 변경 검토
+218,즛토마요,53,KUZURI,ZUTOMAYO,Koke no ichinen Kaiba ni takusu - EP,JPPO02404478,1770242097,53.0,KUZURI,Koke no ichinen Kaiba ni takusu,JPPO02404478,4KweyFHHiRpzvkdRgDxIq4,ISRC 일치
+219,즛토마요,54,Hippocampal Pain,ZUTOMAYO,Hippocampal Pain - Single,JPPO02403852,1763157329,54.0,海馬成長痛,海馬成長痛,JPPO02403852,1YfXeoQ39zL9IWHOTrL8bg,ISRC 일치
+220,즛토마요,55,Truth In Lies,ZUTOMAYO,Truth In Lies - Single,JPPO02401208,1746027609,55.0,Truth In Lies,Truth In Lies,JPPO02401208,7pfXqlkAjrai8JT6Paeqtp,ISRC 일치
+221,즛토마요,56,Blues in the Closet,ZUTOMAYO,Blues in the Closet - Single,JPPO02401209,1748771429,56.0,Blues in the Closet,Blues in the Closet,JPPO02401209,4lcupZPn3QWQWQ20C9ZL0M,ISRC 일치
+222,즛토마요,57,SHADE,ZUTOMAYO,SHADE - Single,JPPO02406152,1790588889,57.0,SHADE,SHADE,JPPO02406152,2EiSrQ8WaPgojshzPRKMxY,ISRC 일치
+223,즛토마요,58,Warmthaholic,ZUTOMAYO,Warmthaholic - Single,JPPO02501011,1806044918,58.0,Warmthaholic,Warmthaholic,JPPO02501011,7DpSFg1XfC0NF1otM7oqDT,ISRC 일치
+224,즛토마요,59,CREAM,ZUTOMAYO,CREAM - Single,JPPO02501554,1813833251,59.0,クリームで会いにいけますか,Daylight Chill Vibes in Tokyo,JPPO02501554,5bpumpWz5GMslA0GCU4ANQ,발매항목 변경 검토
+225,즛토마요,60,Yushinron,ZUTOMAYO,Yushinron - Single,JPPO02504144,1851385244,60.0,Yushinron,Yushinron,JPPO02504144,4I0EvbsEe7EAGxLPM1QcLb,ISRC 일치
+226,즛토마요,61,This Planet Feels Fake,ZUTOMAYO,KEISOUDO,JPPO02600585,1881610509,61.0,This Planet Feels Fake,KEISOUDO,JPPO02600585,41WGNsGs5yKUInFZyj3MXM,ISRC 일치
+227,즛토마요,62,残機,ZUTOMAYO,沈香学,JPPO02203871,1688968529,62.0,残機,沈香学,JPPO02203871,2fJbss5uUmmBqn7qFkmyWj,ISRC 일치
+228,즛토마요,63,Medianoche,ZUTOMAYO,Medianoche - Single,JPPO02600041,1869186104,63.0,メディアノーチェ,メディアノーチェ,JPPO02600041,0da1IJi7awMHj2O4ZzGFWj,ISRC 일치
+229,즛토마요,64,Kani Shabu Funk,ZUTOMAYO,KEISOUDO,JPPO02600589,1881610633,64.0,Kani Shabu Funk,KEISOUDO,JPPO02600589,2JKfLSzOLn88OyoLfq8b4m,ISRC 일치
+230,즛토마요,65,Pain Give Form,ZUTOMAYO,Pain Give Form - Single,JPPO02501793,1817596288,65.0,Pain Give Form,Pain Give Form,JPPO02501793,5i8NWMVWvkYKjYPIeQv9ML,ISRC 일치
+231,즛토마요,66,ultra soul,ZUTOMAYO,KEISOUDO,JPPO02600595,1881610738,66.0,ultra soul,KEISOUDO,JPPO02600595,2AlU0ltG2bfCvpuV5vVaGY,ISRC 일치
+232,즛토마요,67,Learning How Not to Break,ZUTOMAYO,KEISOUDO,JPPO02600596,1881610741,67.0,Learning How Not to Break,KEISOUDO,JPPO02600596,00KhdF8q73GeL0wikGclhl,ISRC 일치
+233,즛토마요,68,antimony,ZUTOMAYO,KEISOUDO,JPPO02600598,1881610746,68.0,antimony,KEISOUDO,JPPO02600598,3JwzEATET2OmnFvuaswDz7,ISRC 일치
+234,즛토마요,69,yomosugara,ZUTOMAYO,KEISOUDO,JPPO02600599,1881610749,69.0,yomosugara,yomosugara,JPPO02600599,3kDghWIadlBGiz5830reKu,발매항목 변경 검토
+235,즛토마요,70,lowmotion algae,ZUTOMAYO,KEISOUDO,JPPO02600602,1881610913,70.0,lowmotion algae,KEISOUDO,JPPO02600602,6D492ntSbATQ0zSehJuV5L,ISRC 일치
+236,DJMAX,1,glory day (Extended Ver.),BEXTER & Mycin.T,DJMAX RESPECT VERSE.1,KRMIM2432959,1746924062,1.0,glory day - Extended Ver.,DJMAX RESPECT VERSE.1,KRMIM2432959,4NYZrqgYdzgq75NjuOR3sF,ISRC 일치
+237,DJMAX,2,BlackCat,BEXTER,DJMAX RESPECT VERSE.1,KRMIM2432958,1746924054,2.0,BlackCat,DJMAX RESPECT VERSE.1,KRMIM2432958,0Z7A2c1ZxR39AiN5wTEkII,ISRC 일치
+238,DJMAX,3,Boom!,BEXTER,DJMAX RESPECT VERSE.1,KRMIM2346090,1746924055,3.0,Boom!,DJMAX RESPECT VERSE.1,KRMIM2346090,7hgizi9sjSb9ZblUIHgaqD,ISRC 일치
+239,DJMAX,4,Dream it,BEXTER,DJMAX RESPECT VERSE.1,KRMIM2346111,1746924057,4.0,Dream it,DJMAX RESPECT VERSE.1,KRMIM2346111,3I07vUwvcTpfj7rQzImRud,ISRC 일치
+240,DJMAX,5,Daydream,BEXTER & SiNA,DJMAX RESPECT VERSE.1,KRMIM2346136,1746924058,5.0,Daydream,DJMAX RESPECT VERSE.1,KRMIM2346136,7xxEGPHHzkIp4UwO3OwcHZ,ISRC 일치
+241,DJMAX,6,Tic! Tac! Toe!,Rocky Music,DMRV 22FW - EP,KRMIM2335954,1677736325,6.0,Tic! Tac! Toe!,DMRV 22FW,KRMIM2335954,22KV14kOQGbBUbiX2Hy2Zu,ISRC 일치
+242,DJMAX,7,DIE IN,탁 & Sobrem,DJMAX RESPECT VERSE.1,KRMIM2359397,1746924060,7.0,DIE IN,DJMAX RESPECT VERSE.1,KRMIM2359397,0KTNva0pyA6KiAJ9sxvJKp,ISRC 일치
+243,DJMAX,8,glory MAX -나의 최대치로 너와 함께할게-,탁,DJMAX RESPECT VERSE.1,KRMM02300480,1746924061,8.0,glory MAX -to the MAXimum-,DJMAX RESPECT VERSE.1,KRMM02300480,0dfyKL4uVlUx0UlavgEzqY,ISRC 일치
+244,DJMAX,9,Final Hour (Full Ver.),Pure 100%,DMRV 24SS,KRMIM2442982,1754275605,9.0,Final Hour - Full Ver.,DMRV 24SS,KRMIM2442982,0qQSdsV9DI3pMsZNeGLpw8,ISRC 일치
+245,DJMAX,10,Kakera,CLTH(이태훈),V LIBERTY 2 (Original Soundtrack),KRMIM2475376,1786286839,10.0,Kakera,V LIBERTY 2 (Original Soundtrack),KRMIM2475376,7hA1VCeuWLhtNZa4c6ZeLj,ISRC 일치
+246,DJMAX,11,Checkmate (feat. Re.may),ned & PahNic,V LIBERTY 3 (Original Soundtrack),KRMIM2532754,1821405956,11.0,Checkmate (feat. Re.may),V LIBERTY 3 (Original Soundtrack),KRMIM2532754,306dFZnkYgfq7spBprslxC,ISRC 일치
+247,DJMAX,12,The Castle of Báthory,Wicked Frontier,V LIBERTY 4 (Original Soundtrack),KRMIM2569080,1862679508,12.0,The Castle of Báthory,V LIBERTY 4 (Original Soundtrack),KRMIM2569080,4wi9Z3JHvrPyyxvG82I0A9,ISRC 일치
+248,DJMAX,13,Break Out,Night Tempo,V LIBERTY (Original Soundtrack),KRMIM2442937,1754124912,13.0,Break Out,V LIBERTY (Original Soundtrack),KRMIM2442937,1hffUWwKfDHVhTQvmjFVw5,ISRC 일치
+249,DJMAX,14,"때론, 냉정도 필요해 (Full Ver.)",Mycin.T,DMRV 24SS,KRMIM2442984,1754275608,14.0,Cold Generation - Full Ver.,DMRV 24SS,KRMIM2442984,5OFPG4KJ2w0z8RM6QTHz2B,ISRC 일치
+250,DJMAX,15,별빛정원,DJMAX,"Djmax Best, Vol. 1 (Original Soundtrack)",KRMIM1802771,1547411774,15.0,Starlight Garden,"Djmax Best, Vol. 1 (Original Soundtrack)",KRMIM1802771,71Y8lMabZkG31pG71lWyB3,ISRC 일치
+251,DJMAX,16,별빛너머 (Full ver.),ned,DMRV23FW,KRMM02300482,1720071973,16.0,Over the Starlight - Full ver.,DMRV23FW,KRMM02300482,3BIwkac55AmmrmuikC5WaF,ISRC 일치
+252,DJMAX,17,Mad (feat. WaMi),ESAI,V LIBERTY 2 (Original Soundtrack),KRMIM2475381,1786286845,17.0,Mad (feat. WaMi),V LIBERTY 2 (Original Soundtrack),KRMIM2475381,0HvP8bdCl1xf2gIje7CLOz,ISRC 일치
+253,DJMAX,18,Carrot Carrot,Sobrem,V EXTENSION V (Original Soundtrack),KRMM02304750,1720124007,18.0,Carrot Carrot,V EXTENSION V (Original Soundtrack),KRMM02304750,2H3reb4aiZvFopx81lptUt,ISRC 일치
+254,DJMAX,19,Away,Sobrem,V LIBERTY (Original Soundtrack),KRMIM2442944,1754125040,19.0,Away,V LIBERTY (Original Soundtrack),KRMIM2442944,3Vjyz6gh1h1NWoMvyycMAm,ISRC 일치
+255,DJMAX,20,1! 2! 3! 4! Streaming rn CHU!,Sobrem,V LIBERTY 2 (Original Soundtrack),KRMIM2475377,1786286841,20.0,1! 2! 3! 4! Streaming rn CHU!,V LIBERTY 2 (Original Soundtrack),KRMIM2475377,4AR6GAjbBYNhSuQVZT2bXD,ISRC 일치
+256,DJMAX,21,Crazy (feat. Yina),chomin,V LIBERTY 4 (Original Soundtrack),KRMIM2569084,1862679842,21.0,Crazy,V LIBERTY 4 (Original Soundtrack),KRMIM2569084,3gcoc7vzUvkkbFElul1ILh,ISRC 일치
+257,DJMAX,22,평행고백,BEXTER,V LIBERTY (Original Soundtrack),KRMIM2427333,1754125045,22.0,Confession in Another World,V LIBERTY (Original Soundtrack),KRMIM2427333,38J5kiLxZC5leXGIaJy87Q,ISRC 일치
+258,DJMAX,23,"Love, Epilogue (Feat. mill)",최신엽,V LIBERTY 3 (Original Soundtrack),KRMIM2532757,1821405959,23.0,"Love, Epilogue (Feat. mill)",V LIBERTY 3 (Original Soundtrack),KRMIM2532757,5PAf2oATCDCNb8Ahm2jRnE,ISRC 일치
+259,DJMAX,24,"DJ조선 (feat. 이오몽, 판다랑)",CLTH(이태훈),V LIBERTY 3 (Original Soundtrack),KRMIM2532755,1821405957,24.0,"DJ_Joseon (feat. E_Omong, Pandalang)",V LIBERTY 3 (Original Soundtrack),KRMIM2532755,0xeGQp2R3EVczw0rAXL9UR,ISRC 일치
+260,DJMAX,25,Final Round (Extended Ver.),INFX & 머신투더문,V LIBERTY (Original Soundtrack),KRMIM2442946,1754125042,25.0,Final Round - Extended Ver.,V LIBERTY (Original Soundtrack),KRMIM2442946,42ppwT3xm9f0sOKv6QEpFr,ISRC 일치
+261,DJMAX,26,ECiLA,최신엽,V EXTENSION V (Original Soundtrack),KRMM02304745,1720124000,26.0,ECiLA,V EXTENSION V (Original Soundtrack),KRMM02304745,7cRrbQpYSaEedEUxiCvLLB,ISRC 일치
+262,DJMAX,27,B!G-BANG CHALLENGE,seatrus,V LIBERTY 2 (Original Soundtrack),KRMIM2475395,1786286859,27.0,B!G-BANG CHALLENGE,V LIBERTY 2 (Original Soundtrack),KRMIM2475395,1Tn1gGmcxuK3ozy6y0BVVF,ISRC 일치
+263,DJMAX,28,Dying,다인,Dying - Single,KRMIM2534859,1821634408,28.0,Dying,Dying,KRMIM2534859,5TImLYv7JPJaSYNiFTZMFp,ISRC 일치
+264,DJMAX,29,AWAKE,다인,AWAKE - Single,KRMIM2554223,1843326988,29.0,AWAKE,AWAKE,KRMIM2554223,1LJJg2jK4cCAaeiIwGk3uy,ISRC 일치
+265,DJMAX,30,AURORA,다인,AURORA - Single,KRMIM2555005,1849356108,30.0,AURORA,AURORA,KRMIM2555005,5qwyV9zOJUTOjf1inWyXNf,ISRC 일치
+266,DJMAX,31,No Mercy,다인,No Mercy - Single,KRMIM2569106,1862462698,31.0,No Mercy,No Mercy,KRMIM2569106,0xlZJBZdv56bXzbV2JeFV4,ISRC 일치
+267,DJMAX,32,Rocket Ride,다인,Rocket Ride - Single,KRMIM2618493,1883642628,32.0,Rocket Ride,Rocket Ride,KRMIM2618493,2O7Td3YfTComIEjSHoWf3d,ISRC 일치
+268,DJMAX,33,Summer Fling,Pure 100%,V LIBERTY 3 (Original Soundtrack),KRMIM2532760,1821405962,33.0,Summer Fling,V LIBERTY 3 (Original Soundtrack),KRMIM2532760,3fle8vAwjXPGGXBJFELCMH,ISRC 일치
+269,DJMAX,34,KICK IT,HAYAKO,V EXTENSION III (Original Soundtrack),KRMIM2346040,1701991662,34.0,KICK IT,V EXTENSION III (Original Soundtrack),KRMIM2346040,53HZDvZaHk8eCa9ctH7KKc,ISRC 일치
+270,DJMAX,35,Pitter-patter,SOPHI,V EXTENSION V (Original Soundtrack),KRMM02304749,1720124005,35.0,Pitter-patter,V EXTENSION V (Original Soundtrack),KRMM02304749,2ZOb553ZiZB9TLPePbBueC,ISRC 일치
+271,DJMAX,36,mochimochi,탁,mochimochi - Single,QMBZ92414715,1763584221,36.0,mochimochi,mochimochi,QMBZ92414715,7bjDEKwjlV8e5jdDts4a9o,ISRC 일치
+272,DJMAX,37,LEMON MELON COOKIE,탁,LEMON MELON COOKIE - Single,QMFMF2438530,1786335236,37.0,LEMON MELON COOKIE,LEMON MELON COOKIE,QMFMF2438530,65gE7v1HqOfudsfdh2SuD8,ISRC 일치
+273,DJMAX,38,PPPP (feat. 初音ミク & 重音テト),탁,PPPP (feat. 初音ミク & 重音テト) - Single,QMFME2515427,1837128829,38.0,"PPPP (feat. Hatsune Miku, Kasane Teto)",PPPP,QMFME2515427,6J3pPfXLujwsWQpvR6XMgC,ISRC 일치
+274,DJMAX,39,"numb numb (feat. Hatsune Miku, Kasane Teto)",탁,numb numb (feat. Hatsune Miku & Kasane Teto) - Single,KRMIM2629653,6766820661,39.0,"numb numb (feat. Hatsune Miku, Kasane Teto)","numb numb (feat. Hatsune Miku, Kasane Teto)",KRMIM2629653,0AmLImb5bR5gu2WtxvyKAL,ISRC 일치
+275,DJMAX,40,Rabbit Hole,DECO*27,Rabbit Hole - Single,JP92Q2301331,1685142715,40.0,ラビットホール,TRANSFORM,JP92Q2301331,0kCRrfk1WV7QMnlxqhpwV9,발매항목 변경 검토
+276,DJMAX,41,Cherry Pop,DECO*27,Cherry Pop - Single,JP92Q2502426,1822895966,41.0,チェリーポップ,チェリーポップ,JP92Q2502426,6yID3RbYKiwn2p2LPz0OkK,ISRC 일치
+277,DJMAX,42,Telepathy,DECO*27,Telepathy - Single,JP92Q2501790,1794967656,42.0,テレパシ,テレパシ,JP92Q2501790,76kJA3LUe1uREGjlaOypkL,ISRC 일치
+278,DJMAX,43,Monitoring (Best Friend Remix),DECO*27,Monitoring (Best Friend Remix) - Single,JP92Q2502736,1832605668,43.0,モニタリング (Best Friend Remix),モニタリング (Best Friend Remix),JP92Q2502736,5an1RVI4IDE9xP7iBRVssg,ISRC 일치
+279,DJMAX,44,Constant Moderato,ミツキヨ (미츠키요),블루 아카이브 1주년 기념 (Original Soundtrack),KRMIM2474652,1779470430,44.0,Constant Moderato,Blue Archive 1st Anniversary (Original Soundtrack),KRMIM2474652,2UJqnLNlUSQ2ZRBQuEFZml,ISRC 일치
+280,DJMAX,45,Signal of Abydos,Nor,블루 아카이브 1주년 기념 (Original Soundtrack),KRMIM2474664,1779471136,45.0,Signal of Abydos,Blue Archive 1st Anniversary (Original Soundtrack),KRMIM2474664,0yOXRZOUNOFUsg9M27H86b,ISRC 일치
+281,DJMAX,46,Rolling beat,ミツキヨ (미츠키요),블루 아카이브 1주년 기념 (Original Soundtrack),KRMIM2474670,1779471729,46.0,Rolling beat,Blue Archive 1st Anniversary (Original Soundtrack),KRMIM2474670,1BsRHmQomSHhuOzIVm71Rf,ISRC 일치
+282,DJMAX,47,Step by Step,KARUT,블루 아카이브 1주년 기념 (Original Soundtrack),KRMIM2474656,1779470448,47.0,Step by Step,Blue Archive 1st Anniversary (Original Soundtrack),KRMIM2474656,404bfT8cVTOCHw2fvGhZNU,ISRC 일치
+283,DJMAX,48,Shooting Stars,KARUT,블루 아카이브 1주년 기념 (Original Soundtrack),KRMIM2474655,1779470442,48.0,Shooting Stars,Blue Archive 1st Anniversary (Original Soundtrack),KRMIM2474655,1FoUJkjr1Y1PswDmHFV0nT,ISRC 일치
+284,DJMAX,49,Colorful Mess,KARUT,블루 아카이브 2주년 기념 (Original Game Soundtrack),KRMIM2475093,1779443866,49.0,Colorful Mess,Blue Archive 2nd Anniversary (Original Soundtrack),KRMIM2475093,46HB8PhoVDhbOTSdhvCjBf,ISRC 일치
+285,DJMAX,50,Usagi Flap,Nor,블루 아카이브 4주년 기념 (Original Soundtrack),KRMIM2602063,1869503760,50.0,Usagi Flap,Blue Archive 4th Anniversary (Original Soundtrack),KRMIM2602063,41p94xERAQCmiI7wMNUcpa,ISRC 일치
+286,DJMAX,51,Up to 21°C,Nor,블루 아카이브 4주년 기념 (Original Soundtrack),KRMIM2602070,1869504053,51.0,Up to 21°C,Blue Archive 4th Anniversary (Original Soundtrack),KRMIM2602070,2y4H56uV8bKvwDC8I27F3S,ISRC 일치
+287,DJMAX,52,Operation☆DOTABATA!,ミツキヨ (미츠키요),블루 아카이브 4주년 기념 (Original Soundtrack),KRMIM2602066,1869503773,52.0,Operation☆DOTABATA!,Blue Archive 4th Anniversary (Original Soundtrack),KRMIM2602066,1Adkt1kZW1kt3rbpbWRGUM,ISRC 일치
+288,DJMAX,53,Tok9 Train,Nor,블루 아카이브 4주년 기념 (Original Soundtrack),KRMIM2602074,1869504143,53.0,Tok9 Train,Blue Archive 4th Anniversary (Original Soundtrack),KRMIM2602074,56gFsQLxmbvPRbWsP0GqpH,ISRC 일치
+289,DJMAX,54,Action 68,KARUT,블루 아카이브 4주년 기념 (Original Soundtrack),KRMIM2602083,1869504168,54.0,Action 68,Blue Archive 4th Anniversary (Original Soundtrack),KRMIM2602083,1V390bhfY3XXLbt0YIs2r8,ISRC 일치
+290,DJMAX,55,Unwelcome School,ミツキヨ (미츠키요),블루 아카이브 3주년 기념 (Original Soundtrack),KRMIM2478987,1783092896,55.0,Unwelcome School,Blue Archive 3rd Anniversary (Original Soundtrack),KRMIM2478987,2Qc23ytxTlv8Db3mAP8SSw,ISRC 일치
+291,DJMAX,56,Funky Road,KARUT,블루 아카이브 3주년 기념 (Original Soundtrack),KRMIM2478988,1783092897,56.0,Funky Road,Blue Archive 3rd Anniversary (Original Soundtrack),KRMIM2478988,4cIJolTqaywqdK2MA7xOfY,ISRC 일치
+292,DJMAX,57,꿈길 위의 꽃 (Korean Version),ミツキヨ (미츠키요),꿈길 위의 꽃 (블루 아카이브) [Original Soundtrack] [Korean Version] - Single,KRMIM2468913,1774186887,57.0,Yumeji no Hana - Korean Version,Yumeji no Hana (Blue Archive) (Original Soundtrack) (Korean Version),KRMIM2468913,5gTjaz2BuCCPcDG2opQAuw,ISRC 일치
+293,DJMAX,58,Raise the Huddle,Nor,블루 아카이브 3.5주년 기념 OST (Original Soundtrack),KRMIM2532597,1817103607,58.0,Raise the Huddle,Blue Archive 3.5th Anniversary (Original Soundtrack),KRMIM2532597,3lhro7b0lNQd9wv9RWZhtg,ISRC 일치
+294,DJMAX,59,Shooting Athletes,KARUT,블루 아카이브 3.5주년 기념 OST (Original Soundtrack),KRMIM2532598,1817103608,59.0,Shooting Athletes,Blue Archive 3.5th Anniversary (Original Soundtrack),KRMIM2532598,0ilPoH7JY1MLUxaAc8Dh5d,ISRC 일치
+295,DJMAX,60,Goal Wo Nerae!,KARUT,블루 아카이브 3.5주년 기념 OST (Original Soundtrack),KRMIM2532599,1817103616,60.0,Goal Wo Nerae!,Blue Archive 3.5th Anniversary (Original Soundtrack),KRMIM2532599,5jIQJQVGJVD4A3mZBwlNkB,ISRC 일치
+296,DJMAX,61,Midnight Trip,Nor,블루 아카이브 2.5주년 기념 (Original Soundtrack),KRMIM2475051,1779468022,61.0,Midnight Trip,Blue Archive 2.5th Anniversary (Original Soundtrack),KRMIM2475051,08OT1KAKaCSsWLKNmgcc52,ISRC 일치
+297,DJMAX,62,Hifumi Daisuki,ミツキヨ (미츠키요),블루 아카이브 2.5주년 기념 (Original Soundtrack),KRMIM2475054,1779468040,62.0,Hifumi Daisuki,Blue Archive 2.5th Anniversary (Original Soundtrack),KRMIM2475054,1ooYqn7Ktu3lZZxPDZCxCL,ISRC 일치
+298,DJMAX,63,After School Dessert,KARUT,블루 아카이브 2.5주년 기념 (Original Soundtrack),KRMIM2475060,1779468245,63.0,After School Dessert,Blue Archive 2.5th Anniversary (Original Soundtrack),KRMIM2475060,04urwecRv8jqNMoanq9Ayc,ISRC 일치
+299,DJMAX,64,FEEEEVER TIME,Nor,블루 아카이브 2.5주년 기념 (Original Soundtrack),KRMIM2475061,1779468246,64.0,FEEEEVER TIME,Blue Archive 2.5th Anniversary (Original Soundtrack),KRMIM2475061,6sRfMCyNfLQOzUS3lmEdug,ISRC 일치
+300,DJMAX,65,Dolce Biblioteca,ミツキヨ (미츠키요),블루 아카이브 2.5주년 기념 (Original Soundtrack),KRMIM2475058,1779468237,65.0,Dolce Biblioteca,Blue Archive 2.5th Anniversary (Original Soundtrack),KRMIM2475058,6PxoUqLd2cSQuo8c7mOmzJ,ISRC 일치
+301,DJMAX,66,Takaramonogatari,ミツキヨ (미츠키요),블루 아카이브 4주년 기념 (Original Soundtrack),KRMIM2602073,1869504140,66.0,Takaramonogatari,Blue Archive 4th Anniversary (Original Soundtrack),KRMIM2602073,3XK26lt8Exrn0IyUt12wCF,ISRC 일치
+302,DJMAX,67,Romantic Seaside (Korean Version),ミツキヨ (미츠키요),Romantic Seaside (블루 아카이브) [Korean Version] - EP,KRMIM2573090,1863660228,67.0,Romantic Seaside - Korean Version,Romantic Seaside (Blue Archive) (Korean Version),KRMIM2573090,59l6UGQvVoshehM5VkdTsp,ISRC 일치
+303,DJMAX,68,Bunny Bunny Carrot Carrot,ミツキヨ (미츠키요),블루 아카이브 2주년 기념 (Original Game Soundtrack),KRMIM2475090,1779443859,68.0,Bunny Bunny Carrot Carrot,Blue Archive 2nd Anniversary (Original Soundtrack),KRMIM2475090,5Emj1sb5QujfB5ohprZoWl,ISRC 일치
+304,DJMAX,69,Mechanical JUNGLE,KARUT,블루 아카이브 1주년 기념 (Original Soundtrack),KRMIM2474673,1779472057,69.0,Mechanical JUNGLE,Blue Archive 1st Anniversary (Original Soundtrack),KRMIM2474673,5MoXYnnOV4r3dOWMvRWLpG,ISRC 일치
+305,DJMAX,70,OperationD,Nor,블루 아카이브 2주년 기념 (Original Game Soundtrack),KRMIM2475091,1779443863,70.0,OperationD,Blue Archive 2nd Anniversary (Original Soundtrack),KRMIM2475091,6kr3CwF3zvJwgBdOXaMAHa,ISRC 일치
+306,DJMAX,71,Love Parade (feat. Dovlvl),ミツキヨ (미츠키요),Love Parade (블루 아카이브) [feat. Dovlvl] - Single,KRMIM2542170,1827898931,71.0,Love Parade,Love Parade (Blue Archive),KRMIM2542170,4scqYs8C6ERc8SGIeXJFZM,ISRC 일치
+307,DJMAX,72,"꽃, 바람, 그대 (feat. 새빛)",ミツキヨ (미츠키요),"꽃, 바람, 그대 (블루 아카이브) - Single",KRMIM2516627,1802584027,72.0,"Flower, Wind, and You","Flower, Wind, You (Blue Archive)",KRMIM2516627,6paRgkIe7XCAkDkEawYtqc,ISRC 일치
+308,DJMAX,73,Ramune Lagoon,YUC'e,블루 아카이브 4주년 기념 (Original Soundtrack),KRMIM2602075,1869504146,73.0,Ramune Lagoon,Blue Archive 4th Anniversary (Original Soundtrack),KRMIM2602075,1byOSFvSwTF98T4soVg1fW,ISRC 일치
+309,DJMAX,74,Encroached Sky,KARUT,블루 아카이브 3주년 기념 (Original Soundtrack),KRMIM2479004,1783093055,74.0,Encroached Sky,Blue Archive 3rd Anniversary (Original Soundtrack),KRMIM2479004,2BOuVW14vzckDgJkVcRWZ7,ISRC 일치
+310,DJMAX,75,Polyphonic,Nor,블루 아카이브 3주년 기념 (Original Soundtrack),KRMIM2479006,1783093250,75.0,Polyphonic,Blue Archive 3rd Anniversary (Original Soundtrack),KRMIM2479006,0NE8BBwM0WGzRcTqzBDB4n,ISRC 일치
+311,DJMAX,76,Oxygen Destroyer,KARUT,블루 아카이브 2주년 기념 (Original Game Soundtrack),KRMIM2475100,1779444065,76.0,Oxygen Destroyer,Blue Archive 2nd Anniversary (Original Soundtrack),KRMIM2475100,0LNK1gt7AyGc0kvbNonXmK,ISRC 일치
+312,DJMAX,77,Hell'o,PahNic,V EXTENSION IV (Original Soundtrack),KRMIM2359410,1690336288,77.0,Hell'o,V EXTENSION IV (Original Soundtrack),KRMIM2359410,1QHfjSSsuJMSdVGP49RU8w,ISRC 일치
+313,DJMAX,78,O'men,PahNic,V LIBERTY (Original Soundtrack),KRMIM2442943,1754125039,78.0,O'men,V LIBERTY (Original Soundtrack),KRMIM2442943,6qj1jMxqoDOO5srseEHSxg,ISRC 일치
+314,kessoku band,1,青春コンプレックス,kessoku band,結束バンド,JPE302200934,1657318551,1.0,青春コンプレックス,結束バンド,JPE302200934,60nwK1iMgnFCznF6FiNfts,ISRC 일치
+315,kessoku band,2,ひとりぼっち東京,kessoku band,結束バンド,JPE302200935,1657318555,2.0,ひとりぼっち東京,結束バンド,JPE302200935,1ZFnNl8O8zd4mef77SAd91,ISRC 일치
+316,kessoku band,3,Distortion!!,kessoku band,結束バンド,JPE302201009,1657318564,3.0,Distortion!!,結束バンド,JPE302201009,3l8rIBKJUDQFqQfKvcpQ1w,ISRC 일치
+317,kessoku band,4,ひみつ基地,kessoku band,結束バンド,JPE302201061,1657318570,4.0,ひみつ基地,結束バンド,JPE302201061,6P0RocRd21jJxs3E9vQoNH,ISRC 일치
+318,kessoku band,5,ギターと孤独と蒼い惑星,kessoku band,結束バンド,JPE302201022,1657318765,5.0,ギターと孤独と蒼い惑星,結束バンド,JPE302201022,1rgncjmlpHMP3DBhpagyVb,ISRC 일치
+319,kessoku band,6,ラブソングが歌えない,kessoku band,結束バンド,JPE302201062,1657318775,6.0,ラブソングが歌えない,結束バンド,JPE302201062,5e9Pocvg3lRkVAsAKeiNio,ISRC 일치
+320,kessoku band,7,あのバンド,kessoku band,結束バンド,JPE302201023,1657318780,7.0,あのバンド,結束バンド,JPE302201023,4Ji17AjAdjf83FsIDcXe0J,ISRC 일치
+321,kessoku band,8,カラカラ,kessoku band,結束バンド,JPE302201019,1657318783,8.0,カラカラ,結束バンド,JPE302201019,1ofAXq6xfHjn6ZUxdsY3YW,ISRC 일치
+322,kessoku band,9,小さな海,kessoku band,結束バンド,JPE302201063,1657318876,9.0,小さな海,結束バンド,JPE302201063,54SWXjFN2XYo3G5YiNSCqd,ISRC 일치
+323,kessoku band,10,なにが悪い,kessoku band,結束バンド,JPE302201021,1657318881,10.0,なにが悪い,結束バンド,JPE302201021,2Ifn0MXm7x9ddBQPUabV9a,ISRC 일치
+324,kessoku band,11,忘れてやらない,kessoku band,結束バンド,JPE302201020,1657318882,11.0,忘れてやらない,結束バンド,JPE302201020,5ISHFvPLUqKz2JfDRtwnb2,ISRC 일치
+325,kessoku band,12,星座になれたら,kessoku band,結束バンド,JPE302201032,1657318884,12.0,星座になれたら,結束バンド,JPE302201032,1iNhNmEwrd2TP4XrV7pQBI,ISRC 일치
+326,kessoku band,13,フラッシュバッカー,kessoku band,結束バンド,JPE302201064,1657318889,13.0,フラッシュバッカー,結束バンド,JPE302201064,2qdPWFrknWyLXYIPpbtAgD,ISRC 일치
+327,kessoku band,14,光の中へ,kessoku band,光の中へ - EP,JPE302300187,1685194940,14.0,光の中へ,光の中へ,JPE302300187,5pRchw0E4RpVqIWcyVCrJv,ISRC 일치
+328,kessoku band,15,青い春と西の空,kessoku band,光の中へ - EP,JPE302300188,1685194942,15.0,青い春と西の空,光の中へ,JPE302300188,7hfOYw1pDISWok8ZR8JALg,ISRC 일치
+329,kessoku band,16,月並みに輝け,kessoku band,Re:結束バンド - EP,JPE302400232,1759525329,16.0,月並みに輝け,Re:結束バンド,JPE302400232,5ZAoRsTvtgtdVCB10tNhnS,ISRC 일치
+330,kessoku band,17,今、僕、アンダーグラウンドから,kessoku band,Re:結束バンド - EP,JPE302400233,1759525332,17.0,今、僕、アンダーグラウンドから,Re:結束バンド,JPE302400233,7hbC8V5n1C8t01azpZqsH9,ISRC 일치
+331,kessoku band,18,ドッペルゲンガー,kessoku band,Re:結束バンド - EP,JPE302400585,1759525333,18.0,ドッペルゲンガー,Re:結束バンド,JPE302400585,3lG2lpAVirM0df8pMMUP1P,ISRC 일치
+332,kessoku band,19,僕と三原色,kessoku band,Re:結束バンド - EP,JPE302400586,1759525334,19.0,僕と三原色,Re:結束バンド,JPE302400586,5C3AH2Pxm8r2wovLBFWHe7,ISRC 일치
+333,kessoku band,20,秒針少女,kessoku band,Re:結束バンド - EP,JPE302400587,1759525335,20.0,秒針少女,Re:結束バンド,JPE302400587,0o4gPwmVjQCdmAuaGfD63k,ISRC 일치
+334,kessoku band,21,milky way,kessoku band,We will - EP,JPE302400658,1765078732,21.0,milky way,We will,JPE302400658,3lKpFtBHX0Q17ABO380mhv,ISRC 일치
+335,kessoku band,22,惑う星,kessoku band,We will - EP,JPE302400659,1765078740,22.0,惑う星,We will,JPE302400659,4iWnWYDtg7ITUoNh6OjJUz,ISRC 일치
+336,kessoku band,23,UNITE,kessoku band,We will - EP,JPE302400660,1765078742,23.0,UNITE,We will,JPE302400660,1alnCCvoaTx5r0IhqXU3Ru,ISRC 일치
+337,kessoku band,24,夢を束ねて,kessoku band,We will - EP,JPE302400661,1765078744,24.0,夢を束ねて,We will,JPE302400661,2Tc6Yq6HAjFU0OORD3b8w2,ISRC 일치
+338,kessoku band,25,転がる岩、君に朝が降る,kessoku band,結束バンド,JPE302201024,1657318890,25.0,転がる岩、君に朝が降る,結束バンド,JPE302201024,6wH2RsJUO8oypx8c5PG0bP,ISRC 일치
+339,kessoku band,26,Re:Re:,kessoku band,Re:結束バンド - EP,JPE302400588,1759525336,26.0,Re:Re:,Re:結束バンド,JPE302400588,4aapC2MVDjxG1kp8O8HoxJ,ISRC 일치
+340,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,1,Audio zero zero one,Vaundy,strobo,JPR652000110,1707022777,1.0,Audio 001,strobo,JPR652000110,6fth54aIbC1taVaG1pOzoQ,ISRC 일치
+341,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,2,Tomoshibi,Vaundy,strobo,JPR652000111,1707022783,2.0,Tomoshibi,strobo,JPR652000111,7vNMGbK0IlrmoX5L1PKOe3,ISRC 일치
+342,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,3,Tokyo Flash,Vaundy,strobo,JPR651900334,1707023149,3.0,東京フラッシュ,strobo,JPR651900334,04e72JtsOIIlHUQ7CvWwvX,ISRC 일치
+343,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,4,Kaiju no Hanauta,Vaundy,strobo,JPR652000112,1707023156,4.0,Kaiju no Hanauta,strobo,JPR652000112,1pCcNaCodPssCc8Aq68gPS,ISRC 일치
+344,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,5,life hack,Vaundy,strobo,JPR652000094,1707023167,5.0,life hack,strobo,JPR652000094,0DKHQ4ixPdmN1SHtT8PVpS,ISRC 일치
+345,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,6,Fukakoryoku,Vaundy,strobo,JPR651900353,1707023356,6.0,Fukakoryoku,strobo,JPR651900353,0lK0ONyDapmxGzYexyaAFW,ISRC 일치
+346,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,7,soramimi,Vaundy,strobo,JPR651900357,1707023361,7.0,soramimi,strobo,JPR651900357,3aXXsS4RWTEYmqfXY3R2tD,ISRC 일치
+347,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,8,Audio zero zero two,Vaundy,strobo,JPR652000113,1707023367,8.0,Audio 002,strobo,JPR652000113,59fU1zkuWSNOs6EqMGcEpb,ISRC 일치
+348,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,9,napori,Vaundy,strobo,JPR652000114,1707023375,9.0,napori,strobo,JPR652000114,7hDX39mc6Uf6zp8RXYUQ6d,ISRC 일치
+349,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,10,Boku wa kyo mo,Vaundy,strobo,JPR651900360,1707023379,10.0,僕は今日も,strobo,JPR651900360,0t9c8d6PQhLmZSS6JVt0NS,ISRC 일치
+350,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,11,Bye by me,Vaundy,strobo,JPR652000115,1707023385,11.0,Bye by me,strobo,JPR652000115,02U9Ks0wBzbELtZKD6bBnw,ISRC 일치
+351,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,12,地球儀 (with Vaundy),에메,Walpurgis,JPU902003548,1546316248,12.0,地球儀,Walpurgis,JPU902003548,3fIMaGEhHBRtLa1ZwNB7M6,ISRC 일치
+352,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,13,Ash (feat. Vaundy) [N-Buna From Yorushika Remix],Nulbarich,NEW GRAVITY,JPVI02002329,1561568166,13.0,ASH feat. Vaundy (n-buna from YORUSHIKA Remix),NEW GRAVITY,JPVI02002329,1xmGzkLLW5P7utET6gxHaq,ISRC 일치
+353,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,14,Ash (feat. Vaundy),Nulbarich,NEW GRAVITY,JPVI02002216,1561568172,14.0,ASH feat. Vaundy,NEW GRAVITY,JPVI02002216,0BOr48Q9eVUuOKIQ5oZzqO,ISRC 일치
+354,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,15,二人話,Vaundy,裸の勇者 - EP,JPP302101987,1600223389,15.0,二人話,裸の勇者,JPP302101987,2OtLY8mm6sHy3u85zzZg1c,ISRC 일치
+355,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,16,HERO,Vaundy,裸の勇者 - EP,JPP302101988,1600223390,16.0,HERO,裸の勇者,JPP302101988,7C4pZa37R3hTIA4NWzbj9W,ISRC 일치
+356,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,17,おもかげ -self cover-,Vaundy,裸の勇者 - EP,JPP302101989,1600223394,17.0,おもかげ -self cover-,裸の勇者,JPP302101989,6uqewERWZ1vzfCcin1zFIp,ISRC 일치
+357,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,18,Backlight,Ado,UTA'S SONGS ONE PIECE FILM RED,JPPO02202426,1636446964,18.0,Backlight,UTA'S SONGS ONE PIECE FILM RED,JPPO02202426,3WY0iazRPHOlIq6CdbKLZ6,ISRC 일치
+358,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,19,くびったけ,yama,Versus the night,JPU902202362,1638668173,19.0,くびったけ,Versus the night,JPU902202362,4N68vlWbWHDe8DeNgJaWtO,ISRC 일치
+359,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,20,Missing,Vaundy,ELLEGARDEN TRIBUTE,JPPO02204315,1669558928,20.0,Missing - Amazon Original,Boys in Stereo: Asia - Spring,JPPO02204315,4W3EQGSsEm3aicQdhz6WdP,발매항목 변경 검토
+360,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,21,rose feat. Vaundy,Chilli Beans.,mixtape - EP,JPB602300187,1664099748,21.0,rose - feat. Vaundy,mixtape,JPB602300187,72DWkd9AazMHYDafzpq4XF,ISRC 일치
+361,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,22,Audio 007,Vaundy,replica,JPP302300542,1714599650,22.0,Audio 007,replica,JPP302300542,3aNHHvXx1RyZnNZPhGzKFH,ISRC 일치
+362,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,23,ZERO,Vaundy,replica,JPP302300534,1714599652,23.0,ZERO,replica,JPP302300534,65HcaAy1eQRr5pxVvVAqc5,ISRC 일치
+363,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,24,美電球,Vaundy,replica,JPP302300543,1714599655,24.0,美電球,replica,JPP302300543,4oEcfGnvhxjjMscLLnNYSR,ISRC 일치
+364,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,25,カーニバル,Vaundy,replica,JPR652300108,1714599658,25.0,カーニバル,replica,JPR652300108,5XGhwqu1TB391if1pD4lje,ISRC 일치
+365,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,26,1リッター分の愛をこめて,Vaundy,replica,JPP302300545,1714599659,26.0,1リッター分の愛をこめて,replica,JPP302300545,12CAcVzra8ZX8WGCRs73r9,ISRC 일치
+366,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,27,常熱,Vaundy,replica,JPP302300546,1714599663,27.0,常熱,replica,JPP302300546,5h3ynZiK27wTtQt0uXId75,ISRC 일치
+367,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,28,Audio 006,Vaundy,replica,JPP302300547,1714599668,28.0,Audio 006,replica,JPP302300547,3wfW86CJqG9no0UFbiZsdi,ISRC 일치
+368,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,29,宮,Vaundy,replica,JPP302300548,1714599670,29.0,宮,replica,JPP302300548,2EOOd0UJfRZzzlok8IZ6iZ,ISRC 일치
+369,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,30,黒子,Vaundy,replica,JPP302300549,1714599671,30.0,黒子,replica,JPP302300549,3YOzU8IiYNHphHhVrgvuV9,ISRC 일치
+370,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,31,逆光 - replica -,Vaundy,replica,JPP302300550,1714599674,31.0,逆光 - replica -,replica,JPP302300550,3LZwKI90sFbwjJMMSfyPp7,ISRC 일치
+371,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,32,NEO JAPAN,Vaundy,replica,JPP302300551,1714599676,32.0,NEO JAPAN,replica,JPP302300551,4PQJs2U6R1xhXLxyjmf4gj,ISRC 일치
+372,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,33,呼吸のように,Vaundy,replica,JPP302300552,1714599798,33.0,呼吸のように,replica,JPP302300552,419L5Vb2jXSEm19LH9IbmV,ISRC 일치
+373,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,34,怪獣の花唄 - replica -,Vaundy,replica,JPP302300553,1714599800,34.0,怪獣の花唄 - replica -,replica,JPP302300553,26H7pT0IHTko0AA3A35S73,ISRC 일치
+374,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,35,Audio 008,Vaundy,replica,JPP302300554,1714599802,35.0,Audio 008,replica,JPP302300554,0EXDDf7g5TXkTLU4Haovuj,ISRC 일치
+375,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,36,replica,Vaundy,replica,JPP302300555,1714599807,36.0,replica,replica,JPP302300555,2ZLdeyeaIQdP4mqcMCB9yR,ISRC 일치
+376,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,37,Audio 003,Vaundy,replica,JPP302300556,1714599813,37.0,Audio 003,replica,JPP302300556,3bOCsb2U3BgkKbPeIofmkU,ISRC 일치
+377,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,38,世界の秘密,Vaundy,replica,JPR652000319,1714599817,38.0,世界の秘密,replica,JPR652000319,0bv6tutpCuYApSXTF0AKrP,ISRC 일치
+378,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,39,融解sink,Vaundy,replica,JPR652000328,1714599818,39.0,融解sink,replica,JPR652000328,1CC9gpmBhKRr9SzYEfStct,ISRC 일치
+379,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,40,しわあわせ,Vaundy,replica,JPR652100006,1714599822,40.0,しわあわせ,replica,JPR652100006,4GvJskA0Jn4NorP2YWxuaf,ISRC 일치
+380,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,41,benefits,Vaundy,replica,JPR652100019,1714599823,41.0,benefits,replica,JPR652100019,6pdUfehrxvlrMaNBmNiaJb,ISRC 일치
+381,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,42,花占い,Vaundy,replica,JPR652100020,1714599825,42.0,花占い,replica,JPR652100020,4ETc1oFREuqQss7VQ1Y4mj,ISRC 일치
+382,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,43,Tokimeki,Vaundy,replica,JPR652100038,1714599978,43.0,Tokimeki,replica,JPR652100038,3e0Td8QexmD5l3DJzXbbcC,ISRC 일치
+383,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,44,泣き地蔵,Vaundy,replica,JPR652100016,1714599979,44.0,泣き地蔵,replica,JPR652100016,7iMmJciZihn8wrKGabtTLU,ISRC 일치
+384,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,45,踊り子,Vaundy,replica,JPR652100061,1714599984,45.0,踊り子,replica,JPR652100061,1YXot2MLAG9sttepCtBRM7,ISRC 일치
+385,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,46,裸の勇者,Vaundy,replica,JPP302101986,1714599986,46.0,裸の勇者,replica,JPP302101986,5zdyuqPOZ6oR6a4ZtqI1vl,ISRC 일치
+386,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,47,恋風邪にのせて,Vaundy,replica,JPR652200002,1714599987,47.0,恋風邪にのせて,replica,JPR652200002,1IFyAcFGKEoAcdFa8WwLk0,ISRC 일치
+387,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,48,走馬灯,Vaundy,replica,JPR652200041,1714599992,48.0,走馬灯,replica,JPR652200041,6Sj8igey2JUWN6HtmiADtq,ISRC 일치
+388,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,49,mabataki,Vaundy,replica,JPR652200079,1714599994,49.0,mabataki,replica,JPR652200079,5y1N9zfII6NnDRzNPmMPJv,ISRC 일치
+389,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,50,CHAINSAW BLOOD,Vaundy,replica,JPP302200652,1714600003,50.0,CHAINSAW BLOOD,replica,JPP302200652,20CH6NjUJ8GGJQesmiqPeB,ISRC 일치
+390,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,51,瞳惚れ,Vaundy,replica,JPR652200113,1714600006,51.0,瞳惚れ,replica,JPR652200113,5ZqO8UI3rELw35xCb8oF7c,ISRC 일치
+391,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,52,忘れ物,Vaundy,replica,JPR652200115,1714600309,52.0,忘れ物,replica,JPR652200115,6y3ZWLQTlgRUqqNKBt3WgO,ISRC 일치
+392,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,53,置き手紙,Vaundy,replica,JPR652200123,1714600311,53.0,置き手紙,replica,JPR652200123,3I7zyBNpewaGeIRDO1QBwp,ISRC 일치
+393,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,54,まぶた,Vaundy,replica,JPR652200171,1714600312,54.0,まぶた,replica,JPR652200171,2TUKLEXyjtKOmTjJupAexh,ISRC 일치
+394,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,55,そんなbitterな話,Vaundy,replica,JPR652300031,1714600317,55.0,そんなbitterな話,replica,JPR652300031,4DmmljTCS4ViQRSLCiMnOt,ISRC 일치
+395,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,56,トドメの一撃 (feat. Cory Wong),Vaundy,replica,JPR652300153,1714600333,56.0,トドメの一撃,replica,JPR652300153,7sd09c4dFK5dLHRsySex9L,ISRC 일치
+396,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,57,タイムパラドックス,Vaundy,タイムパラドックス - Single,JPR652300211,1730929696,57.0,タイムパラドックス,タイムパラドックス,JPR652300211,5tUXcVSQKwoVVkziZmCOTM,ISRC 일치
+397,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,58,ココロありがとう,Vaundy,タイムパラドックス - Single,JPR652400014,1730930121,58.0,ココロありがとう,タイムパラドックス,JPR652400014,0BJoEqn7PsV1M36n1qXZ1l,ISRC 일치
+398,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,59,惑う糸,스다 마사키,SPIN,JPU902201685,1750677680,59.0,惑う糸,SPIN,JPU902201685,7AEQ3GCjZoKoHHQl5kgzRU,ISRC 일치
+399,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,60,Ibara,Ado,Zanmu,JPPO02301246,1754263836,60.0,Ibara,Zanmu,JPPO02301246,02uUERfxuB8fsU3Xnnorv7,ISRC 일치
+400,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,61,ホムンクルス,Vaundy,ホムンクルス / Gift - Single,JPR652400083,1758905746,61.0,ホムンクルス,ホムンクルス / Gift,JPR652400083,7H2twalBiwEUErhVLyIQ31,ISRC 일치
+401,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,62,Gift,Vaundy,ホムンクルス / Gift - Single,JPR652400086,1758905748,62.0,Gift,ホムンクルス / Gift,JPR652400086,76gAyGyyhDuHh2r4TdHKaP,ISRC 일치
+402,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,63,Toumei Ni Naritai,Number_i,No.Ⅰ,JPY932300181,6780732817,63.0,透明になりたい,No.Ⅰ,JPY932300181,6xhAPExQCbfy6WiIWdbgRR,ISRC 일치
+403,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,64,GORILLA SHIBAI,Vaundy,GORILLA SHIBAI - Single,JPR652400099,1766130694,64.0,GORILLA SHIBAI,GORILLA SHIBAI,JPR652400099,7nEJcD8O9l2QDCUuQwEnDl,ISRC 일치
+404,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,65,風神,Vaundy,風神 - Single,JPR652400161,1771366342,65.0,風神,風神,JPR652400161,00GDUNeJd97qjKp2yrx0OC,ISRC 일치
+405,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,66,走れSAKAMOTO,Vaundy,走れSAKAMOTO - Single,JPR652400186,1785122582,66.0,走れSAKAMOTO,走れSAKAMOTO,JPR652400186,39G4uYSkyjaDcCJdt8qg9E,ISRC 일치
+406,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,67,Somebody help us,Vaundy,走れSAKAMOTO - Single,JPR652400197,1793301774,67.0,Somebody help us,走れSAKAMOTO,JPR652400197,11gc2n8N1ANGERLZ1Ju66i,ISRC 일치
+407,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,68,Jinsei wa mix nuts no kumiawase,Vaundy,Jinsei wa mix nuts no kumiawase - Single,JPR652500056,1800425637,68.0,Jinsei wa mix nuts no kumiawase,Jinsei wa mix nuts no kumiawase,JPR652500056,2zyM9MlG0LULnGhJiQ1ITM,ISRC 일치
+408,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,69,僕にはどうしてわかるんだろう,Vaundy,僕にはどうしてわかるんだろう - Single,JPR652500088,1808353380,69.0,僕にはどうしてわかるんだろう,僕にはどうしてわかるんだろう,JPR652500088,6l9uVfPEhdfE50mTPgnE0W,ISRC 일치
+409,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,70,まじで、サヨナラべぃべぃ,Vaundy,まじで、サヨナラべぃべぃ - Single,JPR652500092,1810654781,70.0,まじで、サヨナラべぃべぃ,まじで、サヨナラべぃべぃ,JPR652500092,2ulLum9XO5il5TWFmR9u7t,ISRC 일치
+410,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,71,pained,Vaundy,pained - Single,JPP302300558,1819665892,71.0,pained,pained,JPP302300558,4fLu1o9tL4Fg7Zh7y4P7mK,ISRC 일치
+411,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,72,再会,Vaundy,再会 - Single,JPR652500130,1823815962,72.0,再会,再会,JPR652500130,7c1icp8E7aYG90vA3wo3Se,ISRC 일치
+412,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,73,zutto love song,Vaundy,zutto love song - Single,JPR652500161,1833847517,73.0,zutto love song,zutto love song,JPR652500161,5sotruxtVBUsYrmnRvRhgW,ISRC 일치
+413,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,74,wasurerumaeni,Vaundy,wasurerumaeni - Single,JPR652500176,1841372294,74.0,wasurerumaeni,wasurerumaeni,JPR652500176,4gUjQJheIwz5ALZyeGXHXo,ISRC 일치
+414,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,75,偉生人,Vaundy,偉生人 - Single,JPR652100042,1846515044,75.0,偉生人,偉生人,JPR652100042,3g1Ca8PPhR4FBN6a66wkyq,ISRC 일치
+415,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,76,Zenzenzense,Vaundy,Dear Jubilee -RADWIMPS TRIBUTE-,JPR652500206,1852963449,76.0,前前前世,Dear Jubilee -RADWIMPS TRIBUTE-,JPR652500206,4JBxW5PXO7EIaR6CeGo07A,ISRC 일치
+416,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,77,Kiseki,Vaundy,Kiseki - Single,JPR652500209,1853550302,77.0,Kiseki,Kiseki,JPR652500209,4H2nmq7XyWon9RklaF7NCw,ISRC 일치
+417,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,78,呼び声,Vaundy,呼び声 - Single,JPR652500239,1859586540,78.0,呼び声,呼び声,JPR652500239,3kQf453SpkwX7ALdgzNSNY,ISRC 일치
+418,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,79,シンギュラリティ,Vaundy,シンギュラリティ - Single,JPR652600003,1873288364,79.0,シンギュラリティ,シンギュラリティ,JPR652600003,0XamVfkI6uAAjvpbVnerBx,ISRC 일치
+419,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,80,Audio 015 (DOME TOUR 2026 ver.),Vaundy,The SILENCE - Single,JPR652600070,1885749347,80.0,Audio 015 - DOME TOUR 2026 ver.,The SILENCE,JPR652600070,1nYRkQaJ9r1NJYoZ6prtpF,ISRC 일치
+420,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,81,The SILENCE,Vaundy,The SILENCE - Single,JPR652600045,1885749350,81.0,The SILENCE,The SILENCE,JPR652600045,0FZxNGBKHZkI4YIovEY4me,ISRC 일치
+421,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,82,飛ぶ時,Vaundy,飛ぶ時 / 飛ぼうよ - Single,JPR652600046,1890060756,82.0,飛ぶ時,飛ぶ時 / 飛ぼうよ,JPR652600046,2NFgZXeRjcqV91SaBIZ3cI,ISRC 일치
+422,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,83,飛ぼうよ,yama,飛ぶ時 / 飛ぼうよ - Single,JPU902600975,1890060969,83.0,飛ぼうよ,飛ぶ時 / 飛ぼうよ,JPU902600975,4Ael7H7pDC9VIHeA0CxU4U,ISRC 일치
+423,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,84,飛ぶ時,yama,飛ぶ時 / 飛ぼうよ - Single,JPU902600976,1890061240,84.0,飛ぶ時,飛ぶ時 / 飛ぼうよ,JPU902600976,3oD8xasVquybDGrftRT70E,ISRC 일치
+424,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,85,飛ぼうよ,Vaundy,飛ぶ時 / 飛ぼうよ - Single,JPR652600047,1890061241,85.0,飛ぼうよ,飛ぶ時 / 飛ぼうよ,JPR652600047,0sLgHRWNlYcrPpaerJrbEo,ISRC 일치
+425,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,86,イデアが溢れて眠れない,Vaundy,イデアが溢れて眠れない - Single,JPR652600076,1891710449,86.0,イデアが溢れて眠れない,イデアが溢れて眠れない,JPR652600076,4nsrIXDihSYr8eb56j015A,ISRC 일치
+426,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,87,kimagure,Vaundy,kimagure - Single,JPR652600123,6771238815,87.0,kimagure,kimagure,JPR652600123,6C57BHEiqIaatLzFzqYx4e,ISRC 일치
+427,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,88,かげろう,Vaundy,かげろう - Single,JPR652600149,6787836341,88.0,かげろう,かげろう,JPR652600149,5BKwzntuwwe6V5oapO6eJ4,ISRC 일치
+428,Vaundy 본인곡·참여작 — 앨범 우선·발매순 1/4,89,ポップス (Prod. n-buna from ヨルシカ),Jeremy Quartus & n-buna,ポップス (Prod. n-buna from ヨルシカ) - Single,JPD862601481,6811041770,89.0,ポップス (Prod. n-buna from ヨルシカ),ポップス (Prod. n-buna from ヨルシカ),JPD862601481,7z4LDuqnHFy9ownckU6uvf,ISRC 일치
+429,Wave To Earth,1,gold,wave to earth,wave 0.01 - EP,KRMIM1925216,1849398154,1.0,gold,wave 0.01,KRMIM1925216,6SoL3jHkBzqy9NxmLLSeWO,ISRC 일치
+430,Wave To Earth,2,bonfire,wave to earth,wave 0.01 - EP,KRMIM1925217,1849398157,2.0,bonfire,wave 0.01,KRMIM1925217,67bFYUkeyR01cpvH4tE0dy,ISRC 일치
+431,Wave To Earth,3,wave,wave to earth,wave 0.01 - EP,KRMIM1914745,1849398160,3.0,wave,wave 0.01,KRMIM1914745,1jEexn50fumvI5MfGCKp1M,ISRC 일치
+432,Wave To Earth,4,light,wave to earth,wave 0.01 - EP,KRMIM1921432,1849398163,4.0,light,wave 0.01,KRMIM1921432,4AWtNQRR2jEtVir0ZGLpAr,ISRC 일치
+433,Wave To Earth,5,bird,wave to earth,wave 0.01 - EP,KRMIM1925218,1849398170,5.0,bird,wave 0.01,KRMIM1925218,6e5aOjRosdJaCby9tPCXQ1,ISRC 일치
+434,Wave To Earth,6,purple lake,wave to earth,wave 0.01 - EP,KRMIM1925219,1849398173,6.0,purple lake,wave 0.01,KRMIM1925219,5fYVjSZ0zKS5WXooJQ4Kf3,ISRC 일치
+435,Wave To Earth,7,summer flows,wave to earth,summer flows 0.02 - EP,KRMIM2021576,1781856628,7.0,summer flows,summer flows 0.02,KRMIM2021576,1ppReCtO4bZcHv2BYSRnYG,ISRC 일치
+436,Wave To Earth,8,ride,wave to earth,summer flows 0.02 - EP,KRMIM2021577,1781856629,8.0,ride,summer flows 0.02,KRMIM2021577,292o94drp4IqtnS9iK65lg,ISRC 일치
+437,Wave To Earth,9,seasons,wave to earth,summer flows 0.02 - EP,KRMIM2021578,1781856632,9.0,seasons,summer flows 0.02,KRMIM2021578,0aVd7QiY8BstysHb62c5Fi,ISRC 일치
+438,Wave To Earth,10,ocean floor,wave to earth,summer flows 0.02 - EP,KRMIM2021579,1781856633,10.0,ocean floor,summer flows 0.02,KRMIM2021579,2KKQixWJmf8bhQzWNquPD4,ISRC 일치
+439,Wave To Earth,11,surf.,wave to earth,summer flows 0.02 - EP,KRMIM2021580,1781856636,11.0,surf.,summer flows 0.02,KRMIM2021580,2KXN5guakxotePe0EgKQJr,ISRC 일치
+440,Wave To Earth,12,daisy.,wave to earth,daisy. - Single,KRMIM2120660,1781856467,12.0,daisy.,daisy.,KRMIM2120660,18gHmYZHV9JHZ0VUpjYlFs,ISRC 일치
+441,Wave To Earth,13,bad,wave to earth,0.1 flaws and all.,KRA252300807,1770274109,13.0,bad,0.1 flaws and all.,KRA252300807,6H67gFuycHyTOROX2M4bbs,ISRC 일치
+442,Wave To Earth,14,sunny days,wave to earth,0.1 flaws and all.,KRA252300808,1770274115,14.0,sunny days,0.1 flaws and all.,KRA252300808,3URe1bi21ftFK4zh5nO1P1,ISRC 일치
+443,Wave To Earth,15,peach eyes,wave to earth,0.1 flaws and all.,KRA252300809,1770274119,15.0,peach eyes,0.1 flaws and all.,KRA252300809,72UVMFjUAL6KJvwi36VBiz,ISRC 일치
+444,Wave To Earth,16,evening glow,wave to earth,0.1 flaws and all.,KRA252300810,1770274126,16.0,evening glow,0.1 flaws and all.,KRA252300810,7KboPR4TuGQSAEjJNXKwQQ,ISRC 일치
+445,Wave To Earth,17,pink horizon,wave to earth,0.1 flaws and all.,KRA252300811,1770274502,17.0,pink horizon,0.1 flaws and all.,KRA252300811,2Fh7LC098S5WtVVtSJrgKg,ISRC 일치
+446,Wave To Earth,18,pink,wave to earth,0.1 flaws and all.,KRA252300812,1770274506,18.0,pink,0.1 flaws and all.,KRA252300812,1JYtwhnjpVxQeYE9uyU2Lx,ISRC 일치
+447,Wave To Earth,19,calla,wave to earth,0.1 flaws and all.,KRA252201123,1770274549,19.0,calla,0.1 flaws and all.,KRA252201123,0X9qVaLfmgFFaJaYv72V7A,ISRC 일치
+448,Wave To Earth,20,사랑으로,wave to earth,0.1 flaws and all.,KRA252300813,1770274550,20.0,love.,0.1 flaws and all.,KRA252300813,5mtTAScDytxMMqZj14NmlN,ISRC 일치
+449,Wave To Earth,21,homesick,wave to earth,0.1 flaws and all.,KRA252300814,1770274552,21.0,homesick,0.1 flaws and all.,KRA252300814,2FZIabCRMEWAYfN69Ijn1U,ISRC 일치
+450,Wave To Earth,22,dried flower,wave to earth,0.1 flaws and all.,KRA252201803,1770274555,22.0,dried flower,0.1 flaws and all.,KRA252201803,12jbiJhWbCQqRdnCB2QbmX,ISRC 일치
+451,Wave To Earth,23,sunburn,wave to earth,0.1 flaws and all.,KRA252300815,1770274556,23.0,sunburn,0.1 flaws and all.,KRA252300815,1pOIJTuRBw241sCT6eq2TK,ISRC 일치
+452,Wave To Earth,24,akira,wave to earth,0.1 flaws and all.,KRA252300816,1770274559,24.0,akira,0.1 flaws and all.,KRA252300816,5oThdPvhz6t4fdHjjEnrPM,ISRC 일치
+453,Wave To Earth,25,nouvelle vague,wave to earth,0.1 flaws and all.,KRA252102205,1770274578,25.0,nouvelle vague,0.1 flaws and all.,KRA252102205,3pUBfXGCqH0imhTQ02wBLr,ISRC 일치
+454,Wave To Earth,26,so real,wave to earth,0.1 flaws and all.,KRA252300817,1770274951,26.0,so real,0.1 flaws and all.,KRA252300817,6B75WGGugFzGfyVWSF38Q1,ISRC 일치
+455,Wave To Earth,27,are you bored?,wave to earth,play with earth! 0.03 (Extended Version),KRA252402436,1771834340,27.0,are you bored?,play with earth! 0.03 (extended),KRA252402436,6DN8fxNpyPfHg5uR2skBBt,ISRC 일치
+456,Wave To Earth,28,play with earth!,wave to earth,play with earth! 0.03 (Extended Version),KRA252402437,1771834356,28.0,play with earth!,play with earth! 0.03 (extended),KRA252402437,5UuoeJvdYF87S0OEKgt9Xn,ISRC 일치
+457,Wave To Earth,29,annie.,wave to earth,play with earth! 0.03 (Extended Version),KRA252402438,1771834489,29.0,annie.,play with earth! 0.03 (extended),KRA252402438,1I9je9jTqpmejE4Tzdl4MM,ISRC 일치
+458,Wave To Earth,30,pueblo (remastered 2024),wave to earth,play with earth! 0.03 (Extended Version),KRA252402439,1771834490,30.0,pueblo (remastered 2024),play with earth! 0.03 (extended),KRA252402439,5LeRzKKmCY67RobH8Qie4h,ISRC 일치
+459,Wave To Earth,31,beck.,wave to earth,play with earth! 0.03 (Extended Version),KRA252402440,1771834494,31.0,beck.,play with earth! 0.03 (extended),KRA252402440,55IKmfgsiRh7DTlSwP7TuG,ISRC 일치
+460,Wave To Earth,32,slow dive,wave to earth,play with earth! 0.03 (Extended Version),KRA252402441,1771834495,32.0,slow dive,play with earth! 0.03 (extended),KRA252402441,6IP5uRxuuoQL1JDIkfuGA2,ISRC 일치
+461,Wave To Earth,33,holyland,wave to earth,play with earth! 0.03 (Extended Version),KRA252402442,1771834501,33.0,holyland,play with earth! 0.03 (extended),KRA252402442,0OaWxhWXB47J93vzObroan,ISRC 일치
+462,Wave To Earth,34,검은 산,wave to earth,Twenty Plenty,KRA382402371,1740727751,34.0,Black Mountain,Twenty Plenty,KRA382402371,06sXeC9qDRsw3JvAZOnC8g,ISRC 일치
