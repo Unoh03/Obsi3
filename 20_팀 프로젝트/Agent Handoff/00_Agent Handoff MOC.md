@@ -18,11 +18,15 @@ Chat에서 탐색·설계를 진행한 뒤 Codex/Astra 같은 실행 Agent로 �
 
 ## 현재 단계
 
-**Research / Design**
+**Research / Prototype Implementation**
 
 아직 10-field schema를 최종 확정하거나 Skill 구현을 시작한 단계가 아니다.
 
 현재 10-field 구조는 강한 후보이며, 기술적 근거와 실제 handoff/context-engineering 패턴을 학습하면서 유지·통합·삭제·추가 여부를 검증한다.
+
+## 실행 인수인계
+
+- [[20_팀 프로젝트/Agent Handoff/HANDOFF_TO_CODEX_SKILL_v0.2|Codex Handoff — experimental Skill v0.2]] - 현재 연구 상태를 Codex에 넘겨 첫 프로토타입을 구현하기 위한 실전 handoff/dogfooding 문서.
 
 ## 연구 기록
 
