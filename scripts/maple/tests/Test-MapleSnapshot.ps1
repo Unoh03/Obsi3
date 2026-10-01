@@ -79,6 +79,60 @@ Test 'quality distinguishes field presence from completeness and temporal verifi
     Assert ($Summary.presets.union_raider.union_state_stat_preset[0].preset_no -eq 2) 'New union preset lost beside null legacy field'
 }
 
+Test 'only known image URLs are omitted; descriptions, identifiers and unknown fields survive' {
+    $Data = New-Data
+    $Data.metadata.ocid = 'synthetic-ocid'
+    $Data.metadata.future_provenance = @{value='keep'; empty=$null}
+    $Data.item_equipment.medal_shape = @{medal_shape_name='훈장 외형';medal_shape_description='설명';medal_shape_icon='https://example.invalid/medal'}
+    $Data.item_equipment.item_equipment[0].item_shape_name = '외형 이름'
+    $Data.item_equipment.item_equipment[0].item_icon = $null
+    $Data.pet_equipment.pet_1_appearance = '펫 외형'
+    $Data.other_stat.future_icon = 'https://example.invalid/unknown'
+    $Data.other_stat.item_icon = @{value=42}
+    $Data.other_stat.skill_icon = 'not a URL'
+    $Summary = New-MapleSummary $Data
+    Assert ($Summary.metadata.ocid -ceq 'synthetic-ocid' -and $Summary.metadata.future_provenance.Contains('empty')) 'Metadata lost'
+    Assert ($Summary.actual.item_equipment.medal_shape.medal_shape_description -ceq '설명') 'Medal text lost'
+    Assert (-not $Summary.actual.item_equipment.medal_shape.Contains('medal_shape_icon')) 'Known image URL retained'
+    Assert ($Summary.actual.item_equipment.item_equipment[0].item_shape_name -ceq '외형 이름') 'Appearance name lost'
+    Assert ($Summary.actual.item_equipment.item_equipment[0].Contains('item_icon') -and $null -eq $Summary.actual.item_equipment.item_equipment[0].item_icon) 'Null lost'
+    Assert ($Summary.actual.pet_equipment.pet_1_appearance -ceq '펫 외형') 'Pet appearance lost'
+    Assert ($Summary.actual.other_stat.future_icon -ceq $Data.other_stat.future_icon) 'Unknown field discarded'
+    Assert ($Summary.actual.other_stat.item_icon.value -eq 42 -and $Summary.actual.other_stat.skill_icon -ceq 'not a URL') 'Non-URL content discarded'
+    $Summary.metadata.character_name = 'changed'
+    Assert ($Data.metadata.character_name -ceq '테스트') 'Metadata source mutated'
+}
+
+Test 'only identical basic identity fields are deduplicated; dates preserve missing vs null' {
+    $Data = New-Data
+    $Data.basic.character_class = '은월'
+    $Data.basic.character_gender = '남'
+    $Data.stat.character_class = '은월'
+    $Data.hexamatrix_stat.character_class = $null
+    $Data.link_skill.character_class = '다른 직업'
+    $Data.link_skill.character_gender = @('남')
+    $Data.other_stat.Remove('date')
+    $Summary = New-MapleSummary $Data
+    Assert (-not $Summary.actual.stat.Contains('character_class')) 'Duplicate retained'
+    Assert ($Summary.actual.hexamatrix_stat.Contains('character_class') -and $null -eq $Summary.actual.hexamatrix_stat.character_class) 'Different null lost'
+    Assert ($Summary.actual.link_skill.character_class -ceq '다른 직업' -and $Summary.actual.link_skill.character_gender -is [array]) 'Different value or type lost'
+    Assert (-not $Summary.quality.data_dates.Contains('other_stat') -and $Summary.quality.data_dates.Contains('stat')) 'Missing date became null'
+    $Data.basic.Remove('character_class')
+    Assert ((New-MapleSummary $Data).actual.stat.character_class -ceq '은월') 'Identity lost without basic counterpart'
+}
+
+Test 'new final_stat attributes survive while missing values fail explicitly' {
+    $Data = New-Data
+    $Data.stat.final_stat[0].unit = 'points'
+    $Summary = New-MapleSummary $Data
+    Assert ($Summary.actual.stat.values.INT -ceq '123') 'Final values missing'
+    Assert ($Summary.actual.stat.final_stat[0].unit -ceq 'points' -and $Summary.actual.stat.final_stat.Count -eq 3) 'New stat attribute lost'
+    $Data.stat.final_stat[0].Remove('stat_value')
+    $Failed = $false
+    try { $null = New-MapleSummary $Data } catch { $Failed = $true }
+    Assert $Failed 'Missing value silently changed to null'
+}
+
 Test 'unrecognized hyper preset is preserved instead of guessed' {
     $Data = New-Data; $Data.hyper_stat.use_preset_no = 9
     $Summary = New-MapleSummary $Data
@@ -185,9 +239,9 @@ Test 'all stored preset families survive separately, including empty and null' {
     $Data = New-Data
     $Data.ability.preset_no = 1
     $Data.ability.ability_preset_2 = @{ ability_info=@(@{ability_value='아이템 드롭률 18%'}) }
-    $Data.item_equipment.title_preset3 = @{title_name='칭호';title_icon='remove';date_expire=$null}
-    $Data.item_equipment.item_equipment_preset_2 = @(@{item_name='대안';item_icon='remove';item_total_option=@{str='123'}})
-    $Data.link_skill.character_link_skill_preset_2 = @(@{skill_name='대안 링크';skill_icon='remove';skill_level=2})
+    $Data.item_equipment.title_preset3 = @{title_name='칭호';title_icon='https://example.invalid/title';date_expire=$null}
+    $Data.item_equipment.item_equipment_preset_2 = @(@{item_name='대안';item_icon='https://example.invalid/item';item_total_option=@{str='123'}})
+    $Data.link_skill.character_link_skill_preset_2 = @(@{skill_name='대안 링크';skill_icon='https://example.invalid/skill';skill_level=2})
     $Data.link_skill.character_owned_link_skill_preset_3 = $null
     $Data.vmatrix.character_v_core_equipment_preset_5 = @()
     $Data.hexamatrix_stat.preset_hexa_stat_core = @(@{slot_id='1';main_stat_level=10})
@@ -195,7 +249,7 @@ Test 'all stored preset families survive separately, including empty and null' {
     $Data.union_raider.union_raider_preset_1 = $null
     $Data.union_raider.union_state_stat_preset = @(@{preset_no=2;union_state_stat=@('보공 20%')})
     $Data.pet_equipment.world_share_pet_1_equipment_preset_no = 3
-    $Data.pet_equipment.world_share_pet_equipment_preset = @(@{preset_no=3;item=@{item_icon='remove';scroll_upgrade=10}})
+    $Data.pet_equipment.world_share_pet_equipment_preset = @(@{preset_no=3;item=@{item_icon='https://example.invalid/item';scroll_upgrade=10}})
     $BeforeText = ConvertTo-Json -InputObject $Data -Depth 100 -Compress
     $Summary = New-MapleSummary $Data
     Assert ($Summary.presets.Count -eq 8) 'A preset family is missing'

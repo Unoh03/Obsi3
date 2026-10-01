@@ -22,6 +22,18 @@ $script:Endpoints = [ordered]@{
 }
 $script:Sections = @($script:Endpoints.Keys)
 $script:PublishedFiles = @('summary.json','diff.json','latest.json','ai-context.json')
+# Only observed presentation fields are eligible for URL omission. Unknown fields,
+# nulls and structured values must survive even if their names end in icon/image.
+$script:ImageFields = @(
+    'character_image', 'item_icon', 'item_shape_icon', 'title_icon', 'title_shape_icon',
+    'medal_shape_icon', 'medal_shape_changed_icon', 'symbol_icon', 'skill_icon',
+    'skill_1_icon', 'skill_2_icon', 'special_ring_reserve_icon'
+)
+foreach ($Prefix in @('pet', 'world_share_pet')) {
+    foreach ($Number in 1..3) {
+        $script:ImageFields += "${Prefix}_${Number}_icon", "${Prefix}_${Number}_appearance_icon"
+    }
+}
 
 function Get-MapleEndpoints {
     $Result = [ordered]@{}
@@ -48,9 +60,8 @@ function Remove-MaplePresentation($Value) {
     if ($Value -is [System.Collections.IDictionary]) {
         $Result = [ordered]@{}
         foreach ($Key in $Value.Keys) {
-            # Descriptions may contain gameplay effects, so preserve them.
-            if ($Key -match '(^|_)(icon|image)$' -or $Key -in @('item_shape','item_shape_name','medal_shape') -or
-                $Key -match '^((world_share_)?pet_[123])_appearance$') { continue }
+            if ($Key -cin $script:ImageFields -and $Value[$Key] -is [string] -and
+                $Value[$Key] -match '^https?://') { continue }
             $Result[$Key] = Remove-MaplePresentation $Value[$Key]
         }
         return $Result
@@ -106,11 +117,21 @@ function New-MapleSummary($Data) {
             continue
         }
         $InputSection = $Data[$Section]
-        $Dates[$Section] = $InputSection.date
+        if ($InputSection -is [System.Collections.IDictionary] -and $InputSection.Contains('date')) {
+            $Dates[$Section] = $InputSection.date
+        }
         $Value = Remove-MaplePresentation $InputSection
         if ($Value -is [System.Collections.IDictionary]) {
             $Value.Remove('date')
-            if ($Section -ne 'basic') { $Value.Remove('character_class'); $Value.Remove('character_gender') }
+            if ($Section -ne 'basic' -and $Data.basic -is [System.Collections.IDictionary]) {
+                foreach ($Key in @('character_class', 'character_gender')) {
+                    if ($Value.Contains($Key) -and $Data.basic.Contains($Key) -and
+                        (ConvertTo-Json -InputObject $Value[$Key] -Depth 100 -Compress) -ceq
+                        (ConvertTo-Json -InputObject $Data.basic[$Key] -Depth 100 -Compress)) {
+                        $Value.Remove($Key)
+                    }
+                }
+            }
             if ($Section -eq 'hyper_stat') {
                 $ActiveKey = "hyper_stat_preset_$($InputSection.use_preset_no)"
                 $Resolved = $InputSection.Contains($ActiveKey) -and (Test-MapleHyperEntries $InputSection[$ActiveKey])
@@ -139,11 +160,15 @@ function New-MapleSummary($Data) {
             }
             if ($Section -eq 'stat' -and $InputSection.final_stat -is [System.Collections.IList]) {
                 $Stats = [System.Collections.Specialized.OrderedDictionary]::new([StringComparer]::Ordinal)
+                $CompactRows = $true
                 foreach ($Row in $InputSection.final_stat) {
                     if (-not $Row.stat_name -or $Stats.Contains($Row.stat_name)) { throw 'final_stat에 이름 누락/중복이 있습니다. 원본 확인 필요.' }
+                    if (-not $Row.Contains('stat_value')) { throw 'final_stat에 stat_value가 누락되었습니다. 원본 확인 필요.' }
+                    if ($Row.Count -ne 2) { $CompactRows = $false }
                     $Stats[$Row.stat_name] = $Row.stat_value
                 }
-                $Value.Remove('final_stat')
+                # Preserve new row attributes instead of silently discarding them.
+                if ($CompactRows) { $Value.Remove('final_stat') }
                 $Value.values = $Stats
             }
         }
@@ -151,13 +176,7 @@ function New-MapleSummary($Data) {
     }
     return [ordered]@{
         schema_version = 3
-        metadata = [ordered]@{
-            character_name = $Data.metadata.character_name
-            collected_at = $Data.metadata.collected_at
-            collection_finished_at = $Data.metadata.collection_finished_at
-            source = $Data.metadata.source
-            source_url = $Data.metadata.source_url
-        }
+        metadata = Read-MapleMetadata $Data.metadata
         reading_guide = @(
             'NEXON API가 반환한 캐릭터 상태입니다. 실시간 접속 상태나 환산 결과를 뜻하지 않습니다.',
             '먼저 metadata.collected_at과 raw_sha256을 확인하세요. 로컬 재수집은 이미 첨부한 파일을 갱신하지 않습니다.',
@@ -166,7 +185,8 @@ function New-MapleSummary($Data) {
             'actual은 현재 상태, presets는 저장된 대안 설정입니다. presets는 API 섹션/원래 필드명으로 찾으며 번호·남은 포인트·null·빈 배열도 보존합니다. 보스용/사냥용이라는 용도는 임의로 추정하지 마세요.',
             '유니온 상태 프리셋은 presets.union_raider.union_state_stat_preset을 우선 확인하세요. 구형 union_raider_preset_1~5의 null만으로 프리셋 전체가 없다고 판단하지 마세요.',
             'quality.section_status의 ok는 전체 필드 검증이나 섹션 간 동시 갱신을 보증하지 않습니다. 검증 범위와 미확인은 quality.assessment에 표시합니다.',
-            '이미지 URL·외형 필드는 생략했습니다. 현재 상태와 저장 프리셋의 수치·옵션·효과·설명·null·0·배열 순서는 보존하며 전체 응답은 raw에 있습니다.',
+            '확인된 아이콘·이미지 필드의 URL만 생략합니다. 외형 이름·설명·OCID·알 수 없는 필드·null은 보존하며, 직업·성별은 basic과 같은 값만 중복 제거합니다. 전체 응답은 로컬 raw에 있습니다.',
+            'changes_since_previous는 직전 비교 가능한 수집본과의 차이이며 누적 이력이 아닙니다. stat.final_stat이 함께 있으면 추가 속성 보존용 원문이므로 values와 중복 합산하지 마세요.',
             '숫자처럼 보이는 문자열도 API 타입 그대로입니다. diff는 정상 수집된 섹션만 비교하며 변화의 원인을 단정하지 않습니다.'
         )
         quality = [ordered]@{
@@ -187,6 +207,13 @@ function New-MapleSummary($Data) {
         actual = $Actual
         presets = $Presets
     }
+}
+
+function Read-MapleMetadata($Metadata) {
+    # Copy without narrowing to a fixed subset or mutating the source metadata.
+    $Result = [ordered]@{}
+    foreach ($Key in $Metadata.Keys) { $Result[$Key] = $Metadata[$Key] }
+    return $Result
 }
 
 # Presence is not schema validity or proof that the preset is currently active.
