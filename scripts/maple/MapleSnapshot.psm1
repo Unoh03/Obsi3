@@ -240,7 +240,7 @@ function New-MapleUserContext($Summary, $Config) {
     }
 }
 
-function Export-MapleAIContext([string]$OutputDirectory) {
+function Export-MapleAIContext([string]$OutputDirectory, [string]$ExportDirectory) {
     $Published = Get-MaplePublishedSet $OutputDirectory
     if (-not $Published) { throw '완료된 결과 묶음이 없습니다.' }
     $Source = Join-Path $Published.directory 'ai-context.json'
@@ -248,7 +248,7 @@ function Export-MapleAIContext([string]$OutputDirectory) {
     $Collected = ([DateTimeOffset]$Context.metadata.collected_at).ToOffset([TimeSpan]::FromHours(9))
     $Character = [string]$Context.metadata.character_name -replace '[\\/:*?"<>|]', '_'
     $Hash = $Published.manifest.files['ai-context.json']
-    $ExportDir = Join-Path $OutputDirectory 'exports'
+    $ExportDir = if ($ExportDirectory) { [IO.Path]::GetFullPath($ExportDirectory) } else { Join-Path $OutputDirectory 'exports' }
     New-Item -ItemType Directory -Path $ExportDir -Force | Out-Null
     $Path = Join-Path $ExportDir "ai-context-$Character-$($Collected.ToString('yyyy-MM-dd-HHmmss'))-KST-$($Hash.Substring(0,12)).json"
     if (-not (Test-Path -LiteralPath $Path)) { [IO.File]::Copy($Source, $Path, $false) }

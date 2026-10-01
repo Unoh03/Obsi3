@@ -4,27 +4,29 @@ NEXON Open API로 캐릭터 정보를 수집하고, AI와 대화할 때 사용�
 
 ## 사용
 
-1. `Run-MapleCharacterData.cmd`를 더블클릭한다.
-2. PowerShell 입력창에 NEXON API key를 입력한다. 키는 파일에 저장하지 않는다.
-3. 현재 스펙·저장 프리셋·직전 변경을 분석하려면 **실행 마지막에 표시되는 `output/exports/ai-context-캐릭터-날짜-시간-KST-해시.json`을 AI에 첨부**한다. [[scripts/maple/00_메이플_AI_목차|메이플 AI 데이터 목차]]를 함께 제공하면 읽기 순서와 필드 경로를 안내할 수 있다. 원본 API 응답을 감사하거나 생략한 외형/식별 정보를 확인할 때는 raw를 사용한다.
+1. `Run-MapleCharacterData.cmd`를 더블클릭한다. 선택 메뉴 없이 **우노03 → 우노03레테** 순서로 수집한다.
+2. PowerShell 입력창에 NEXON API key를 한 번 입력한다. 같은 프로세스에서 두 수집에 사용하며 파일·환경변수·명령줄 문자열에 저장하지 않는다.
+3. 마지막 결과표에서 캐릭터별 성공 여부와 **이번 실행의 첨부 경로**를 확인한다. GPT 프로젝트에는 `output/exports/ai-context-캐릭터-날짜-시간-KST-해시.json`을 **캐릭터당 하나씩** 첨부한다. [[scripts/maple/00_메이플_AI_목차|메이플 AI 데이터 목차]]는 공통 안내다. 폴더나 합본 JSON을 올릴 필요가 없다.
 
-기본 캐릭터는 우노03이다. 직접 실행하거나 다른 캐릭터를 수집하려면:
+직접 일괄 실행하려면 `./Run-MapleCharacters.ps1`을 사용한다. 하나만 수집하는 기존 기능도 유지한다. 예를 들어:
 
 ```powershell
 Set-Location 'D:\Obsidian\Vault\Obsi2\scripts\maple'
-./Get-MapleCharacterData.ps1 -CharacterName '캐릭터명' -NoPause
-./Build-MapleSnapshot.ps1 -SourcePath './output/캐릭터명-maple-api.json'
+./Get-MapleCharacterData.ps1 -CharacterName '우노03레테' -OutputPath './output/characters/우노03레테/우노03레테-maple-api.json' -NoPause
+./Build-MapleSnapshot.ps1 -SourcePath './output/characters/우노03레테/우노03레테-maple-api.json' -ExportDirectory './output/exports'
 ```
 
 수집 없이 기존 파일만 재가공할 수도 있다. API key와 네트워크 연결이 필요 없다.
 
 ```powershell
-./Build-MapleSnapshot.ps1
+./Build-MapleSnapshot.ps1 -SourcePath './output/characters/우노03/우노03-maple-api.json' -ExportDirectory './output/exports'
 # 과거 원본은 별도 출력 폴더를 사용한다.
 ./Build-MapleSnapshot.ps1 -SourcePath './output/raw/과거파일.json' -OutputDirectory './output/past-review'
 ```
 
 ## 출력 파일
+
+일괄 실행의 내부 결과는 **`output/characters/우노03/`와 `output/characters/우노03레테/`** 아래에 독립적으로 저장한다. 아래 표의 결과 파일은 각 캐릭터 폴더 기준이며, `exports`와 `last-batch.json`만 공통 `output` 바로 아래에 있다.
 
 | 파일 | 역할 |
 |---|---|
@@ -36,10 +38,23 @@ Set-Location 'D:\Obsidian\Vault\Obsi2\scripts\maple'
 | `raw/캐릭터명-*.json` | 덮어쓰지 않는 과거 원본. 기존 이력도 계속 사용 |
 | `current.json` | 마지막으로 완료된 결과 묶음의 경로와 파일별 SHA-256 |
 | `snapshots/<hash>/` | 함께 생성·검증된 summary/diff/latest/ai-context. 공개 후 덮어쓰지 않는 결과 묶음 |
+| `output/last-batch.json` | 마지막 완료된 일괄 실행의 캐릭터별 상태·수집 시각·이번 첨부 경로. 시작/종료 시각 확인 필요 |
 
-여러 캐릭터의 raw 이력은 구분하지만, `ai-context.json` 등 고정 이름 파일은 마지막으로 처리한 캐릭터를 가리킨다. 동시에 실행하지 않는다. 모든 생성 파일은 Git 제외 대상이다.
+이력과 diff는 캐릭터별로만 비교한다. 일괄 실행 잠금은 같은 출력 루트의 중복 실행을 막는다. 단일 수집 명령을 일괄 실행과 동시에 같은 경로에 실행하지 않는다. 모든 생성 파일은 Git 제외 대상이다.
 
-로컬 재수집만으로 ChatGPT에 이미 첨부한 사본이 바뀌지는 않는다. 새 전달본을 올리고 AI가 `metadata.collected_at`을 먼저 확인하도록 한다. 파일명은 가공 시각이 아닌 **원본 수집 시각**이다. 같은 원본도 가공 규칙·비교 이력이 다르면 전달본 내용 해시가 달라질 수 있다. 전달본의 SHA-256과 `metadata.raw_sha256`(원본 해시)은 서로 다른 파일의 식별자다. 전달본 생성이 실패하면 경고를 출력하고, 완료 묶음과 기본 `ai-context.json`은 유지한다.
+기존 명령의 기본 경로는 호환성을 위해 유지한다. 인자 없이 단일 수집/후처리를 실행하면 예전 공용 `output`을 사용하므로, 위 예시처럼 캐릭터별 경로를 명시한다. 일괄 실행은 공용 `latest.json`·`ai-context.json` 등을 갱신하지 않는다.
+
+로컬 재수집만으로 ChatGPT에 이미 첨부한 사본이 바뀌지는 않는다. 같은 캐릭터의 옛 첨부를 새 전달본으로 교체하고 AI가 `metadata.collected_at`을 먼저 확인하도록 한다. 파일명은 가공 시각이 아닌 **원본 수집 시각**이다. 같은 원본도 가공 규칙·비교 이력이 다르면 전달본 내용 해시가 달라질 수 있다. 전달본 SHA-256과 `metadata.raw_sha256`(원본 해시)은 서로 다른 파일의 식별자다.
+
+전달본 생성 실패 시 완료 묶음은 유지하지만 이번 첨부 경로를 안내하지 않는다. 단독 후처리도 오류를 반환한다. `-ExportDirectory`로 전달 위치를 지정하고, `-SkipExport`로 전달본 생성을 생략할 수 있다.
+
+## 기존 자료와 실행 결과
+
+일괄 실행은 기존 공용 raw의 **metadata 캐릭터명**을 정확히 대조한 뒤 캐릭터별 raw에 복사하고 해시를 검증한다. 원본은 삭제·이동하지 않으며 반복 실행해도 동일 자료를 중복 생성하지 않는다. 읽을 수 없는 파일은 보존하고 경고한다. 같은 수집 시각에 다른 내용이 있으면 해당 캐릭터를 실패 처리한다.
+
+새 캐릭터 저장소에 완료 결과가 없고 기존 공용 완료 묶음이 해당 캐릭터의 것이라면, 묶음 해시를 검증해 이전 정상 결과를 복구한다. 이때 전달본은 만들지 않으며 **이번 API 수집 성공으로 표시하지 않는다**.
+
+한 캐릭터의 실패 후에도 다른 캐릭터를 계속 처리한다. 결과는 `성공`, `부분 성공`, `실패`, `전달본 생성 실패`로 구분한다. 부분 성공도 품질 정보가 포함된 새 전달본을 제공하지만, 전체 종료 코드는 1이다. 모든 캐릭터가 완전히 성공한 경우만 0이다. 시작 단계 오류도 1로 종료한다. 실패한 캐릭터의 이전 첨부 파일을 이번 결과로 재안내하지 않는다. `last-batch.json`은 종료된 실행 기록이므로 진행 중인 실행이나 잠금 실패의 실시간 상태로 해석하지 않는다.
 
 `summary.json`과 `diff.json`의 내용은 `ai-context.json`에 들어 있으므로 AI에 중복 첨부할 필요가 없다. 두 파일은 로컬 확인용으로 계속 생성한다. `latest.json`은 캐릭터별 수집 원본의 복사본이며, raw 이력과 함께 원본 검증용으로 보존한다.
 
@@ -71,6 +86,8 @@ API 최종 스탯에 장비·링크·유니온 효과를 다시 더하면 중복
 
 `preset-roles.json`에 캐릭터별 사용자 설명을 저장한다. 우노03은 사용자가 설명한 장비·하이퍼·어빌·링크의 1번을 보스용, 2번을 사냥용으로 연결했다. 유니온·V 매트릭스 등 별도 번호의 용도가 확인되지 않은 항목은 임의로 연결하지 않는다.
 
+우노03레테의 용도 설명은 확인되지 않아 등록하지 않았다. 우노03 설명을 복사하지 않고 API가 제공한 프리셋만 보존한다.
+
 설정의 `characters` 아래 캐릭터명, `recorded_on`(설명 기록일), `preset_roles`의 섹션별 번호/용도를 수정하면 다음 후처리부터 반영된다. 다른 캐릭터에 우노03 설명을 적용하지 않는다. 현재 지원하는 네 섹션은 1~3번을 지정할 수 있다. 설명 날짜는 API 수집 시각과 별개이며 재가공할 때 자동 갱신하지 않는다. 용도를 바꿨다면 설정도 함께 수정해야 한다.
 
 참조 대상이 없으면 `data_presence: missing`, null이면 `null`, 값이 있으면 `present`로 표시한다. `present`는 내용의 유효성이나 현재 적용을 보증하지 않는다. 사용자 설명은 캐릭터 변화 diff에 섞지 않는다. 잘못된 설정 파일은 후처리를 오류로 종료하고 기존 완료 결과를 유지한다. 별도 설정은 `Build-MapleSnapshot.ps1 -PresetRolesPath 경로`로 지정하며, `-PresetRolesPath ''`로 설명을 제외할 수 있다. 과거 원본 재가공도 현재 지정한 설명을 사용하므로 기록일과 수집일을 함께 확인한다.
@@ -90,6 +107,7 @@ API 최종 스탯에 장비·링크·유니온 효과를 다시 더하면 중복
 
 | 파일 | 역할 |
 |---|---|
+| `Run-MapleCharacters.ps1`, `MapleBatch.psm1` | 두 캐릭터 순차 실행, 공통 키 입력, 실행 잠금, 기존 이력 복사, 결과 집계 |
 | `Get-MapleCharacterData.ps1` | SecureString 키 입력, API 요청 간격·429 재시도·요청 제한 시간, 원본 저장 |
 | `MapleSnapshot.psm1` | API 목록, JSON 입출력, AI용 상태 정리, 변경 비교 |
 | `Build-MapleSnapshot.ps1` | raw 이력 선택·보관과 출력 생성 |
@@ -98,6 +116,7 @@ API 최종 스탯에 장비·링크·유니온 효과를 다시 더하면 중복
 
 ```powershell
 pwsh -NoProfile -File ./tests/Test-MapleSnapshot.ps1
+pwsh -NoProfile -File ./tests/Test-MapleBatch.ps1
 ```
 
 환산 실험용 코드·테스트·의존성·가상환경·문서는 제거했다. 기존 `.runtime/`, `fixtures/maplescouter/`의 로컬 자료는 이 도구에서 사용하지 않으며, 기존 사용자 상태/증거 보존을 위해 Git 제외 상태로 남겨 두었다.

@@ -3,10 +3,13 @@
 param(
     [string]$SourcePath = (Join-Path $PSScriptRoot 'output/우노03-maple-api.json'),
     [string]$OutputDirectory,
-    [string]$PresetRolesPath = (Join-Path $PSScriptRoot 'preset-roles.json')
+    [string]$PresetRolesPath = (Join-Path $PSScriptRoot 'preset-roles.json'),
+    [string]$ExportDirectory,
+    [switch]$SkipExport,
+    [switch]$Quiet
 )
 $ErrorActionPreference = 'Stop'
-Import-Module (Join-Path $PSScriptRoot 'MapleSnapshot.psm1') -Force
+Import-Module (Join-Path $PSScriptRoot 'MapleSnapshot.psm1')
 $SourcePath = (Resolve-Path -LiteralPath $SourcePath -ErrorAction Stop).Path
 if (-not $OutputDirectory) { $OutputDirectory = Split-Path -Parent $SourcePath }
 $OutputDirectory = [IO.Path]::GetFullPath($OutputDirectory)
@@ -100,13 +103,17 @@ $Context = [ordered]@{
 }
 if ($Summary.Contains('user_context')) { $Context.user_context = $Summary.user_context }
 Publish-MapleSnapshot $Summary $Diff $Context $RawPath $OutputDirectory
-Write-Host "AI에 전달: $(Join-Path $OutputDirectory 'ai-context.json')"
-try {
-    $Export = Export-MapleAIContext $OutputDirectory
-    Write-Host "날짜 포함 전달본: $($Export.path)"
-    Write-Host "수집 시작: $($Export.collected_at) / 전달본 SHA-256: $($Export.sha256)"
+if (-not $Quiet) { Write-Host "완료 결과: $(Join-Path $OutputDirectory 'ai-context.json')" }
+if (-not $SkipExport) {
+    # Export failure must be visible to batch callers as a non-success.
+    $Export = Export-MapleAIContext $OutputDirectory $ExportDirectory
+    if (-not $Quiet) {
+        Write-Host "날짜 포함 전달본: $($Export.path)"
+        Write-Host "수집 시작: $($Export.collected_at) / 전달본 SHA-256: $($Export.sha256)"
+    }
 }
-catch { Write-Warning "결과 묶음은 갱신됐지만 날짜 포함 전달본 생성 실패: $($_.Exception.Message)" }
-Write-Host "원본 보관: $RawPath"
-Write-Host "변경 $($Diff.change_count)건 / 수집 실패·누락 $($Summary.quality.unavailable_sections.Count)개"
+if (-not $Quiet) {
+    Write-Host "원본 보관: $RawPath"
+    Write-Host "변경 $($Diff.change_count)건 / 수집 실패·누락 $($Summary.quality.unavailable_sections.Count)개"
+}
 foreach ($Warning in $HistoryWarnings) { Write-Warning $Warning }

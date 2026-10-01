@@ -27,6 +27,9 @@ param(
     [string]$OutputPath,
 
     [Parameter()]
+    [Security.SecureString]$ApiKeySecure,
+
+    [Parameter()]
     [ValidateRange(200, 5000)]
     [int]$RequestIntervalMs = 250,
 
@@ -48,7 +51,7 @@ param(
 $ErrorActionPreference = "Stop"
 $BaseUrl = "https://open.api.nexon.com/maplestory/v1"
 $ScriptDir = Split-Path -Parent $PSCommandPath
-Import-Module (Join-Path $ScriptDir 'MapleSnapshot.psm1') -Force
+Import-Module (Join-Path $ScriptDir 'MapleSnapshot.psm1')
 $script:LastRequestAt = [DateTimeOffset]::MinValue
 
 if ([string]::IsNullOrWhiteSpace($OutputPath)) {
@@ -153,7 +156,7 @@ $ApiKey = $null
 $Headers = $null
 
 try {
-    $SecureKey = Read-Host "NEXON Open API Key 입력" -AsSecureString
+    $SecureKey = if ($null -ne $ApiKeySecure) { $ApiKeySecure } else { Read-Host "NEXON Open API Key 입력" -AsSecureString }
     $ApiKey = ConvertFrom-SecureStringPlainText -SecureString $SecureKey
     $Headers = @{
         "x-nxopen-api-key" = $ApiKey

@@ -5,28 +5,18 @@ cd /d "%~dp0"
 where pwsh.exe >nul 2>&1 || goto :missing_pwsh
 
 chcp 65001 >nul
-pwsh.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Get-MapleCharacterData.ps1" -NoPause
-if errorlevel 1 goto :collector_failed
-
-pwsh.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Build-MapleSnapshot.ps1"
-if errorlevel 1 goto :snapshot_failed
+pwsh.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Run-MapleCharacters.ps1"
+if errorlevel 1 goto :batch_failed
 
 echo.
 echo Maple API collection and snapshot build completed.
 echo Give the dated JSON path shown above to your AI chat.
-echo If export failed, use output\ai-context.json and check its collection time.
 pause
 exit /b 0
 
-:collector_failed
+:batch_failed
 echo.
-echo Maple API collector failed.
-pause
-exit /b 1
-
-:snapshot_failed
-echo.
-echo Maple snapshot build failed.
+echo Some characters failed or have incomplete data. Check the per-character results above.
 pause
 exit /b 1
 
