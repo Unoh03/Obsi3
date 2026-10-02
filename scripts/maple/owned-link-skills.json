@@ -8,7 +8,7 @@
       "verified_on": "2026-10-03",
       "verified_from_character": "우노03",
       "source": "user_verified",
-      "evidence": "사용자가 게임 UI 목록과 이름·레벨 19종이 일치한다고 재확인. 스크린샷 파일은 이 작업에 제공되지 않음.",
+      "evidence": "사용자가 게임 UI 전체 목록 1/2·2/2의 이름·레벨 19종을 직접 확인함. 스크린샷은 별도 ChatGPT 대화에 제공했으며, 이 수집기에는 사용자 확인 결과를 전달함.",
       "skills": [
         {"skill_name": "구사 일생", "level": 2},
         {"skill_name": "노블레스", "level": 2},
