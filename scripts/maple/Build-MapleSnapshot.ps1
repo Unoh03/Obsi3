@@ -4,6 +4,7 @@ param(
     [string]$SourcePath = (Join-Path $PSScriptRoot 'output/우노03-maple-api.json'),
     [string]$OutputDirectory,
     [string]$PresetRolesPath = (Join-Path $PSScriptRoot 'preset-roles.json'),
+    [string]$OwnedLinksPath = (Join-Path $PSScriptRoot 'owned-link-skills.json'),
     [string]$ExportDirectory,
     [switch]$SkipExport,
     [switch]$Quiet
@@ -90,6 +91,17 @@ if ($PresetRolesPath) {
     if ($null -ne $UserContext) {
         $Summary.user_context = $UserContext
         $Summary.reading_guide += 'user_context는 별도 사용자 설명입니다. preset_roles의 경로와 data_presence를 확인하고, 용도 라벨을 현재 착용 상태나 프리셋별 최종 스탯으로 해석하지 마세요.'
+    }
+}
+$OwnedLinks = $null
+if ($OwnedLinksPath) {
+    Import-Module (Join-Path $PSScriptRoot 'MapleOwnedLinks.psm1')
+    $OwnedLinks = New-MapleOwnedLinks $Data (Read-MapleJson $OwnedLinksPath) $OutputDirectory
+    if ($null -ne $OwnedLinks) {
+        if (-not $Summary.Contains('user_context')) { $Summary.user_context = [ordered]@{} }
+        $Summary.user_context.owned_link_skills = $OwnedLinks.skills
+        $Summary.user_context.owned_link_skills_info = $OwnedLinks.info
+        $Summary.reading_guide += 'user_context.owned_link_skills는 월드 공통 보유 후보입니다. verified_on과 owned_link_skills_info.rules를 확인하세요. API 수집 시점보다 나중의 사용자 확인이 포함될 수 있습니다.'
     }
 }
 $Context = [ordered]@{

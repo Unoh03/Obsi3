@@ -69,7 +69,7 @@ Set-Location 'D:\Obsidian\Vault\Obsi2\scripts\maple'
 - `quality.assessment`: 수행한 검증의 범위, 전체 스키마 검증 미수행, 섹션 간 동시 갱신·최종 스탯과 프리셋 연결 미확인, 기준 시각 없는 섹션 목록. 유니온 새 프리셋 필드는 `missing` / `null` / `empty_array` / `array_present` / `unexpected_type`을 구분한다. 배열 존재는 내용 검증이나 현재 적용의 증거가 아니다.
 - `actual`: 모든 최종 스탯, 현재 장비의 상세 옵션·잠재·추옵·스타포스, 하이퍼 스탯·어빌리티, 심볼, 세트, 펫, 링크, V 매트릭스, HEXA 코어·스탯, 무릉, 기타 스탯, 반지, 유니온·아티팩트·챔피언.
 - `presets`: 저장된 하이퍼 스탯·어빌리티·장비·칭호·링크/자체 링크·V 매트릭스·HEXA 스탯·유니온·펫 장비 프리셋. API 섹션과 원래 필드명을 유지하며, 현재 적용 설정으로 간주하지 않는다.
-- `user_context`: 해당 캐릭터에 등록한 사용자 설명이 있을 때만 포함. `preset_roles`의 용도·원본 JSON 경로·데이터 존재 여부를 제공한다. NEXON 응답과 분리되며 최종 스탯이나 활성 상태를 덮어쓰지 않는다.
+- `user_context`: 해당 캐릭터에 등록한 사용자 설명이 있을 때만 포함. `preset_roles`의 용도·원본 JSON 경로·데이터 존재 여부와, 등록된 월드의 `owned_link_skills` 보유 후보 목록을 제공한다. NEXON 응답과 분리되며 최종 스탯이나 활성 상태를 덮어쓰지 않는다.
 - `changes_since_previous`: 직전의 더 오래된 **동일 캐릭터** 수집본과 비교한 현재 상태·저장 프리셋의 변경값 및 비교하지 못한 섹션. 프리셋 변경 경로는 `$.presets.`로 시작한다.
 
 예를 들어 하이퍼 2번은 `presets.hyper_stat.hyper_stat_preset_2`, 어빌리티 2번은 `presets.ability.ability_preset_2`, 칭호 3번은 `presets.item_equipment.title_preset3`에 있다. 유니온 상태 프리셋은 `presets.union_raider.union_state_stat_preset`에 있다. 번호와 API가 반환한 순서를 유지하며, 보스용/사냥용 용도는 임의로 붙이지 않는다.
@@ -96,6 +96,22 @@ API 최종 스탯에 장비·링크·유니온 효과를 다시 더하면 중복
 
 현재 수집에서는 과거 조회용 `ring_exchange`를 호출하지 않고 `ring_reserve`를 사용한다. [NEXON의 2026-03-19 업데이트 안내](https://openapi.nexon.com/ko/support/notice/3402834/)에 따른 구분이다. 기존 raw에 남아 있는 `ring_exchange` 데이터/오류는 그대로 읽고 보존하므로, 과거 수집본을 재가공했다고 과거 오류가 사라지지는 않는다.
 
+## 보유 링크 후보 목록
+
+`owned-link-skills.json`은 사용자 확인 목록을 담는 별도 설정 데이터다. 링크 이름이나 개수는 코드에 고정하지 않는다. 스카니아의 우노03·우노03레테를 같은 그룹으로 등록했으며, 2026-10-03 사용자 재확인 19종을 초기 데이터로 사용한다. 스크린샷 파일은 제공되지 않았으므로 별도 이미지 검증을 주장하지 않는다. 다른 월드나 미등록 캐릭터에는 자동 적용하지 않는다.
+
+- `user_context.owned_link_skills`: 이름, `level`, 출처(`user_verified` / `api_observed`), 관측 레벨과 캐릭터·필드·수집 시각, `level_review_required`.
+- `user_context.owned_link_skills_info`: 그룹·월드·사용자 확인일·확인 캐릭터·근거·API 관측 상한 시각·경고·추천 규칙. API 수집보다 뒤의 사용자 확인을 적용한 경우 `verification_newer_than_snapshot: true`다.
+- 추천은 이 목록의 이름을 후보로 삼는다. 목록 밖은 보유 미확인/육성 후보로 분리한다. 실제 장착·자체 링크·효과·프리셋은 **해당 캐릭터의** `actual.link_skill`과 `presets.link_skill`을 읽는다. 본인 링크를 전수 슬롯에 중복 추천하지 않는다. [공식 링크 스킬 안내](https://maplestory.nexon.com/Guide/N23GameInformation/Articles/406)
+
+현재 원본과 보존된 raw에서 현재 링크·자체 링크·각 1~3번 프리셋을 조사한다. 표준 `output/characters/<캐릭터>/` 구조에서는 같은 그룹에 명시된 캐릭터의 raw도 함께 읽는다. 별도 출력 폴더에서는 그 폴더의 raw만 사용한다. 다른 월드·미등록 캐릭터·현재 수집 시각보다 미래인 원본은 제외한다. 관측 자료는 캐릭터/필드/레벨별 마지막 시각으로 압축한다.
+
+전체 목록 확인일 이후에 API에서 새 이름이 발견되면 자동 추가한다. 이후 미관측·API 실패만으로 삭제하지 않으며 raw 이력으로 재구성하므로 별도 변경 가능한 캐시를 만들지 않는다. raw를 보존해야 과거 API 추가 항목도 유지된다. 전체 목록을 다시 검증할 때 설정의 `skills`와 `verified_on`을 갱신하면, 새 확인일보다 오래된 미등록 항목을 다시 보유 목록으로 끌어오지 않는다.
+
+사용자 확인 레벨은 API로 덮어쓰지 않는다. 확인일 이후 다른 레벨이 관측되면 `level_review_required`로 표시한다. API에서만 추가된 항목은 관측 레벨이 하나일 때만 `level`을 채우며 여러 레벨이면 null로 남긴다. 최대값 선택이나 합산을 하지 않는다. 차이는 성장·프리셋·자체 링크 등 맥락 확인 대상이며 오류나 현재 적용 레벨로 단정하지 않는다. 오래된 관측도 날짜와 함께 남지만 현재 수준을 보증하지 않는다.
+
+API 수집·`actual`·`presets`·직전 diff는 이 사용자 컨텍스트와 독립적이다. `Build-MapleSnapshot.ps1 -OwnedLinksPath 경로`로 별도 설정을 지정하고 `-OwnedLinksPath ''`로 보유 목록만 제외할 수 있다. 기존 `-PresetRolesPath ''`는 프리셋 용도 설명만 제외한다. 설정 오류 시 이전 완료 묶음을 유지한다.
+
 ## 변경 비교와 이력
 
 - 첨부에는 **직전 비교 가능한 수집과의 변화만** 담는다. 누적 이력이나 최근 N회 이력은 추가하지 않는다. 더 오래된 원본·완료 묶음·전달본은 로컬에 남지만, 최신 첨부만 받은 AI가 자동으로 읽을 수 있는 것은 아니다.
@@ -115,11 +131,13 @@ API 최종 스탯에 장비·링크·유니온 효과를 다시 더하면 중복
 | `MapleSnapshot.psm1` | API 목록, JSON 입출력, AI용 상태 정리, 변경 비교 |
 | `Build-MapleSnapshot.ps1` | raw 이력 선택·보관과 출력 생성 |
 | `preset-roles.json` | 캐릭터별 사용자 설명. API 원본과 별개로 보존하는 프리셋 용도 |
+| `owned-link-skills.json`, `MapleOwnedLinks.psm1` | 월드·캐릭터 그룹별 사용자 확인 링크와 raw 관측을 합친 보유 후보 목록 |
 | `tests/Test-MapleSnapshot.ps1` | 네트워크 없이 가공·변경 비교·원본 보존 검증 |
 
 ```powershell
 pwsh -NoProfile -File ./tests/Test-MapleSnapshot.ps1
 pwsh -NoProfile -File ./tests/Test-MapleBatch.ps1
+pwsh -NoProfile -File ./tests/Test-MapleOwnedLinks.ps1
 ```
 
 환산 실험용 코드·테스트·의존성·가상환경·문서는 제거했다. 기존 `.runtime/`, `fixtures/maplescouter/`의 로컬 자료는 이 도구에서 사용하지 않으며, 기존 사용자 상태/증거 보존을 위해 Git 제외 상태로 남겨 두었다.

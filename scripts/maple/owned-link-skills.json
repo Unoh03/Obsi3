@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "id": "unoh-scania",
+      "world_name": "스카니아",
+      "characters": ["우노03", "우노03레테"],
+      "verified_on": "2026-10-03",
+      "verified_from_character": "우노03",
+      "source": "user_verified",
+      "evidence": "사용자가 게임 UI 목록과 이름·레벨 19종이 일치한다고 재확인. 스크린샷 파일은 이 작업에 제공되지 않음.",
+      "skills": [
+        {"skill_name": "구사 일생", "level": 2},
+        {"skill_name": "노블레스", "level": 2},
+        {"skill_name": "데들리 인스팅트", "level": 2},
+        {"skill_name": "데몬스 퓨리", "level": 2},
+        {"skill_name": "륀느의 축복", "level": 1},
+        {"skill_name": "무아", "level": 2},
+        {"skill_name": "소울 컨트랙트", "level": 2},
+        {"skill_name": "스피릿 오브 프리덤", "level": 6},
+        {"skill_name": "시그너스 블레스", "level": 2},
+        {"skill_name": "시프 커닝", "level": 2},
+        {"skill_name": "아이언 윌", "level": 2},
+        {"skill_name": "어드벤쳐러 큐리어스", "level": 2},
+        {"skill_name": "엘프의 축복", "level": 2},
+        {"skill_name": "와일드 레이지", "level": 2},
+        {"skill_name": "인빈서블 빌리프", "level": 4},
+        {"skill_name": "인텐시브 인썰트", "level": 2},
+        {"skill_name": "커버넌트", "level": 2},
+        {"skill_name": "파이렛 블레스", "level": 4},
+        {"skill_name": "판단", "level": 2}
+      ]
+    }
+  ]
+}
