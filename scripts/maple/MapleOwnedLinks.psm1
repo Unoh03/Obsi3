@@ -27,6 +27,7 @@ function New-MapleOwnedLinks($Data, $Config, [string]$OutputDirectory) {
             observed_levels=@(); observations=@(); level_review_required=$false
         }
     }
+    $SeedNames = @($Skills.Keys)
     $Cutoff = [DateTimeOffset]$Data.metadata.collected_at
     $Records = [System.Collections.Generic.List[object]]::new()
     $Warnings = [System.Collections.Generic.List[string]]::new()
@@ -71,8 +72,9 @@ function New-MapleOwnedLinks($Data, $Config, [string]$OutputDirectory) {
                     continue
                 }
                 # A newer full user verification supersedes older unlisted observations.
+                # Test the immutable seed, not the map populated during this scan.
+                if ($Time -lt $Verified -and $Row.skill_name -cnotin $SeedNames) { continue }
                 if (-not $Skills.Contains($Row.skill_name)) {
-                    if ($Time -lt $Verified) { continue }
                     $Skills[$Row.skill_name] = [ordered]@{
                         skill_name=$Row.skill_name; level=$null; source='api_observed'
                         observed_levels=@(); observations=@(); level_review_required=$false
@@ -89,9 +91,13 @@ function New-MapleOwnedLinks($Data, $Config, [string]$OutputDirectory) {
             }
         }
     }
-    foreach ($Name in $Skills.Keys) {
+    $Names = $SeedNames + @($Skills.Keys | Where-Object { $_ -cnotin $SeedNames } | Sort-Object -CaseSensitive)
+    foreach ($Name in $Names) {
         $Skill = $Skills[$Name]
-        $Skill.observations = @($Observations.Values | Where-Object skill_name -CEQ $Name | Sort-Object character_name,field,level)
+        # Scriptblock keys read dictionary entries; bare property names do not
+        # reliably sort OrderedDictionary records across PowerShell processes.
+        $Skill.observations = @($Observations.Values | Where-Object skill_name -CEQ $Name |
+            Sort-Object { $_.character_name }, { $_.field }, { $_.level })
         $Skill.observed_levels = @($Skill.observations.level | Sort-Object -Unique)
         if ($Skill.source -ceq 'api_observed' -and $Skill.observed_levels.Count -eq 1) { $Skill.level=$Skill.observed_levels[0] }
         $Recent = @($Skill.observations | Where-Object { [DateTimeOffset]$_.collected_at -ge $Verified })
@@ -100,7 +106,7 @@ function New-MapleOwnedLinks($Data, $Config, [string]$OutputDirectory) {
         } else { $Skill.observed_levels.Count -ne 1 }
     }
     return [ordered]@{
-        skills=@($Skills.Values)
+        skills=@($Names | ForEach-Object { $Skills[$_] })
         info=[ordered]@{
             group_id=$Group.id; world_name=$World; characters=$Group.characters
             verified_on=$Group.verified_on; verified_from_character=$Group.verified_from_character

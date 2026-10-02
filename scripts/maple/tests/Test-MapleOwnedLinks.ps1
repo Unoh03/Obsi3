@@ -52,6 +52,33 @@ try {
         $Again=New-MapleOwnedLinks (New-TestData) (Config) $Out
         Assert ((ConvertTo-Json $Result -Depth 30 -Compress) -ceq (ConvertTo-Json $Again -Depth 30 -Compress)) 'Not reproducible'
     }
+    Test 'raw file order cannot change levels or resurrect pre-verification observations' {
+        $History="$Work/permuted"
+        New-Item -ItemType Directory -Path "$History/raw" -Force | Out-Null
+        $Old=New-TestData 'A' '2026-10-02T00:00:00+09:00'
+        $Old.link_skill.character_link_skill=@(@{skill_name='new-link';skill_level=1})
+        $New=New-TestData 'A' '2026-10-04T09:00:00+09:00'
+        $New.link_skill.character_link_skill=@(@{skill_name='new-link';skill_level=2})
+        Write-MapleJson $Old "$History/raw/a.json"
+        Write-MapleJson $New "$History/raw/b.json"
+        $First=New-MapleOwnedLinks (New-TestData) (Config) $History
+        Write-MapleJson $New "$History/raw/a.json"
+        Write-MapleJson $Old "$History/raw/b.json"
+        $Second=New-MapleOwnedLinks (New-TestData) (Config) $History
+        Assert ((ConvertTo-Json $First -Depth 30 -Compress) -ceq (ConvertTo-Json $Second -Depth 30 -Compress)) 'History order changes inventory'
+        $Link=@($Second.skills | Where-Object skill_name -EQ 'new-link')[0]
+        Assert ($Link.level -eq 2 -and $Link.observed_levels.Count -eq 1 -and -not $Link.level_review_required) 'Pre-verification level resurrected'
+    }
+    Test 'dictionary observations have a canonical field order' {
+        $Current=New-TestData
+        $Current.link_skill.character_link_skill_preset_3=@(@{skill_name='seed';skill_level=2})
+        $Current.link_skill.character_link_skill_preset_1=@(@{skill_name='seed';skill_level=2})
+        $Current.link_skill.character_owned_link_skill=@{skill_name='seed';skill_level=2}
+        $Current.link_skill.character_link_skill=@(@{skill_name='seed';skill_level=2})
+        $Result=New-MapleOwnedLinks $Current (Config) "$Work/empty"
+        $Fields=@($Result.skills[0].observations | ForEach-Object { $_.field })
+        Assert (($Fields -join ',') -ceq 'character_link_skill,character_link_skill_preset_1,character_link_skill_preset_3,character_owned_link_skill') 'Dictionary fields are not sorted'
+    }
     Test 'level disagreement is visible and never blindly promoted or downgraded' {
         $Current=New-TestData
         $Current.link_skill.character_link_skill=@(@{skill_name='seed';skill_level=3},@{skill_name='new-link';skill_level=2})
