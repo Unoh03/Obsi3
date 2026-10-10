@@ -47,7 +47,7 @@ def exhaustive_three():
             totals = tuple(min(value, 10) for value in totals)
             if totals[0] != 10:
                 continue
-            key = (sum(totals), *totals[1:], -cost)
+            key = (sum(totals), int(totals[6] > 0), *totals[1:], -cost)
             best_by_cost[cost] = max(best_by_cost.get(cost, key), key)
     return {
         budget: max((rank for cost, rank in best_by_cost.items() if cost <= budget), default=None)
@@ -89,7 +89,7 @@ class EngineTests(unittest.TestCase):
         self.assertEqual((metrics.used_ap, metrics.level_sum, metrics.total), (24, 19, 57))
         optimized = engine.solve_level(20)
         self.assertEqual(optimized.metrics.total, 57)
-        self.assertEqual(optimized.metrics.effective, (10, 10, 10, 9, 9, 9, 0, 0, 0, 0, 0, 0))
+        self.assertGreater(optimized.metrics.effective[6], 0)
         self.assertGreater(optimized.metrics.rank, metrics.rank)
 
     def test_total_beats_priority_and_overflow_is_excluded(self):
@@ -106,6 +106,43 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(r.metrics.used_ap, 59)
         self.assertLess(engine.solve(58, 9).metrics.total, 120)
         self.assertEqual(engine.verify(r.crystals, 72, 9), r.metrics)
+
+    def test_level_23_allstat_without_losing_total(self):
+        r = engine.solve_level(23)
+        self.assertEqual(r.metrics.total, 60)
+        self.assertEqual(r.metrics.effective, (10, 10, 10, 10, 10, 8, 2, 0, 0, 0, 0, 0))
+        example = (
+            engine.Crystal(5, (0, 1, 2)), engine.Crystal(4, (3, 4, 5)),
+            engine.Crystal(5, (0, 1, 2)), engine.Crystal(4, (3, 4, 5)),
+            engine.Crystal(2, (3, 4, 6)),
+        )
+        self.assertEqual(engine.verify(example, 27, 5).rank, r.metrics.rank)
+
+    def test_allstat_is_dropped_if_it_would_reduce_maximum(self):
+        # Inject a tradeoff to exercise the conditional fallback even if the
+        # current game's free option slots usually allow positive allstat.
+        native = engine._solve_interruptibly
+        added = False
+
+        def tradeoff(solver, model):
+            nonlocal added
+            if not added:
+                variables = {
+                    var.name: model.get_int_var_from_proto_index(i)
+                    for i, var in enumerate(model.proto.variables)
+                }
+                model.add(variables["total"] + variables["has_allstat"] <= 33)
+                added = True
+            return native(solver, model)
+
+        with patch.object(engine, "_solve_interruptibly", side_effect=tradeoff):
+            r = engine.solve(16, 3)
+        self.assertEqual(r.status, "optimal")
+        self.assertEqual(r.metrics.total, 33)
+        self.assertEqual(r.metrics.effective[6], 0)
+        with redirect_stdout(io.StringIO()) as output:
+            calculator.display(1, r)
+        self.assertIn("확보할 수 없어 제외", output.getvalue())
 
     def test_group_expansion_degree_sequences(self):
         # Exhaust every valid degree vector over six columns, 1~4 rows.

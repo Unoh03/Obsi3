@@ -39,7 +39,7 @@ class Metrics:
 
     @property
     def rank(self) -> tuple[int, ...]:
-        return (self.total, *self.effective[1:], -self.used_ap)
+        return (self.total, int(self.effective[6] > 0), *self.effective[1:], -self.used_ap)
 
 
 @dataclass(frozen=True)
@@ -240,16 +240,20 @@ def solve(
     model.add(effective[0] == 10)
     total = integer(10, upper, "total")
     model.add(total == sum(effective))
+    has_allstat = integer(0, 1, "has_allstat")
+    model.add(effective[6] >= 1).only_enforce_if(has_allstat)
+    model.add(effective[6] == 0).only_enforce_if(has_allstat.Not())
 
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 8
     solver.parameters.random_seed = 0
     solver.parameters.catch_sigint_signal = False
-    objectives = [("효과 총합 최대화", total, False)]
-    objectives += [(f"동점 비교: {EFFECTS[j]}", effective[j], False) for j in range(1, 12)]
-    objectives += [("동점 비교: AP 최소화", spent, True)]
+    objectives = [("효과 총합 최대화", total, False, None)]
+    objectives += [("최대 총합 유지: 올스탯 확보 가능 여부", has_allstat, False, None)]
+    objectives += [(f"동점 비교: {EFFECTS[j]}", effective[j], False, j) for j in range(1, 12)]
+    objectives += [("동점 비교: AP 최소화", spent, True, None)]
     proven = []
-    for index, (label, objective, minimize) in enumerate(objectives):
+    for index, (label, objective, minimize, effect_index) in enumerate(objectives):
         report(f"[{index + 1}/{len(objectives)}] {label}")
         if minimize:
             model.minimize(objective)
@@ -265,10 +269,10 @@ def solve(
         model.add(objective == optimum)
         # A score bound or a subset-sum impossibility eliminates an entire
         # level configuration without enumerating any option allocations.
-        if index < 12:
+        if index == 0 or effect_index is not None:
             remaining = [
                 (values, bound) for values, bound in candidates
-                if (bound >= optimum if index == 0 else optimum in _possible_effects(values, index))
+                if (bound >= optimum if index == 0 else optimum in _possible_effects(values, effect_index))
             ]
             if len(remaining) < len(candidates):
                 allowed = [(values[0], values[1], *(values[2:].count(k) for k in range(1, 6))) for values, _ in remaining]
@@ -283,7 +287,7 @@ def solve(
         rows.extend(_expand_group(k + 1, solver.value(sizes[k]), [solver.value(var) for var in degrees[k]]))
     crystals = tuple(rows)
     metrics = verify(crystals, budget, count)
-    if (metrics.total, *metrics.effective[1:], metrics.used_ap) != tuple(proven):
+    if (metrics.total, int(metrics.effective[6] > 0), *metrics.effective[1:], metrics.used_ap) != tuple(proven):
         raise ValueError("검산 실패: 최적화 단계별 값과 실제 배치 불일치")
     return Result("optimal", budget, count, crystals, metrics, perf_counter() - start)
 

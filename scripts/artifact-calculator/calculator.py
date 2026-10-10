@@ -25,7 +25,9 @@ def display(level, result):
         print("조건 충족 불가능: 이 레벨에서는 고정 옵션을 유지하며 치확 Lv.10을 확보할 수 없습니다.")
         print(f"계산 시간: {result.elapsed:.3f}초")
         return
-    print("최적해 확정 — 치확 10 → 효과 총합 → 효과 우선순위 → AP 최소")
+    print("최적해 확정 — 치확 10 → 효과 총합 → 가능한 경우 올스탯 확보 → 효과 우선순위 → AP 최소")
+    if result.metrics.effective[6] == 0:
+        print("올스탯: 최대 효과 총합을 유지하며 확보할 수 없어 제외했습니다.")
     rows = []
     for i, crystal in enumerate(result.crystals):
         name = CRYSTAL_NAMES[i] if i < len(CRYSTAL_NAMES) else f"크리스탈 {i + 1}"
