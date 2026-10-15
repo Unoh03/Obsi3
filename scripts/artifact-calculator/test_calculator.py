@@ -7,7 +7,7 @@ its ranking helper, or its verifier to decide the expected optimum.
 import _thread
 from contextlib import redirect_stdout, redirect_stderr
 import io
-from itertools import combinations, product
+from itertools import combinations, combinations_with_replacement, product
 from pathlib import Path
 import subprocess
 import sys
@@ -47,7 +47,7 @@ def exhaustive_three():
             totals = tuple(min(value, 10) for value in totals)
             if totals[0] != 10:
                 continue
-            key = (sum(totals), int(totals[6] > 0), *totals[1:], -cost)
+            key = (sum(totals[:6]), *totals[1:6], sum(totals), *totals[6:], -cost)
             best_by_cost[cost] = max(best_by_cost.get(cost, key), key)
     return {
         budget: max((rank for cost, rank in best_by_cost.items() if cost <= budget), default=None)
@@ -56,6 +56,89 @@ def exhaustive_three():
 
 
 class EngineTests(unittest.TestCase):
+    def test_representative_levels_follow_core_first_policy(self):
+        fixtures = {
+            20: ((10, 10, 10, 9, 9, 9, 0, 0, 0, 0, 0, 0), 24),
+            21: ((10, 10, 10, 9, 9, 9, 0, 0, 0, 0, 0, 0), 24),
+            23: ((10,) * 6 + (0,) * 6, 27),
+            25: ((10,) * 6 + (0,) * 6, 27),
+            30: ((10,) * 7 + (5, 0, 0, 0, 0), 35),
+        }
+        for level, (effects, cost) in fixtures.items():
+            with self.subTest(level=level):
+                progress = []
+                result = engine.solve_level(level, progress.append)
+                self.assertEqual(result.status, "optimal")
+                self.assertEqual(result.metrics.effective, effects)
+                self.assertEqual(result.metrics.used_ap, cost)
+                self.assertEqual(result.metrics.total, sum(effects))
+                self.assertEqual(len(progress), 14)
+                self.assertIn("핵심 6종 합계", progress[0])
+                self.assertIn("전체 효과 합계", progress[6])
+
+    def test_all_levels_feasibility_and_reconstructed_allocations(self):
+        # Horn cannot carry critical rate and can stay at level 1 for free.
+        # Enumerate the levels of every other crystal independently of the
+        # engine's candidate pruning; all can carry critical rate together.
+        minimum_cost = {
+            count: min(
+                sum((0, 1, 3, 5, 8)[value - 1] for value in levels)
+                for levels in combinations_with_replacement(range(1, 6), count - 1)
+                if sum(levels) >= 10
+            ) for count in range(3, 10)
+        }
+        for level, (budget, count) in enumerate(zip(AP_TABLE, COUNT_TABLE), 1):
+            with self.subTest(level=level):
+                result = engine.solve_level(level)
+                possible = budget >= minimum_cost[count]
+                self.assertEqual(result.status, "optimal" if possible else "infeasible")
+                if possible:
+                    metrics = engine.verify(result.crystals, budget, count)
+                    self.assertEqual(metrics, result.metrics)
+                    self.assertEqual(metrics.total, 3 * metrics.level_sum - sum(metrics.overflow))
+                else:
+                    self.assertIsNone(result.metrics)
+                    self.assertEqual(result.crystals, ())
+
+    def test_policy_hierarchy_with_controlled_candidates(self):
+        # Artificial candidate metrics isolate policy ordering, not game
+        # feasibility. Real allocations are covered by exhaustive/regression tests.
+        core = (10, 10, 10, 9, 9, 9)
+        cases = [
+            ((10,) * 6 + (0,) * 6, 30, core + (10,) * 6, 20),
+            (core + (0,) * 6, 30, (10, 9, 10, 10, 9, 9) + (10,) * 6, 20),
+            ((10,) * 6 + (5, 10, 0, 0, 0, 0), 30, (10,) * 6 + (10, 0, 0, 0, 0, 0), 20),
+            ((10,) * 6 + (10, 5, 0, 0, 0, 0), 30, (10,) * 6 + (5, 10, 0, 0, 0, 0), 20),
+            ((10,) * 6 + (0,) * 6, 27, (10,) * 6 + (0,) * 6, 30),
+        ]
+        # Each adjacent effect must beat any gains in later effects at tied sums.
+        for indexes in (range(1, 6), range(6, 12)):
+            for earlier, later in zip(indexes, list(indexes)[1:]):
+                preferred = [10] + [5] * 11
+                other = preferred.copy()
+                preferred[earlier] += 1
+                other[later] += 1
+                cases.append((tuple(preferred), 30, tuple(other), 20))
+        for preferred, cost, other, other_cost in cases:
+            with self.subTest(preferred=preferred, other=other, cost=cost):
+                model = cp_model.CpModel()
+                effects = [model.new_int_var(0, 10, f"e{j}") for j in range(12)]
+                total = model.new_int_var(0, 120, "total")
+                core_total = model.new_int_var(0, 60, "core_total")
+                spent = model.new_int_var(0, 72, "spent")
+                model.add(total == sum(effects))
+                model.add(core_total == sum(effects[:6]))
+                model.add_allowed_assignments(effects + [spent], [(*preferred, cost), (*other, other_cost)])
+                problem = engine._AllocationModel(model, effects + [total, core_total, spent],
+                                                  [], [], [], effects, total, core_total, spent)
+                solver, proven = engine._optimize(problem, [], lambda _: None)
+                self.assertEqual(tuple(solver.value(v) for v in effects), preferred)
+                self.assertEqual(solver.value(spent), cost)
+                metrics = engine.Metrics(cost, 0, preferred, preferred, (0,) * 12)
+                alternative = engine.Metrics(other_cost, 0, other, other, (0,) * 12)
+                self.assertEqual(metrics.objective_values, proven)
+                self.assertGreater(metrics.rank, alternative.rank)
+
     def test_all_60_resource_rows(self):
         for level, expected in enumerate(zip(AP_TABLE, COUNT_TABLE), start=1):
             with self.subTest(level=level):
@@ -89,15 +172,19 @@ class EngineTests(unittest.TestCase):
         self.assertEqual((metrics.used_ap, metrics.level_sum, metrics.total), (24, 19, 57))
         optimized = engine.solve_level(20)
         self.assertEqual(optimized.metrics.total, 57)
-        self.assertGreater(optimized.metrics.effective[6], 0)
+        self.assertEqual(optimized.metrics.core_total, 57)
         self.assertGreater(optimized.metrics.rank, metrics.rank)
 
-    def test_total_beats_priority_and_overflow_is_excluded(self):
-        r = engine.solve_level(21)
-        self.assertEqual((r.budget, r.count), (25, 5))
-        self.assertEqual(r.metrics.total, 58)
-        self.assertEqual(r.metrics.effective, (10, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0))
-        self.assertEqual((r.metrics.level_sum, r.metrics.raw[0], sum(r.metrics.overflow)), (20, 12, 2))
+    def test_overflow_is_excluded_from_both_effect_sums(self):
+        rows = (
+            engine.Crystal(4, (0, 1, 2)), engine.Crystal(4, (3, 4, 5)),
+            engine.Crystal(4, (0, 1, 6)), engine.Crystal(4, (0, 2, 6)),
+            engine.Crystal(4, (3, 4, 5)),
+        )
+        metrics = engine.verify(rows, 25, 5)
+        self.assertEqual(metrics.effective, (10, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0))
+        self.assertEqual((metrics.level_sum, metrics.raw[0], sum(metrics.overflow)), (20, 12, 2))
+        self.assertEqual((metrics.core_total, metrics.total), (50, 58))
 
     def test_level_60_minimizes_ap_after_full_effects(self):
         r = engine.solve_level(60)
@@ -107,42 +194,16 @@ class EngineTests(unittest.TestCase):
         self.assertLess(engine.solve(58, 9).metrics.total, 120)
         self.assertEqual(engine.verify(r.crystals, 72, 9), r.metrics)
 
-    def test_level_23_allstat_without_losing_total(self):
-        r = engine.solve_level(23)
-        self.assertEqual(r.metrics.total, 60)
-        self.assertEqual(r.metrics.effective, (10, 10, 10, 10, 10, 8, 2, 0, 0, 0, 0, 0))
-        example = (
-            engine.Crystal(5, (0, 1, 2)), engine.Crystal(4, (3, 4, 5)),
-            engine.Crystal(5, (0, 1, 2)), engine.Crystal(4, (3, 4, 5)),
-            engine.Crystal(2, (3, 4, 6)),
-        )
-        self.assertEqual(engine.verify(example, 27, 5).rank, r.metrics.rank)
-
-    def test_allstat_is_dropped_if_it_would_reduce_maximum(self):
-        # Inject a tradeoff to exercise the conditional fallback even if the
-        # current game's free option slots usually allow positive allstat.
-        native = engine._solve_interruptibly
-        added = False
-
-        def tradeoff(solver, model):
-            nonlocal added
-            if not added:
-                variables = {
-                    var.name: model.get_int_var_from_proto_index(i)
-                    for i, var in enumerate(model.proto.variables)
-                }
-                model.add(variables["total"] + variables["has_allstat"] <= 33)
-                added = True
-            return native(solver, model)
-
-        with patch.object(engine, "_solve_interruptibly", side_effect=tradeoff):
-            r = engine.solve(16, 3)
-        self.assertEqual(r.status, "optimal")
-        self.assertEqual(r.metrics.total, 33)
-        self.assertEqual(r.metrics.effective[6], 0)
+    def test_output_explains_core_first_without_old_allstat_rule(self):
+        result = engine.solve_level(25)
         with redirect_stdout(io.StringIO()) as output:
-            calculator.display(1, r)
-        self.assertIn("확보할 수 없어 제외", output.getvalue())
+            calculator.display(25, result)
+        text = output.getvalue()
+        for expected in ("핵심 효과 우선순위", "전체 효과 합계", "핵심 6종 효과 합계: 60 / 60",
+                         "올스탯 적용 레벨: 0 / 10", "실제 효과 레벨 총합: 60 / 120",
+                         "사용 AP: 27 / 30 | 남은 AP: 3"):
+            self.assertIn(expected, text)
+        self.assertNotIn("확보할 수 없어 제외", text)
 
     def test_group_expansion_degree_sequences(self):
         # Exhaust every valid degree vector over six columns, 1~4 rows.
@@ -223,6 +284,21 @@ class EngineTests(unittest.TestCase):
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_removed_comparison_flags_are_rejected(self):
+        for flag, values in (("--compare", ["방무", "올스탯"]), ("--loss", ["0"]), ("--candidate", ["1"])):
+            with self.subTest(flag=flag), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as exc:
+                calculator.main(["--level", "25", flag, *values])
+            self.assertEqual(exc.exception.code, 2)
+        with redirect_stdout(io.StringIO()) as output, self.assertRaises(SystemExit):
+            calculator.main(["--help"])
+        self.assertNotIn("--compare", output.getvalue())
+
+    def test_old_comparison_shortcut_is_now_invalid_level(self):
+        with patch("builtins.input", side_effect=["c", "q"]), redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(calculator.main([]), 0)
+        self.assertIn("1~60의 정수를 입력하세요", output.getvalue())
+        self.assertNotIn("후보 비교", output.getvalue())
+
     def test_repeated_input_defaults_and_validation(self):
         result = engine.Result("infeasible", 1, 3)
         with patch("builtins.input", side_effect=["", "0", "61", "2.5", "abc", "1", "", "q"]), \

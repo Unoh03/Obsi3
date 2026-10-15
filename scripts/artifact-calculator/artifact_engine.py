@@ -38,8 +38,18 @@ class Metrics:
         return sum(self.effective)
 
     @property
+    def core_total(self) -> int:
+        return sum(self.effective[:6])
+
+    @property
+    def objective_values(self) -> tuple[int, ...]:
+        return (self.core_total, *self.effective[1:6], self.total,
+                *self.effective[6:], self.used_ap)
+
+    @property
     def rank(self) -> tuple[int, ...]:
-        return (self.total, int(self.effective[6] > 0), *self.effective[1:], -self.used_ap)
+        values = self.objective_values
+        return (*values[:-1], -values[-1])
 
 
 @dataclass(frozen=True)
@@ -183,23 +193,21 @@ def _expand_group(level: int, size: int, degrees: list[int]) -> list[Crystal]:
     return rows
 
 
-def solve(
-    budget: int,
-    count: int,
-    progress: Callable[[str], None] | None = None,
-) -> Result:
-    """Internal AP/count interface. Public CLI accepts artifact level only."""
-    if type(budget) is not int or budget < 0:
-        raise ValueError("AP 예산은 0 이상의 정수여야 합니다.")
-    if type(count) is not int or not 3 <= count <= 9:
-        raise ValueError("크리스탈 수는 3~9의 정수여야 합니다.")
-    start = perf_counter()
-    report = progress or (lambda message: None)
-    candidates = _level_candidates(min(budget, 8 * count), count)
-    if not candidates:
-        return Result("infeasible", budget, count, elapsed=perf_counter() - start)
-    upper = max(bound for _, bound in candidates)
+@dataclass
+class _AllocationModel:
+    model: cp_model.CpModel
+    all_vars: list[cp_model.IntVar]
+    levels: list[cp_model.IntVar]
+    sizes: list[cp_model.IntVar]
+    degrees: list[list[cp_model.IntVar]]
+    effective: list[cp_model.IntVar]
+    total: cp_model.IntVar
+    core_total: cp_model.IntVar
+    spent: cp_model.IntVar
 
+
+def _build_model(budget: int, count: int, upper: int) -> _AllocationModel:
+    """Encode legal allocations independently of the optimization order."""
     model = cp_model.CpModel()
     all_vars = []
 
@@ -240,18 +248,33 @@ def solve(
     model.add(effective[0] == 10)
     total = integer(10, upper, "total")
     model.add(total == sum(effective))
-    has_allstat = integer(0, 1, "has_allstat")
-    model.add(effective[6] >= 1).only_enforce_if(has_allstat)
-    model.add(effective[6] == 0).only_enforce_if(has_allstat.Not())
+    core_total = integer(0, 60, "core_total")
+    model.add(core_total == sum(effective[:6]))
 
+    return _AllocationModel(model, all_vars, levels, sizes, degrees,
+                            effective, total, core_total, spent)
+
+
+def _build_objectives(problem: _AllocationModel):
+    """Declare the current priority order separately from solver execution."""
+    objectives = [("핵심 6종 합계 최대화", problem.core_total, False, None)]
+    objectives += [(f"핵심 동점 비교: {EFFECTS[j]}", problem.effective[j], False, j) for j in range(1, 6)]
+    objectives += [("핵심 유지: 전체 효과 합계 최대화", problem.total, False, None)]
+    objectives += [(f"동점 비교: {EFFECTS[j]}", problem.effective[j], False, j) for j in range(6, 12)]
+    objectives += [("동점 비교: AP 최소화", problem.spent, True, None)]
+    return objectives
+
+
+def _optimize(problem: _AllocationModel, candidates, report):
+    """Prove and fix each objective, retaining bounds and solution hints."""
+    model = problem.model
+    levels, sizes = problem.levels, problem.sizes
+    total, all_vars = problem.total, problem.all_vars
+    objectives = _build_objectives(problem)
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 8
     solver.parameters.random_seed = 0
     solver.parameters.catch_sigint_signal = False
-    objectives = [("효과 총합 최대화", total, False, None)]
-    objectives += [("최대 총합 유지: 올스탯 확보 가능 여부", has_allstat, False, None)]
-    objectives += [(f"동점 비교: {EFFECTS[j]}", effective[j], False, j) for j in range(1, 12)]
-    objectives += [("동점 비교: AP 최소화", spent, True, None)]
     proven = []
     for index, (label, objective, minimize, effect_index) in enumerate(objectives):
         report(f"[{index + 1}/{len(objectives)}] {label}")
@@ -261,7 +284,7 @@ def solve(
             model.maximize(objective)
         status = _solve_interruptibly(solver, model)
         if status == cp_model.INFEASIBLE and index == 0:
-            return Result("infeasible", budget, count, elapsed=perf_counter() - start)
+            return None
         if status != cp_model.OPTIMAL:
             raise SolveIncomplete(f"{label}: {solver.status_name(status)} — 전체 최적해 미확정")
         optimum = solver.value(objective)
@@ -269,10 +292,10 @@ def solve(
         model.add(objective == optimum)
         # A score bound or a subset-sum impossibility eliminates an entire
         # level configuration without enumerating any option allocations.
-        if index == 0 or effect_index is not None:
+        if objective is total or effect_index is not None:
             remaining = [
                 (values, bound) for values, bound in candidates
-                if (bound >= optimum if index == 0 else optimum in _possible_effects(values, effect_index))
+                if (bound >= optimum if objective is total else optimum in _possible_effects(values, effect_index))
             ]
             if len(remaining) < len(candidates):
                 allowed = [(values[0], values[1], *(values[2:].count(k) for k in range(1, 6))) for values, _ in remaining]
@@ -282,12 +305,39 @@ def solve(
         for var in all_vars:
             model.add_hint(var, solver.value(var))
 
+    return solver, tuple(proven)
+
+
+def _extract_crystals(problem: _AllocationModel, solver) -> tuple[Crystal, ...]:
+    levels, sizes, degrees = problem.levels, problem.sizes, problem.degrees
     rows = [Crystal(solver.value(levels[i]), FIXED_OPTIONS[i]) for i in range(2)]
     for k in reversed(range(5)):
         rows.extend(_expand_group(k + 1, solver.value(sizes[k]), [solver.value(var) for var in degrees[k]]))
-    crystals = tuple(rows)
+    return tuple(rows)
+
+
+def solve(
+    budget: int,
+    count: int,
+    progress: Callable[[str], None] | None = None,
+) -> Result:
+    """Build, optimize, reconstruct and independently verify an allocation."""
+    if type(budget) is not int or budget < 0:
+        raise ValueError("AP 예산은 0 이상의 정수여야 합니다.")
+    if type(count) is not int or not 3 <= count <= 9:
+        raise ValueError("크리스탈 수는 3~9의 정수여야 합니다.")
+    start = perf_counter()
+    candidates = _level_candidates(min(budget, 8 * count), count)
+    if not candidates:
+        return Result("infeasible", budget, count, elapsed=perf_counter() - start)
+    problem = _build_model(budget, count, max(bound for _, bound in candidates))
+    optimized = _optimize(problem, candidates, progress or (lambda message: None))
+    if optimized is None:
+        return Result("infeasible", budget, count, elapsed=perf_counter() - start)
+    solver, proven = optimized
+    crystals = _extract_crystals(problem, solver)
     metrics = verify(crystals, budget, count)
-    if (metrics.total, int(metrics.effective[6] > 0), *metrics.effective[1:], metrics.used_ap) != tuple(proven):
+    if metrics.objective_values != proven:
         raise ValueError("검산 실패: 최적화 단계별 값과 실제 배치 불일치")
     return Result("optimal", budget, count, crystals, metrics, perf_counter() - start)
 
