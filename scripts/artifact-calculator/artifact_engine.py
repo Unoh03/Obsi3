@@ -7,13 +7,9 @@ from time import perf_counter
 from typing import Callable
 
 from ortools.sat.python import cp_model
+from artifact_policy import EFFECTS, POLICIES, Mode
 
 
-# Order is also the lexicographic tie-break order (critical rate is mandatory).
-EFFECTS = (
-    "치확", "크뎀", "공마", "보공", "데미지", "방무",
-    "올스탯", "드롭", "메획", "경험치", "벞지", "재사용",
-)
 COSTS = (0, 1, 3, 5, 8)
 FIXED_OPTIONS = ((0, 1, 2), (3, 4, 5))
 CRYSTAL_NAMES = ("주황버섯", "뿔버섯", "슬라임", "스텀프", "스톤골렘")
@@ -43,13 +39,23 @@ class Metrics:
 
     @property
     def objective_values(self) -> tuple[int, ...]:
-        return (self.core_total, *self.effective[1:6], self.total,
-                *self.effective[6:], self.used_ap)
+        return self.objective_values_for(Mode.CORE6)
 
     @property
     def rank(self) -> tuple[int, ...]:
-        values = self.objective_values
-        return (*values[:-1], -values[-1])
+        return self.rank_for(Mode.CORE6)
+
+    def objective_values_for(self, mode: Mode | str) -> tuple[int, ...]:
+        aggregates = {"core_total": self.core_total, "total": self.total, "spent": self.used_ap}
+        return tuple(
+            self.effective[step.effect_index] if step.target == "effect" else aggregates[step.target]
+            for step in POLICIES[Mode(mode)]
+        )
+
+    def rank_for(self, mode: Mode | str) -> tuple[int, ...]:
+        return tuple(-value if step.minimize else value for step, value in zip(
+            POLICIES[Mode(mode)], self.objective_values_for(mode)
+        ))
 
 
 @dataclass(frozen=True)
@@ -60,6 +66,7 @@ class Result:
     crystals: tuple[Crystal, ...] = ()
     metrics: Metrics | None = None
     elapsed: float = 0.0
+    mode: Mode = Mode.CORE6
 
 
 class SolveIncomplete(RuntimeError):
@@ -255,22 +262,23 @@ def _build_model(budget: int, count: int, upper: int) -> _AllocationModel:
                             effective, total, core_total, spent)
 
 
-def _build_objectives(problem: _AllocationModel):
-    """Declare the current priority order separately from solver execution."""
-    objectives = [("핵심 6종 합계 최대화", problem.core_total, False, None)]
-    objectives += [(f"핵심 동점 비교: {EFFECTS[j]}", problem.effective[j], False, j) for j in range(1, 6)]
-    objectives += [("핵심 유지: 전체 효과 합계 최대화", problem.total, False, None)]
-    objectives += [(f"동점 비교: {EFFECTS[j]}", problem.effective[j], False, j) for j in range(6, 12)]
-    objectives += [("동점 비교: AP 최소화", problem.spent, True, None)]
-    return objectives
+def _build_objectives(problem: _AllocationModel, mode: Mode = Mode.CORE6):
+    """Bind shared policy steps to this allocation model's variables."""
+    aggregates = {"core_total": problem.core_total, "total": problem.total, "spent": problem.spent}
+    return [
+        (step.label,
+         problem.effective[step.effect_index] if step.target == "effect" else aggregates[step.target],
+         step.minimize, step.effect_index)
+        for step in POLICIES[Mode(mode)]
+    ]
 
 
-def _optimize(problem: _AllocationModel, candidates, report):
+def _optimize(problem: _AllocationModel, candidates, report, *, mode: Mode = Mode.CORE6):
     """Prove and fix each objective, retaining bounds and solution hints."""
     model = problem.model
     levels, sizes = problem.levels, problem.sizes
     total, all_vars = problem.total, problem.all_vars
-    objectives = _build_objectives(problem)
+    objectives = _build_objectives(problem, mode)
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 8
     solver.parameters.random_seed = 0
@@ -320,8 +328,11 @@ def solve(
     budget: int,
     count: int,
     progress: Callable[[str], None] | None = None,
+    *,
+    mode: Mode | str = Mode.CORE6,
 ) -> Result:
     """Build, optimize, reconstruct and independently verify an allocation."""
+    mode = Mode(mode)
     if type(budget) is not int or budget < 0:
         raise ValueError("AP 예산은 0 이상의 정수여야 합니다.")
     if type(count) is not int or not 3 <= count <= 9:
@@ -329,18 +340,19 @@ def solve(
     start = perf_counter()
     candidates = _level_candidates(min(budget, 8 * count), count)
     if not candidates:
-        return Result("infeasible", budget, count, elapsed=perf_counter() - start)
+        return Result("infeasible", budget, count, elapsed=perf_counter() - start, mode=mode)
     problem = _build_model(budget, count, max(bound for _, bound in candidates))
-    optimized = _optimize(problem, candidates, progress or (lambda message: None))
+    optimized = _optimize(problem, candidates, progress or (lambda message: None), mode=mode)
     if optimized is None:
-        return Result("infeasible", budget, count, elapsed=perf_counter() - start)
+        return Result("infeasible", budget, count, elapsed=perf_counter() - start, mode=mode)
     solver, proven = optimized
     crystals = _extract_crystals(problem, solver)
     metrics = verify(crystals, budget, count)
-    if metrics.objective_values != proven:
+    if metrics.objective_values_for(mode) != proven:
         raise ValueError("검산 실패: 최적화 단계별 값과 실제 배치 불일치")
-    return Result("optimal", budget, count, crystals, metrics, perf_counter() - start)
+    return Result("optimal", budget, count, crystals, metrics, perf_counter() - start, mode)
 
 
-def solve_level(level: int, progress: Callable[[str], None] | None = None) -> Result:
-    return solve(*resources(level), progress=progress)
+def solve_level(level: int, progress: Callable[[str], None] | None = None, *,
+                mode: Mode | str = Mode.CORE6) -> Result:
+    return solve(*resources(level), progress=progress, mode=mode)

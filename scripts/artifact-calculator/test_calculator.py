@@ -19,6 +19,7 @@ from ortools.sat.python import cp_model
 
 import artifact_engine as engine
 import calculator
+from artifact_policy import MODE_NAMES, Mode
 
 
 # Public source growth table, transcribed as fixed fixtures rather than
@@ -34,7 +35,16 @@ AP_TABLE = (
 COUNT_TABLE = (3,) * 9 + (4,) * 10 + (5,) * 10 + (6,) * 10 + (7,) * 10 + (8,) * 10 + (9,)
 
 
-def exhaustive_three():
+def reference_rank(effects, cost, mode):
+    # Independent expected priorities: do not use production policy definitions.
+    if mode == "total":
+        return (sum(effects), *effects[1:], -cost)
+    if mode == "core7":
+        return (sum(effects[:6]), *effects[1:6], effects[6], sum(effects), *effects[7:], -cost)
+    return (sum(effects[:6]), *effects[1:6], sum(effects), *effects[6:], -cost)
+
+
+def exhaustive_three(mode):
     """Enumerate all 5^3 * C(12,3) labeled level/option assignments."""
     best_by_cost = {}
     for levels in product(range(1, 6), repeat=3):
@@ -47,7 +57,7 @@ def exhaustive_three():
             totals = tuple(min(value, 10) for value in totals)
             if totals[0] != 10:
                 continue
-            key = (sum(totals[:6]), *totals[1:6], sum(totals), *totals[6:], -cost)
+            key = reference_rank(totals, cost, mode)
             best_by_cost[cost] = max(best_by_cost.get(cost, key), key)
     return {
         budget: max((rank for cost, rank in best_by_cost.items() if cost <= budget), default=None)
@@ -87,18 +97,20 @@ class EngineTests(unittest.TestCase):
                 if sum(levels) >= 10
             ) for count in range(3, 10)
         }
-        for level, (budget, count) in enumerate(zip(AP_TABLE, COUNT_TABLE), 1):
-            with self.subTest(level=level):
-                result = engine.solve_level(level)
-                possible = budget >= minimum_cost[count]
-                self.assertEqual(result.status, "optimal" if possible else "infeasible")
-                if possible:
-                    metrics = engine.verify(result.crystals, budget, count)
-                    self.assertEqual(metrics, result.metrics)
-                    self.assertEqual(metrics.total, 3 * metrics.level_sum - sum(metrics.overflow))
-                else:
-                    self.assertIsNone(result.metrics)
-                    self.assertEqual(result.crystals, ())
+        for mode in Mode:
+            for level, (budget, count) in enumerate(zip(AP_TABLE, COUNT_TABLE), 1):
+                with self.subTest(level=level, mode=mode):
+                    result = engine.solve_level(level, mode=mode)
+                    possible = budget >= minimum_cost[count]
+                    self.assertEqual(result.status, "optimal" if possible else "infeasible")
+                    self.assertEqual(result.mode, mode)
+                    if possible:
+                        metrics = engine.verify(result.crystals, budget, count)
+                        self.assertEqual(metrics, result.metrics)
+                        self.assertEqual(metrics.total, 3 * metrics.level_sum - sum(metrics.overflow))
+                    else:
+                        self.assertIsNone(result.metrics)
+                        self.assertEqual(result.crystals, ())
 
     def test_policy_hierarchy_with_controlled_candidates(self):
         # Artificial candidate metrics isolate policy ordering, not game
@@ -119,25 +131,63 @@ class EngineTests(unittest.TestCase):
                 preferred[earlier] += 1
                 other[later] += 1
                 cases.append((tuple(preferred), 30, tuple(other), 20))
-        for preferred, cost, other, other_cost in cases:
-            with self.subTest(preferred=preferred, other=other, cost=cost):
-                model = cp_model.CpModel()
-                effects = [model.new_int_var(0, 10, f"e{j}") for j in range(12)]
-                total = model.new_int_var(0, 120, "total")
-                core_total = model.new_int_var(0, 60, "core_total")
-                spent = model.new_int_var(0, 72, "spent")
-                model.add(total == sum(effects))
-                model.add(core_total == sum(effects[:6]))
-                model.add_allowed_assignments(effects + [spent], [(*preferred, cost), (*other, other_cost)])
-                problem = engine._AllocationModel(model, effects + [total, core_total, spent],
-                                                  [], [], [], effects, total, core_total, spent)
-                solver, proven = engine._optimize(problem, [], lambda _: None)
-                self.assertEqual(tuple(solver.value(v) for v in effects), preferred)
-                self.assertEqual(solver.value(spent), cost)
-                metrics = engine.Metrics(cost, 0, preferred, preferred, (0,) * 12)
-                alternative = engine.Metrics(other_cost, 0, other, other, (0,) * 12)
-                self.assertEqual(metrics.objective_values, proven)
-                self.assertGreater(metrics.rank, alternative.rank)
+        for mode in Mode:
+            for first, first_cost, second, second_cost in cases:
+                preferred, cost = max(((first, first_cost), (second, second_cost)),
+                                      key=lambda pair: reference_rank(*pair, mode))
+                other, other_cost = (second, second_cost) if (preferred, cost) == (first, first_cost) else (first, first_cost)
+                with self.subTest(mode=mode, preferred=preferred, other=other, cost=cost):
+                    model = cp_model.CpModel()
+                    effects = [model.new_int_var(0, 10, f"e{j}") for j in range(12)]
+                    total = model.new_int_var(0, 120, "total")
+                    core_total = model.new_int_var(0, 60, "core_total")
+                    spent = model.new_int_var(0, 72, "spent")
+                    model.add(total == sum(effects))
+                    model.add(core_total == sum(effects[:6]))
+                    model.add_allowed_assignments(effects + [spent], [(*preferred, cost), (*other, other_cost)])
+                    problem = engine._AllocationModel(model, effects + [total, core_total, spent],
+                                                      [], [], [], effects, total, core_total, spent)
+                    solver, proven = engine._optimize(problem, [], lambda _: None, mode=mode)
+                    self.assertEqual(tuple(solver.value(v) for v in effects), preferred)
+                    self.assertEqual(solver.value(spent), cost)
+                    metrics = engine.Metrics(cost, 0, preferred, preferred, (0,) * 12)
+                    alternative = engine.Metrics(other_cost, 0, other, other, (0,) * 12)
+                    self.assertEqual(metrics.objective_values_for(mode), proven)
+                    self.assertGreater(metrics.rank_for(mode), alternative.rank_for(mode))
+
+    def test_modes_and_default_compatibility(self):
+        for mode in Mode:
+            for level in (25, 30):
+                with self.subTest(mode=mode, level=level):
+                    progress = []
+                    result = engine.solve_level(level, progress.append, mode=mode.value)
+                    if mode == Mode.TOTAL:
+                        expected = ((10, 10, 10, 9, 9, 9, 2, 2, 2, 0, 0, 0), 30) if level == 25 else (
+                            (10, 10, 10, 8, 8, 8, 8, 8, 8, 0, 0, 0), 36)
+                    else:
+                        expected = ((10,) * 6 + (0,) * 6, 27) if level == 25 else (
+                            (10,) * 7 + (5, 0, 0, 0, 0), 35)
+                    self.assertEqual((result.metrics.effective, result.metrics.used_ap), expected)
+                    self.assertEqual(result.mode, mode)
+                    self.assertEqual(len(progress), 13 if mode == Mode.TOTAL else 14)
+                    self.assertIn("전체 효과 합계", progress[{Mode.CORE6: 6, Mode.CORE7: 7, Mode.TOTAL: 0}[mode]])
+                    self.assertEqual(result.metrics.rank_for(mode), reference_rank(*expected, mode))
+                    with redirect_stdout(io.StringIO()) as output:
+                        calculator.display(level, result)
+                    self.assertIn(f"계산 방식: {MODE_NAMES[mode]}", output.getvalue())
+        default = engine.solve_level(25)
+        self.assertEqual(default.mode, Mode.CORE6)
+        self.assertEqual(default.metrics.objective_values, default.metrics.objective_values_for("core6"))
+        self.assertEqual(default.metrics.rank, default.metrics.rank_for("core6"))
+        for bad in ("", "boss", "CORE6", None, 1):
+            with self.subTest(bad=bad), self.assertRaises(ValueError):
+                engine.solve(0, 3, mode=bad)
+        for mode in Mode:
+            result = engine.solve_level(1, mode=mode)
+            self.assertEqual(result.mode, mode)
+            with redirect_stdout(io.StringIO()) as output:
+                calculator.display(1, result)
+            self.assertIn(MODE_NAMES[mode], output.getvalue())
 
     def test_all_60_resource_rows(self):
         for level, expected in enumerate(zip(AP_TABLE, COUNT_TABLE), start=1):
@@ -153,14 +203,15 @@ class EngineTests(unittest.TestCase):
                 engine.solve(budget, count)
 
     def test_exhaustive_three_all_budgets(self):
-        for budget, expected in exhaustive_three().items():
-            with self.subTest(budget=budget):
-                actual = engine.solve(budget, 3)
-                if expected is None:
-                    self.assertEqual(actual.status, "infeasible")
-                else:
-                    self.assertEqual(actual.status, "optimal")
-                    self.assertEqual(actual.metrics.rank, expected)
+        for mode in Mode:
+            for budget, expected in exhaustive_three(mode).items():
+                with self.subTest(budget=budget, mode=mode):
+                    actual = engine.solve(budget, 3, mode=mode)
+                    if expected is None:
+                        self.assertEqual(actual.status, "infeasible")
+                    else:
+                        self.assertEqual(actual.status, "optimal")
+                        self.assertEqual(actual.metrics.rank_for(mode), expected)
 
     def test_original_example_and_priority(self):
         original = (
@@ -187,12 +238,13 @@ class EngineTests(unittest.TestCase):
         self.assertEqual((metrics.core_total, metrics.total), (50, 58))
 
     def test_level_60_minimizes_ap_after_full_effects(self):
-        r = engine.solve_level(60)
-        self.assertEqual((r.budget, r.count), (72, 9))
-        self.assertEqual(r.metrics.effective, (10,) * 12)
-        self.assertEqual(r.metrics.used_ap, 59)
-        self.assertLess(engine.solve(58, 9).metrics.total, 120)
-        self.assertEqual(engine.verify(r.crystals, 72, 9), r.metrics)
+        for mode in Mode:
+            r = engine.solve_level(60, mode=mode)
+            self.assertEqual((r.budget, r.count), (72, 9))
+            self.assertEqual(r.metrics.effective, (10,) * 12)
+            self.assertEqual(r.metrics.used_ap, 59)
+            self.assertLess(engine.solve(58, 9, mode=mode).metrics.total, 120)
+            self.assertEqual(engine.verify(r.crystals, 72, 9), r.metrics)
 
     def test_output_explains_core_first_without_old_allstat_rule(self):
         result = engine.solve_level(25)
@@ -284,6 +336,52 @@ class EngineTests(unittest.TestCase):
 
 
 class InterfaceTests(unittest.TestCase):
+    def test_mode_selection_retry_and_remembered_defaults(self):
+        answers = ["25", "4", "c", "3", "", "", "30", "2", "", "1", "q"]
+        with patch("builtins.input", side_effect=answers) as prompt, \
+                patch.object(calculator, "calculate", return_value=0) as calculate, \
+                redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(calculator.main([]), 0)
+        self.assertEqual([(call.args[0], call.kwargs["mode"]) for call in calculate.call_args_list],
+                         [(25, Mode.TOTAL), (25, Mode.TOTAL), (30, Mode.CORE7), (30, Mode.CORE6)])
+        self.assertEqual(output.getvalue().count("1~3 중 선택하세요"), 2)
+        prompts = [call.args[0] for call in prompt.call_args_list]
+        self.assertIn("선택 [Enter: 3]: ", prompts)
+        self.assertIn("선택 [Enter: 2]: ", prompts)
+
+    def test_exit_during_mode_selection_never_calculates(self):
+        for exit_input in ("q", "quit", "exit", EOFError(), KeyboardInterrupt()):
+            with self.subTest(exit_input=exit_input), \
+                    patch("builtins.input", side_effect=["25", exit_input]), \
+                    patch.object(calculator, "calculate") as calculate, redirect_stdout(io.StringIO()):
+                self.assertEqual(calculator.main([]), 0)
+                calculate.assert_not_called()
+
+    def test_cli_mode_routing_and_interactive_preset(self):
+        for value in (None, "core6", "core7", "total"):
+            args = ["--level", "25"] + (["--mode", value] if value else [])
+            with self.subTest(value=value), patch.object(calculator, "calculate", return_value=0) as calculate:
+                self.assertEqual(calculator.main(args), 0)
+                calculate.assert_called_once_with(25, mode=Mode(value or "core6"))
+        with patch("builtins.input", side_effect=["25", "", "q"]), \
+                patch.object(calculator, "calculate", return_value=0) as calculate, redirect_stdout(io.StringIO()):
+            self.assertEqual(calculator.main(["--mode", "total"]), 0)
+            calculate.assert_called_once_with(25, mode=Mode.TOTAL)
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+            calculator.main(["--mode", "invalid"])
+        self.assertEqual(error.exception.code, 2)
+
+    def test_cli_runs_each_mode(self):
+        path = str(Path(__file__).with_name("calculator.py"))
+        for mode in Mode:
+            with self.subTest(mode=mode):
+                run = subprocess.run([sys.executable, path, "--level", "25", "--mode", mode.value],
+                                     capture_output=True, timeout=30)
+                self.assertEqual(run.returncode, 0, run.stderr.decode("utf-8"))
+                output = run.stdout.decode("utf-8")
+                self.assertIn(f"계산 방식: {MODE_NAMES[mode]}", output)
+                self.assertIn("실제 효과 레벨 총합: " + ("63" if mode == Mode.TOTAL else "60"), output)
+
     def test_removed_comparison_flags_are_rejected(self):
         for flag, values in (("--compare", ["방무", "올스탯"]), ("--loss", ["0"]), ("--candidate", ["1"])):
             with self.subTest(flag=flag), redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as exc:
@@ -301,7 +399,7 @@ class InterfaceTests(unittest.TestCase):
 
     def test_repeated_input_defaults_and_validation(self):
         result = engine.Result("infeasible", 1, 3)
-        with patch("builtins.input", side_effect=["", "0", "61", "2.5", "abc", "1", "", "q"]), \
+        with patch("builtins.input", side_effect=["", "0", "61", "2.5", "abc", "1", "", "", "", "q"]), \
                 patch.object(engine, "solve_level", return_value=result) as solve, \
                 redirect_stdout(io.StringIO()) as output:
             self.assertEqual(calculator.main([]), 0)
@@ -309,7 +407,7 @@ class InterfaceTests(unittest.TestCase):
         self.assertEqual(output.getvalue().count("1~60의 정수를 입력하세요"), 5)
 
     def test_interrupted_calculation_can_be_followed_by_new_input(self):
-        with patch("builtins.input", side_effect=["20", "1", "q"]), \
+        with patch("builtins.input", side_effect=["20", "2", "1", "", "q"]), \
                 patch.object(engine, "solve_level", side_effect=[KeyboardInterrupt, engine.Result("infeasible", 1, 3)]), \
                 redirect_stdout(io.StringIO()) as output:
             self.assertEqual(calculator.main([]), 0)
@@ -334,7 +432,7 @@ class InterfaceTests(unittest.TestCase):
     def test_launcher_from_another_working_directory(self):
         launcher = Path(__file__).with_name("Run-ArtifactCalculator.cmd").resolve()
         run = subprocess.run(
-            ["cmd.exe", "/d", "/c", str(launcher)], input=b"20\nq\n", capture_output=True,
+            ["cmd.exe", "/d", "/c", str(launcher)], input=b"20\n\nq\n", capture_output=True,
             cwd=launcher.parents[2], timeout=30,
         )
         self.assertEqual(run.returncode, 0, run.stderr.decode("utf-8", errors="replace"))
