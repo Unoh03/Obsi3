@@ -56,9 +56,9 @@ if ($null -eq $RecordsResponse -or $RecordsResponse.success -ne $true -or
     [int]$RecordsResponse.count -ne $RecordsResponse.records.Count) {
     throw 'Invalid or partial V-ARCHIVE response; previous state preserved.'
 }
-$Seen = [Collections.Generic.HashSet[string]]::new()
+$Seen = [System.Collections.Generic.HashSet[string]]::new()
 foreach ($R in $RecordsResponse.records) {
-    if ($R -isnot [Collections.IDictionary] -or $null -eq $R.title -or
+    if ($R -isnot [System.Collections.IDictionary] -or $null -eq $R.title -or
         $R.pattern -cnotin @('NM','HD','MX','SC') -or
         $null -eq $R.level -or $null -eq $R.score -or $R.maxCombo -isnot [bool] -or
         [double]$R.score -lt 0 -or [double]$R.score -gt 100 -or
@@ -87,7 +87,7 @@ foreach ($Group in @($Records | Group-Object -Property level | Sort-Object { [in
 }
 $TierName = $null; $TierPoint = $null; $DjClass = $null
 if ($null -ne $TierResponse -and $TierResponse.success -eq $true) {
-    if ($TierResponse.tier -is [Collections.IDictionary]) {
+    if ($TierResponse.tier -is [System.Collections.IDictionary]) {
         $TierName = $TierResponse.tier.name
     }
     $TierPoint = $TierResponse.tierPoint
@@ -135,10 +135,10 @@ $OldIndex = @{}; $NewIndex = @{}
 if ($null -ne $Old) {
     foreach ($R in $Old.records_response.records) { $OldIndex[(Key-Of $R)] = $R }
 }
-$NewCharts = [Collections.Generic.List[object]]::new()
-$Improvements = [Collections.Generic.List[object]]::new()
-$Regressions = [Collections.Generic.List[object]]::new()
-$NewCombos = [Collections.Generic.List[object]]::new()
+$NewCharts = [System.Collections.Generic.List[object]]::new()
+$Improvements = [System.Collections.Generic.List[object]]::new()
+$Regressions = [System.Collections.Generic.List[object]]::new()
+$NewCombos = [System.Collections.Generic.List[object]]::new()
 foreach ($R in $Records) {
     $Key = Key-Of $R
     $NewIndex[$Key] = $R
@@ -206,7 +206,9 @@ $Name = "$Stamp-$Id"
 $Stage = Join-Path $OutputRoot ('.staging-' + $Name)
 $Snapshot = Join-Path (Join-Path $OutputRoot 'snapshots') $Name
 $Exports = Join-Path $OutputRoot 'exports'
-[void](New-Item -ItemType Directory -Force -Path $Stage, (Split-Path -Parent $Snapshot), $Exports)
+foreach ($Dir in @($Stage, (Split-Path -Parent $Snapshot), $Exports)) {
+    [void](New-Item -ItemType Directory -Force -Path $Dir)
+}
 try {
     Write-Json $Latest (Join-Path $Stage 'latest.json')
     Write-Json $Summary (Join-Path $Stage 'summary.json')
