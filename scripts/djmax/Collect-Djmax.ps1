@@ -148,6 +148,11 @@ foreach ($R in $Records) {
                 key=$Key; name=$R.name; pattern=$R.pattern; level=$R.level
                 score=$R.score; max_combo=$R.maxCombo
             })
+            if ($R.maxCombo) {
+                $NewCombos.Add([ordered]@{
+                    key=$Key; name=$R.name; pattern=$R.pattern; level=$R.level
+                })
+            }
         }
         continue
     }
