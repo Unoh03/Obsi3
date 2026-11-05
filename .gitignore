@@ -37,3 +37,5 @@ scripts/maple/output/
 scripts/maple/.venv/
 scripts/maple/fixtures/maplescouter/
 scripts/maple/.runtime/
+
+scripts/djmax/output/
